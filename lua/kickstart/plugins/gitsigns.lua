@@ -1,11 +1,23 @@
--- Adds git related signs to the gutter, as well as utilities for managing changes
--- NOTE: gitsigns is already included in init.lua but contains only the base
--- config. This will add also the recommended keymaps.
-
+local git_signs = require('kickstart.icons').git.signs
 return {
   {
     'lewis6991/gitsigns.nvim',
     opts = {
+      signs = {
+        add = { text = git_signs.add },
+        change = { text = git_signs.modified },
+        delete = { text = git_signs.delete },
+        topdelete = { text = git_signs.delete },
+        changedelete = { text = git_signs.modified },
+        untracked = { text = git_signs.add },
+      },
+      signs_staged = {
+        add = { text = git_signs.add },
+        change = { text = git_signs.modified },
+        delete = { text = git_signs.delete },
+        topdelete = { text = git_signs.delete },
+        changedelete = { text = git_signs.modified },
+      },
       on_attach = function(bufnr)
         local gitsigns = require 'gitsigns'
 
@@ -16,21 +28,21 @@ return {
         end
 
         -- Navigation
-        map('n', ']c', function()
+        map('n', ']h', function()
           if vim.wo.diff then
-            vim.cmd.normal { ']c', bang = true }
+            vim.cmd.normal { ']h', bang = true }
           else
             gitsigns.nav_hunk 'next'
           end
-        end, { desc = 'Jump to next git [c]hange' })
+        end, { desc = 'Jump to next git [h]hunk' })
 
-        map('n', '[c', function()
+        map('n', '[h', function()
           if vim.wo.diff then
-            vim.cmd.normal { '[c', bang = true }
+            vim.cmd.normal { '[h', bang = true }
           else
             gitsigns.nav_hunk 'prev'
           end
-        end, { desc = 'Jump to previous git [c]hange' })
+        end, { desc = 'Jump to previous git [h]unk' })
 
         -- Actions
         -- visual mode
@@ -46,7 +58,8 @@ return {
         map('n', '<leader>hS', gitsigns.stage_buffer, { desc = 'git [S]tage buffer' })
         map('n', '<leader>hu', gitsigns.stage_hunk, { desc = 'git [u]ndo stage hunk' })
         map('n', '<leader>hR', gitsigns.reset_buffer, { desc = 'git [R]eset buffer' })
-        map('n', '<leader>hp', gitsigns.preview_hunk, { desc = 'git [p]review hunk' })
+        map('n', '<leader>hp', gitsigns.preview_hunk_inline, { desc = 'git [p]review hunk inline' })
+        map('n', '<leader>hP', gitsigns.preview_hunk, { desc = 'git [P]review hunk' })
         map('n', '<leader>hb', gitsigns.blame_line, { desc = 'git [b]lame line' })
         map('n', '<leader>hd', gitsigns.diffthis, { desc = 'git [d]iff against index' })
         map('n', '<leader>hD', function()
