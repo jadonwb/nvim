@@ -1,5 +1,44 @@
 local git_signs = require('kickstart.icons').git.signs
 return {
+  'tpope/vim-rhubarb',
+  {
+    'tpope/vim-fugitive',
+    cmd = { 'G', 'Git' },
+    init = function()
+      vim.keymap.set('n', '<leader>gw', function()
+        if vim.bo.filetype == 'fugitive' then
+          vim.cmd 'quit'
+        else
+          vim.cmd 'G'
+        end
+      end, { desc = 'Toggle Git Fugitive Window' })
+      vim.api.nvim_create_user_command('Gc', function(args)
+        local vimCmd = 'Git commit'
+        if args['args'] then
+          vimCmd = vimCmd .. ' -m "' .. args['args'] .. '"'
+        end
+        vim.cmd(vimCmd)
+      end, { desc = 'Commit w/wo a message', nargs = '*' })
+
+      vim.api.nvim_create_user_command('Gp', function(args)
+        local vimCmd = 'Git push'
+        if args['args'] then
+          vimCmd = vimCmd .. ' ' .. args['args']
+        end
+        vim.cmd(vimCmd)
+      end, { desc = 'Git push', nargs = '*' })
+
+      vim.api.nvim_create_user_command('Gpf', function()
+        local vimCmd = 'Git push --force'
+        vim.cmd(vimCmd)
+      end, { desc = 'Git push --force', nargs = '*' })
+
+      vim.api.nvim_create_user_command('Grc', function()
+        local vimCmd = 'Git recommit'
+        vim.cmd(vimCmd)
+      end, { desc = 'Git recommit', nargs = '*' })
+    end,
+  },
   {
     'lewis6991/gitsigns.nvim',
     opts = {
