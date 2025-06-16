@@ -5,37 +5,62 @@ return {
     { 'mason-org/mason.nvim', opts = {} },
     'mason-org/mason-lspconfig.nvim',
     'WhoIsSethDaniel/mason-tool-installer.nvim',
-    -- TODO snacks, preview, diagnostics
 
-    { 'j-hui/fidget.nvim', opts = {} },
-    'saghen/blink.cmp',
+    -- For LSP actions preview
+    { 'aznhe21/actions-preview.nvim', opts = { backend = { 'snacks', 'nui' } } },
+
+    -- Preview for go to methods
+    { 'rmagatti/goto-preview', opts = { default_mappings = true, references = { provider = 'snacks' } }, event = 'VeryLazy' },
+
+    -- Populates project-wide lsp diagnostcs
+    'artemave/workspace-diagnostics.nvim',
+
+    -- This is the notifications in bottom right
+    -- consider theming to look better?
+    -- { 'j-hui/fidget.nvim', opts = {} },
+
+    -- 'saghen/blink.cmp',
+
+    -- Provides keymaps for LSP actions
+    'folke/snacks.nvim',
   },
   config = function()
     vim.api.nvim_create_autocmd('LspAttach', {
       group = vim.api.nvim_create_augroup('kickstart-lsp-attach', { clear = true }),
       callback = function(event)
-        local map = function(keys, func, desc, mode)
+        local map = function(keys, func, desc, mode, lsp)
           mode = mode or 'n'
-          vim.keymap.set(mode, keys, func, { buffer = event.buf, desc = 'LSP: ' .. desc })
+          lsp = lsp == nil and true or lsp
+          vim.keymap.set(mode, keys, func, { buffer = event.buf, desc = lsp and 'LSP: ' .. desc or desc })
         end
 
-        map('grn', vim.lsp.buf.rename, '[R]e[n]ame')
+        map('K', vim.lsp.buf.hover, 'Display Hover Information')
 
-        map('gra', vim.lsp.buf.code_action, '[G]oto Code [A]ction', { 'n', 'x' })
+        ---@module 'snacks'
+        map('grd', Snacks.picker.lsp_definitions, '[G]oto [D]efinition')
 
-        map('grr', require('telescope.builtin').lsp_references, '[G]oto [R]eferences')
+        map('grr', Snacks.picker.lsp_references, '[G]oto [R]eferences')
 
-        map('gri', require('telescope.builtin').lsp_implementations, '[G]oto [I]mplementation')
+        map('gri', Snacks.picker.lsp_implementations, '[G]oto [I]mplementation')
 
-        map('grd', require('telescope.builtin').lsp_definitions, '[G]oto [D]efinition')
+        map('grt', Snacks.picker.lsp_type_definitions, '[G]oto [T]ype Definition')
 
-        map('grD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
+        map('grD', Snacks.picker.lsp_declarations, '[G]oto [D]eclaration')
 
-        map('grs', require('telescope.builtin').lsp_document_symbols, 'Open Document Symbols')
+        local kind_filter = { filter = require('kickstart.icons').kind_filter }
+        map('<leader>ss', function()
+          Snacks.picker.lsp_symbols(kind_filter)
+        end, 'Open Buffer Symbols', 'n', false)
 
-        map('grS', require('telescope.builtin').lsp_dynamic_workspace_symbols, 'Open Workspace Symbols')
+        map('<leader>sS', function()
+          Snacks.picker.lsp_workspace_symbols(kind_filter)
+        end, 'Open Workspace Symbols', 'n', false)
 
-        map('grt', require('telescope.builtin').lsp_type_definitions, '[G]oto [T]ype Definition')
+        map('<leader>rv', vim.lsp.buf.rename, 'Rename Variable', 'n', false)
+
+        map('<leader>ca', require('actions-preview').code_actions, 'Code action', { 'n', 'v' })
+        -- map('<leader>a', vim.lsp.buf.code_action, 'Code [A]ction')
+        -- map('gra', vim.lsp.buf.code_action, '[G]oto Code [A]ction', { 'n', 'x' })
 
         -- This function resolves a difference between neovim nightly (version 0.11) and stable (version 0.10)
         ---@param client vim.lsp.Client
@@ -74,40 +99,13 @@ return {
           })
         end
 
-        if client and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_inlayHint, event.buf) then
-          map('<leader>th', function()
-            vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf })
-          end, '[T]oggle Inlay [H]ints')
-        end
+        -- if client and client_supports_method(client, vim.lsp.protocol.Methods.textDocument_inlayHint, event.buf) then
+        --   map('<leader>th', function()
+        --     vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf })
+        --   end, '[T]oggle Inlay [H]ints')
+        -- end
       end,
     })
-
-    vim.diagnostic.config {
-      severity_sort = true,
-      float = { border = 'rounded', source = 'if_many' },
-      underline = { severity = vim.diagnostic.severity.ERROR },
-      signs = vim.g.have_nerd_font and {
-        text = {
-          [vim.diagnostic.severity.ERROR] = '󰅚 ',
-          [vim.diagnostic.severity.WARN] = '󰀪 ',
-          [vim.diagnostic.severity.INFO] = '󰋽 ',
-          [vim.diagnostic.severity.HINT] = '󰌶 ',
-        },
-      } or {},
-      virtual_text = {
-        source = 'if_many',
-        spacing = 1,
-        format = function(diagnostic)
-          local diagnostic_message = {
-            [vim.diagnostic.severity.ERROR] = diagnostic.message,
-            [vim.diagnostic.severity.WARN] = diagnostic.message,
-            [vim.diagnostic.severity.INFO] = diagnostic.message,
-            [vim.diagnostic.severity.HINT] = diagnostic.message,
-          }
-          return diagnostic_message[diagnostic.severity]
-        end,
-      },
-    }
 
     -- local capabilities = require("blink.cmp").get_lsp_capabilities()
 
@@ -153,11 +151,11 @@ return {
     end
 
     -- add workspace-diagnostics to all LSPs
-    -- vim.lsp.config('*', {
-    --   on_attach = function(client, bufnr)
-    --     require('workspace-diagnostics').populate_workspace_diagnostics(client, bufnr)
-    --   end,
-    -- })
+    vim.lsp.config('*', {
+      on_attach = function(client, bufnr)
+        require('workspace-diagnostics').populate_workspace_diagnostics(client, bufnr)
+      end,
+    })
 
     -- Grab the list of servers and tools to install and add them to ensure_installed
     local ensure_installed = vim.tbl_keys(servers.mason or {})

@@ -82,3 +82,30 @@ elseif gsettings:match 'prefer%-light' then
 else
   vim.o.background = 'dark' -- fallback
 end
+
+local diag_icons = require('kickstart.icons').diagnostics
+vim.diagnostic.config {
+  underline = false,
+  virtual_text = {
+    spacing = 2,
+    prefix = '●',
+    current_line = true,
+    source = 'if_many',
+  },
+  float = {
+    border = 'rounded',
+    source = 'if_many',
+    header = '',
+    prefix = '',
+  },
+  update_in_insert = false,
+  severity_sort = true,
+  signs = {
+    text = {
+      [vim.diagnostic.severity.ERROR] = diag_icons.Error,
+      [vim.diagnostic.severity.WARN] = diag_icons.Warn,
+      [vim.diagnostic.severity.HINT] = diag_icons.Hint,
+      [vim.diagnostic.severity.INFO] = diag_icons.Info,
+    },
+  },
+}

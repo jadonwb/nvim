@@ -4,12 +4,37 @@ return { -- Autoformat
   cmd = { 'ConformInfo' },
   keys = {
     {
-      '<leader>f',
+      '<leader>ff',
       function()
         require('conform').format { async = true, lsp_format = 'fallback' }
       end,
-      mode = '',
       desc = '[F]ormat buffer',
+    },
+    {
+      '<leader>f',
+      function()
+        require('conform').format({ async = true, lsp_format = 'fallback' }, function(err)
+          if not err then
+            vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<Esc>', true, false, true), 'n', true)
+          end
+        end)
+      end,
+      mode = 'x',
+      desc = 'Format Visual',
+    },
+    {
+      '<C-f>',
+      function()
+        require('conform').format { async = true, lsp_format = 'fallback' }
+      end,
+      mode = 'i',
+      desc = 'Format Buffer',
+    },
+    {
+      '<leader>fi',
+      '<cmd>ConformInfo<cr>',
+      mode = 'n',
+      desc = 'Conform Info',
     },
   },
   opts = {
@@ -47,4 +72,28 @@ return { -- Autoformat
       },
     },
   },
+  init = function()
+    -- [[ Toggle Autoformatting with Conform.nvim ]]
+    local function toggle_autoformatting()
+      local enabled = not vim.g.disable_autoformat
+      require('which-key').add {
+        {
+          '<leader>ft',
+          function()
+            vim.g.disable_autoformat = not vim.g.disable_autoformat
+            vim.b.disable_autoformat = vim.g.disable_autoformat
+            print('Auto Formatting is ' .. (enabled and 'Disabled' or 'Enabled'))
+            toggle_autoformatting()
+          end,
+          desc = (enabled and 'Disable' or 'Enable') .. ' Formatting',
+          icon = {
+            icon = enabled and '' or '',
+            color = enabled and 'green' or 'yellow',
+          },
+        },
+      }
+    end
+    -- Initialize the mapping for the first time
+    toggle_autoformatting()
+  end,
 }

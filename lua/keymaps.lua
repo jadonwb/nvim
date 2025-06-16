@@ -8,6 +8,15 @@ vim.g.maplocalleader = ' '
 -- See `:help vim.keymap.set()`
 local map = vim.keymap.set
 
+-- Delete some default LSP keymaps
+vim.keymap.del('n', 'gra')
+vim.keymap.del('n', 'gri')
+vim.keymap.del('n', 'grn')
+vim.keymap.del('n', 'grr')
+vim.keymap.del('n', 'gO')
+
+map('n', 'gq', vim.diagnostic.open_float, { desc = 'Open floating diagnostic message' })
+
 -- Remap for dealing with word wrap
 map('n', 'k', "v:count == 0 ? 'gk' : 'k'", { expr = true, silent = true })
 map('n', 'j', "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = true })
@@ -15,7 +24,7 @@ map('n', 'j', "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = true })
 map('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
 -- Diagnostic keymaps
-map('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
+-- map('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 
 -- Shortcut to exit terminal mode
 map('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
@@ -32,12 +41,6 @@ map('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
 map('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
 map('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 map('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
-
---TODO: make this more useful or
--- From TJ lua video (slightly adapted):
--- map('n', '<leader>xx', '<cmd>source %<CR>')
--- map('n', '<leader>xl', ':.lua<CR>')
--- map('v', '<leader>xl', ':lua<CR>')
 
 -- New line without insert mode
 map('n', '<M-o>', 'o<Esc>', { desc = 'New Line Down' })
@@ -70,9 +73,9 @@ map('n', '<leader>w', function()
   end
   -- Buffer has a name, save normally
   vim.cmd.write()
-end, { desc = 'Save Buffer' })
-map('n', '<leader>x', '<cmd>wqa<CR>', { desc = 'Save and Exit' })
-map('n', '<leader>q', '<cmd>q<CR>', { desc = 'Quit Window' })
+end, { desc = '[W]rite Buffer' })
+map('n', '<leader>x', '<cmd>wqa<CR>', { desc = 'Save and E[x]it' })
+map('n', '<leader>q', '<cmd>q<CR>', { desc = '[Q]uit Window' })
 
 -- Resize window using <ctrl> arrow keys with smart behavior
 map('n', '<C-Up>', function()

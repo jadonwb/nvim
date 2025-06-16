@@ -1,98 +1,168 @@
-return { -- Autocompletion
+return {
   'saghen/blink.cmp',
-  event = 'VimEnter',
-  version = '1.*',
+  event = { 'InsertEnter', 'CmdlineEnter' },
   dependencies = {
+    -- Integrate Nvim-cmp completion sources
+    { 'saghen/blink.compat', version = '*', lazy = true, opts = {} },
+
+    -- Sources
+    'kristijanhusak/vim-dadbod-completion',
+    'Kaiser-Yang/blink-cmp-avante',
+    'disrupted/blink-cmp-conventional-commits',
+    'ribru17/blink-cmp-spell',
+    'Kaiser-Yang/blink-cmp-git',
+    {
+      'fang2hou/blink-copilot',
+      dependencies = 'zbirenbaum/copilot.lua',
+    },
+
     -- Snippet Engine
     {
       'L3MON4D3/LuaSnip',
-      version = '2.*',
-      build = (function()
-        -- Build Step is needed for regex support in snippets.
-        -- This step is not supported in many windows environments.
-        -- Remove the below condition to re-enable on windows.
-        if vim.fn.has 'win32' == 1 or vim.fn.executable 'make' == 0 then
-          return
-        end
-        return 'make install_jsregexp'
-      end)(),
+      version = 'v2.*',
       dependencies = {
-        -- `friendly-snippets` contains a variety of premade snippets.
-        --    See the README about individual language/framework/plugin snippets:
-        --    https://github.com/rafamadriz/friendly-snippets
-        -- {
-        --   'rafamadriz/friendly-snippets',
-        --   config = function()
-        --     require('luasnip.loaders.from_vscode').lazy_load()
-        --   end,
-        -- },
+        -- Snippets
+        'solidjs-community/solid-snippets',
+        'rafamadriz/friendly-snippets',
       },
-      opts = {},
+      config = function()
+        require('luasnip.loaders.from_vscode').lazy_load()
+        -- require 'snippets.init'
+      end,
     },
-    'folke/lazydev.nvim',
+
+    -- Visual
+    { 'xzbdmw/colorful-menu.nvim', opts = {} },
   },
-  --- @module 'blink.cmp'
-  --- @type blink.cmp.Config
+  version = '*',
+  ---@module 'blink.cmp'
+  ---@type blink.cmp.Config
   opts = {
-    keymap = {
-      -- 'default' (recommended) for mappings similar to built-in completions
-      --   <c-y> to accept ([y]es) the completion.
-      --    This will auto-import if your LSP supports it.
-      --    This will expand snippets if the LSP sent a snippet.
-      -- 'super-tab' for tab to accept
-      -- 'enter' for enter to accept
-      -- 'none' for no mappings
-      --
-      -- For an understanding of why the 'default' preset is recommended,
-      -- you will need to read `:help ins-completion`
-      --
-      -- No, but seriously. Please read `:help ins-completion`, it is really good!
-      --
-      -- All presets have the following mappings:
-      -- <tab>/<s-tab>: move to right/left of your snippet expansion
-      -- <c-space>: Open menu or open docs if already open
-      -- <c-n>/<c-p> or <up>/<down>: Select next/previous item
-      -- <c-e>: Hide menu
-      -- <c-k>: Toggle signature help
-      --
-      -- See :h blink-cmp-config-keymap for defining your own keymap
-      preset = 'default',
-
-      -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
-      --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
-    },
-
-    appearance = {
-      -- 'mono' (default) for 'Nerd Font Mono' or 'normal' for 'Nerd Font'
-      -- Adjusts spacing to ensure icons are aligned
-      nerd_font_variant = 'mono',
-    },
-
     completion = {
-      -- By default, you may press `<c-space>` to show the documentation.
-      -- Optionally, set `auto_show = true` to show the documentation after a delay.
-      documentation = { auto_show = false, auto_show_delay_ms = 500 },
-    },
-
-    sources = {
-      default = { 'lsp', 'path', 'snippets', 'lazydev' },
-      providers = {
-        lazydev = { module = 'lazydev.integrations.blink', score_offset = 100 },
+      menu = {
+        draw = {
+          columns = { { 'kind_icon' }, { 'label', gap = 1 } },
+          components = {
+            label = {
+              text = function(ctx)
+                return require('colorful-menu').blink_components_text(ctx)
+              end,
+              highlight = function(ctx)
+                return require('colorful-menu').blink_components_highlight(ctx)
+              end,
+            },
+          },
+        },
+        border = 'rounded',
+      },
+      documentation = {
+        auto_show = true,
+        auto_show_delay_ms = 500,
+        window = {
+          border = 'rounded',
+        },
       },
     },
-
+    keymap = {
+      preset = 'default',
+      ['<C-a>'] = { 'select_and_accept' },
+      ['<C-x>'] = { 'show', 'hide' },
+      ['<C-k>'] = { 'show_documentation', 'hide_documentation' },
+      ['<C-space>'] = {},
+      ['<Up>'] = {},
+      ['<Down>'] = {},
+    },
+    cmdline = {
+      keymap = {
+        preset = 'cmdline',
+        ['<C-a>'] = { 'select_and_accept' },
+        ['<C-x>'] = { 'show', 'hide' },
+        ['<C-space>'] = {},
+        ['<Right>'] = {
+          function(cmp)
+            if cmp.is_ghost_text_visible() and not cmp.is_menu_visible() then
+              return cmp.accept()
+            end
+          end,
+          'fallback',
+        },
+      },
+    },
     snippets = { preset = 'luasnip' },
-
-    -- Blink.cmp includes an optional, recommended rust fuzzy matcher,
-    -- which automatically downloads a prebuilt binary when enabled.
-    --
-    -- By default, we use the Lua implementation instead, but you may enable
-    -- the rust implementation via `'prefer_rust_with_warning'`
-    --
-    -- See :h blink-cmp-config-fuzzy for more information
-    fuzzy = { implementation = 'lua' },
-
-    -- Shows a signature help window while you type arguments for a function
-    signature = { enabled = true },
+    sources = {
+      default = { 'copilot', 'lsp', 'path', 'buffer', 'dadbod', 'snippets', 'lazydev', 'avante', 'git', 'conventional_commits', 'spell' },
+      providers = {
+        copilot = {
+          name = 'copilot',
+          module = 'blink-copilot',
+          async = true,
+          score_offset = -4,
+          opts = {
+            max_completions = 3,
+            max_attempts = 4,
+          },
+        },
+        lazydev = {
+          name = 'LazyDev',
+          module = 'lazydev.integrations.blink',
+          score_offset = 100,
+        },
+        dadbod = {
+          name = 'Dadbod',
+          module = 'vim_dadbod_completion.blink',
+        },
+        git = {
+          module = 'blink-cmp-git',
+          name = 'Git',
+          async = true,
+          enabled = function()
+            return vim.tbl_contains({ 'octo', 'gitcommit', 'markdown' }, vim.bo.filetype) and vim.fn.executable 'gh' == 1
+          end,
+          opts = { commit = { triggers = { ';' } } },
+        },
+        conventional_commits = {
+          name = 'Conventional Commits',
+          module = 'blink-cmp-conventional-commits',
+          enabled = function()
+            return vim.bo.filetype == 'gitcommit'
+          end,
+          opts = {},
+        },
+        avante = {
+          module = 'blink-cmp-avante',
+          name = 'Avante',
+          opts = {},
+        },
+        spell = {
+          name = 'Spell',
+          module = 'blink-cmp-spell',
+          opts = {
+            -- Only enable source in `@spell` captures, and disable it
+            -- in `@nospell` captures.
+            enable_in_context = function()
+              local curpos = vim.api.nvim_win_get_cursor(0)
+              local captures = vim.treesitter.get_captures_at_pos(0, curpos[1] - 1, curpos[2] - 1)
+              local in_spell_capture = false
+              for _, cap in ipairs(captures) do
+                if cap.capture == 'spell' then
+                  in_spell_capture = true
+                elseif cap.capture == 'nospell' then
+                  return false
+                end
+              end
+              return in_spell_capture
+            end,
+          },
+        },
+      },
+    },
+    appearance = {
+      use_nvim_cmp_as_default = true,
+      nerd_font_variant = 'mono',
+      kind_icons = require('kickstart.icons').kind_icons,
+    },
   },
+  -- allows extending the providers array elsewhere in your config
+  -- without having to redefine it
+  opts_extend = { 'sources.default' },
 }
