@@ -7,10 +7,30 @@ return {
 
     -- Sources
     'kristijanhusak/vim-dadbod-completion',
-    'Kaiser-Yang/blink-cmp-avante',
     'disrupted/blink-cmp-conventional-commits',
     'ribru17/blink-cmp-spell',
     'Kaiser-Yang/blink-cmp-git',
+    {
+      'huijiro/blink-cmp-supermaven',
+    },
+    {
+      'supermaven-inc/supermaven-nvim',
+
+      opts = {
+        disable_keymaps = true,
+        disable_inline_completion = true,
+
+        ignore_filetypes = {
+          help = true,
+          gitrebase = true,
+          hgcommit = true,
+          svn = true,
+          cvs = true,
+          ['.'] = true,
+        },
+        log_level = 'info',
+      },
+    },
     {
       'fang2hou/blink-copilot',
       dependencies = 'zbirenbaum/copilot.lua',
@@ -65,7 +85,7 @@ return {
     },
     keymap = {
       preset = 'default',
-      ['<C-a>'] = { 'select_and_accept' },
+      -- ['<C-a>'] = { 'select_and_accept' },
       ['<C-x>'] = { 'show', 'hide' },
       ['<C-k>'] = { 'show_documentation', 'hide_documentation' },
       ['<C-space>'] = {},
@@ -75,7 +95,7 @@ return {
     cmdline = {
       keymap = {
         preset = 'cmdline',
-        ['<C-a>'] = { 'select_and_accept' },
+        -- ['<C-a>'] = { 'select_and_accept' }, -- this might be the same as <C-y>
         ['<C-x>'] = { 'show', 'hide' },
         ['<C-space>'] = {},
         ['<Right>'] = {
@@ -90,8 +110,22 @@ return {
     },
     snippets = { preset = 'luasnip' },
     sources = {
-      default = { 'copilot', 'lsp', 'path', 'buffer', 'dadbod', 'snippets', 'lazydev', 'avante', 'git', 'conventional_commits', 'spell' },
+      default = { 'supermaven', 'copilot', 'lsp', 'path', 'buffer', 'dadbod', 'snippets', 'lazydev', 'git', 'conventional_commits', 'spell' },
       providers = {
+        supermaven = {
+          name = 'supermaven',
+          module = 'blink-cmp-supermaven',
+          async = true,
+          score_offset = -3,
+          enabled = true,
+          transform_items = function(ctx, items)
+            for _, item in ipairs(items) do
+              item.kind_icon = ''
+              item.kind_name = 'Supermaven'
+            end
+            return items
+          end,
+        },
         copilot = {
           name = 'copilot',
           module = 'blink-copilot',
@@ -126,11 +160,6 @@ return {
           enabled = function()
             return vim.bo.filetype == 'gitcommit'
           end,
-          opts = {},
-        },
-        avante = {
-          module = 'blink-cmp-avante',
-          name = 'Avante',
           opts = {},
         },
         spell = {
