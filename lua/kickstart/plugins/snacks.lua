@@ -357,7 +357,7 @@ return {
     t_keymap('<c-j>', '<Cmd>wincmd j<CR>')
     t_keymap('<c-l>', '<Cmd>wincmd l<CR>')
     t_keymap('<c-w>', [[<C-\><C-n><C-w>]])
-    t_keymap('<esc>', [[<C-\><C-n>]])
+    t_keymap('<esc><esc>', [[<C-\><C-n>]])
 
     vim.api.nvim_create_autocmd('User', {
       pattern = 'VeryLazy',
