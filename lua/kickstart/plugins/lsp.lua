@@ -37,15 +37,15 @@ return {
         map('K', vim.lsp.buf.hover, 'Display Hover Information')
 
         ---@module 'snacks'
-        map('grd', Snacks.picker.lsp_definitions, '[G]oto [D]efinition')
+        map('grd', Snacks.picker.lsp_definitions, 'Goto Definition')
 
-        map('grr', Snacks.picker.lsp_references, '[G]oto [R]eferences')
+        map('grr', Snacks.picker.lsp_references, 'Goto References')
 
-        map('gri', Snacks.picker.lsp_implementations, '[G]oto [I]mplementation')
+        map('gri', Snacks.picker.lsp_implementations, 'Goto Implementation')
 
-        map('grt', Snacks.picker.lsp_type_definitions, '[G]oto [T]ype Definition')
+        map('grt', Snacks.picker.lsp_type_definitions, 'Goto Type Definition')
 
-        map('grD', Snacks.picker.lsp_declarations, '[G]oto [D]eclaration')
+        map('grD', Snacks.picker.lsp_declarations, 'Goto Declaration')
 
         local kind_filter = { filter = require('kickstart.icons').kind_filter }
         map('<leader>ss', function()

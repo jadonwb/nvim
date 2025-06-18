@@ -73,9 +73,9 @@ map('n', '<leader>w', function()
   end
   -- Buffer has a name, save normally
   vim.cmd.write()
-end, { desc = '[W]rite Buffer' })
-map('n', '<leader>x', '<cmd>wqa<CR>', { desc = 'Save and E[x]it' })
-map('n', '<leader>q', '<cmd>q<CR>', { desc = '[Q]uit Window' })
+end, { desc = 'Write Buffer' })
+map('n', '<leader>x', '<cmd>wqa<CR>', { desc = 'Save and Exit' })
+map('n', '<leader>q', '<cmd>q<CR>', { desc = 'Quit Window' })
 
 -- Resize window using <ctrl> arrow keys with smart behavior
 map('n', '<C-Up>', function()

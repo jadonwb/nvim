@@ -12,6 +12,30 @@ return {
     quickfile = { enabled = true },
     words = { enabled = true },
     indent = { enabled = true, animate = { enabled = false } },
+    animate = {
+      duration = 16,
+      easing = 'outQuad',
+      fps = 60,
+    },
+
+    scroll = {
+      animate = {
+        duration = {
+          step = 12,
+          total = 170,
+        },
+        easing = 'outCubic',
+      },
+
+      animate_repeat = {
+        delay = 70,
+        duration = {
+          step = 8,
+          total = 110,
+        },
+        easing = 'outQuad',
+      },
+    },
     styles = {
       notification = {
         wo = { wrap = true }, -- Wrap notifications
@@ -21,6 +45,9 @@ return {
     input = { enabled = true },
     image = { enabled = true, doc = { enabled = true, inline = false, float = true } },
     dashboard = { enabled = true },
+    explorer = {
+      replace_netrw = true,
+    },
     picker = {
       focus = 'list',
       matcher = { frecency = true },
@@ -60,35 +87,35 @@ return {
       function()
         Snacks.explorer.open()
       end,
-      desc = 'Toggle File [E]xplorer',
+      desc = 'Toggle File Explorer',
     },
     {
       '<leader>Ss',
       function()
         Snacks.scratch()
       end,
-      desc = 'Toggle [S]cratch Buffer',
+      desc = 'Toggle Scratch Buffer',
     },
     {
       '<leader>SS',
       function()
         Snacks.scratch.select()
       end,
-      desc = '[S]elect [S]cratch Buffer',
+      desc = 'Select Scratch Buffer',
     },
     {
       '<leader>uN',
       function()
         Snacks.notifier.show_history()
       end,
-      desc = '[N]otification History',
+      desc = 'Notification History',
     },
     {
       '<leader>un',
       function()
         Snacks.notifier.hide()
       end,
-      desc = 'Dismiss All [N]otifications',
+      desc = 'Dismiss All Notifications',
     },
     {
       '<A-c>',
@@ -102,7 +129,7 @@ return {
       function()
         Snacks.rename.rename_file()
       end,
-      desc = '[R]ename [F]ile',
+      desc = 'Rename File',
     },
     {
       '<c-/>',
@@ -139,7 +166,7 @@ return {
       function()
         Snacks.gitbrowse()
       end,
-      desc = '[G]it Browse',
+      desc = 'Git Browse',
     },
     -- [[ Picker ]]
     -- Search
@@ -148,7 +175,7 @@ return {
       function()
         Snacks.picker.files()
       end,
-      desc = '[S]earch [F]iles',
+      desc = 'Search Files',
     },
     {
       '<leader><space>',
@@ -165,21 +192,21 @@ return {
           },
         }
       end,
-      desc = '[ ] Find Existing Buffers',
+      desc = '[] Find Existing Buffers',
     },
     {
       '<leader>sD',
       function()
         Snacks.picker.diagnostics()
       end,
-      desc = '[S]earch Workspace [D]iagnostics',
+      desc = 'Search Workspace Diagnostics',
     },
     {
       '<leader>sd',
       function()
         Snacks.picker.diagnostics_buffer { layout = 'ivy' }
       end,
-      desc = '[S]earch [D]iagnostics',
+      desc = 'Search Diagnostics',
     },
     {
       '<leader>sp',
@@ -188,7 +215,7 @@ return {
           layout = 'select',
         }
       end,
-      desc = '[S]elect [P]ickers',
+      desc = 'Select Pickers',
     },
     {
       '<leader>si',
@@ -202,14 +229,14 @@ return {
           layout = 'telescope',
         }
       end,
-      desc = '[S]earch [I]mages',
+      desc = 'Search Images',
     },
     {
       '<leader>sP',
       function()
         Snacks.picker.projects()
       end,
-      desc = '[S]earch [P]rojects',
+      desc = 'Search Projects',
     },
     ---@diagnostic disable-next-line: undefined-field
     {
@@ -217,21 +244,21 @@ return {
       function()
         Snacks.picker.todo_comments()
       end,
-      desc = '[S]earch [T]odo Comments',
+      desc = 'Search Todo Comments',
     },
     {
       '<leader>sr',
       function()
         Snacks.picker.resume()
       end,
-      desc = '[S]earch [R]esume',
+      desc = 'Search Resume',
     },
     {
       '<leader>s.',
       function()
         Snacks.picker.recent()
       end,
-      desc = '[S]earch [R]ecent Files',
+      desc = 'Search Recent Files',
     },
     -- Grep
     {
@@ -246,28 +273,28 @@ return {
       function()
         Snacks.picker.grep_buffers()
       end,
-      desc = '[G]rep Open Buffers',
+      desc = 'Grep Open Buffers',
     },
     {
       '<leader>sg',
       function()
         Snacks.picker.grep()
       end,
-      desc = '[G]rep',
+      desc = 'Grep',
     },
     {
       '<leader>sw',
       function()
         Snacks.picker.grep_word()
       end,
-      desc = 'Grep [W]ord',
+      desc = 'Grep Word',
     },
     {
       '<leader>g',
       function()
         Snacks.picker.grep_word()
       end,
-      desc = '[G]rep Search Visual',
+      desc = 'Grep Search Visual',
       mode = 'x',
     },
     -- Git
@@ -278,14 +305,14 @@ return {
       function()
         Snacks.picker.git_files()
       end,
-      desc = '[G]it [F]iles',
+      desc = 'Git Files',
     },
     {
       '<leader>gs',
       function()
         Snacks.picker.git_status()
       end,
-      desc = '[G]it [S]tatus',
+      desc = 'Git Status',
     },
     -- LazyGit
     {
@@ -293,7 +320,7 @@ return {
       function()
         Snacks.lazygit.log_file()
       end,
-      desc = '[G]it File [H]istory',
+      desc = 'Git File History',
     },
     {
       '<leader>gg',
@@ -307,7 +334,7 @@ return {
       function()
         Snacks.lazygit.log()
       end,
-      desc = '[G]it [L]og',
+      desc = 'Git Log',
     },
     -- Neovim
     {
@@ -315,14 +342,14 @@ return {
       function()
         Snacks.picker.help()
       end,
-      desc = '[S]earch [H]elp',
+      desc = 'Search Help',
     },
     {
       '<leader>snk',
       function()
         Snacks.picker.keymaps { layout = 'vertical' }
       end,
-      desc = '[S]earch [K]eymaps',
+      desc = 'Search Keymaps',
     },
     {
       '<leader>snf',
@@ -331,11 +358,11 @@ return {
           cwd = vim.fn.stdpath 'config' --[[@as string]],
         }
       end,
-      desc = '[S]earch [N]eovim [F]iles',
+      desc = 'Search Neovim Files',
     },
     {
       '<leader>snn',
-      desc = '[S]earch [N]ews',
+      desc = 'Search News',
       function()
         Snacks.win {
           file = vim.api.nvim_get_runtime_file('doc/news.txt', false)[1],
