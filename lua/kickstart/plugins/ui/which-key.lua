@@ -8,6 +8,7 @@ return {
     spec = {
       { '<leader>f', group = 'Format' },
       { '<leader>s', group = 'Search' },
+      { '<leader>b', group = 'Buffer' },
       { '<leader>t', group = 'Test' },
       { '<leader>g', group = 'Git' },
       { '<leader>h', group = 'Git Hunk', mode = { 'n', 'v' } },

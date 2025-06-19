@@ -192,7 +192,7 @@ return {
           },
         }
       end,
-      desc = '[] Find Existing Buffers',
+      desc = 'Find Existing Buffers',
     },
     {
       '<leader>sD',
@@ -262,11 +262,11 @@ return {
     },
     -- Grep
     {
-      '<leader>/',
+      '<leader>b/',
       function()
         Snacks.picker.lines()
       end,
-      desc = '[/] Grep Lines',
+      desc = 'Grep Lines',
     },
     {
       '<leader>sG',

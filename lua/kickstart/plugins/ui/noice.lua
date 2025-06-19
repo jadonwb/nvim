@@ -2,7 +2,7 @@ return {
   'folke/noice.nvim',
   event = 'VeryLazy',
   opts = {
-    cmdline = { view = 'cmdline' },
+    -- cmdline = { view = 'cmdline' },
     lsp = {
       -- override markdown rendering so that **cmp** and other plugins use **Treesitter**
       override = {
@@ -15,6 +15,7 @@ return {
     presets = {
       long_message_to_split = false, -- long messages will be sent to a split
       lsp_doc_border = true, -- add a border to hover docs and signature help
+      command_palette = true, -- enables a command palette
     },
     routes = {
       {

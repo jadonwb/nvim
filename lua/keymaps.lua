@@ -121,3 +121,38 @@ map('n', '<C-Left>', function()
     vim.cmd 'vertical resize +2'
   end
 end, { desc = 'Decrease Window Width' })
+
+-- Buffer keymaps
+
+map('n', '<leader>bd', function()
+  local bufnr = vim.api.nvim_get_current_buf()
+  local listed = vim.fn.getbufinfo { buflisted = 1 }
+
+  if #listed > 1 then
+    vim.cmd 'bd' -- Close current buffer
+  else
+    vim.cmd 'qa'
+  end
+end, { desc = 'Close buffer' })
+
+-- Buffer navigation
+map('n', '<leader>bn', '<cmd>bnext<cr>', { desc = 'Next buffer' })
+map('n', '<leader>bp', '<cmd>bprevious<cr>', { desc = 'Previous buffer' })
+map('n', '<leader>bf', '<cmd>bfirst<cr>', { desc = 'First buffer' })
+map('n', '<leader>bl', '<cmd>blast<cr>', { desc = 'Last buffer' })
+
+-- Buffer actions
+map('n', '<leader>bd', '<cmd>bdelete<cr>', { desc = 'Delete buffer' })
+map('n', '<leader>bD', '<cmd>bdelete!<cr>', { desc = 'Force delete buffer' })
+map('n', '<leader>bw', '<cmd>bwipeout<cr>', { desc = 'Wipeout buffer' })
+map('n', '<leader>bW', '<cmd>bwipeout!<cr>', { desc = 'Force wipeout buffer' })
+
+-- Buffer utilities
+map('n', '<leader>bs', '<cmd>w<cr>', { desc = 'Save buffer' })
+map('n', '<leader>bS', '<cmd>wa<cr>', { desc = 'Save all buffers' })
+map('n', '<leader>br', '<cmd>e!<cr>', { desc = 'Reload buffer' })
+map('n', '<leader>bo', '<cmd>%bd|e#<cr>', { desc = 'Close other buffers' })
+
+-- Buffer switching with Alt + h/l
+map('n', '<A-h>', '<cmd>bprevious<cr>', { desc = 'Previous buffer' })
+map('n', '<A-l>', '<cmd>bnext<cr>', { desc = 'Next buffer' })

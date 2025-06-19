@@ -85,7 +85,6 @@ return {
     },
     keymap = {
       preset = 'default',
-      -- ['<C-a>'] = { 'select_and_accept' },
       ['<C-x>'] = { 'show', 'hide' },
       ['<C-k>'] = { 'show_documentation', 'hide_documentation' },
       ['<C-space>'] = {},
@@ -95,7 +94,6 @@ return {
     cmdline = {
       keymap = {
         preset = 'cmdline',
-        -- ['<C-a>'] = { 'select_and_accept' }, -- this might be the same as <C-y>
         ['<C-x>'] = { 'show', 'hide' },
         ['<C-space>'] = {},
         ['<Right>'] = {

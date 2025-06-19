@@ -1,60 +1,80 @@
 return {
-
-  { -- Linting
-    'mfussenegger/nvim-lint',
-    event = { 'BufReadPre', 'BufNewFile' },
-    config = function()
-      local lint = require 'lint'
-      lint.linters_by_ft = {
-        markdown = { 'markdownlint' },
-      }
-
-      -- To allow other plugins to add linters to require('lint').linters_by_ft,
-      -- instead set linters_by_ft like this:
-      -- lint.linters_by_ft = lint.linters_by_ft or {}
-      -- lint.linters_by_ft['markdown'] = { 'markdownlint' }
-      --
-      -- However, note that this will enable a set of default linters,
-      -- which will cause errors unless these tools are available:
-      -- {
-      --   clojure = { "clj-kondo" },
-      --   dockerfile = { "hadolint" },
-      --   inko = { "inko" },
-      --   janet = { "janet" },
-      --   json = { "jsonlint" },
-      --   markdown = { "vale" },
-      --   rst = { "vale" },
-      --   ruby = { "ruby" },
-      --   terraform = { "tflint" },
-      --   text = { "vale" }
-      -- }
-      --
-      -- You can disable the default linters by setting their filetypes to nil:
-      -- lint.linters_by_ft['clojure'] = nil
-      -- lint.linters_by_ft['dockerfile'] = nil
-      -- lint.linters_by_ft['inko'] = nil
-      -- lint.linters_by_ft['janet'] = nil
-      -- lint.linters_by_ft['json'] = nil
-      -- lint.linters_by_ft['markdown'] = nil
-      -- lint.linters_by_ft['rst'] = nil
-      -- lint.linters_by_ft['ruby'] = nil
-      -- lint.linters_by_ft['terraform'] = nil
-      -- lint.linters_by_ft['text'] = nil
-
-      -- Create autocommand which carries out the actual linting
-      -- on the specified events.
-      local lint_augroup = vim.api.nvim_create_augroup('lint', { clear = true })
-      vim.api.nvim_create_autocmd({ 'BufEnter', 'BufWritePost', 'InsertLeave' }, {
-        group = lint_augroup,
-        callback = function()
-          -- Only run the linter in buffers that you can modify in order to
-          -- avoid superfluous noise, notably within the handy LSP pop-ups that
-          -- describe the hovered symbol using Markdown.
-          if vim.bo.modifiable then -- and vim.bo.buftype == ''
-            lint.try_lint()
-          end
-        end,
-      })
-    end,
+  'mfussenegger/nvim-lint',
+  event = {
+    'BufReadPre',
+    'BufNewFile',
   },
+  opts = {
+    --NOTE: add the linters to ensure_installed with inside mason-tools.lua
+    linters_by_ft = {
+      -- python = { "uv_flake8" },
+      go = { 'golangcilint' },
+      sh = { 'shellcheck' },
+      markdown = { 'markdownlint' },
+    },
+  },
+  config = function(_, opts)
+    vim.g.disable_lint = false
+    local lint = require 'lint'
+    lint.linters_by_ft = opts.linters_by_ft
+
+    --[[ -- Create a custom uv_flake8 linter
+    local flake8 = lint.linters.flake8
+    lint.linters.uv_flake8 = flake8
+    lint.linters.uv_flake8.cmd = 'uv'
+    lint.linters.uv_flake8.args = vim.list_extend({ 'run', 'flake8' }, flake8.args or {}) ]]
+
+    local function debounce(ms, fn)
+      local timer = vim.uv.new_timer()
+      return function(...)
+        local argv = { ... }
+        if fn and timer then
+          timer:start(ms, 0, function()
+            timer:stop()
+            vim.schedule_wrap(fn)(unpack(argv))
+          end)
+        end
+      end
+    end
+
+    vim.api.nvim_create_autocmd({ 'BufReadPost', 'BufWritePost', 'InsertLeave' }, {
+      group = vim.api.nvim_create_augroup('lint', { clear = true }),
+      callback = debounce(100, function()
+        if vim.bo.modifiable and vim.bo.buftype == '' and not vim.g.disable_lint then
+          lint.try_lint()
+        end
+      end),
+    })
+
+    -- [[ Toggle Linting with nvim-lint ]]
+    local function toggle_linting()
+      local enabled = not vim.g.disable_lint
+      require('which-key').add {
+        {
+          '<leader>ul',
+          function()
+            vim.g.disable_lint = not vim.g.disable_lint
+
+            local current_linters = opts.linters_by_ft[vim.bo.filetype]
+            if vim.g.disable_lint and current_linters then
+              for _, linter in ipairs(current_linters) do
+                local ns = lint.get_namespace(linter)
+                vim.diagnostic.reset(ns)
+              end
+            else
+              lint.try_lint()
+            end
+            print('Linting is ' .. (vim.g.disable_lint and 'disabled' or 'enabled'))
+            toggle_linting()
+          end,
+          desc = (enabled and 'Disable' or 'Enable') .. ' Linting',
+          icon = {
+            icon = enabled and '' or '',
+            color = enabled and 'green' or 'yellow',
+          },
+        },
+      }
+    end
+    toggle_linting()
+  end,
 }
