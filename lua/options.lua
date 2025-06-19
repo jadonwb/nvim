@@ -13,6 +13,11 @@ vim.o.mouse = 'a'
 -- Disable mode, lualine has it already
 vim.o.showmode = false
 
+-- Disable Statusline
+vim.o.laststatus = 0
+vim.o.ruler = false
+vim.o.statusline = ' '
+
 --  See `:help 'clipboard'`
 vim.schedule(function()
   vim.o.clipboard = 'unnamedplus'
