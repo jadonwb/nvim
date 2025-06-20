@@ -7,9 +7,7 @@ return {
 
     -- Sources
     'kristijanhusak/vim-dadbod-completion',
-    'disrupted/blink-cmp-conventional-commits',
     'ribru17/blink-cmp-spell',
-    'Kaiser-Yang/blink-cmp-git',
     {
       'huijiro/blink-cmp-supermaven',
     },
@@ -77,7 +75,7 @@ return {
       },
       documentation = {
         auto_show = true,
-        auto_show_delay_ms = 500,
+        auto_show_delay_ms = 350,
         window = {
           border = 'rounded',
         },
@@ -108,7 +106,7 @@ return {
     },
     snippets = { preset = 'luasnip' },
     sources = {
-      default = { 'supermaven', 'copilot', 'lsp', 'path', 'buffer', 'dadbod', 'snippets', 'lazydev', 'git', 'conventional_commits', 'spell' },
+      default = { 'supermaven', 'copilot', 'lsp', 'path', 'buffer', 'dadbod', 'snippets', 'lazydev', 'conventional_commits', 'spell' },
       providers = {
         supermaven = {
           name = 'supermaven',
@@ -142,23 +140,6 @@ return {
         dadbod = {
           name = 'Dadbod',
           module = 'vim_dadbod_completion.blink',
-        },
-        git = {
-          module = 'blink-cmp-git',
-          name = 'Git',
-          async = true,
-          enabled = function()
-            return vim.tbl_contains({ 'octo', 'gitcommit', 'markdown' }, vim.bo.filetype) and vim.fn.executable 'gh' == 1
-          end,
-          opts = { commit = { triggers = { ';' } } },
-        },
-        conventional_commits = {
-          name = 'Conventional Commits',
-          module = 'blink-cmp-conventional-commits',
-          enabled = function()
-            return vim.bo.filetype == 'gitcommit'
-          end,
-          opts = {},
         },
         spell = {
           name = 'Spell',
