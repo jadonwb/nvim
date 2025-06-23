@@ -23,4 +23,31 @@ add_tool('clangd', {
   'clang-format',
 })
 
+add_tool('python3', {
+  -- Formatters
+  'black',
+  'isort',
+  -- DAP
+  'debugpy',
+  -- Linters
+  'flake8',
+})
+
+add_tool('go', {
+  -- Formatters
+  'gofumpt',
+  'goimports',
+  -- Linters
+  'golangci-lint',
+  -- DAP
+  'delve',
+  -- Gopher.nvim
+  'gomodifytags',
+  'gotests',
+  'iferr',
+  'impl',
+})
+
+vim.list_extend(ensure_installed, { 'markdownlint' })
+
 return ensure_installed

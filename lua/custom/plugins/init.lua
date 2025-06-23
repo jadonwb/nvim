@@ -6,4 +6,5 @@ return {
   { 'numToStr/Comment.nvim', opts = {}, event = 'BufReadPost' },
   { 'JoosepAlviste/nvim-ts-context-commentstring', dependencies = 'numToStr/Comment.nvim' },
   { 'danitrap/cheatsh.nvim', cmd = { 'CheatSh' } },
+  { 'vuciv/golf' },
 }

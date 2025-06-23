@@ -7,7 +7,7 @@ return { -- Collection of various small independent plugins/modules
     --  - va)  - [V]isually select [A]round [)]paren
     --  - yinq - [Y]ank [I]nside [N]ext [Q]uote
     --  - ci'  - [C]hange [I]nside [']quote
-    require('mini.ai').setup { n_lines = 500, mappings = { around_last = 'ap', inside_last = 'ip', search_method = 'cover' } }
+    require('mini.ai').setup { n_lines = 500, mappings = { around_last = 'ap', inside_last = 'ip', search_method = 'cover' }, silent = true }
 
     -- Add/delete/replace surroundings (brackets, quotes, etc.)
     --
@@ -27,6 +27,7 @@ return { -- Collection of various small independent plugins/modules
         suffix_last = 'p', -- Suffix to search with "prev" method
         suffix_next = 'n', -- Suffix to search with "next" method
       },
+      silent = true,
     }
     -- Move lines easily in visual and normal mode
     require('mini.move').setup {
@@ -45,7 +46,6 @@ return { -- Collection of various small independent plugins/modules
     }
 
     require('mini.pairs').setup()
-    require('mini.bracketed').setup()
     require('mini.icons').setup()
 
     -- ... and there is more!

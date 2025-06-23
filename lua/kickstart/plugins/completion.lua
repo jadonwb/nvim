@@ -33,6 +33,18 @@ return {
       'fang2hou/blink-copilot',
       dependencies = 'zbirenbaum/copilot.lua',
     },
+    {
+      'Yu-Leo/cmp-go-pkgs',
+      enabled = vim.fn.executable 'go' == 1,
+      init = function()
+        vim.api.nvim_create_autocmd({ 'LspAttach' }, {
+          pattern = { '*.go' },
+          callback = function(args)
+            require('cmp_go_pkgs').init_items(args)
+          end,
+        })
+      end,
+    },
 
     -- Snippet Engine
     {
@@ -45,7 +57,7 @@ return {
       },
       config = function()
         require('luasnip.loaders.from_vscode').lazy_load()
-        -- require 'snippets.init'
+        require 'snippets.init'
       end,
     },
 
@@ -106,7 +118,7 @@ return {
     },
     snippets = { preset = 'luasnip' },
     sources = {
-      default = { 'supermaven', 'copilot', 'lsp', 'path', 'buffer', 'dadbod', 'snippets', 'lazydev', 'conventional_commits', 'spell' },
+      default = { 'supermaven', 'copilot', 'lsp', 'path', 'buffer', 'dadbod', 'snippets', 'lazydev', 'go_pkgs', 'spell' },
       providers = {
         supermaven = {
           name = 'supermaven',
@@ -121,6 +133,10 @@ return {
             end
             return items
           end,
+        },
+        snippets = {
+          module = 'blink.cmp.sources.snippets',
+          score_offset = 3,
         },
         copilot = {
           name = 'copilot',
@@ -161,6 +177,14 @@ return {
               return in_spell_capture
             end,
           },
+        },
+        go_pkgs = {
+          name = 'go_pkgs',
+          module = 'blink.compat.source',
+          enabled = function()
+            return vim.bo.filetype == 'go' and vim.fn.executable 'go' == 1
+          end,
+          opts = {},
         },
       },
     },

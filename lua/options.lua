@@ -30,7 +30,10 @@ vim.o.breakindent = true
 vim.o.undofile = true
 
 -- Set hidden
-vim.o.hidden = true
+-- vim.o.hidden = true
+
+-- Backup copy?
+vim.o.backupcopy = 'yes'
 
 -- Case-insensitive searching UNLESS \C or one or more capital letters in the search term
 vim.o.ignorecase = true
