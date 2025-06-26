@@ -27,7 +27,7 @@ map('n', '<Esc>', '<cmd>nohlsearch<CR>')
 -- map('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
 
 -- Shortcut to exit terminal mode
-map('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
+-- map('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 
 -- Disable arrow keys in normal mode
 map('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
@@ -125,7 +125,6 @@ end, { desc = 'Decrease Window Width' })
 -- Buffer keymaps
 
 map('n', '<leader>bd', function()
-  local bufnr = vim.api.nvim_get_current_buf()
   local listed = vim.fn.getbufinfo { buflisted = 1 }
 
   if #listed > 1 then
