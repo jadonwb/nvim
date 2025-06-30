@@ -6,6 +6,10 @@ local function add_tool(command, tools)
   end
 end
 
+add_tool('rustup', {
+  'codelldb',
+})
+
 add_tool('bash', {
   -- Linters
   'shellcheck',
@@ -21,16 +25,6 @@ add_tool('lua', {
 add_tool('clangd', {
   -- Formatters
   'clang-format',
-})
-
-add_tool('python3', {
-  -- Formatters
-  'black',
-  'isort',
-  -- DAP
-  'debugpy',
-  -- Linters
-  'flake8',
 })
 
 add_tool('go', {

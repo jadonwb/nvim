@@ -8,7 +8,7 @@ return { -- Autoformat
       function()
         require('conform').format { async = true, lsp_format = 'fallback' }
       end,
-      desc = '[F]ormat buffer',
+      desc = 'Format buffer',
     },
     {
       '<leader>f',
@@ -59,41 +59,11 @@ return { -- Autoformat
       bash = { 'shfmt' },
       c = { 'clang-format' },
       rust = { 'rustfmt' },
-      python = { 'isort', 'black' },
       go = { 'gofumpt', 'goimports' },
     },
     formatters = {
       shfmt = {
         prepend_args = { '-i', '4', '-ci', '-sr', '-kp' },
-      },
-      black = {
-        command = 'uv',
-        args = { 'run', 'black', '--stdin-filename', '$FILENAME', '--quiet', '-' },
-      },
-      isort = {
-        command = 'uv',
-        args = function(_, ctx)
-          -- isort doesn't do a good job of auto-detecting the line endings.
-          local line_ending
-          local file_format = vim.bo[ctx.buf].fileformat
-          if file_format == 'dos' then
-            line_ending = '\r\n'
-          elseif file_format == 'mac' then
-            line_ending = '\r'
-          else
-            line_ending = '\n'
-          end
-          return {
-            'run',
-            'isort',
-            '--stdout',
-            '--line-ending',
-            line_ending,
-            '--filename',
-            '$FILENAME',
-            '-',
-          }
-        end,
       },
     },
   },

@@ -12,30 +12,6 @@ return {
     quickfile = { enabled = true },
     words = { enabled = true },
     indent = { enabled = true, animate = { enabled = false } },
-    animate = {
-      duration = 16,
-      easing = 'outQuad',
-      fps = 60,
-    },
-
-    scroll = {
-      animate = {
-        duration = {
-          step = 12,
-          total = 170,
-        },
-        easing = 'outCubic',
-      },
-
-      animate_repeat = {
-        delay = 70,
-        duration = {
-          step = 8,
-          total = 110,
-        },
-        easing = 'outQuad',
-      },
-    },
     styles = {
       notification = {
         wo = { wrap = true }, -- Wrap notifications
@@ -45,22 +21,12 @@ return {
     input = { enabled = true },
     image = { enabled = true, doc = { enabled = true, inline = false, float = true } },
     dashboard = { enabled = true },
-    explorer = {
-      replace_netrw = true,
-    },
     picker = {
-      focus = 'list',
+      focus = 'input',
       matcher = { frecency = true },
     },
   },
   keys = {
-    {
-      '<leader>e',
-      function()
-        Snacks.explorer.open()
-      end,
-      desc = 'Toggle File Explorer',
-    },
     {
       '<leader>Ss',
       function()
@@ -103,20 +69,20 @@ return {
       end,
       desc = 'Rename File',
     },
-    -- {
-    --   '<c-/>',
-    --   function()
-    --     Snacks.terminal()
-    --   end,
-    --   desc = 'Toggle Terminal',
-    -- },
-    -- {
-    --   '<c-_>',
-    --   function()
-    --     Snacks.terminal()
-    --   end,
-    --   desc = 'which_key_ignore',
-    -- },
+    {
+      '<c-/>',
+      function()
+        Snacks.terminal()
+      end,
+      desc = 'Toggle Terminal',
+    },
+    {
+      '<c-_>',
+      function()
+        Snacks.terminal()
+      end,
+      desc = 'which_key_ignore',
+    },
     {
       ']]',
       function()
@@ -142,6 +108,12 @@ return {
     },
     -- [[ Picker ]]
     -- Search
+    {
+      '<leader>sq',
+      function()
+        Snacks.picker.qflist()
+      end,
+    },
     {
       '<leader>sf',
       function()

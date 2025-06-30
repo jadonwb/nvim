@@ -1,24 +1,22 @@
 local ft = {
-  'go', --[[ 'python', ]]
+  'go',
   'lua',
+  'rust',
+  'c',
+  'cpp',
 }
 return {
   'mfussenegger/nvim-dap',
   dependencies = {
-    -- Creates a beautiful debugger UI
     'rcarriga/nvim-dap-ui',
-
-    -- Inline virtual text for debugging
     { 'theHamsta/nvim-dap-virtual-text', opts = {} },
 
     -- Debuggers for different languages
     --NOTE: add the debuggers to ensure_installed in mason-tools.lua
-    'mfussenegger/nvim-dap-python',
     'leoluz/nvim-dap-go',
     'jbyuki/one-small-step-for-vimkind', -- Neovim
   },
   keys = {
-    -- Basic debugging keymaps, feel free to change to your liking!
     {
       '<leader>dr',
       function()
@@ -131,9 +129,6 @@ return {
     -- Install language specific configurations
     local mason_packages = vim.fn.stdpath 'data' .. '/mason/packages/'
 
-    -- Python
-    require('dap-python').setup(mason_packages .. 'debugpy/venv/bin/python')
-
     -- Go
     require('dap-go').setup {
       delve = {
@@ -142,6 +137,32 @@ return {
         detached = vim.fn.has 'win32' == 0,
       },
     }
+
+    dap.adapters.gdb = {
+      type = 'executable',
+      command = 'gdb',
+      args = { '-i', 'dap' },
+    }
+
+    local dap_config = {
+      name = 'Launch',
+      type = 'gdb',
+      request = 'launch',
+      program = function()
+        local dir = '/'
+        if vim.bo.filetype == 'rust' then
+          dir = '/target/debug/'
+        end
+        ---@diagnostic disable-next-line
+        return vim.fn.input('Path to executable: ', vim.fn.getcwd() .. dir, 'file')
+      end,
+      cwd = '${workspaceFolder}',
+      stopAtBeginningOfMainSubprogram = false,
+    }
+
+    dap.configurations.c = { dap_config }
+    dap.configurations.cpp = { dap_config }
+    dap.configurations.rust = { dap_config }
 
     -- Neovim
     dap.configurations.lua = {

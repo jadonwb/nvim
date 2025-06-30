@@ -7,21 +7,13 @@ return {
   opts = {
     --NOTE: add the linters to ensure_installed with inside mason-tools.lua
     linters_by_ft = {
-      python = { 'uv_flake8' },
       go = { 'golangcilint' },
       sh = { 'shellcheck' },
-      markdown = { 'markdownlint' },
     },
   },
   config = function(_, opts)
     local lint = require 'lint'
     lint.linters_by_ft = opts.linters_by_ft
-
-    -- Create a custom uv_flake8 linter
-    local flake8 = lint.linters.flake8
-    lint.linters.uv_flake8 = flake8
-    lint.linters.uv_flake8.cmd = 'uv'
-    lint.linters.uv_flake8.args = vim.list_extend({ 'run', 'flake8' }, flake8.args or {})
 
     local function debounce(ms, fn)
       local timer = vim.uv.new_timer()
@@ -39,7 +31,7 @@ return {
     vim.api.nvim_create_autocmd({ 'BufReadPost', 'BufWritePost', 'InsertLeave' }, {
       group = vim.api.nvim_create_augroup('lint', { clear = true }),
       callback = debounce(100, function()
-        if vim.bo.modifiable and vim.bo.buftype == '' and not vim.g.disable_lint then
+        if vim.bo.modifiable and not vim.g.disable_lint then
           lint.try_lint()
         end
       end),

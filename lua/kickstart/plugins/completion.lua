@@ -1,3 +1,4 @@
+local supermaven_enabled = false
 return {
   'saghen/blink.cmp',
   event = { 'InsertEnter', 'CmdlineEnter' },
@@ -6,7 +7,6 @@ return {
     { 'saghen/blink.compat', version = '*', lazy = true, opts = {} },
 
     -- Sources
-    'kristijanhusak/vim-dadbod-completion',
     'ribru17/blink-cmp-spell',
     {
       'huijiro/blink-cmp-supermaven',
@@ -30,10 +30,6 @@ return {
       },
     },
     {
-      'fang2hou/blink-copilot',
-      dependencies = 'zbirenbaum/copilot.lua',
-    },
-    {
       'Yu-Leo/cmp-go-pkgs',
       enabled = vim.fn.executable 'go' == 1,
       init = function()
@@ -45,6 +41,8 @@ return {
         })
       end,
     },
+    'mikavilpas/blink-ripgrep.nvim',
+    'folke/snacks.nvim',
 
     -- Snippet Engine
     {
@@ -69,6 +67,11 @@ return {
   ---@type blink.cmp.Config
   opts = {
     completion = {
+      accept = {
+        auto_brackets = {
+          enabled = true,
+        },
+      },
       menu = {
         draw = {
           columns = { { 'kind_icon' }, { 'label', gap = 1 } },
@@ -87,9 +90,11 @@ return {
       },
       documentation = {
         auto_show = true,
-        auto_show_delay_ms = 350,
+        auto_show_delay_ms = 150,
         window = {
           border = 'rounded',
+          max_width = 120,
+          max_height = 120,
         },
       },
     },
@@ -97,7 +102,19 @@ return {
       preset = 'default',
       ['<C-x>'] = { 'show', 'hide' },
       ['<C-k>'] = { 'show_documentation', 'hide_documentation' },
-      ['<C-space>'] = {},
+      ['<C-space>'] = {
+        function(cmp)
+          supermaven_enabled = not supermaven_enabled
+          vim.notify('Supermaven ' .. (supermaven_enabled and 'enabled' or 'disabled'), vim.log.levels.INFO)
+
+          if cmp.is_visible() then
+            cmp.hide()
+            vim.defer_fn(function()
+              cmp.show()
+            end, 10)
+          end
+        end,
+      },
       ['<Up>'] = {},
       ['<Down>'] = {},
     },
@@ -105,7 +122,19 @@ return {
       keymap = {
         preset = 'cmdline',
         ['<C-x>'] = { 'show', 'hide' },
-        ['<C-space>'] = {},
+        ['<C-space>'] = {
+          function(cmp)
+            supermaven_enabled = not supermaven_enabled
+            vim.notify('Supermaven ' .. (supermaven_enabled and 'enabled' or 'disabled'), vim.log.levels.INFO)
+
+            if cmp.is_visible() then
+              cmp.hide()
+              vim.defer_fn(function()
+                cmp.show()
+              end, 10)
+            end
+          end,
+        },
         ['<Right>'] = {
           function(cmp)
             if cmp.is_ghost_text_visible() and not cmp.is_menu_visible() then
@@ -118,14 +147,16 @@ return {
     },
     snippets = { preset = 'luasnip' },
     sources = {
-      default = { 'supermaven', 'copilot', 'lsp', 'path', 'buffer', 'dadbod', 'snippets', 'lazydev', 'go_pkgs', 'spell' },
+      default = { 'supermaven', 'lsp', 'path', 'buffer', 'snippets', 'lazydev', 'go_pkgs', 'spell', 'ripgrep' },
       providers = {
         supermaven = {
           name = 'supermaven',
           module = 'blink-cmp-supermaven',
           async = true,
-          score_offset = -3,
-          enabled = true,
+          score_offset = 10,
+          enabled = function()
+            return supermaven_enabled
+          end,
           transform_items = function(ctx, items)
             for _, item in ipairs(items) do
               item.kind_icon = ''
@@ -136,26 +167,12 @@ return {
         },
         snippets = {
           module = 'blink.cmp.sources.snippets',
-          score_offset = 3,
-        },
-        copilot = {
-          name = 'copilot',
-          module = 'blink-copilot',
-          async = true,
-          score_offset = -4,
-          opts = {
-            max_completions = 3,
-            max_attempts = 4,
-          },
+          score_offset = -1,
         },
         lazydev = {
           name = 'LazyDev',
           module = 'lazydev.integrations.blink',
           score_offset = 100,
-        },
-        dadbod = {
-          name = 'Dadbod',
-          module = 'vim_dadbod_completion.blink',
         },
         spell = {
           name = 'Spell',
@@ -186,6 +203,35 @@ return {
           end,
           opts = {},
         },
+        ripgrep = {
+          module = 'blink-ripgrep',
+          name = 'Ripgrep',
+          score_offset = -8,
+          -- opts = {
+          --   toggles = {
+          --     on_off = '<leader>ur',
+          --   },
+          -- },
+          transform_items = function(_, items)
+            for _, item in ipairs(items) do
+              item.labelDetails = {
+                description = '(rg)',
+              }
+            end
+            return items
+          end,
+        },
+      },
+    },
+    fuzzy = {
+      implementation = 'rust',
+      sorts = {
+        'exact',
+        'score',
+        'sort_text',
+      },
+      prebuilt_binaries = {
+        download = true,
       },
     },
     appearance = {

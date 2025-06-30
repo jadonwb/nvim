@@ -15,12 +15,6 @@ return {
     -- Populates project-wide lsp diagnostcs
     'artemave/workspace-diagnostics.nvim',
 
-    -- This is the notifications in bottom right
-    -- consider theming to look better?
-    -- { 'j-hui/fidget.nvim', opts = {} },
-
-    -- 'saghen/blink.cmp',
-
     -- Provides keymaps for LSP actions
     'folke/snacks.nvim',
   },
@@ -88,8 +82,6 @@ return {
       end,
     })
 
-    -- local capabilities = require("blink.cmp").get_lsp_capabilities()
-
     --  Add any additional override configuration in any of the following tables. Available keys are:
     --  - cmd (table): Override the default command used to start the server
     --  - filetypes (table): Override the default list of associated filetypes for the server
@@ -114,8 +106,6 @@ return {
             },
           },
         },
-
-        basedpyright = { command = 'python3' },
 
         gopls = {
           command = 'go',

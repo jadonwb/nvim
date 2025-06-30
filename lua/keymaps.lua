@@ -49,6 +49,7 @@ map('n', '<M-O>', 'O<Esc>', { desc = 'New Line Up' })
 -- Swap r and ctrl+r
 map('n', '<C-r>', 'r', { silent = true }) -- replace a single character
 map('n', 'r', '<C-r>', { silent = true }) -- redo
+
 -- keep cursor centered while jumping around
 map('n', '<C-d>', '<C-d>zz')
 map('n', '<C-u>', '<C-u>zz')
@@ -56,6 +57,12 @@ map('n', '<C-u>', '<C-u>zz')
 -- Stay in visual when indenting
 map('v', '<', '<gv')
 map('v', '>', '>gv')
+
+-- Yank file
+map('n', '<leader>y', ':%y<CR>', { desc = 'Yank file' })
+
+-- Lazy
+map('n', '<leader>l', '<cmd>Lazy<CR>', { desc = 'Lazy' })
 
 -- Shortcuts for save and exit
 map('n', '<leader>w', function()
@@ -74,7 +81,6 @@ map('n', '<leader>w', function()
   -- Buffer has a name, save normally
   vim.cmd.write()
 end, { desc = 'Write Buffer' })
-map('n', '<leader>x', '<cmd>wqa<CR>', { desc = 'Save and Exit' })
 map('n', '<leader>q', '<cmd>q<CR>', { desc = 'Quit Window' })
 
 -- Resize window using <ctrl> arrow keys with smart behavior
@@ -121,36 +127,6 @@ map('n', '<C-Left>', function()
     vim.cmd 'vertical resize +2'
   end
 end, { desc = 'Decrease Window Width' })
-
--- Buffer keymaps
-
-map('n', '<leader>bd', function()
-  local listed = vim.fn.getbufinfo { buflisted = 1 }
-
-  if #listed > 1 then
-    vim.cmd 'bd' -- Close current buffer
-  else
-    vim.cmd 'qa'
-  end
-end, { desc = 'Close buffer' })
-
--- Buffer navigation
-map('n', '<leader>bn', '<cmd>bnext<cr>', { desc = 'Next buffer' })
-map('n', '<leader>bp', '<cmd>bprevious<cr>', { desc = 'Previous buffer' })
-map('n', '<leader>bf', '<cmd>bfirst<cr>', { desc = 'First buffer' })
-map('n', '<leader>bl', '<cmd>blast<cr>', { desc = 'Last buffer' })
-
--- Buffer actions
-map('n', '<leader>bd', '<cmd>bdelete<cr>', { desc = 'Delete buffer' })
-map('n', '<leader>bD', '<cmd>bdelete!<cr>', { desc = 'Force delete buffer' })
-map('n', '<leader>bw', '<cmd>bwipeout<cr>', { desc = 'Wipeout buffer' })
-map('n', '<leader>bW', '<cmd>bwipeout!<cr>', { desc = 'Force wipeout buffer' })
-
--- Buffer utilities
-map('n', '<leader>bs', '<cmd>w<cr>', { desc = 'Save buffer' })
-map('n', '<leader>bS', '<cmd>wa<cr>', { desc = 'Save all buffers' })
-map('n', '<leader>br', '<cmd>e!<cr>', { desc = 'Reload buffer' })
-map('n', '<leader>bo', '<cmd>%bd|e#<cr>', { desc = 'Close other buffers' })
 
 -- Buffer switching with Alt + h/l
 map('n', '<A-h>', '<cmd>bprevious<cr>', { desc = 'Previous buffer' })

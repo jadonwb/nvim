@@ -45,7 +45,6 @@ return { -- Collection of various small independent plugins/modules
       },
     }
 
-    require('mini.pairs').setup()
     require('mini.icons').setup()
 
     -- ... and there is more!

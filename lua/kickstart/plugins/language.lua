@@ -1,10 +1,7 @@
 -- [[Language specific plugins]]
 local language_requirements = {
-  -- go = 'go',
-  -- typescript = 'npm',
-  -- tailwind = 'npm',
-  -- java = 'java',
-  -- csharp = 'dotnet',
+  go = 'go',
+  lua = 'lua',
 }
 
 local module_prefix = 'kickstart.plugins.language.'

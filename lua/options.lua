@@ -13,6 +13,8 @@ vim.schedule(function()
   vim.o.clipboard = 'unnamedplus'
 end)
 vim.o.breakindent = true
+vim.o.autoindent = true
+vim.o.smartindent = true
 vim.o.undofile = true
 vim.o.backupcopy = 'yes'
 vim.o.ignorecase = true
@@ -27,8 +29,9 @@ vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
 vim.o.inccommand = 'split'
 vim.o.cursorline = true
 vim.o.cursorlineopt = 'number'
-vim.o.scrolloff = 7
+vim.o.scrolloff = 8
 vim.o.confirm = true
+vim.o.swapfile = false
 -- Set completeopt to have a better completion experience
 vim.o.completeopt = 'menuone,noselect'
 vim.o.termguicolors = true

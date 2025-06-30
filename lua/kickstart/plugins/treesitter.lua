@@ -6,10 +6,6 @@ return {
   build = ':TSUpdate',
   cmd = { 'TSUpdateSync', 'TSUpdate', 'TSInstall' },
   lazy = vim.fn.argc(-1) == 0, -- load treesitter early when opening a file from the cmdline
-  keys = {
-    { '<C-A-space>', desc = 'Increment Selection' },
-    { '<bs>', desc = 'Decrement Selection', mode = 'x' },
-  },
   dependencies = 'nvim-treesitter/nvim-treesitter-textobjects',
   opts = {
     auto_install = true,
@@ -19,6 +15,7 @@ return {
       'scss',
       'c',
       'cpp',
+      'rust',
       'go',
       'lua',
       'python',
@@ -39,15 +36,6 @@ return {
     },
     highlight = { enable = true },
     indent = { enable = true },
-    incremental_selection = {
-      enable = true,
-      keymaps = {
-        init_selection = '<C-A-space>',
-        node_incremental = '<C-A-space>',
-        scope_incremental = false,
-        node_decremental = '<bs>',
-      },
-    },
     textobjects = {
       select = {
         enable = true,

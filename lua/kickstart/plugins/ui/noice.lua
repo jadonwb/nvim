@@ -81,6 +81,20 @@ return {
         },
         skip = true,
       },
+      {
+        filter = {
+          event = 'msg_show',
+          find = "Cannot make changes, 'modifiable' is off",
+        },
+        skip = true,
+      },
+      {
+        filter = {
+          event = 'notify',
+          find = 'No information available',
+        },
+        skip = true,
+      },
     },
   },
   dependencies = {

@@ -24,7 +24,7 @@ return {
         ft = 'go',
       },
       {
-        '<leader>cc',
+        '<leader>cC',
         function()
           vim.cmd.GoCmt()
         end,
