@@ -4,6 +4,7 @@ return {
   priority = 1000,
   lazy = false,
   opts = {
+    dashboard = require 'kickstart.dashboard',
     bigfile = { enabled = true },
     notifier = {
       enabled = true,
@@ -20,7 +21,6 @@ return {
     scope = { enabled = true }, -- Jumps: ]i [i textobjects: ii(inner scope) ai(full scope)
     input = { enabled = true },
     image = { enabled = true, doc = { enabled = true, inline = false, float = true } },
-    dashboard = { enabled = true },
     picker = {
       focus = 'input',
       matcher = { frecency = true },
