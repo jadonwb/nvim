@@ -1,6 +1,9 @@
 return {
   'nvim-lualine/lualine.nvim',
-  dependencies = { 'nvim-tree/nvim-web-devicons' },
+  dependencies = {
+    'nvim-tree/nvim-web-devicons',
+    -- 'folke/noice.nvim',
+  },
   opts = {
     options = {
       component_separators = '',
@@ -22,6 +25,17 @@ return {
         },
       },
       lualine_x = {
+        { '%S' },
+        {
+          function()
+            return require('noice').api.status.mode.get()
+          end,
+          cond = function()
+            return require('noice').api.status.mode.has()
+          end,
+        },
+      },
+      lualine_y = {
         'filetype',
         'encoding',
         {
@@ -35,8 +49,7 @@ return {
           end,
         },
       },
-      lualine_y = { 'location' },
-      lualine_z = {},
+      lualine_z = { 'location' },
     },
     inactive_sections = {
       lualine_a = {},

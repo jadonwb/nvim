@@ -3,11 +3,9 @@ vim.o.number = true
 vim.o.relativenumber = true
 vim.o.shiftwidth = 4
 vim.o.mouse = 'a'
+vim.o.showcmd = true
+vim.o.showcmdloc = 'statusline'
 vim.o.showmode = false
--- Disable Statusline
-vim.o.laststatus = 0
-vim.o.ruler = false
-vim.o.statusline = ' '
 --  See `:help 'clipboard'`
 vim.schedule(function()
   vim.o.clipboard = 'unnamedplus'
@@ -29,7 +27,7 @@ vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
 vim.o.inccommand = 'split'
 vim.o.cursorline = true
 vim.o.cursorlineopt = 'number'
-vim.o.scrolloff = 8
+vim.o.scrolloff = 6
 vim.o.confirm = true
 vim.o.swapfile = false
 -- Set completeopt to have a better completion experience

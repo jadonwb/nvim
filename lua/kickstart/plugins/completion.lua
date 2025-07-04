@@ -41,7 +41,6 @@ return {
         })
       end,
     },
-    'mikavilpas/blink-ripgrep.nvim',
     'folke/snacks.nvim',
 
     -- Snippet Engine
@@ -100,6 +99,14 @@ return {
     },
     keymap = {
       preset = 'default',
+      ['<Tab>'] = {
+        function(cmp)
+          if cmp.is_visible() then
+            return cmp.select_and_accept()
+          end
+        end,
+        'fallback',
+      },
       ['<C-x>'] = { 'show', 'hide' },
       ['<C-k>'] = { 'show_documentation', 'hide_documentation' },
       ['<C-space>'] = {
@@ -147,7 +154,7 @@ return {
     },
     snippets = { preset = 'luasnip' },
     sources = {
-      default = { 'supermaven', 'lsp', 'path', 'buffer', 'snippets', 'lazydev', 'go_pkgs', 'spell', 'ripgrep' },
+      default = { 'supermaven', 'lsp', 'path', 'buffer', 'snippets', 'lazydev', 'go_pkgs', 'spell' },
       providers = {
         supermaven = {
           name = 'supermaven',
@@ -202,24 +209,6 @@ return {
             return vim.bo.filetype == 'go' and vim.fn.executable 'go' == 1
           end,
           opts = {},
-        },
-        ripgrep = {
-          module = 'blink-ripgrep',
-          name = 'Ripgrep',
-          score_offset = -8,
-          -- opts = {
-          --   toggles = {
-          --     on_off = '<leader>ur',
-          --   },
-          -- },
-          transform_items = function(_, items)
-            for _, item in ipairs(items) do
-              item.labelDetails = {
-                description = '(rg)',
-              }
-            end
-            return items
-          end,
         },
       },
     },

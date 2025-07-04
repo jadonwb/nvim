@@ -39,13 +39,6 @@ return {
         },
         skip = true,
       },
-      -- {
-      --   filter = {
-      --     event = 'msg_show',
-      --     find = 'change',
-      --   },
-      --   skip = true,
-      -- },
       {
         filter = {
           kind = '',

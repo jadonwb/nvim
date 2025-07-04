@@ -56,13 +56,6 @@ return {
       desc = 'Dismiss All Notifications',
     },
     {
-      '<A-c>',
-      function()
-        Snacks.bufdelete()
-      end,
-      desc = 'Delete Buffer',
-    },
-    {
       '<leader>rf',
       function()
         Snacks.rename.rename_file()
@@ -75,13 +68,6 @@ return {
         Snacks.terminal()
       end,
       desc = 'Toggle Terminal',
-    },
-    {
-      '<c-_>',
-      function()
-        Snacks.terminal()
-      end,
-      desc = 'which_key_ignore',
     },
     {
       ']]',
@@ -113,6 +99,7 @@ return {
       function()
         Snacks.picker.qflist()
       end,
+      desc = 'Quickfix List',
     },
     {
       '<leader>sf',
@@ -134,6 +121,7 @@ return {
             },
             list = { keys = { ['d'] = 'bufdelete' } },
           },
+          focus = 'list',
         }
       end,
       desc = 'Find Existing Buffers',
@@ -200,7 +188,9 @@ return {
     {
       '<leader>s.',
       function()
-        Snacks.picker.recent()
+        Snacks.picker.recent {
+          focus = 'list',
+        }
       end,
       desc = 'Search Recent Files',
     },
