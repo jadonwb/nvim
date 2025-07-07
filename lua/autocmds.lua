@@ -44,91 +44,31 @@ for ext, app in pairs(file_associations) do
   })
 end
 
--- Easier setup for clangd --
--- local function ensure_basic_clangd_config()
---   if vim.fn.filereadable 'compile_commands.json' == 0 and vim.fn.filereadable '.clangd' == 0 then
---     local basic_config = [[
--- CompileFlags:
---   Add:
---     - -std=c11
---     - -Wall
---     - -Wextra
---   Remove: [-W*, -fopenmp*]
---
--- Diagnostics:
---   Suppress:
---     - unknown-warning-option
---     - unused-command-line-argument-hard-error-in-future
--- ]]
---     local file = io.open('.clangd', 'w')
---     if file then
---       file:write(basic_config)
---       file:close()
---     end
---   end
--- end
---
--- local function smart_clangd_setup()
---   local cwd = vim.fn.getcwd()
---
---   if vim.fn.filereadable 'compile_commands.json' == 1 then
---     return
---   end
---
---   if vim.fn.filereadable 'CMakeLists.txt' == 1 then
---     local success =
---       os.execute 'cd build 2>/dev/null && cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON . 2>/dev/null && ln -sf ../build/compile_commands.json .. 2>/dev/null'
---     if success ~= 0 then
---       os.execute 'cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -B build 2>/dev/null && ln -sf build/compile_commands.json . 2>/dev/null'
---     end
---   elseif vim.fn.filereadable 'Makefile' == 1 then
---     os.execute 'command -v bear >/dev/null && bear -- make build 2>/dev/null'
---   else
---     local compile_db = string.format(
---       [[
---   {
---     "directory": "%s",
---     "command": "gcc -std=c11 -Wall -Wextra -I. %s",
---     "file": "%s"
---   }
--- ]],
---       cwd,
---       vim.fn.expand '%',
---       vim.fn.expand '%:p'
---     )
---     local file = io.open('compile_commands.json', 'w')
---     if file then
---       file:write(compile_db)
---       file:close()
---     end
---   end
--- end
-
 -- Easy build and execute --
 local lang_maps = {
   arduino = {
     build = 'arduino-cli compile --fqbn arduino:avr:uno %',
-    exec = 'arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno %',
+    run = 'arduino-cli upload -p /dev/ttyACM0 --fqbn arduino:avr:uno %',
     clean = 'rm -rf build/',
   },
-  c = { build = 'gcc *.c -lm -g -o main', exec = './main', clean = 'rm -f main' },
-  clojure = { exec = 'lein run' },
+  c = { build = 'gcc *.c -lm -g -o main', run = './main', clean = 'rm -f main' },
+  clojure = { run = 'lein run' },
   cpp = {
     build = 'mkdir -p build && cd build && cmake .. && make',
-    exec = 'cd build && ./main',
+    run = 'cd build && ./main',
     clean = 'rm -rf build/',
   },
-  elixir = { exec = 'mix run' },
-  gleam = { exec = 'gleam run' },
-  go = { build = 'go build', exec = 'go run %', clean = 'go clean && rm -f main' },
-  haskell = { exec = 'cabal run' },
-  java = { build = 'javac %', exec = 'java %:r', clean = 'rm -f *.class' },
-  javascript = { exec = 'bun %' },
-  python = { exec = 'python %' },
-  rust = { exec = 'cargo run' },
-  sh = { exec = '%' },
+  elixir = { run = 'mix run' },
+  gleam = { run = 'gleam run' },
+  go = { build = 'go build', run = 'go run %', clean = 'go clean && rm -f main' },
+  haskell = { run = 'cabal run' },
+  java = { build = 'javac %', run = 'java %:r', clean = 'rm -f *.class' },
+  javascript = { run = 'bun %' },
+  python = { run = 'python %' },
+  rust = { run = 'cargo run' },
+  sh = { run = '%' },
   tex = { build = 'pdflatex -shell-escape %' },
-  typescript = { exec = 'bun %' },
+  typescript = { run = 'bun %' },
   typst = { build = 'typst compile %' },
 }
 
@@ -136,7 +76,7 @@ for lang, data in pairs(lang_maps) do
   local f, _ = io.open('Makefile', 'r')
   if f then
     data.build = 'make build'
-    data.exec = 'make exec'
+    data.run = 'make run'
     data.clean = 'make clean'
     f:close()
   end
@@ -144,7 +84,7 @@ for lang, data in pairs(lang_maps) do
   -- --TODO: add cmakelists detection for easy build execute and clean
   -- if vim.fn.filereadable 'CMakeLists.txt' == 1 then
   --   data.build = ''
-  --   data.exec = ''
+  --   data.run = ''
   --   data.clean = ''
   -- end
 
@@ -160,12 +100,12 @@ for lang, data in pairs(lang_maps) do
     })
   end
 
-  if data.exec ~= nil then
+  if data.run ~= nil then
     vim.api.nvim_create_autocmd('FileType', {
       pattern = lang,
       callback = function()
-        vim.keymap.set('n', '<Leader>cx', ':split<CR>:terminal ' .. data.exec .. '<CR>', {
-          desc = 'Execute: ' .. data.exec,
+        vim.keymap.set('n', '<Leader>cx', ':split<CR>:terminal ' .. data.run .. '<CR>', {
+          desc = 'Execute: ' .. data.run,
           buffer = true,
         })
       end,
@@ -184,14 +124,3 @@ for lang, data in pairs(lang_maps) do
     })
   end
 end
-
--- vim.api.nvim_create_autocmd('FileType', {
---   pattern = { 'c', 'cpp' },
---   callback = function()
---     ensure_basic_clangd_config()
---     vim.keymap.set('n', '<Leader>cC', smart_clangd_setup, {
---       buffer = true,
---       desc = 'Setup clangd compile_commands.json',
---     })
---   end,
--- })
