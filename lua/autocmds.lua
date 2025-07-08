@@ -18,29 +18,40 @@ vim.api.nvim_create_autocmd('BufEnter', {
 })
 
 -- [[ Open files with external applications ]]
-local function open_with_app(app)
+local function open_with_app(apps)
   return function()
-    if vim.fn.executable(app) == 0 then
-      return
+    if type(apps) == 'string' then
+      apps = { apps }
     end
 
     local file_path = vim.fn.expand '%:p'
-    vim.fn.jobstart({ app, file_path }, { detach = true })
-    vim.cmd 'bdelete'
+
+    for _, app in ipairs(apps) do
+      if app == 'browser' then
+        vim.fn.jobstart({ 'xdg-open', file_path }, { detach = true })
+        vim.cmd 'bdelete'
+        return
+      elseif vim.fn.executable(app) == 1 then
+        vim.fn.jobstart({ app, file_path }, { detach = true })
+        vim.cmd 'bdelete'
+        return
+      end
+    end
+
+    vim.notify('No suitable application found for opening ' .. file_path, vim.log.levels.WARN)
   end
 end
 
 local file_associations = {
-  pdf = 'zathura', -- or "tdf"
-  -- You can add more file types here
+  pdf = { 'zathura', 'browser' }, -- or "tdf"
   -- png = "feh",
   -- mp4 = "mpv",
 }
 
-for ext, app in pairs(file_associations) do
+for ext, apps in pairs(file_associations) do
   vim.api.nvim_create_autocmd({ 'BufEnter' }, {
     pattern = '*.' .. ext,
-    callback = open_with_app(app),
+    callback = open_with_app(apps),
   })
 end
 
