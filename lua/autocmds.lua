@@ -48,12 +48,29 @@ local file_associations = {
   -- mp4 = "mpv",
 }
 
+-- local preview_associations = {
+--   md = { 'zathura', 'browser' },
+--   html = { 'zathura', 'browser' },
+-- }
+
 for ext, apps in pairs(file_associations) do
   vim.api.nvim_create_autocmd({ 'BufEnter' }, {
     pattern = '*.' .. ext,
     callback = open_with_app(apps),
   })
 end
+
+-- vim.keymap.set('n', '<leader>o', function()
+--   local file_path = vim.fn.expand '%:p'
+--   local ext = vim.fn.expand '%:e'
+--
+--   local apps = preview_associations[ext]
+--   if apps then
+--     open_with_app(apps)()
+--   else
+--     vim.fn.jobstart({ 'xdg-open', file_path }, { detach = true })
+--   end
+-- end, { desc = 'Preview file with external application' })
 
 -- Easy build and execute --
 local lang_maps = {
