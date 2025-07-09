@@ -3,7 +3,8 @@ return {
     width = 117,
     {
       section = 'terminal',
-      cmd = 'cat ~/.config/nvim/dashboard.cat | ~/.config/nvim/colors.sh',
+      -- cmd = 'cat ~/.config/nvim/dashboard.cat | ~/.config/nvim/colors.sh',
+      cmd = 'cat ~/.config/nvim/colored-dashboard.cat',
       indent = -27,
       align = 'center',
       height = 10,
