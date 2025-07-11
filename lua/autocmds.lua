@@ -109,7 +109,7 @@ for lang, data in pairs(lang_maps) do
     f:close()
   end
 
-  -- --TODO: add cmakelists detection for easy build execute and clean
+  --TODO: add cmakelists detection for easy build execute and clean
   -- if vim.fn.filereadable 'CMakeLists.txt' == 1 then
   --   data.build = ''
   --   data.run = ''

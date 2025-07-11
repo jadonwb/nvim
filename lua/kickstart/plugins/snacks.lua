@@ -48,20 +48,6 @@ return {
       end,
       desc = 'Rename File',
     },
-    -- {
-    --   '<c-/>',
-    --   function()
-    --     Snacks.terminal()
-    --   end,
-    --   desc = 'Toggle Terminal',
-    -- },
-    -- {
-    --   '<c-_>',
-    --   function()
-    --     Snacks.terminal()
-    --   end,
-    --   desc = 'which_key_ignore',
-    -- },
     {
       ']]',
       function()
@@ -97,7 +83,7 @@ return {
     {
       '<leader>sf',
       function()
-        Snacks.picker.files()
+        Snacks.picker.files({ hidden = true, ignored = true })
       end,
       desc = 'Search Files',
     },
