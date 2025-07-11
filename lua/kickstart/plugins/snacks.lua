@@ -4,7 +4,7 @@ return {
   priority = 1000,
   lazy = false,
   opts = {
-    dashboard = require 'kickstart.dashboard',
+    -- dashboard = require 'kickstart.dashboard',
     bigfile = { enabled = true },
     notifier = {
       enabled = true,
