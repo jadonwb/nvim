@@ -1,11 +1,6 @@
--- [[ Basic Keymaps ]]
-
--- Set <space> as the leader key
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
--- Keymaps for better default experience
--- See `:help vim.keymap.set()`
 local map = vim.keymap.set
 
 -- Delete some default LSP keymaps
@@ -21,13 +16,8 @@ map('n', 'gq', vim.diagnostic.open_float, { desc = 'Open floating diagnostic mes
 map('n', 'k', "v:count == 0 ? 'gk' : 'k'", { expr = true, silent = true })
 map('n', 'j', "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = true })
 
+-- Clear highlights
 map('n', '<Esc>', '<cmd>nohlsearch<CR>')
-
--- Diagnostic keymaps
--- map('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
-
--- Shortcut to exit terminal mode
--- map('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
 
 -- Disable arrow keys in normal mode
 map('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
@@ -50,9 +40,14 @@ map('n', '<M-O>', 'O<Esc>', { desc = 'New Line Up' })
 map('n', '<C-r>', 'r', { silent = true }) -- replace a single character
 map('n', 'r', '<C-r>', { silent = true }) -- redo
 
+-- Better J
+map('n', 'J', 'mzJ`z', { desc = 'Join lines and keep cursor position' })
+
 -- keep cursor centered while jumping around
 map('n', '<C-d>', '<C-d>zz')
 map('n', '<C-u>', '<C-u>zz')
+map('n', 'n', 'nzzzv')
+map('n', 'N', 'Nzzzv')
 
 -- Stay in visual when indenting
 map('v', '<', '<gv')
@@ -131,3 +126,7 @@ end, { desc = 'Decrease Window Width' })
 -- Buffer switching with Alt + h/l
 map('n', '<A-h>', '<cmd>bprevious<cr>', { desc = 'Previous buffer' })
 map('n', '<A-l>', '<cmd>bnext<cr>', { desc = 'Next buffer' })
+
+-- Sessions
+map('n', '<leader>S', '<cmd>:lua require("persistence").select()<CR>', { desc = 'Select Session' })
+map('n', '<leader>p', '<cmd>:lua require("persistence").load({last = true})<CR>', { desc = 'Previous Session' })

@@ -28,20 +28,6 @@ return {
   },
   keys = {
     {
-      '<leader>Ss',
-      function()
-        Snacks.scratch()
-      end,
-      desc = 'Toggle Scratch Buffer',
-    },
-    {
-      '<leader>SS',
-      function()
-        Snacks.scratch.select()
-      end,
-      desc = 'Select Scratch Buffer',
-    },
-    {
       '<leader>uN',
       function()
         Snacks.notifier.show_history()
@@ -62,20 +48,20 @@ return {
       end,
       desc = 'Rename File',
     },
-    {
-      '<c-/>',
-      function()
-        Snacks.terminal()
-      end,
-      desc = 'Toggle Terminal',
-    },
-    {
-      '<c-_>',
-      function()
-        Snacks.terminal()
-      end,
-      desc = 'which_key_ignore',
-    },
+    -- {
+    --   '<c-/>',
+    --   function()
+    --     Snacks.terminal()
+    --   end,
+    --   desc = 'Toggle Terminal',
+    -- },
+    -- {
+    --   '<c-_>',
+    --   function()
+    --     Snacks.terminal()
+    --   end,
+    --   desc = 'which_key_ignore',
+    -- },
     {
       ']]',
       function()

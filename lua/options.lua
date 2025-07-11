@@ -1,48 +1,76 @@
--- [[ Setting options ]]
+-- Basic
 vim.o.number = true
 vim.o.relativenumber = true
-vim.o.shiftwidth = 4
+vim.o.cursorline = true
+vim.o.cursorlineopt = 'number'
+vim.o.scrolloff = 6
 vim.o.mouse = 'a'
+vim.o.confirm = true
+
+-- Indentation
+vim.o.shiftwidth = 4
+vim.o.tabstop = 4
+vim.o.softtabstop = 4
+vim.o.expandtab = true
+vim.o.smartindent = true
+vim.o.autoindent = true
+vim.o.breakindent = true
+
+-- Search
+vim.o.ignorecase = true
+vim.o.smartcase = true
+vim.o.hlsearch = false
+vim.o.incsearch = true
+
+-- Visual
+vim.o.termguicolors = true
+vim.o.signcolumn = 'yes'
+vim.o.colorcolumn = '100'
+vim.o.completeopt = 'menuone,noinsert,noselect'
 vim.o.showcmd = true
 vim.o.showcmdloc = 'statusline'
 vim.o.showmode = false
---  See `:help 'clipboard'`
-vim.schedule(function()
-  vim.o.clipboard = 'unnamedplus'
-end)
-vim.o.breakindent = true
-vim.o.autoindent = true
-vim.o.smartindent = true
-vim.o.undofile = true
-vim.o.backupcopy = 'yes'
-vim.o.ignorecase = true
-vim.o.smartcase = true
-vim.o.signcolumn = 'yes'
-vim.o.updatetime = 250
-vim.o.timeoutlen = 300
+vim.o.cmdheight = 1
+vim.o.pumheight = 10
+vim.o.pumblend = 10
+vim.o.winblend = 0
+vim.o.concealcursor = ''
+-- vim.o.lazyredraw = true
 vim.o.splitright = true
 vim.o.splitbelow = true
 vim.o.list = true
 vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
 vim.o.inccommand = 'split'
-vim.o.cursorline = true
-vim.o.cursorlineopt = 'number'
-vim.o.scrolloff = 6
-vim.o.confirm = true
-vim.o.swapfile = false
--- Set completeopt to have a better completion experience
-vim.o.completeopt = 'menuone,noselect'
-vim.o.termguicolors = true
 
--- jadon specific dark/light autotheming :)
-local gsettings = vim.fn.system 'gsettings get org.gnome.desktop.interface color-scheme'
-if gsettings:match 'prefer%-dark' then
-  vim.o.background = 'dark'
-elseif gsettings:match 'prefer%-light' then
-  vim.o.background = 'light'
-else
-  vim.o.background = 'dark' -- fallback
+-- File
+vim.o.backupcopy = 'yes'
+vim.o.swapfile = false
+vim.o.undofile = true
+vim.o.undodir = vim.fn.expand '~/.vim/undodir'
+vim.o.updatetime = 250
+vim.o.timeoutlen = 300
+vim.o.autoread = true
+vim.o.autowrite = false
+
+-- Performance improvements
+vim.o.redrawtime = 10000
+vim.o.maxmempattern = 20000
+
+-- Create undo directory if it doesn't exist
+local undodir = vim.fn.expand '~/.vim/undodir'
+if vim.fn.isdirectory(undodir) == 0 then
+  vim.fn.mkdir(undodir, 'p')
 end
+
+-- Behavior
+vim.o.hidden = true
+vim.o.errorbells = false
+vim.o.backspace = 'indent,eol,start'
+vim.opt.iskeyword:append '-'
+vim.o.selection = 'exclusive'
+vim.schedule(function()
+  vim.o.clipboard = 'unnamedplus'
+end)
 
 local diag_icons = require('kickstart.icons').diagnostics
 vim.diagnostic.config {

@@ -13,11 +13,6 @@ return {
         desc = 'Open yazi at the current file',
       },
       {
-        '<leader>E',
-        '<cmd>Yazi cwd<cr>',
-        desc = 'Open yazi at the cwd',
-      },
-      {
         '<c-up>',
         '<cmd>Yazi toggle<cr>',
         desc = 'Resume the last yazi session',

@@ -21,6 +21,7 @@ rtp:prepend(lazypath)
 require 'keymaps'
 require 'options'
 require 'autocmds'
+require 'terminal'
 
 -- [[ Configure and install plugins ]]
 require('lazy').setup({

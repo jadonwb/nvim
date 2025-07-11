@@ -17,11 +17,11 @@ return {
       { 'gp', group = 'Preview' },
       { '<leader>u', group = 'Ui' },
       { '<leader>d', group = 'Debug' },
-      {
-        '<leader>S',
-        group = '[S]cratch',
-        icon = { icon = '󱓧', color = 'red' },
-      },
+      -- {
+      --   '<leader>S',
+      --   group = '[S]cratch',
+      --   icon = { icon = '󱓧', color = 'red' },
+      -- },
     },
   },
 }
