@@ -20,8 +20,8 @@ local function FloatingTerminal()
   end
 
   -- Calculate window dimensions
-  local width = math.floor(vim.o.columns * 0.8)
-  local height = math.floor(vim.o.lines * 0.8)
+  local width = math.floor(vim.o.columns * 0.9)
+  local height = math.floor(vim.o.lines * 0.9)
   local row = math.floor((vim.o.lines - height) / 2)
   local col = math.floor((vim.o.columns - width) / 2)
 
@@ -57,7 +57,7 @@ local function FloatingTerminal()
   end
 
   if not has_terminal then
-    vim.fn.jobstart(os.getenv 'SHELL' or 'sh', { term = true })
+    vim.fn.jobstart(os.getenv 'SHELL' or 'sh', { term = true, pty = true })
   end
 
   terminal_state.is_open = true

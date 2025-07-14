@@ -6,6 +6,8 @@ return {
     'rcarriga/nvim-dap-ui',
     'nvim-neotest/nvim-nio',
     'jbyuki/one-small-step-for-vimkind',
+    'nvim-telescope/telescope.nvim',
+    'nvim-telescope/telescope-dap.nvim',
   },
   ft = { 'c', 'lua', 'rust' },
   keys = {
@@ -138,6 +140,27 @@ return {
       -- Use eol instead of inline
       virt_text_pos = 'eol',
     }
+
+    local telescope_dap = require('telescope').extensions.dap
+    local keymap = vim.keymap.set
+
+    keymap({ 'n', 'v' }, '<leader>d?', function()
+      telescope_dap.commands {}
+    end, { silent = true, desc = 'DAP builtin commands' })
+    keymap({ 'n', 'v' }, '<leader>dl', function()
+      telescope_dap.list_breakpoints {}
+    end, { silent = true, desc = 'DAP breakpoint list' })
+    keymap({ 'n', 'v' }, '<leader>df', function()
+      telescope_dap.frames()
+    end, { silent = true, desc = 'DAP frames' })
+    keymap({ 'n', 'v' }, '<leader>dv', function()
+      telescope_dap.variables()
+    end, { silent = true, desc = 'DAP variables' })
+    keymap({ 'n', 'v' }, '<leader>dc', function()
+      telescope_dap.configurations()
+    end, { silent = true, desc = 'DAP debugger configurations' })
+
+    require('telescope').load_extension 'dap'
 
     -- configure dap-ui and language adapaters
     require 'kickstart.plugins.dap.ui'

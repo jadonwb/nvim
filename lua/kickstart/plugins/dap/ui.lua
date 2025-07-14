@@ -16,8 +16,8 @@ dapui.setup {
     {
       -- You can change the order of elements in the sidebar
       elements = {
-        -- { id = "scopes", size = 0.25, },
-        { id = 'stacks', size = 0.50 },
+        { id = 'scopes', size = 0.25 },
+        { id = 'stacks', size = 0.25 },
         { id = 'breakpoints', size = 0.25 },
         { id = 'watches', size = 0.25 },
       },
@@ -29,7 +29,7 @@ dapui.setup {
         { id = 'repl', size = 0.60 },
         { id = 'console', size = 0.40 },
       },
-      size = 8,
+      size = 10,
       position = 'bottom', -- Can be "bottom" or "top"
     },
   },
