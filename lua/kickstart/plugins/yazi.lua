@@ -21,6 +21,8 @@ return {
     ---@type YaziConfig | {}
     opts = {
       open_for_directories = true,
+      yazi_floating_window_zindex = 300,
+      floating_window_scaling_factor = 1,
       keymaps = {
         show_help = '<f1>',
         open_file_in_vertical_split = '<c-v>',
