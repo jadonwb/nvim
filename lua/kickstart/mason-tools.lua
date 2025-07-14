@@ -6,10 +6,6 @@ local function add_tool(command, tools)
   end
 end
 
-add_tool('rustup', {
-  'codelldb',
-})
-
 add_tool('bash', {
   -- Linters
   'shellcheck',
@@ -30,16 +26,6 @@ add_tool('clangd', {
 add_tool('go', {
   -- Formatters
   'gofumpt',
-  'goimports',
-  -- Linters
-  'golangci-lint',
-  -- DAP
-  'delve',
-  -- Gopher.nvim
-  'gomodifytags',
-  'gotests',
-  'iferr',
-  'impl',
 })
 
 vim.list_extend(ensure_installed, { 'markdownlint' })

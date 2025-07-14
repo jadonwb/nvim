@@ -1,4 +1,3 @@
-local supermaven_enabled = false
 return {
   'saghen/blink.cmp',
   event = { 'InsertEnter', 'CmdlineEnter' },
@@ -29,18 +28,6 @@ return {
         log_level = 'info',
       },
     },
-    {
-      'Yu-Leo/cmp-go-pkgs',
-      enabled = vim.fn.executable 'go' == 1,
-      init = function()
-        vim.api.nvim_create_autocmd({ 'LspAttach' }, {
-          pattern = { '*.go' },
-          callback = function(args)
-            require('cmp_go_pkgs').init_items(args)
-          end,
-        })
-      end,
-    },
     'folke/snacks.nvim',
 
     -- Snippet Engine
@@ -66,14 +53,17 @@ return {
   ---@type blink.cmp.Config
   opts = {
     completion = {
-      accept = {
-        auto_brackets = {
-          enabled = true,
+      list = {
+        selection = {
+          preselect = function(ctx)
+            return not require('blink.cmp').snippet_active { direction = 1 }
+          end,
+          auto_insert = false,
         },
       },
       menu = {
         draw = {
-          columns = { { 'kind_icon' }, { 'label', gap = 1 } },
+          columns = { { 'kind_icon' }, { 'label', gap = 2 } },
           components = {
             label = {
               text = function(ctx)
@@ -98,72 +88,64 @@ return {
       },
     },
     keymap = {
-      preset = 'default',
-      ['<Tab>'] = {
-        function(cmp)
-          if cmp.is_visible() then
-            return cmp.select_and_accept()
-          end
-        end,
-        'fallback',
-      },
-      ['<C-x>'] = { 'show', 'hide' },
-      ['<C-k>'] = { 'show_documentation', 'hide_documentation' },
+      preset = 'super-tab',
       ['<C-space>'] = {
-        function(cmp)
-          supermaven_enabled = not supermaven_enabled
-          vim.notify('Supermaven ' .. (supermaven_enabled and 'enabled' or 'disabled'), vim.log.levels.INFO)
-
-          if cmp.is_visible() then
-            cmp.hide()
-            vim.defer_fn(function()
-              cmp.show()
-            end, 10)
-          end
-        end,
+        'show',
+        'hide',
       },
+      ['<C-k>'] = { 'show_documentation', 'hide_documentation' },
       ['<Up>'] = {},
       ['<Down>'] = {},
     },
     cmdline = {
       keymap = {
-        preset = 'cmdline',
-        ['<C-x>'] = { 'show', 'hide' },
-        ['<C-space>'] = {
+        preset = 'none',
+        ['<Tab>'] = { 'show', 'select_next' },
+        ['<S-Tab>'] = { 'show', 'select_prev' },
+        ['<CR>'] = {
           function(cmp)
-            supermaven_enabled = not supermaven_enabled
-            vim.notify('Supermaven ' .. (supermaven_enabled and 'enabled' or 'disabled'), vim.log.levels.INFO)
-
-            if cmp.is_visible() then
-              cmp.hide()
-              vim.defer_fn(function()
-                cmp.show()
-              end, 10)
+            if cmp.is_menu_visible() then
+              cmp.select_and_accept()
+              return true
             end
           end,
+          'fallback',
         },
-        ['<Right>'] = {
+        ['<C-space>'] = { 'show', 'hide' },
+        ['<C-e>'] = {
           function(cmp)
-            if cmp.is_ghost_text_visible() and not cmp.is_menu_visible() then
+            if cmp.is_ghost_text_visible() then
               return cmp.accept()
             end
           end,
           'fallback',
         },
       },
+      completion = {
+        list = {
+          selection = {
+            auto_insert = false,
+          },
+        },
+        menu = {
+          auto_show = function(ctx)
+            return vim.fn.getcmdtype() == ':'
+            -- enable for inputs as well, with:
+            -- or vim.fn.getcmdtype() == '@'
+          end,
+        },
+      },
     },
     snippets = { preset = 'luasnip' },
     sources = {
-      default = { 'supermaven', 'lsp', 'path', 'buffer', 'snippets', 'lazydev', 'go_pkgs', 'spell' },
+      default = { 'supermaven', 'lsp', 'path', 'buffer', 'snippets', 'lazydev', 'spell' },
       providers = {
         supermaven = {
           name = 'supermaven',
           module = 'blink-cmp-supermaven',
           async = true,
           score_offset = 10,
-          enabled = function()
-            return supermaven_enabled
-          end,
+          enabled = true,
           transform_items = function(ctx, items)
             for _, item in ipairs(items) do
               item.kind_icon = ''
@@ -202,14 +184,6 @@ return {
             end,
           },
         },
-        go_pkgs = {
-          name = 'go_pkgs',
-          module = 'blink.compat.source',
-          enabled = function()
-            return vim.bo.filetype == 'go' and vim.fn.executable 'go' == 1
-          end,
-          opts = {},
-        },
       },
     },
     fuzzy = {
@@ -224,7 +198,6 @@ return {
       },
     },
     appearance = {
-      use_nvim_cmp_as_default = true,
       nerd_font_variant = 'mono',
       kind_icons = require('kickstart.icons').kind_icons,
     },

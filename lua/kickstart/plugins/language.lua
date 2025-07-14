@@ -1,6 +1,5 @@
 -- [[Language specific plugins]]
 local language_requirements = {
-  go = 'go',
   lua = 'lua',
 }
 

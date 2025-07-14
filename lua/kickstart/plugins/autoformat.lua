@@ -59,7 +59,7 @@ return { -- Autoformat
       bash = { 'shfmt' },
       c = { 'clang-format' },
       rust = { 'rustfmt' },
-      go = { 'gofumpt', 'goimports' },
+      go = { 'gofumpt' },
     },
     formatters = {
       shfmt = {

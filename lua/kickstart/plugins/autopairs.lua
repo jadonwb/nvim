@@ -1,14 +1,19 @@
 return {
   'windwp/nvim-autopairs',
-  event = { 'InsertEnter' },
+  dependencies = 'nvim-treesitter',
+  event = { 'BufReadPost', 'InsertEnter' },
   config = function()
-    local autopairs = require 'nvim-autopairs'
+    local npairs = require 'nvim-autopairs'
+    local nrule = require 'nvim-autopairs.rule'
+    local ncond = require 'nvim-autopairs.conds'
 
-    autopairs.setup {
+    npairs.setup {
       check_ts = true,
       ts_config = {
         lua = { 'string' },
       },
     }
+
+    npairs.add_rule(nrule('<', '>', { 'rust', 'cpp' }):with_pair(ncond.not_before_regex_check ' '))
   end,
 }

@@ -1,20 +1,23 @@
-return { -- Collection of various small independent plugins/modules
-  'echasnovski/mini.nvim',
-  config = function()
-    -- Better Around/Inside textobjects
-    --
-    -- Examples:
-    --  - va)  - [V]isually select [A]round [)]paren
-    --  - yinq - [Y]ank [I]nside [N]ext [Q]uote
-    --  - ci'  - [C]hange [I]nside [']quote
-    require('mini.ai').setup { n_lines = 500, mappings = { around_last = 'ap', inside_last = 'ip', search_method = 'cover' }, silent = true }
-
-    -- Add/delete/replace surroundings (brackets, quotes, etc.)
-    --
-    -- - gsaw)  - [G]enerously [S]urround [A]round [W]ord [)]Paren
-    -- - gsd'   - [G]racefully [S]urround [D]elete [']quotes
-    -- - gsc)'  - [G]loriously [S]urround [C]hange [)] [']
-    require('mini.surround').setup {
+return {
+  {
+    'echasnovski/mini.ai',
+    version = false,
+    event = 'VeryLazy',
+    opts = {
+      n_lines = 500,
+      mappings = {
+        around_last = 'aN',
+        inside_last = 'iN',
+        search_method = 'cover',
+      },
+      silent = true,
+    },
+  },
+  {
+    'echasnovski/mini.surround',
+    version = false,
+    event = 'VeryLazy',
+    opts = {
       mappings = {
         add = 'gs', -- Add surrounding in Normal and Visual modes
         delete = 'gsd', -- Delete surrounding
@@ -28,25 +31,28 @@ return { -- Collection of various small independent plugins/modules
         suffix_next = 'n', -- Suffix to search with "next" method
       },
       silent = true,
-    }
-    -- Move lines easily in visual and normal mode
-    require('mini.move').setup {
+    },
+  },
+  {
+    'echasnovski/mini.move',
+    version = false,
+    event = 'VeryLazy',
+    opts = {
       mappings = {
-        -- Move visual selection in Visual mode
         left = 'H',
         right = 'L',
         down = 'J',
         up = 'K',
-        -- Move current line in Normal mode
         line_left = '',
         line_right = '',
-        line_down = '<M-j>',
-        line_up = '<M-k>',
+        line_down = '<M-j>', -- Move current line in Normal mode
+        line_up = '<M-k>', -- Move current line in Normal mode
       },
-    }
-
-    require('mini.icons').setup()
-    -- ... and there is more!
-    --  Check out: https://github.com/echasnovski/mini.nvim
-  end,
+    },
+  },
+  {
+    'echasnovski/mini.icons',
+    version = false,
+    opts = {},
+  },
 }

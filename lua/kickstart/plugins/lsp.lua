@@ -53,32 +53,6 @@ return {
         map('<leader>rv', vim.lsp.buf.rename, 'Rename Variable', 'n', false)
 
         map('<leader>ca', require('actions-preview').code_actions, 'Code action', { 'n', 'v' })
-        -- map('<leader>a', vim.lsp.buf.code_action, 'Code [A]ction')
-        -- map('gra', vim.lsp.buf.code_action, '[G]oto Code [A]ction', { 'n', 'x' })
-
-        -- local client = vim.lsp.get_client_by_id(event.data.client_id)
-        -- if client and client:supports_method(vim.lsp.protocol.Methods.textDocument_documentHighlight, event.buf) then
-        --   local highlight_augroup = vim.api.nvim_create_augroup('kickstart-lsp-highlight', { clear = false })
-        --   vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
-        --     buffer = event.buf,
-        --     group = highlight_augroup,
-        --     callback = vim.lsp.buf.document_highlight,
-        --   })
-        --
-        --   vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI' }, {
-        --     buffer = event.buf,
-        --     group = highlight_augroup,
-        --     callback = vim.lsp.buf.clear_references,
-        --   })
-        --
-        --   vim.api.nvim_create_autocmd('LspDetach', {
-        --     group = vim.api.nvim_create_augroup('kickstart-lsp-detach', { clear = true }),
-        --     callback = function(event2)
-        --       vim.lsp.buf.clear_references()
-        --       vim.api.nvim_clear_autocmds { group = 'kickstart-lsp-highlight', buffer = event2.buf }
-        --     end,
-        --   })
-        -- end
       end,
     })
 
@@ -110,17 +84,7 @@ return {
         gopls = {
           command = 'go',
           settings = {
-            gopls = {
-              hints = {
-                assignVariableTypes = true,
-                compositeLiteralFields = true,
-                compositeLiteralTypes = true,
-                constantValues = true,
-                functionTypeParameters = true,
-                parameterNames = true,
-                rangeVariableTypes = true,
-              },
-            },
+            gopls = {},
           },
         },
       },

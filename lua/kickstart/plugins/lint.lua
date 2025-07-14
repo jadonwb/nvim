@@ -7,7 +7,6 @@ return {
   opts = {
     --NOTE: add the linters to ensure_installed with inside mason-tools.lua
     linters_by_ft = {
-      go = { 'golangcilint' },
       sh = { 'shellcheck' },
     },
   },

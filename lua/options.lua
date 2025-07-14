@@ -25,7 +25,6 @@ vim.o.incsearch = true
 -- Visual
 vim.o.termguicolors = true
 vim.o.signcolumn = 'yes'
-vim.o.colorcolumn = '100'
 vim.o.completeopt = 'menuone,noinsert,noselect'
 vim.o.showcmd = true
 vim.o.showcmdloc = 'statusline'
@@ -35,12 +34,12 @@ vim.o.pumheight = 10
 vim.o.pumblend = 10
 vim.o.winblend = 0
 vim.o.concealcursor = ''
--- vim.o.lazyredraw = true
 vim.o.splitright = true
 vim.o.splitbelow = true
 vim.o.list = true
 vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
 vim.o.inccommand = 'split'
+vim.opt.fillchars = { eob = ' ' }
 
 -- File
 vim.o.backupcopy = 'yes'
@@ -67,7 +66,7 @@ vim.o.hidden = true
 vim.o.errorbells = false
 vim.o.backspace = 'indent,eol,start'
 vim.opt.iskeyword:append '-'
-vim.o.selection = 'exclusive'
+vim.o.selection = 'inclusive'
 vim.schedule(function()
   vim.o.clipboard = 'unnamedplus'
 end)
