@@ -21,6 +21,7 @@ return {
     ---@type YaziConfig | {}
     opts = {
       open_for_directories = true,
+      yazi_floating_window_border = 'none',
       yazi_floating_window_zindex = 300,
       floating_window_scaling_factor = 1,
       keymaps = {
@@ -66,10 +67,40 @@ return {
     build = function(plugin)
       require('yazi.plugin').build_plugin(plugin, { sub_dir = 'git.yazi' })
       require('yazi.plugin').build_plugin(plugin, { sub_dir = 'chmod.yazi' })
+      require('yazi.plugin').build_plugin(plugin, { sub_dir = 'mount.yazi' })
+      require('yazi.plugin').build_plugin(plugin, { sub_dir = 'full-border.yazi' })
     end,
   },
   {
     'ndtoan96/ouch.yazi',
+    lazy = true,
+    build = function(plugin)
+      require('yazi.plugin').build_plugin(plugin)
+    end,
+  },
+  {
+    'TD-sky/sudo.yazi',
+    lazy = true,
+    build = function(plugin)
+      require('yazi.plugin').build_plugin(plugin)
+    end,
+  },
+  {
+    'grappas/wl-clipboard.yazi',
+    lazy = true,
+    build = function(plugin)
+      require('yazi.plugin').build_plugin(plugin)
+    end,
+  },
+  {
+    'atareao/convert.yazi',
+    lazy = true,
+    build = function(plugin)
+      require('yazi.plugin').build_plugin(plugin)
+    end,
+  },
+  {
+    'GianniBYoung/rsync.yazi',
     lazy = true,
     build = function(plugin)
       require('yazi.plugin').build_plugin(plugin)
