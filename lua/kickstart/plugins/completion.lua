@@ -89,6 +89,15 @@ return {
     },
     keymap = {
       preset = 'super-tab',
+      ['<CR>'] = {
+        function(cmp)
+          if cmp.is_menu_visible() then
+            cmp.select_and_accept()
+            return true
+          end
+        end,
+        'fallback',
+      },
       ['<C-space>'] = {
         'show',
         'hide',
@@ -128,11 +137,7 @@ return {
           },
         },
         menu = {
-          auto_show = function(ctx)
-            return vim.fn.getcmdtype() == ':'
-            -- enable for inputs as well, with:
-            -- or vim.fn.getcmdtype() == '@'
-          end,
+          auto_show = false,
         },
       },
     },
