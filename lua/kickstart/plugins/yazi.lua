@@ -13,7 +13,7 @@ return {
         desc = 'Open yazi at the current file',
       },
       {
-        '<c-up>',
+        '<leader>E',
         '<cmd>Yazi toggle<cr>',
         desc = 'Resume the last yazi session',
       },
@@ -51,11 +51,11 @@ return {
   },
   {
     'yazi-rs/flavors',
-    name = 'yazi-flavor-catppuccin-frappe',
+    name = 'yazi-flavor-catppuccin-mocha',
     lazy = true,
     build = function(spec)
       require('yazi.plugin').build_flavor(spec, {
-        sub_dir = 'catppuccin-frappe.yazi',
+        sub_dir = 'catppuccin-mocha.yazi',
       })
     end,
   },

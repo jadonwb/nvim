@@ -27,7 +27,7 @@ local function open_with_app(apps)
     local file_path = vim.fn.expand '%:p'
 
     for _, app in ipairs(apps) do
-      if app == 'browser' then
+      if app == 'default' then
         vim.fn.jobstart({ 'xdg-open', file_path }, { detach = true })
         vim.cmd 'bdelete'
         return
@@ -43,15 +43,8 @@ local function open_with_app(apps)
 end
 
 local file_associations = {
-  pdf = { 'zathura', 'browser' }, -- or "tdf"
-  -- png = "feh",
-  -- mp4 = "mpv",
+  pdf = { --[[ 'zathura', ]] 'default' },
 }
-
--- local preview_associations = {
---   md = { 'zathura', 'browser' },
---   html = { 'zathura', 'browser' },
--- }
 
 for ext, apps in pairs(file_associations) do
   vim.api.nvim_create_autocmd({ 'BufEnter' }, {
@@ -63,16 +56,9 @@ end
 -- vim.keymap.set('n', '<leader>o', function()
 --   local file_path = vim.fn.expand '%:p'
 --   local ext = vim.fn.expand '%:e'
---
---   local apps = preview_associations[ext]
---   if apps then
---     open_with_app(apps)()
---   else
 --     vim.fn.jobstart({ 'xdg-open', file_path }, { detach = true })
---   end
--- end, { desc = 'Preview file with external application' })
+-- end, { desc = 'Open file with external application' })
 
--- Easy build and execute --
 local lang_maps = {
   arduino = {
     build = 'arduino-cli compile --fqbn arduino:avr:uno %',
@@ -80,24 +66,16 @@ local lang_maps = {
     clean = 'rm -rf build/',
   },
   c = { build = 'gcc *.c -lm -g -o main', run = './main', clean = 'rm -f main' },
-  clojure = { run = 'lein run' },
   cpp = {
     build = 'mkdir -p build && cd build && cmake .. && make',
     run = 'cd build && ./main',
     clean = 'rm -rf build/',
   },
-  elixir = { run = 'mix run' },
-  gleam = { run = 'gleam run' },
   go = { build = 'go build', run = 'go run %', clean = 'go clean && rm -f main' },
-  haskell = { run = 'cabal run' },
   java = { build = 'javac %', run = 'java %:r', clean = 'rm -f *.class' },
-  javascript = { run = 'bun %' },
   python = { run = 'python %' },
   rust = { run = 'cargo run' },
   sh = { run = '%' },
-  tex = { build = 'pdflatex -shell-escape %' },
-  typescript = { run = 'bun %' },
-  typst = { build = 'typst compile %' },
 }
 
 for lang, data in pairs(lang_maps) do
@@ -155,7 +133,6 @@ end
 
 local augroup = vim.api.nvim_create_augroup('UserConfig', {})
 
--- Auto-close terminal when process exits
 vim.api.nvim_create_autocmd('TermClose', {
   group = augroup,
   callback = function()
@@ -165,7 +142,6 @@ vim.api.nvim_create_autocmd('TermClose', {
   end,
 })
 
--- Disable line numbers in terminal
 vim.api.nvim_create_autocmd('TermOpen', {
   group = augroup,
   callback = function()
@@ -175,7 +151,6 @@ vim.api.nvim_create_autocmd('TermOpen', {
   end,
 })
 
--- Auto-resize splits when window is resized
 vim.api.nvim_create_autocmd('VimResized', {
   group = augroup,
   callback = function()
@@ -183,7 +158,6 @@ vim.api.nvim_create_autocmd('VimResized', {
   end,
 })
 
--- Create directories when saving files
 vim.api.nvim_create_autocmd('BufWritePre', {
   group = augroup,
   callback = function()
