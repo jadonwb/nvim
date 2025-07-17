@@ -8,7 +8,6 @@ vim.api.nvim_create_autocmd('TextYankPost', {
   end,
 })
 
--- [[ Disable new line comment ]]
 vim.api.nvim_create_autocmd('BufEnter', {
   callback = function()
     vim.opt.formatoptions:remove { 'c', 'r', 'o' }
@@ -17,7 +16,6 @@ vim.api.nvim_create_autocmd('BufEnter', {
   desc = 'Disable New Line Comment',
 })
 
--- [[ Open files with external applications ]]
 local function open_with_app(apps)
   return function()
     if type(apps) == 'string' then
@@ -43,7 +41,7 @@ local function open_with_app(apps)
 end
 
 local file_associations = {
-  pdf = { --[[ 'zathura', ]] 'default' },
+  pdf = { 'default' },
 }
 
 for ext, apps in pairs(file_associations) do
@@ -53,11 +51,11 @@ for ext, apps in pairs(file_associations) do
   })
 end
 
--- vim.keymap.set('n', '<leader>o', function()
---   local file_path = vim.fn.expand '%:p'
---   local ext = vim.fn.expand '%:e'
---     vim.fn.jobstart({ 'xdg-open', file_path }, { detach = true })
--- end, { desc = 'Open file with external application' })
+vim.keymap.set('n', '<leader>o', function()
+  local file_path = vim.fn.expand '%:p'
+  local ext = vim.fn.expand '%:e'
+  vim.fn.jobstart({ 'xdg-open', file_path }, { detach = true })
+end, { desc = 'Open file with default application' })
 
 local lang_maps = {
   arduino = {
