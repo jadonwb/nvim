@@ -6,7 +6,7 @@ local M = {
 function M.init()
   local keymap = vim.keymap.set
 
-  keymap('n', '<leader>uh', function()
+  keymap('n', '<leader>uH', function()
     require('hex').toggle()
   end, { desc = 'Toggle hex editor' })
 end

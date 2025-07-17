@@ -207,6 +207,30 @@ return {
       kind_icons = require('kickstart.icons').kind_icons,
     },
   },
+  init = function()
+    -- [[ Toggle completion ]]
+    local function toggle_completion()
+      local enabled = vim.b.completion
+      require('which-key').add {
+        {
+          '<leader>uC',
+          function()
+            vim.b.completion = not vim.b.completion
+            print('Completion is ' .. (enabled and 'Disabled' or 'Enabled'))
+            toggle_completion()
+          end,
+          desc = (enabled and 'Disable' or 'Enable') .. ' Completion',
+          icon = {
+            icon = enabled and '' or '',
+            color = enabled and 'green' or 'yellow',
+          },
+        },
+      }
+    end
+    -- Initialize the mapping for the first time
+    toggle_completion()
+  end,
+
   -- allows extending the providers array elsewhere in your config
   -- without having to redefine it
   opts_extend = { 'sources.default' },
