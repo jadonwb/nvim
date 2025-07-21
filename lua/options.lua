@@ -65,7 +65,6 @@ end
 vim.o.hidden = true
 vim.o.errorbells = false
 vim.o.backspace = 'indent,eol,start'
-vim.opt.iskeyword:append '-'
 vim.o.selection = 'inclusive'
 vim.schedule(function()
   vim.o.clipboard = 'unnamedplus'
