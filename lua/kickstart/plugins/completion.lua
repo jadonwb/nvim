@@ -53,14 +53,13 @@ return {
   },
   version = '*',
   config = function()
-    vim.g.completion = true
-    vim.b.completion = vim.g.completion
+    vim.b.completion = true
     require('which-key').add {
       {
         '<leader>uC',
         function()
-          vim.g.completion = not (vim.g.completion or false)
-          vim.b.completion = vim.g.completion
+          vim.g.completion = vim.g.completion == nil and false or nil
+          vim.b.completion = not vim.b.completion
           print('Completion is ' .. (vim.b.completion and 'Enabled' or 'Disabled'))
         end,
         desc = function()
