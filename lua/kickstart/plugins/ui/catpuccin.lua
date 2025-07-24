@@ -26,6 +26,6 @@ return {
       no_bold = false,
     }
 
-    vim.cmd 'colorscheme catppuccin'
+    -- vim.cmd 'colorscheme catppuccin'
   end,
 }

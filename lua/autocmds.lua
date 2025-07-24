@@ -165,3 +165,24 @@ vim.api.nvim_create_autocmd('BufWritePre', {
     end
   end,
 })
+
+vim.api.nvim_create_autocmd('VimEnter', {
+  callback = function()
+    local colorscheme_file = vim.fn.expand '~/.config/nvim/colorscheme.txt'
+    local file = io.open(colorscheme_file, 'r')
+
+    if file then
+      local colorscheme = file:read '*line'
+      file:close()
+
+      if colorscheme and colorscheme ~= '' then
+        colorscheme = colorscheme:gsub('^%s*(.-)%s*$', '%1')
+
+        local ok, err = pcall(vim.cmd, 'colorscheme ' .. colorscheme)
+        if ok then
+          vim.cmd 'doautocmd ColorScheme'
+        end
+      end
+    end
+  end,
+})
