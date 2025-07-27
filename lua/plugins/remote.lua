@@ -10,7 +10,7 @@ return {
   opts = {},
   keys = {
     {
-      '<leader>Rc',
+      '<leader>R',
       function()
         vim.ui.input({
           prompt = 'RemoteSSHFSConnect: ',
@@ -22,8 +22,6 @@ return {
       end,
       desc = 'Remote SSH Connect',
     },
-    { '<leader>Rd', '<cmd>RemoteSSHFSDisconnect<cr>', desc = 'Remote SSH Disconnect' },
-    { '<leader>Re', '<cmd>RemoteSSHFSEdit<cr>', desc = 'Remote SSH Edit' },
   },
 }
 

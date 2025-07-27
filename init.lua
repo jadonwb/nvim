@@ -25,8 +25,7 @@ require 'terminal'
 
 -- [[ Configure and install plugins ]]
 require('lazy').setup({
-  { import = 'kickstart.plugins' },
-  { import = 'custom.plugins' },
+  { import = 'plugins' },
 }, {
   ui = {
     border = 'rounded',

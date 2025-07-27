@@ -1,6 +1,3 @@
-local supermaven_enabled = false
-local providers = { 'lsp', 'path', 'buffer', 'snippets', 'lazydev', 'spell' }
-
 return {
   'saghen/blink.cmp',
   event = { 'InsertEnter', 'CmdlineEnter' },
@@ -10,27 +7,6 @@ return {
 
     -- Sources
     'ribru17/blink-cmp-spell',
-    {
-      'huijiro/blink-cmp-supermaven',
-    },
-    {
-      'supermaven-inc/supermaven-nvim',
-
-      opts = {
-        disable_keymaps = true,
-        disable_inline_completion = true,
-
-        ignore_filetypes = {
-          help = true,
-          gitrebase = true,
-          hgcommit = true,
-          svn = true,
-          cvs = true,
-          ['.'] = true,
-        },
-        log_level = 'info',
-      },
-    },
     'folke/snacks.nvim',
 
     -- Snippet Engine
@@ -53,30 +29,7 @@ return {
   },
   version = '*',
   config = function()
-    vim.b.completion = true
-    require('which-key').add {
-      {
-        '<leader>uC',
-        function()
-          vim.g.completion = vim.g.completion == nil and false or nil
-          vim.b.completion = not vim.b.completion
-          print('Completion is ' .. (vim.b.completion and 'Enabled' or 'Disabled'))
-        end,
-        desc = function()
-          return (vim.b.completion and 'Disable' or 'Enable') .. ' Completion'
-        end,
-        icon = function()
-          return {
-            icon = vim.b.completion and '' or '',
-            color = vim.b.completion and 'green' or 'yellow',
-          }
-        end,
-      },
-    }
     require('blink.cmp').setup {
-      enabled = function()
-        return vim.b.completion
-      end,
       completion = {
         list = {
           selection = {
@@ -114,27 +67,7 @@ return {
       },
       keymap = {
         preset = 'super-tab',
-        ['<CR>'] = {
-          function(cmp)
-            if cmp.is_menu_visible() then
-              cmp.select_and_accept()
-              return true
-            end
-          end,
-          'fallback',
-        },
-        ['<C-space>'] = {
-          function(cmp)
-            supermaven_enabled = not supermaven_enabled
-            if supermaven_enabled then
-              table.insert(providers, 'supermaven')
-              cmp.show { providers = providers }
-            else
-              table.remove(providers, #providers)
-              cmp.show { providers = providers }
-            end
-          end,
-        },
+        ['<C-space>'] = { 'show', 'hide' },
         ['<C-k>'] = { 'show_documentation', 'hide_documentation' },
         ['<Up>'] = {},
         ['<Down>'] = {},
@@ -176,24 +109,8 @@ return {
       },
       snippets = { preset = 'luasnip' },
       sources = {
-        default = providers,
+        default = { 'lsp', 'path', 'buffer', 'snippets', 'lazydev', 'spell' },
         providers = {
-          supermaven = {
-            name = 'supermaven',
-            module = 'blink-cmp-supermaven',
-            enabled = function()
-              return supermaven_enabled
-            end,
-            async = true,
-            score_offset = 10,
-            transform_items = function(ctx, items)
-              for _, item in ipairs(items) do
-                item.kind_icon = ''
-                item.kind_name = 'Supermaven'
-              end
-              return items
-            end,
-          },
           snippets = {
             module = 'blink.cmp.sources.snippets',
             score_offset = -1,
@@ -239,7 +156,7 @@ return {
       },
       appearance = {
         nerd_font_variant = 'mono',
-        kind_icons = require('kickstart.icons').kind_icons,
+        kind_icons = require('icons').kind_icons,
       },
     }
   end,

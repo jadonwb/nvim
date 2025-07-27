@@ -3,7 +3,7 @@ local language_requirements = {
   lua = 'lua',
 }
 
-local module_prefix = 'kickstart.plugins.language.'
+local module_prefix = 'plugins.language.'
 local specs = { { import = module_prefix .. 'lua' } }
 
 -- Filter modules based on available executables

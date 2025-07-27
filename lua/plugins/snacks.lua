@@ -28,14 +28,14 @@ return {
   },
   keys = {
     {
-      '<leader>uN',
+      '<leader>tN',
       function()
         Snacks.notifier.show_history()
       end,
       desc = 'Notification History',
     },
     {
-      '<leader>un',
+      '<leader>tn',
       function()
         Snacks.notifier.hide()
       end,
@@ -312,12 +312,12 @@ return {
         vim.print = _G.dd -- Override print to use snacks for `:=` command
 
         -- Create some toggle mappings
-        Snacks.toggle.option('spell', { name = 'Spelling' }):map '<leader>us'
-        Snacks.toggle.option('wrap', { name = 'Wrap' }):map '<leader>uw'
-        Snacks.toggle.diagnostics():map '<leader>ud'
-        Snacks.toggle.option('conceallevel', { off = 0, on = vim.o.conceallevel > 0 and vim.o.conceallevel or 2 }):map '<leader>uc'
-        Snacks.toggle.animate():map '<leader>ua'
-        Snacks.toggle.line_number():map '<leader>uL'
+        Snacks.toggle.option('spell', { name = 'Spelling' }):map '<leader>ts'
+        Snacks.toggle.option('wrap', { name = 'Wrap' }):map '<leader>tw'
+        Snacks.toggle.diagnostics():map '<leader>td'
+        Snacks.toggle.option('conceallevel', { off = 0, on = vim.o.conceallevel > 0 and vim.o.conceallevel or 2 }):map '<leader>tc'
+        Snacks.toggle.animate():map '<leader>ta'
+        Snacks.toggle.line_number():map '<leader>tL'
         -- Toggle Inlay Hints
         vim.api.nvim_create_autocmd('LspAttach', {
           group = vim.api.nvim_create_augroup('kickstart-lsp-attach', { clear = false }),
@@ -328,7 +328,7 @@ return {
                 local enabled = vim.lsp.inlay_hint.is_enabled { bufnr = event.buf }
                 require('which-key').add {
                   {
-                    '<leader>uh',
+                    '<leader>th',
                     function()
                       vim.lsp.inlay_hint.enable(not enabled)
                       toggle_inlay_hints()
@@ -345,11 +345,6 @@ return {
             end
           end,
         })
-
-        -- Snacks.toggle.inlay_hints():map("<leader>uh")
-        -- Snacks.toggle.option("relativenumber", { name = "Relative Number" }):map("<leader>uL")
-        -- Snacks.toggle.treesitter():map("<leader>uT")
-        -- Snacks.toggle.option("background", { off = "light", on = "dark", name = "Dark Background" }):map("<leader>ub")
       end,
     })
 

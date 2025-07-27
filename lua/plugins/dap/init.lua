@@ -163,13 +163,13 @@ return {
     require('telescope').load_extension 'dap'
 
     -- configure dap-ui and language adapaters
-    require 'kickstart.plugins.dap.ui'
+    require 'plugins.dap.ui'
     if vim.fn.executable 'gdb' == 1 then
-      require 'kickstart.plugins.dap.c'
+      require 'plugins.dap.c'
     end
     if vim.fn.executable 'rust-gdb' == 1 then
-      require 'kickstart.plugins.dap.rust'
+      require 'plugins.dap.rust'
     end
-    require 'kickstart.plugins.dap.lua'
+    require 'plugins.dap.lua'
   end,
 }

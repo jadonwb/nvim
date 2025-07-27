@@ -3,7 +3,7 @@ if not ok then
   return
 end
 
-local icons = require 'kickstart.icons'
+local icons = require 'icons'
 local dapui_icons = icons.dapui
 
 dapui.setup {

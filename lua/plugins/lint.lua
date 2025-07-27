@@ -41,7 +41,7 @@ return {
       local enabled = not vim.g.disable_lint
       require('which-key').add {
         {
-          '<leader>ul',
+          '<leader>tl',
           function()
             local current_linters = opts.linters_by_ft[vim.bo.filetype]
             if vim.g.disable_lint and not current_linters then

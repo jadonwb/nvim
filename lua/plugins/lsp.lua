@@ -41,7 +41,9 @@ return {
 
         map('grD', Snacks.picker.lsp_declarations, 'Goto Declaration')
 
-        local kind_filter = { filter = require('kickstart.icons').kind_filter }
+        map('gra', require('actions-preview').code_actions, 'Code action', { 'n', 'v' })
+
+        local kind_filter = { filter = require('icons').kind_filter }
         map('<leader>ss', function()
           Snacks.picker.lsp_symbols(kind_filter)
         end, 'Open Buffer Symbols', 'n', false)
@@ -51,8 +53,6 @@ return {
         end, 'Open Workspace Symbols', 'n', false)
 
         map('<leader>rv', vim.lsp.buf.rename, 'Rename Variable', 'n', false)
-
-        map('<leader>ca', require('actions-preview').code_actions, 'Code action', { 'n', 'v' })
       end,
     })
 
@@ -113,7 +113,7 @@ return {
 
     -- Grab the list of servers and tools to install and add them to ensure_installed
     local ensure_installed = vim.tbl_keys(servers.mason or {})
-    local tools = require 'kickstart.mason-tools'
+    local tools = require 'mason-tools'
     vim.list_extend(ensure_installed, tools)
     require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 

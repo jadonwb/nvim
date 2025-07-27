@@ -26,8 +26,6 @@ vim.o.incsearch = true
 vim.o.termguicolors = true
 vim.o.signcolumn = 'yes'
 vim.o.completeopt = 'menuone,noinsert,noselect'
-vim.o.showcmd = true
-vim.o.showcmdloc = 'statusline'
 vim.o.showmode = false
 vim.o.cmdheight = 1
 vim.o.pumheight = 10
@@ -70,7 +68,7 @@ vim.schedule(function()
   vim.o.clipboard = 'unnamedplus'
 end)
 
-local diag_icons = require('kickstart.icons').diagnostics
+local diag_icons = require('icons').diagnostics
 vim.diagnostic.config {
   underline = false,
   virtual_text = {
