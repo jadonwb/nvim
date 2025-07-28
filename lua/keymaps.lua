@@ -53,8 +53,15 @@ map('n', 'N', 'Nzzzv')
 map('v', '<', '<gv')
 map('v', '>', '>gv')
 
--- Yank file
-map('n', '<leader>y', ':%y<CR>', { desc = 'Yank file' })
+-- Yank, Paste, Delete
+map('x', '<leader>p', [["_dP]])
+map({ 'n', 'v' }, '<leader>y', [["+y]])
+map('n', '<leader>Y', [["+Y]])
+map({ 'n', 'v' }, '<leader>d', '"_d')
+
+-- Search and Replace (genuinely goated keymaps)
+map('n', '<leader>?', [[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]], { desc = 'Search and Replace' })
+map('v', '<leader>?', [["zy:%s/\V<C-r>z/<C-r>z/gI<Left><Left><Left>]], { desc = 'Search and Replace' })
 
 -- Lazy
 map('n', '<leader>l', '<cmd>Lazy<CR>', { desc = 'Lazy' })
@@ -128,5 +135,5 @@ map('n', '<A-h>', '<cmd>bprevious<cr>', { desc = 'Previous buffer' })
 map('n', '<A-l>', '<cmd>bnext<cr>', { desc = 'Next buffer' })
 
 -- Sessions
-map('n', '<leader>S', '<cmd>:lua require("persistence").select()<CR>', { desc = 'Select Session' })
-map('n', '<leader>p', '<cmd>:lua require("persistence").load({last = true})<CR>', { desc = 'Previous Session' })
+map('n', '<leader>X', '<cmd>:lua require("persistence").select()<CR>', { desc = 'Select Session' })
+map('n', '<leader>x', '<cmd>:lua require("persistence").load({last = true})<CR>', { desc = 'Previous Session' })

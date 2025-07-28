@@ -15,7 +15,11 @@ return {
       { 'gp', group = 'Preview' },
       { 'gr', group = 'LSP' },
       { '<leader>t', group = 'Toggle' },
-      { '<leader>d', group = 'Debug' },
+      { '<leader>b', group = 'deBug' },
+      { '<leader>y', hidden = true },
+      { '<leader>Y', hidden = true },
+      { '<leader>p', hidden = true },
+      { '<leader>d', hidden = true },
     },
   },
 }
