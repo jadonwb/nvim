@@ -22,7 +22,7 @@ return {
       step_back = ' (F9)',
       run_last = ' (F10)',
       terminate = ' (F12)',
-      disconnect = ' (␣dd)',
+      disconnect = ' (␣bd)',
     },
     icons = {
       expanded = '▾',
