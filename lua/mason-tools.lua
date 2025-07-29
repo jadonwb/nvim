@@ -29,5 +29,6 @@ add_tool('go', {
 })
 
 vim.list_extend(ensure_installed, { 'markdownlint' })
+vim.list_extend(ensure_installed, { 'language-server-bitbake'})
 
 return ensure_installed
