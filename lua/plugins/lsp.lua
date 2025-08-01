@@ -2,7 +2,7 @@ return {
   -- Main LSP Configuration
   'neovim/nvim-lspconfig',
   dependencies = {
-    { 'mason-org/mason.nvim',         opts = {} },
+    { 'mason-org/mason.nvim', opts = {} },
     'mason-org/mason-lspconfig.nvim',
     'WhoIsSethDaniel/mason-tool-installer.nvim',
 
@@ -10,7 +10,7 @@ return {
     { 'aznhe21/actions-preview.nvim', opts = { backend = { 'snacks', 'nui' } } },
 
     -- Preview for go to methods
-    { 'rmagatti/goto-preview',        opts = { default_mappings = true, references = { provider = 'snacks' } }, event = 'VeryLazy' },
+    { 'rmagatti/goto-preview', opts = { default_mappings = true, references = { provider = 'snacks' } }, event = 'VeryLazy' },
 
     -- Populates project-wide lsp diagnostcs
     'artemave/workspace-diagnostics.nvim',
@@ -88,12 +88,9 @@ return {
           },
         },
 
-        -- bitbake_ls = {},
-        -- language-server-bitbake = {},
+        neocmake = {},
       },
-      others = {
-        -- bitbake_language_server = {},
-      },
+      others = {},
     }
 
     vim.lsp.config('bitbake_ls', {
@@ -101,7 +98,7 @@ return {
       filetypes = { 'bitbake' },
       root_markers = { '.git' },
     })
-    vim.lsp.enable('bitbake_ls')
+    vim.lsp.enable 'bitbake_ls'
 
     for server, config in pairs(vim.tbl_extend('keep', servers.mason, servers.others)) do
       if not vim.tbl_isempty(config) then

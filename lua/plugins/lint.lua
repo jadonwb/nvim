@@ -8,6 +8,7 @@ return {
     --NOTE: add the linters to ensure_installed with inside mason-tools.lua
     linters_by_ft = {
       sh = { 'shellcheck' },
+      bitbake = { 'oelint-adv' },
     },
   },
   config = function(_, opts)

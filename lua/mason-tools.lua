@@ -28,7 +28,12 @@ add_tool('go', {
   'gofumpt',
 })
 
+add_tool('cmake', {
+  'cmakelang',
+})
+
 vim.list_extend(ensure_installed, { 'markdownlint' })
-vim.list_extend(ensure_installed, { 'language-server-bitbake'})
+vim.list_extend(ensure_installed, { 'language-server-bitbake' })
+vim.list_extend(ensure_installed, { 'oelint-adv' })
 
 return ensure_installed
