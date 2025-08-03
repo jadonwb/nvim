@@ -13,7 +13,7 @@ local exec_opts = {
 
   filter = function(exec)
     -- Filter out shared libraries
-    return not exec:match '%.so([.0-9]*)'
+    return not exec:match '%.so([.0-9]*)' and not exec:match '%.git/'
   end,
 }
 
@@ -100,7 +100,7 @@ dap.configurations.rust = {
     end,
     args = function()
       local args_str = vim.fn.input {
-        prompt = 'Execeutable arguments: ',
+        prompt = 'Executable arguments: ',
       }
       return vim.split(args_str, ' +')
     end,

@@ -16,18 +16,18 @@ dapui.setup {
     {
       -- You can change the order of elements in the sidebar
       elements = {
-        { id = 'scopes', size = 0.25 },
-        { id = 'stacks', size = 0.25 },
-        { id = 'breakpoints', size = 0.25 },
-        { id = 'watches', size = 0.25 },
+        { id = 'breakpoints', size = 0.15 },
+        { id = 'stacks', size = 0.15 },
+        { id = 'scopes', size = 0.70 },
       },
-      size = 56,
+      size = 42,
       position = 'right', -- Can be "left" or "right"
     },
     {
       elements = {
-        { id = 'repl', size = 0.60 },
-        { id = 'console', size = 0.40 },
+        { id = 'repl', size = 0.55 },
+        { id = 'watches', size = 0.45 },
+        -- { id = 'console', size = 0.40 },
       },
       size = 10,
       position = 'bottom', -- Can be "bottom" or "top"
@@ -48,5 +48,5 @@ end
 local dap = require 'dap'
 
 dap.listeners.after.event_initialized['dapui_config'] = dapui.open
-dap.listeners.before.event_terminated['dapui_config'] = dapui.close
-dap.listeners.before.event_exited['dapui_config'] = dapui.close
+-- dap.listeners.before.event_terminated['dapui_config'] = dapui.close
+-- dap.listeners.before.event_exited['dapui_config'] = dapui.close

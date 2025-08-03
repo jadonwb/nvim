@@ -65,7 +65,7 @@ return {
 
       mason = {
         clangd = {},
-        rust_analyzer = {},
+        -- rust_analyzer = {},
         -- See `:help lspconfig-all` for a list of all the pre-configured LSPs
 
         bashls = {},

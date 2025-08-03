@@ -28,18 +28,19 @@ return {
   },
   keys = {
     {
-      '<leader>tN',
+      '<leader>n',
       function()
         Snacks.notifier.show_history()
       end,
       desc = 'Notification History',
     },
     {
-      '<leader>tn',
+      '<esc>',
       function()
+        vim.cmd 'nohlsearch'
         Snacks.notifier.hide()
       end,
-      desc = 'Dismiss All Notifications',
+      desc = 'Clear UI',
     },
     {
       '<leader>rf',
@@ -158,11 +159,11 @@ return {
       desc = 'Search Todo Comments',
     },
     {
-      '<leader>sr',
+      '<leader>sx',
       function()
         Snacks.picker.resume()
       end,
-      desc = 'Search Resume',
+      desc = 'Search Last Session',
     },
     {
       '<leader>s.',
@@ -297,7 +298,7 @@ return {
     t_keymap('<c-j>', '<Cmd>wincmd j<CR>')
     t_keymap('<c-l>', '<Cmd>wincmd l<CR>')
     t_keymap('<c-w>', [[<C-\><C-n><C-w>]])
-    t_keymap('<esc><esc>', [[<C-\><C-n>]])
+    t_keymap('<c-\\>', [[<C-\><C-n>]])
 
     vim.api.nvim_create_autocmd('User', {
       pattern = 'VeryLazy',

@@ -19,7 +19,6 @@ vim.o.breakindent = true
 -- Search
 vim.o.ignorecase = true
 vim.o.smartcase = true
-vim.o.hlsearch = false
 vim.o.incsearch = true
 
 -- Visual
@@ -31,7 +30,7 @@ vim.o.cmdheight = 1
 vim.o.pumheight = 10
 vim.o.pumblend = 10
 vim.o.winblend = 0
-vim.o.winborder = "rounded"
+vim.o.winborder = 'rounded'
 vim.o.concealcursor = ''
 vim.o.splitright = true
 vim.o.splitbelow = true

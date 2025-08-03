@@ -16,9 +16,6 @@ map('n', 'gq', vim.diagnostic.open_float, { desc = 'Open floating diagnostic mes
 map('n', 'k', "v:count == 0 ? 'gk' : 'k'", { expr = true, silent = true })
 map('n', 'j', "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = true })
 
--- Clear highlights
-map('n', '<Esc>', '<cmd>nohlsearch<CR>')
-
 -- Disable arrow keys in normal mode
 map('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
 map('n', '<right>', '<cmd>echo "Use l to move!!"<CR>')
@@ -58,10 +55,6 @@ map('x', '<leader>p', [["_dP]])
 map({ 'n', 'v' }, '<leader>y', [["+y]])
 map('n', '<leader>Y', [["+Y]])
 map({ 'n', 'v' }, '<leader>d', '"_d')
-
--- Search and Replace (genuinely goated keymaps)
-map('n', '<leader>?', [[:%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>]], { desc = 'Search and Replace' })
-map('v', '<leader>?', [["zy:%s/\V<C-r>z/<C-r>z/gI<Left><Left><Left>]], { desc = 'Search and Replace' })
 
 -- Lazy
 map('n', '<leader>l', '<cmd>Lazy<CR>', { desc = 'Lazy' })
