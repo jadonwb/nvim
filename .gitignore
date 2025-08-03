@@ -7,3 +7,4 @@ spell/
 main.c
 *.o
 colorscheme.txt
+lazylock.json
