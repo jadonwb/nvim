@@ -23,7 +23,6 @@ External Requirements:
   - if you have it set `vim.g.have_nerd_font` in `init.lua` to true
 - Emoji fonts (Ubuntu only, and only if you want emoji!) `sudo apt install fonts-noto-color-emoji`
 - Language Setup:
-  - If you want to write Typescript, you need `npm`
   - If you want to write Golang, you will need `go`
   - If you want to write Rust, you will need `rustup` and probably `cargo`
   - For Language Servers that aren't available via Mason, you will likely need `npm` and`python/pip`
