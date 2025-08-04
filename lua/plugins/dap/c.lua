@@ -27,10 +27,11 @@ local exec_opts = {
 -- See
 -- https://sourceware.org/gdb/current/onlinedocs/gdb.html/Interpreters.html
 -- https://sourceware.org/gdb/current/onlinedocs/gdb.html/Debugger-Adapter-Protocol.html
+local gdb_cmd = vim.fn.executable 'gdb-multiarch' == 1 and 'gdb-multiarch' or 'gdb'
 dap.adapters.gdb = {
   id = 'gdb',
   type = 'executable',
-  command = 'gdb',
+  command = gdb_cmd,
   args = { '--quiet', '--interpreter=dap' },
   --[[
     args = {
@@ -42,7 +43,7 @@ dap.adapters.gdb = {
 ]]
 }
 
-dap.configurations.c = {
+local gdb_configs = {
   {
     name = 'Run executable (GDB)',
     type = 'gdb',
@@ -75,4 +76,21 @@ dap.configurations.c = {
     request = 'attach',
     processId = require('dap.utils').pick_process,
   },
+  -- Remote debugging via gdbserver
+  {
+    name = 'Connect to gdbserver (GDB)',
+    type = 'gdb',
+    request = 'attach',
+    target = function()
+      local host = vim.fn.input('Remote host: ', '')
+      local port = vim.fn.input('Remote port: ', '')
+      return host .. ':' .. port
+    end,
+    program = function()
+      return vim.fn.input('Path to binary on target: ', '/app/')
+    end,
+  },
 }
+
+dap.configurations.c = gdb_configs
+dap.configurations.cpp = gdb_configs
