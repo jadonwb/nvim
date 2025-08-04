@@ -18,7 +18,6 @@ return {
         wo = { wrap = true }, -- Wrap notifications
       },
     },
-    scope = { enabled = true }, -- Jumps: ]i [i textobjects: ii(inner scope) ai(full scope)
     input = { enabled = true },
     image = { enabled = true, doc = { enabled = true, inline = false, float = true } },
     picker = {

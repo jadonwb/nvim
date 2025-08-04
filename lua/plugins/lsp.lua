@@ -65,7 +65,6 @@ return {
 
       mason = {
         clangd = {},
-        -- rust_analyzer = {},
         -- See `:help lspconfig-all` for a list of all the pre-configured LSPs
 
         bashls = {},
@@ -89,8 +88,11 @@ return {
         },
 
         neocmake = {},
+        -- ginko_ls = {},
       },
-      others = {},
+      others = {
+        -- dts_lsp = {},
+      },
     }
 
     vim.lsp.config('bitbake_ls', {

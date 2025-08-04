@@ -51,12 +51,6 @@ for ext, apps in pairs(file_associations) do
   })
 end
 
-vim.keymap.set('n', '<leader>o', function()
-  local file_path = vim.fn.expand '%:p'
-  local ext = vim.fn.expand '%:e'
-  vim.fn.jobstart({ 'xdg-open', file_path }, { detach = true })
-end, { desc = 'Open file with default application' })
-
 local augroup = vim.api.nvim_create_augroup('UserConfig', {})
 
 vim.api.nvim_create_autocmd('TermClose', {

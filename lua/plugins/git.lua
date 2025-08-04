@@ -48,10 +48,10 @@ return {
         -- visual mode
         map('v', '<leader>hs', function()
           gitsigns.stage_hunk { vim.fn.line '.', vim.fn.line 'v' }
-        end, { desc = 'git [s]tage hunk' })
+        end, { desc = 'git stage hunk' })
         map('v', '<leader>hr', function()
           gitsigns.reset_hunk { vim.fn.line '.', vim.fn.line 'v' }
-        end, { desc = 'git [r]eset hunk' })
+        end, { desc = 'git reset hunk' })
         -- normal mode
         map('n', '<leader>hs', gitsigns.stage_hunk, { desc = 'stage hunk' })
         map('n', '<leader>hr', gitsigns.reset_hunk, { desc = 'reset hunk' })
@@ -67,7 +67,6 @@ return {
         end, { desc = 'Diff against last commit' })
         -- Toggles
         map('n', '<leader>tb', gitsigns.toggle_current_line_blame, { desc = 'Toggle git blame line' })
-        map('n', '<leader>tD', gitsigns.preview_hunk_inline, { desc = 'show deleted' })
       end,
     },
   },

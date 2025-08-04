@@ -25,6 +25,14 @@ return {
       },
       lualine_x = {
         { '%S' },
+        {
+          function()
+            return require('noice').api.status.mode.get()
+          end,
+          cond = function()
+            return require('noice').api.status.mode.has()
+          end,
+        },
       },
       lualine_y = {
         'filetype',

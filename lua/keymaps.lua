@@ -10,7 +10,17 @@ vim.keymap.del('n', 'grn')
 vim.keymap.del('n', 'grr')
 vim.keymap.del('n', 'gO')
 
-map('n', 'gq', vim.diagnostic.open_float, { desc = 'Open floating diagnostic message' })
+map('n', 'grq', vim.diagnostic.open_float, { desc = 'LSP: Hover Diagnostic' })
+
+local map_lsp_selection = function(lhs, desc)
+  local s = vim.startswith(desc, 'Increase') and 1 or -1
+  local rhs = function()
+    vim.lsp.buf.selection_range(s * vim.v.count1)
+  end
+  vim.keymap.set('x', lhs, rhs, { desc = desc })
+end
+map_lsp_selection('grs', 'Increase selection')
+map_lsp_selection('grS', 'Decrease selection')
 
 -- Remap for dealing with word wrap
 map('n', 'k', "v:count == 0 ? 'gk' : 'k'", { expr = true, silent = true })
