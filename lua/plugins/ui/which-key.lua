@@ -14,6 +14,7 @@ return {
       { '<leader>r', group = 'Refactor', mode = { 'n', 'v' } },
       { 'gp', group = 'Preview' },
       { 'gr', group = 'LSP' },
+      { 'gs', group = 'Surround' },
       { '<leader>t', group = 'Toggle' },
       { '<leader>b', group = 'deBug' },
       { '<leader>y', hidden = true },
