@@ -46,6 +46,7 @@ vim.api.nvim_set_hl(0, 'NotifyDEBUGBorder', { bg = 'none' })
 
 -- General border highlight groups
 vim.api.nvim_set_hl(0, 'FloatBorder', { bg = 'NONE' })
+vim.api.nvim_set_hl(0, 'FloatTitle', { bg = 'NONE' })
 vim.api.nvim_set_hl(0, 'NormalFloat', { bg = 'NONE' })
 
 -- Which-key specific borders
@@ -55,3 +56,4 @@ vim.api.nvim_set_hl(0, 'WhichKeyTitle', { bg = 'NONE' })
 
 -- Blink.cmp specific borders
 vim.api.nvim_set_hl(0, 'BlinkCmpDoc', { bg = 'NONE' })
+vim.api.nvim_set_hl(0, 'BlinkCmpMenuBorder', { bg = 'NONE' })
