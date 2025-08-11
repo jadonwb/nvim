@@ -6,7 +6,7 @@ del('n', 'gra')
 del('n', 'gri')
 del('n', 'grn')
 del('n', 'grr')
-del('n', 'grt')
+-- del('n', 'grt')
 del('n', 'gO')
 
 map('n', 'grq', vim.diagnostic.open_float, { desc = 'Hover Diagnostic' })

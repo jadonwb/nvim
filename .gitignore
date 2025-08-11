@@ -7,4 +7,5 @@ spell/
 main.c
 *.o
 colorscheme.txt
-# lazy-lock.json
+lazy-lock.json
+lua/plugins/theme.lua
