@@ -57,3 +57,8 @@ vim.api.nvim_set_hl(0, 'WhichKeyTitle', { bg = 'NONE' })
 -- Blink.cmp specific borders
 vim.api.nvim_set_hl(0, 'BlinkCmpDoc', { bg = 'NONE' })
 vim.api.nvim_set_hl(0, 'BlinkCmpMenuBorder', { bg = 'NONE' })
+
+-- render-markdown fix
+vim.api.nvim_set_hl(0, 'RenderMarkdownCode', { bg = 'NONE' })
+vim.api.nvim_set_hl(0, 'RenderMarkdownCodeInline', { bg = 'NONE' })
+vim.api.nvim_set_hl(0, 'ColorColumn', { bg = 'NONE' })
