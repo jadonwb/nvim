@@ -1,4 +1,6 @@
-# Originally based off of kickstart.nvim
+# LazyNvim config for me
+
+I switched from kickstart to LazyVim because I started using Omarchy
 
 ## Introduction
 
@@ -7,6 +9,7 @@ My config for neovim, I think I am somewhere in the middle between minimal and f
 ## Installation
 
 ### Install Neovim
+
 I use *only* the latest
 ['stable'](https://github.com/neovim/neovim/releases/tag/stable) and latest
 ['nightly'](https://github.com/neovim/neovim/releases/tag/nightly) of Neovim.
@@ -15,6 +18,7 @@ If you are experiencing issues, please make sure you have the latest versions.
 ### Install External Dependencies
 
 External Requirements:
+
 - Basic utils: `git`, `make`, `unzip`, C Compiler (`gcc`)
 - [ripgrep](https://github.com/BurntSushi/ripgrep#installation),
   [fd-find](https://github.com/sharkdp/fd#installation)
@@ -24,10 +28,11 @@ External Requirements:
 - Emoji fonts (Ubuntu only, and only if you want emoji!) `sudo apt install fonts-noto-color-emoji`
 - Language Setup:
   - If you want to write Golang, you will need `go`
-  - If you want to write Rust, you will need `rustup` and probably `cargo`
-  - For Language Servers that aren't available via Mason, you will likely need `npm` and`python/pip`
+  - If you want to write Rust, you will need `rustup`
+  - For Language Servers that aren't available via Mason, you will likely need `npm` and `python/pip`
 
 ### Linux Install (The two distros I use, work and personal)
+
 <details><summary>Ubuntu Install Steps</summary>
 
 ```
@@ -35,6 +40,7 @@ sudo add-apt-repository ppa:neovim-ppa/unstable -y
 sudo apt update
 sudo apt install make gcc ripgrep unzip git xclip neovim
 ```
+
 </details>
 
 <details><summary>Arch Install Steps</summary>
@@ -42,5 +48,5 @@ sudo apt install make gcc ripgrep unzip git xclip neovim
 ```
 sudo pacman -S --noconfirm --needed gcc make git ripgrep fd unzip neovim
 ```
-</details>
 
+</details>

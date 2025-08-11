@@ -1,28 +1,28 @@
 return {
-  'nosduco/remote-sshfs.nvim',
-  dependencies = {
-    {
-      'nvim-telescope/telescope.nvim',
-      lazy = true,
-      dependencies = { 'nvim-lua/plenary.nvim' },
-    },
-  },
-  opts = {},
-  keys = {
-    {
-      '<leader>R',
-      function()
-        vim.ui.input({
-          prompt = 'RemoteSSHFSConnect: ',
-        }, function(input)
-          if input and input ~= '' then
-            vim.cmd('RemoteSSHFSConnect ' .. input)
-          end
-        end)
-      end,
-      desc = 'Remote SSH Connect',
-    },
-  },
+  -- 'nosduco/remote-sshfs.nvim',
+  -- dependencies = {
+  --   {
+  --     'nvim-telescope/telescope.nvim',
+  --     lazy = true,
+  --     dependencies = { 'nvim-lua/plenary.nvim' },
+  --   },
+  -- },
+  -- opts = {},
+  -- keys = {
+  --   {
+  --     '<leader>R',
+  --     function()
+  --       vim.ui.input({
+  --         prompt = 'RemoteSSHFSConnect: ',
+  --       }, function(input)
+  --         if input and input ~= '' then
+  --           vim.cmd('RemoteSSHFSConnect ' .. input)
+  --         end
+  --       end)
+  --     end,
+  --     desc = 'Remote SSH Connect',
+  --   },
+  -- },
 }
 
 -- return {

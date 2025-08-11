@@ -79,42 +79,42 @@ return {
       desc = 'DAP terminate',
     },
     {
-      '<leader>bd',
+      '<leader>dd',
       function()
         require('dap').disconnect { terminateDebuggee = false }
       end,
       desc = 'DAP disconnect',
     },
     {
-      '<leader>bt',
+      '<leader>dt',
       function()
         require('dap').disconnect { terminateDebuggee = true }
       end,
       desc = 'DAP disconnect and terminate',
     },
     {
-      '<leader>bb',
+      '<leader>db',
       function()
         require('dap').toggle_breakpoint()
       end,
       desc = 'DAP toggle breakpoint',
     },
     {
-      '<leader>bB',
+      '<leader>dB',
       function()
         require('dap').set_breakpoint(vim.fn.input 'Breakpoint condition: ')
       end,
       desc = 'DAP set breakpoint with condition',
     },
     {
-      '<leader>bp',
+      '<leader>dp',
       function()
         require('dap').set_breakpoint(nil, nil, vim.fn.input 'Log point message: ')
       end,
       desc = 'DAP set breakpoint with log point message',
     },
     {
-      '<leader>be',
+      '<leader>de',
       function()
         require('dapui').eval()
       end,

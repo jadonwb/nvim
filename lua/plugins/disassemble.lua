@@ -1,3 +1,0 @@
-return {
-  'yegappan/disassemble',
-}
