@@ -7,6 +7,10 @@ return {
     dashboard = {
       enabled = false,
     },
+    explorer = {
+      -- enabled = false,
+      replace_netrw = false,
+    },
   },
   keys = {
     {
