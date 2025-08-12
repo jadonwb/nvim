@@ -7,9 +7,6 @@ return {
     dashboard = {
       enabled = false,
     },
-    explorer = {
-      enabled = false,
-    },
   },
   keys = {
     {
