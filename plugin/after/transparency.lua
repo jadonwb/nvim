@@ -14,6 +14,9 @@ vim.api.nvim_set_hl(0, 'TelescopeBorder', { bg = 'none' })
 vim.api.nvim_set_hl(0, 'TelescopeNormal', { bg = 'none' })
 vim.api.nvim_set_hl(0, 'TelescopePromptBorder', { bg = 'none' })
 vim.api.nvim_set_hl(0, 'TelescopePromptTitle', { bg = 'none' })
+vim.api.nvim_set_hl(0, 'StatusLine', { bg = 'none' })
+vim.api.nvim_set_hl(0, 'TabLine', { bg = 'none' })
+vim.api.nvim_set_hl(0, 'TabLineFill', { bg = 'none' })
 
 -- transparent background for neotree
 vim.api.nvim_set_hl(0, 'NeoTreeNormal', { bg = 'none' })

@@ -5,6 +5,23 @@ return {
     opts = function(_, opts)
       local icons = LazyVim.config.icons
 
+      local theme = opts.options.theme
+
+      if type(theme) == 'string' then
+        theme = require('lualine.themes.' .. theme)
+      end
+
+      theme.normal.c.bg = 'NONE'
+      theme.insert.c.bg = 'NONE'
+      theme.visual.c.bg = 'NONE'
+      theme.replace.c.bg = 'NONE'
+      theme.command.c.bg = 'NONE'
+      theme.inactive.a.bg = 'NONE'
+      theme.inactive.b.bg = 'NONE'
+      theme.inactive.c.bg = 'NONE'
+
+      opts.options.theme = theme
+
       opts.sections.lualine_c = {
         LazyVim.lualine.root_dir(),
         {
