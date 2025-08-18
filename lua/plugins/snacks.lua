@@ -38,5 +38,17 @@ return {
       end,
       desc = 'Notification History',
     },
+    {
+      '<leader>/',
+      function()
+        Snacks.picker.lines()
+      end,
+      desc = 'Buffer Lines',
+    },
+    {
+      '<leader>.',
+      LazyVim.pick 'grep',
+      desc = 'Grep (Root Dir)',
+    },
   },
 }
