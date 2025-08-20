@@ -2,23 +2,12 @@ return {
   {
     'echasnovski/mini.ai',
     event = 'VeryLazy',
-    opts = function()
-      local ai = require 'mini.ai'
-      return {
-        custom_textobjects = {
-          v = ai.gen_spec.treesitter { a = '@assignment.outer', i = '@assignment.lhs' },
-          V = ai.gen_spec.treesitter { a = '@assignment.outer', i = '@assignment.rhs' },
-        },
-      }
-    end,
-    config = function(_, opts)
-      require('mini.ai').setup(opts)
-      LazyVim.on_load('which-key.nvim', function()
-        vim.schedule(function()
-          LazyVim.mini.ai_whichkey(opts)
-        end)
-      end)
-    end,
+    opts = {
+      custom_textobjects = {
+        v = require('mini.ai').gen_spec.treesitter { a = '@assignment.outer', i = '@assignment.lhs' },
+        V = require('mini.ai').gen_spec.treesitter { a = '@assignment.outer', i = '@assignment.rhs' },
+      },
+    },
   },
   {
     'saghen/blink.cmp',
