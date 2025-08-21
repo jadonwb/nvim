@@ -11,14 +11,22 @@ return {
         theme = require('lualine.themes.' .. theme)
       end
 
-      theme.normal.c.bg = 'NONE'
-      -- theme.insert.c.bg = 'NONE'
-      -- theme.visual.c.bg = 'NONE'
-      -- theme.replace.c.bg = 'NONE'
-      -- theme.command.c.bg = 'NONE'
-      theme.inactive.a.bg = 'NONE'
-      theme.inactive.b.bg = 'NONE'
-      theme.inactive.c.bg = 'NONE'
+      local function safe_set_bg(section, subsection)
+        if theme[section] and theme[section][subsection] then
+          theme[section][subsection].bg = 'NONE'
+        end
+      end
+
+      local sections = { 'normal', 'insert', 'visual', 'replace', 'command', 'inactive' }
+      for _, section in ipairs(sections) do
+        safe_set_bg(section, 'c')
+        safe_set_bg(section, 'x')
+      end
+
+      safe_set_bg('inactive', 'a')
+      safe_set_bg('inactive', 'b')
+      safe_set_bg('inactive', 'y')
+      safe_set_bg('inactive', 'z')
 
       opts.options.theme = theme
 
