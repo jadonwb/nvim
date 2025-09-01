@@ -26,7 +26,6 @@ return {
             },
             list = { keys = { ['d'] = 'bufdelete' } },
           },
-          focus = 'list',
         }
       end,
       desc = 'Buffers',
