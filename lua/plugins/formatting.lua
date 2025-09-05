@@ -10,7 +10,7 @@ return {
     },
     formatters = {
       shfmt = {
-        prepend_args = { '-i', '4', '-ci', '-sr', '-kp' },
+        prepend_args = { '-i', '2', '-ci', '-sr', '-kp' },
       },
     },
   },
