@@ -59,6 +59,13 @@ return {
     end,
   },
   {
+    'BennyOe/tokyo-night.yazi',
+    lazy = true,
+    build = function(spec)
+      require('yazi.plugin').build_flavor(spec)
+    end,
+  },
+  {
     -- https://github.com/yazi-rs/plugins
     'yazi-rs/plugins',
     name = 'yazi-rs-plugins',
