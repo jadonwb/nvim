@@ -4,6 +4,16 @@ return {
     opts = {
       servers = {
         bitbake_ls = {},
+        neocmake = { --here
+          init_options = {
+            lint = {
+              enable = false,
+            },
+            format = {
+              enable = true,
+            },
+          },
+        },
       },
     },
   },
