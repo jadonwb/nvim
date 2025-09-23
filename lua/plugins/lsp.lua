@@ -3,8 +3,15 @@ return {
     'neovim/nvim-lspconfig',
     opts = {
       servers = {
+        clangd = {
+          on_new_config = function(new_config, root_dir)
+            if vim.g.clangd_extra_args then
+              vim.list_extend(new_config.cmd, vim.g.clangd_extra_args)
+            end
+          end,
+        },
         bitbake_ls = {},
-        neocmake = { --here
+        neocmake = {
           init_options = {
             lint = {
               enable = false,

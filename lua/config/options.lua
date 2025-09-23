@@ -26,22 +26,24 @@ if vim.fn.isdirectory(undodir) == 0 then
 end
 vim.o.hidden = true
 vim.o.errorbells = false
+vim.o.exrc = true
+vim.o.secure = true
 
 -- Clipboard
 if vim.env.SSH_TTY then
-  vim.opt.clipboard:append("unnamedplus")
+  vim.opt.clipboard:append 'unnamedplus'
   local function paste()
-    return vim.split(vim.fn.getreg(""), "\n")
+    return vim.split(vim.fn.getreg '', '\n')
   end
   vim.g.clipboard = {
-    name = "OSC 52",
+    name = 'OSC 52',
     copy = {
-      ["+"] = require("vim.ui.clipboard.osc52").copy("+"),
-      ["*"] = require("vim.ui.clipboard.osc52").copy("*"),
+      ['+'] = require('vim.ui.clipboard.osc52').copy '+',
+      ['*'] = require('vim.ui.clipboard.osc52').copy '*',
     },
     paste = {
-      ["+"] = paste,
-      ["*"] = paste,
+      ['+'] = paste,
+      ['*'] = paste,
     },
   }
 end
