@@ -43,7 +43,7 @@ for ext, apps in pairs(file_associations) do
 end
 
 vim.api.nvim_create_autocmd({ 'FileType' }, {
-  pattern = { 'c, cpp, cmake' },
+  pattern = { 'c', 'cpp', 'cmake' },
   callback = function()
     vim.b.autoformat = false
   end,
