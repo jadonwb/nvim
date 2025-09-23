@@ -40,3 +40,6 @@ end, { desc = 'Save Buffer' })
 
 del('n', '<leader><tab><tab>')
 map('n', '<leader><tab><tab>', '<cmd>tabnew %<cr>', { desc = 'New Tab' })
+
+map('n', '<left>', 'i<Space><Esc>')
+map('n', '<right>', 'a<Space><Esc>')
