@@ -48,3 +48,13 @@ vim.api.nvim_create_autocmd({ 'FileType' }, {
     vim.b.autoformat = false
   end,
 })
+
+vim.api.nvim_create_autocmd('BufReadPre', {
+  callback = function()
+    local root = require('lazyvim.util.root').get()
+    local cfg = root and (root .. '/.nvim.lua') or nil
+    if cfg and vim.fn.filereadable(cfg) == 1 then
+      dofile(cfg)
+    end
+  end,
+})

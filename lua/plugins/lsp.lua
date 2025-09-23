@@ -3,13 +3,6 @@ return {
     'neovim/nvim-lspconfig',
     opts = {
       servers = {
-        clangd = {
-          on_new_config = function(new_config, root_dir)
-            if vim.g.clangd_extra_args then
-              vim.list_extend(new_config.cmd, vim.g.clangd_extra_args)
-            end
-          end,
-        },
         bitbake_ls = {},
         neocmake = {
           init_options = {
@@ -48,6 +41,16 @@ return {
       keys[#keys + 1] = { 'grD', Snacks.picker.lsp_declarations, desc = 'Goto Declaration' }
 
       keys[#keys + 1] = { '<leader>ca', require('actions-preview').code_actions, desc = 'Code Action' }
+    end,
+  },
+  {
+    'neovim/nvim-lspconfig',
+    opts = function(_, opts)
+      opts.servers = opts.servers or {}
+      opts.servers.clangd = opts.servers.clangd or {}
+      if vim.g.clangd_extra_args then
+        opts.servers.clangd.cmd = vim.list_extend(vim.deepcopy(opts.servers.clangd.cmd or { 'clangd' }), vim.g.clangd_extra_args)
+      end
     end,
   },
 }
