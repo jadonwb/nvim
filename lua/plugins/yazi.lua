@@ -66,6 +66,20 @@ return {
     end,
   },
   {
+    'Mintass/rose-pine-dawn.yazi',
+    lazy = true,
+    build = function(spec)
+      require('yazi.plugin').build_flavor(spec)
+    end,
+  },
+  {
+    'Mintass/rose-pine.yazi',
+    lazy = true,
+    build = function(spec)
+      require('yazi.plugin').build_flavor(spec)
+    end,
+  },
+  {
     -- https://github.com/yazi-rs/plugins
     'yazi-rs/plugins',
     name = 'yazi-rs-plugins',
