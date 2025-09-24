@@ -23,23 +23,12 @@ map({ 'n', 'x', 's' }, 'x', '"_x', { noremap = true, silent = true })
 map({ 'n', 'x', 's' }, 'X', '"_X', { noremap = true, silent = true })
 map('x', 'p', '"_dP', { noremap = true, silent = true })
 
-map('n', '<leader>qw', function()
-  local bufname = vim.api.nvim_buf_get_name(0)
-  if bufname == '' then
-    vim.ui.input({
-      prompt = 'Enter file name: ',
-    }, function(name)
-      if name and name ~= '' then
-        vim.cmd('write ' .. vim.fn.fnameescape(name))
-      end
-    end)
-    return
-  end
-  vim.cmd.write()
-end, { desc = 'Save Buffer' })
-
 del('n', '<leader><tab><tab>')
 map('n', '<leader><tab><tab>', '<cmd>tabnew %<cr>', { desc = 'New Tab' })
 
 map('n', '<left>', 'i<Space><Esc>')
 map('n', '<right>', 'a<Space><Esc>')
+
+del('n', '<leader>wd')
+map('n', '<leader>Wd', '<C-W>c', { desc = 'Delete Window', remap = true })
+del('n', '<leader>wm')
