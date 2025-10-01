@@ -77,6 +77,10 @@ modify_hl('WhichKeyTitle', { bg = 'NONE' })
 -- Blink.cmp specific borders
 modify_hl('BlinkCmpDoc', { bg = 'NONE' })
 modify_hl('BlinkCmpMenuBorder', { bg = 'NONE' })
+modify_hl('BlinkCmpMenu', { bg = 'NONE' })
+modify_hl('BlinkCmpDocBorder', { bg = 'NONE' })
+modify_hl('BlinkCmpSignatureHelp', { bg = 'NONE' })
+modify_hl('BlinkCmpSignatureHelpBorder', { bg = 'NONE' })
 
 -- Snacks
 modify_hl('SnacksPickerInputBorder', { bg = 'NONE' })
