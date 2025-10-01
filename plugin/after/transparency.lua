@@ -52,12 +52,24 @@ modify_hl('NotifyWARNBorder', { bg = 'none' })
 modify_hl('NotifyTRACEBorder', { bg = 'none' })
 modify_hl('NotifyDEBUGBorder', { bg = 'none' })
 
+modify_hl('SnacksNotifierInfo', { bg = 'none' })
+modify_hl('SnacksNotifierWarn', { bg = 'none' })
+modify_hl('SnacksNotifierDebug', { bg = 'none' })
+modify_hl('SnacksNotifierError', { bg = 'none' })
+modify_hl('SnacksNotifierTrace', { bg = 'none' })
+modify_hl('SnacksNotifierBorderInfo', { bg = 'none' })
+modify_hl('SnacksNotifierBorderWarn', { bg = 'none' })
+modify_hl('SnacksNotifierBorderDebug', { bg = 'none' })
+modify_hl('SnacksNotifierBorderError', { bg = 'none' })
+modify_hl('SnacksNotifierBorderTrace', { bg = 'none' })
+
 -- General border highlight groups
 modify_hl('FloatBorder', { bg = 'NONE' })
 modify_hl('FloatTitle', { bg = 'NONE' })
 modify_hl('NormalFloat', { bg = 'NONE' })
 
 -- Which-key specific borders
+modify_hl('WhichKeyNormal', { bg = 'NONE' })
 modify_hl('WhichKeyBorder', { bg = 'NONE' })
 modify_hl('WhichKeyFloat', { bg = 'NONE' })
 modify_hl('WhichKeyTitle', { bg = 'NONE' })
