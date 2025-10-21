@@ -28,6 +28,18 @@ return {
         end,
         desc = 'Write Buffer',
       },
+      {
+        mode = { 'n', 'v', 's', 'x' },
+        '<leader>d',
+        [["_d]],
+        desc = 'Delete into the void',
+      },
+      {
+        mode = { 'x' },
+        '<leader>p',
+        [["_dP]],
+        desc = 'Put without overwriting yank',
+      },
     },
   },
 }

@@ -6,8 +6,12 @@ del('n', 'gra')
 del('n', 'gri')
 del('n', 'grn')
 del('n', 'grr')
--- del('n', 'grt')
 del('n', 'gO')
+
+-- Delete profiler keymaps
+del('n', '<leader>dpp')
+del('n', '<leader>dph')
+del('n', '<leader>dps')
 
 map('n', 'grq', vim.diagnostic.open_float, { desc = 'Hover Diagnostic' })
 
@@ -21,7 +25,6 @@ map('n', '<C-u>', '<C-u>zz')
 
 map({ 'n', 'x', 's' }, 'x', '"_x', { noremap = true, silent = true })
 map({ 'n', 'x', 's' }, 'X', '"_X', { noremap = true, silent = true })
-map('x', 'p', '"_dP', { noremap = true, silent = true })
 
 del('n', '<leader><tab><tab>')
 map('n', '<leader><tab><tab>', '<cmd>tabnew %<cr>', { desc = 'New Tab' })
