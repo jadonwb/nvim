@@ -4,7 +4,7 @@ return {
     ui = { border = 'rounded' },
     ensure_installed = {
       'clang-format',
-      'language-server-bitbake',
+      -- 'language-server-bitbake',
       'oelint-adv',
     },
   },

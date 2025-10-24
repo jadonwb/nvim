@@ -3,7 +3,7 @@ return {
   opts = {
     linters_by_ft = {
       sh = { 'shellcheck' },
-      bitbake = { 'oelint-adv' },
+      -- bitbake = { 'oelint-adv' },
       cmake = {},
     },
   },
