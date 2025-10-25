@@ -26,22 +26,61 @@ return {
       -- Preview for go to methods
       { 'rmagatti/goto-preview', opts = { default_mappings = true, references = { provider = 'snacks' } }, event = 'VeryLazy' },
     },
-    opts = function()
-      local keys = require('lazyvim.plugins.lsp.keymaps').get()
-      keys[#keys + 1] = { 'gd', false }
-      keys[#keys + 1] = { 'gr', false }
-      keys[#keys + 1] = { 'gI', false }
-      keys[#keys + 1] = { 'gy', false }
-      keys[#keys + 1] = { 'gD', false }
-
-      keys[#keys + 1] = { 'grd', Snacks.picker.lsp_definitions, desc = 'Goto Definition' }
-      keys[#keys + 1] = { 'grr', Snacks.picker.lsp_references, desc = 'Goto References' }
-      keys[#keys + 1] = { 'gri', Snacks.picker.lsp_implementations, desc = 'Goto Implementation' }
-      keys[#keys + 1] = { 'grt', Snacks.picker.lsp_type_definitions, desc = 'Goto Type Definition' }
-      keys[#keys + 1] = { 'grD', Snacks.picker.lsp_declarations, desc = 'Goto Declaration' }
-
-      keys[#keys + 1] = { '<leader>ca', require('actions-preview').code_actions, desc = 'Code Action' }
-    end,
+    opts = {
+      servers = {
+        ['*'] = {
+          keys = {
+            { 'gd', false },
+            { 'gr', false },
+            { 'gI', false },
+            { 'gy', false },
+            { 'gD', false },
+            {
+              'grd',
+              function()
+                require('snacks').picker.lsp_definitions()
+              end,
+              desc = 'Goto Definition',
+            },
+            {
+              'grr',
+              function()
+                require('snacks').picker.lsp_references()
+              end,
+              desc = 'Goto References',
+            },
+            {
+              'gri',
+              function()
+                require('snacks').picker.lsp_implementations()
+              end,
+              desc = 'Goto Implementation',
+            },
+            {
+              'grt',
+              function()
+                require('snacks').picker.lsp_type_definitions()
+              end,
+              desc = 'Goto Type Definition',
+            },
+            {
+              'grD',
+              function()
+                require('snacks').picker.lsp_declarations()
+              end,
+              desc = 'Goto Declaration',
+            },
+            {
+              '<leader>ca',
+              function()
+                require('actions-preview').code_actions()
+              end,
+              desc = 'Code Action',
+            },
+          },
+        },
+      },
+    },
   },
   {
     'neovim/nvim-lspconfig',
