@@ -34,4 +34,5 @@ map('n', '<right>', 'a<Space><Esc>')
 
 del('n', '<leader>wd')
 map('n', '<leader>Wd', '<C-W>c', { desc = 'Delete Window', remap = true })
+map('n', '<leader>qw', '<C-W>c', { desc = 'Delete Window', remap = true })
 del('n', '<leader>wm')
