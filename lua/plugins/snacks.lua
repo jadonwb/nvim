@@ -81,9 +81,7 @@ return {
       if copilot_exists then
         vim.schedule(function()
           local ok, _ = pcall(function()
-            vim.cmd 'messages clear'
             require('copilot.command').disable()
-            vim.cmd 'messages clear'
           end)
         end)
         Snacks.toggle({
@@ -102,4 +100,25 @@ return {
       end
     end,
   },
+  {
+    "folke/noice.nvim",
+    opts = {
+      routes = {
+        {
+          filter = {
+            event = "notify",
+            find = "copilot is disabled",
+          },
+          opts = { skip = true },
+        },
+        {
+          filter = {
+            event = "msg_show",
+            find = "copilot is disabled",
+          },
+          opts = { skip = true },
+        },
+      },
+    },
+  }
 }
