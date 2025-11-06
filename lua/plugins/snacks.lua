@@ -50,6 +50,26 @@ return {
         LazyVim.pick 'grep',
         desc = 'Grep (Root Dir)',
       },
+      {
+        '<leader><space>',
+        LazyVim.pick('buffers'),
+        desc = 'Buffers'
+      },
+      {
+        '<leader>sb',
+        function()
+          Snacks.picker.grep_buffers()
+        end,
+        desc = 'Grep Open Buffers',
+      },
+      {
+        '<leader>sB',
+        false
+      },
+      {
+        '<leader>,',
+        false
+      }
     },
   },
   {

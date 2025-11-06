@@ -3,14 +3,6 @@ return {
   opts = {
     spec = {
       {
-        '<leader>W',
-        group = 'windows',
-        proxy = '<c-w>',
-        expand = function()
-          return require('which-key.extras').expand.win()
-        end,
-      },
-      {
         '<leader>w',
         function()
           local bufname = vim.api.nvim_buf_get_name(0)
@@ -32,13 +24,17 @@ return {
         mode = { 'n', 'v', 's', 'x' },
         '<leader>d',
         [["_d]],
-        desc = 'Delete into the void',
+        hidden = true,
       },
       {
         mode = { 'x' },
         '<leader>p',
         [["_dP]],
-        desc = 'Put without overwriting yank',
+        hidden = true,
+      },
+      {
+        '<leader>K',
+        hidden = true,
       },
     },
   },

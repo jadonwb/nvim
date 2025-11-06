@@ -13,6 +13,11 @@ del('n', '<leader>dpp')
 del('n', '<leader>dph')
 del('n', '<leader>dps')
 
+-- Delete some other things
+del('n', '<leader>-')
+del('n', '<leader>|')
+del('n', '<leader>`')
+
 map('n', 'grq', vim.diagnostic.open_float, { desc = 'Hover Diagnostic' })
 
 map('n', '<M-o>', 'o<Esc>', { desc = 'New Line Down' })
@@ -29,10 +34,7 @@ map({ 'n', 'x', 's' }, 'X', '"_X', { noremap = true, silent = true })
 del('n', '<leader><tab><tab>')
 map('n', '<leader><tab><tab>', '<cmd>tabnew %<cr>', { desc = 'New Tab' })
 
-map('n', '<left>', 'i<Space><Esc>')
-map('n', '<right>', 'a<Space><Esc>')
-
 del('n', '<leader>wd')
-map('n', '<leader>Wd', '<C-W>c', { desc = 'Delete Window', remap = true })
+map('n', '<c-w>d', '<C-W>c', { desc = 'Delete Window', remap = true })
 map('n', '<leader>qw', '<C-W>c', { desc = 'Delete Window', remap = true })
 del('n', '<leader>wm')

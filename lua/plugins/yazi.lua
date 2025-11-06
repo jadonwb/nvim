@@ -15,7 +15,7 @@ return {
       {
         '<leader>E',
         '<cmd>Yazi toggle<cr>',
-        desc = 'Resume the last yazi session',
+        desc = 'which_key_ignore',
       },
     },
     ---@type YaziConfig | {}
