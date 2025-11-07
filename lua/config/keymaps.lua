@@ -38,3 +38,6 @@ del('n', '<leader>wd')
 map('n', '<c-w>d', '<C-W>c', { desc = 'Delete Window', remap = true })
 map('n', '<leader>qw', '<C-W>c', { desc = 'Delete Window', remap = true })
 del('n', '<leader>wm')
+
+map('n', '<left>', 'i<Space><Esc>')
+map('n', '<right>', 'a<Space><Esc>')
