@@ -15,7 +15,7 @@ return {
     },
     keys = {
       {
-        '<leader>,',
+        '<leader><space>',
         function()
           Snacks.picker.buffers {
             win = {
@@ -51,11 +51,6 @@ return {
         desc = 'Grep (Root Dir)',
       },
       {
-        '<leader><space>',
-        LazyVim.pick('buffers'),
-        desc = 'Buffers'
-      },
-      {
         '<leader>sb',
         function()
           Snacks.picker.grep_buffers()
@@ -64,12 +59,12 @@ return {
       },
       {
         '<leader>sB',
-        false
+        false,
       },
       {
         '<leader>,',
-        false
-      }
+        false,
+      },
     },
   },
   {
@@ -101,24 +96,24 @@ return {
     end,
   },
   {
-    "folke/noice.nvim",
+    'folke/noice.nvim',
     opts = {
       routes = {
         {
           filter = {
-            event = "notify",
-            find = "copilot is disabled",
+            event = 'notify',
+            find = 'copilot is disabled',
           },
           opts = { skip = true },
         },
         {
           filter = {
-            event = "msg_show",
-            find = "copilot is disabled",
+            event = 'msg_show',
+            find = 'copilot is disabled',
           },
           opts = { skip = true },
         },
       },
     },
-  }
+  },
 }
