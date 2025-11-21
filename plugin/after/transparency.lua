@@ -87,6 +87,10 @@ modify_hl('SnacksPickerInputBorder', { bg = 'NONE' })
 modify_hl('SnacksPickerInputTitle', { bg = 'NONE' })
 modify_hl('SnacksPickerBoxTitle', { bg = 'NONE' })
 
+-- Render markdown
+modify_hl('RenderMarkdownCode', { bg = 'NONE' })
+modify_hl('ColorColumn', { bg = 'NONE' })
+
 -- Not Transparency but fun
 local function resolve_hl(name)
   local hl = vim.api.nvim_get_hl(0, { name = name })
