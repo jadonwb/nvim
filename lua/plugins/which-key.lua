@@ -36,6 +36,10 @@ return {
         '<leader>K',
         hidden = true,
       },
+      {
+        '<leader><tab>',
+        hidden = true,
+      },
     },
   },
 }

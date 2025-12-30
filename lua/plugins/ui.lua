@@ -56,14 +56,14 @@ return {
       },
     },
   },
-  {
-    'MeanderingProgrammer/render-markdown.nvim',
-    lazy = false,
-    opts = {
-      code = {
-        -- language_info = false,
-        language_name = false,
-      },
-    },
-  },
+  -- {
+  --   'MeanderingProgrammer/render-markdown.nvim',
+  --   lazy = false,
+  --   opts = {
+  --     code = {
+  --       -- language_info = false,
+  --       language_name = false,
+  --     },
+  --   },
+  -- },
 }

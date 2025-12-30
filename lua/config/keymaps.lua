@@ -31,9 +31,6 @@ map('n', '<C-u>', '<C-u>zz')
 map({ 'n', 'x', 's' }, 'x', '"_x', { noremap = true, silent = true })
 map({ 'n', 'x', 's' }, 'X', '"_X', { noremap = true, silent = true })
 
-del('n', '<leader><tab><tab>')
-map('n', '<leader><tab><tab>', '<cmd>tabnew %<cr>', { desc = 'New Tab' })
-
 del('n', '<leader>wd')
 map('n', '<c-w>d', '<C-W>c', { desc = 'Delete Window', remap = true })
 map('n', '<leader>qw', '<C-W>c', { desc = 'Delete Window', remap = true })
