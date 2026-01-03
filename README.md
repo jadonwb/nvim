@@ -30,12 +30,13 @@ External Requirements:
   - If you want to write Golang, you will need `go`
   - If you want to write Rust, you will need `rustup`
   - For Language Servers that aren't available via Mason, you will likely need `npm` and `python/pip`
+  - etc.
 
 ### Linux Install (The two distros I use, work and personal)
 
 <details><summary>Ubuntu Install Steps</summary>
 
-```
+```sh
 sudo add-apt-repository ppa:neovim-ppa/unstable -y
 sudo apt update
 sudo apt install make gcc ripgrep unzip git xclip neovim
@@ -45,7 +46,7 @@ sudo apt install make gcc ripgrep unzip git xclip neovim
 
 <details><summary>Arch Install Steps</summary>
 
-```
+```sh
 sudo pacman -S --noconfirm --needed gcc make git ripgrep fd unzip neovim
 ```
 
