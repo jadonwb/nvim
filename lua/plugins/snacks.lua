@@ -67,34 +67,34 @@ return {
       },
     },
   },
-  {
-    'folke/snacks.nvim',
-    opts = function(_, opts)
-      local Snacks = require 'snacks'
-      local copilot_exists = pcall(require, 'copilot')
-
-      if copilot_exists then
-        vim.schedule(function()
-          local ok, _ = pcall(function()
-            require('copilot.command').disable()
-          end)
-        end)
-        Snacks.toggle({
-          name = 'Copilot Completion',
-          get = function()
-            return not require('copilot.client').is_disabled()
-          end,
-          set = function(state)
-            if state then
-              require('copilot.command').enable()
-            else
-              require('copilot.command').disable()
-            end
-          end,
-        }):map '<M-l>'
-      end
-    end,
-  },
+  -- {
+  --   'folke/snacks.nvim',
+  --   opts = function(_, opts)
+  --     local Snacks = require 'snacks'
+  --     local copilot_exists = pcall(require, 'copilot')
+  --
+  --     if copilot_exists then
+  --       vim.schedule(function()
+  --         local ok, _ = pcall(function()
+  --           require('copilot.command').disable()
+  --         end)
+  --       end)
+  --       Snacks.toggle({
+  --         name = 'Copilot Completion',
+  --         get = function()
+  --           return not require('copilot.client').is_disabled()
+  --         end,
+  --         set = function(state)
+  --           if state then
+  --             require('copilot.command').enable()
+  --           else
+  --             require('copilot.command').disable()
+  --           end
+  --         end,
+  --       }):map '<M-l>'
+  --     end
+  --   end,
+  -- },
   {
     'folke/noice.nvim',
     opts = {
