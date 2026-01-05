@@ -49,6 +49,13 @@ vim.api.nvim_create_autocmd({ 'FileType' }, {
   end,
 })
 
+vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
+  pattern = { '*.env', '*.env.*' },
+  callback = function()
+    vim.b.autoformat = false
+  end,
+})
+
 vim.api.nvim_create_autocmd('BufReadPre', {
   callback = function()
     local root = require('lazyvim.util.root').get()
@@ -59,5 +66,4 @@ vim.api.nvim_create_autocmd('BufReadPre', {
   end,
 })
 
-vim.api.nvim_create_autocmd("BufWritePost",
-  { pattern = vim.fn.expand("$HOME/.config/kitty/kitty.conf"), command = "silent !kill -SIGUSR1 $(pgrep kitty)" })
+vim.api.nvim_create_autocmd('BufWritePost', { pattern = vim.fn.expand '$HOME/.config/kitty/kitty.conf', command = 'silent !kill -SIGUSR1 $(pgrep kitty)' })
