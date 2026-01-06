@@ -50,36 +50,6 @@ return {
     end,
   },
   {
-    'yazi-rs/flavors',
-    name = 'yazi-flavor-catppuccin',
-    lazy = true,
-    build = function(spec)
-      require('yazi.plugin').build_flavor(spec, { sub_dir = 'catppuccin-mocha.yazi' })
-      require('yazi.plugin').build_flavor(spec, { sub_dir = 'catppuccin-latte.yazi' })
-    end,
-  },
-  {
-    'BennyOe/tokyo-night.yazi',
-    lazy = true,
-    build = function(spec)
-      require('yazi.plugin').build_flavor(spec)
-    end,
-  },
-  {
-    'Mintass/rose-pine-dawn.yazi',
-    lazy = true,
-    build = function(spec)
-      require('yazi.plugin').build_flavor(spec)
-    end,
-  },
-  {
-    'Mintass/rose-pine.yazi',
-    lazy = true,
-    build = function(spec)
-      require('yazi.plugin').build_flavor(spec)
-    end,
-  },
-  {
     -- https://github.com/yazi-rs/plugins
     'yazi-rs/plugins',
     name = 'yazi-rs-plugins',
