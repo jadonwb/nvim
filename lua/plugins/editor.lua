@@ -11,7 +11,6 @@ return {
       spec = {
         { 'gp', group = 'LSP Preview' },
         { 'gr', group = 'LSP Jumps' },
-        { 'gs', group = 'Surround' },
       },
     },
   },
