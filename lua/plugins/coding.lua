@@ -10,15 +10,15 @@ return {
     },
   },
   {
-    "nvim-mini/mini.surround",
+    'nvim-mini/mini.surround',
     opts = {
       mappings = {
-        add = ';;',        -- Add surrounding in Normal and Visual modes
-        delete = ';d',     -- Delete surrounding
-        find = ';f',       -- Find surrounding (to the right)
-        find_left = ';F',  -- Find surrounding (to the left)
-        highlight = ';h',  -- Highlight surrounding
-        replace = ';r',    -- Replace surrounding
+        add = ';;', -- Add surrounding in Normal and Visual modes
+        delete = ';d', -- Delete surrounding
+        find = ';f', -- Find surrounding (to the right)
+        find_left = ';F', -- Find surrounding (to the left)
+        highlight = ';h', -- Highlight surrounding
+        replace = ';r', -- Replace surrounding
 
         suffix_last = 'l', -- Suffix to search with "prev" method
         suffix_next = 'n', -- Suffix to search with "next" method
@@ -26,11 +26,11 @@ return {
     },
   },
   {
-    "folke/flash.nvim",
+    'folke/flash.nvim',
     opts = {
       modes = {
         char = {
-          keys = { "f", "F", "t", "T" },
+          keys = { 'f', 'F', 't', 'T' },
         },
       },
     },
@@ -42,14 +42,6 @@ return {
     },
     opts = {
       completion = {
-        list = {
-          selection = {
-            preselect = function()
-              return not require('blink.cmp').snippet_active { direction = 1 }
-            end,
-            auto_insert = false,
-          },
-        },
         menu = {
           draw = {
             components = {
@@ -72,12 +64,6 @@ return {
         },
       },
       keymap = {
-        preset = 'super-tab',
-        -- ['<Tab>'] = {
-        --   require('blink.cmp.keymap.presets').get('super-tab')['<Tab>'][1],
-        --   require('lazyvim.util.cmp').map { 'snippet_forward', 'ai_accept' },
-        --   'fallback',
-        -- },
         ['<C-space>'] = { 'show', 'hide' },
         ['<C-k>'] = { 'show_documentation', 'hide_documentation' },
       },
