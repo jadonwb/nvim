@@ -47,13 +47,27 @@ return {
     end,
   },
   {
-    "serhez/bento.nvim",
+    'nanozuki/tabby.nvim',
+    opts = {
+      preset = 'tab_only',
+      option = {
+        tab_name = {
+          name_fallback = function()
+            return ''
+          end,
+        },
+        lualine_theme = 'auto',
+      },
+    },
+  },
+  {
+    'serhez/bento.nvim',
     opts = {
       ui = {
         floating = {
-          minimal_menu = "dashed",
-        }
-      }
-    }
-  }
+          -- minimal_menu = 'dashed',
+        },
+      },
+    },
+  },
 }

@@ -38,3 +38,11 @@ del('n', '<leader>wm')
 
 map('n', '<left>', 'i<Space><Esc>')
 map('n', '<right>', 'a<Space><Esc>')
+
+map('n', '<leader><tab>r', function()
+  vim.ui.input({ prompt = 'Rename tab: ' }, function(input)
+    if input then
+      vim.cmd('Tabby rename_tab ' .. input)
+    end
+  end)
+end, { desc = 'Rename Tab' })
