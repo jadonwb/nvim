@@ -3,7 +3,11 @@ return {
     'neovim/nvim-lspconfig',
     opts = {
       servers = {
-        bitbake_ls = {},
+        bitbake_ls = {
+          cmd = { 'language-server-bitbake', '--stdio' },
+          filetypes = { 'bitbake' },
+          root_markers = { '.git' },
+        },
         neocmake = {
           init_options = {
             lint = {
