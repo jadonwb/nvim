@@ -1,6 +1,6 @@
 local function modify_hl(name, changes)
-    local existing = vim.api.nvim_get_hl(0, { name = name })
-    vim.api.nvim_set_hl(0, name, vim.tbl_extend('force', existing, changes))
+  local existing = vim.api.nvim_get_hl(0, { name = name })
+  vim.api.nvim_set_hl(0, name, vim.tbl_extend('force', existing, changes))
 end
 
 -- transparent background
@@ -86,7 +86,7 @@ modify_hl('BlinkCmpSignatureHelpBorder', { bg = 'NONE' })
 modify_hl('SnacksPickerInputBorder', { bg = 'NONE' })
 modify_hl('SnacksPickerInputTitle', { bg = 'NONE' })
 modify_hl('SnacksPickerBoxTitle', { bg = 'NONE' })
--- modify_hl('SnacksBackdrop', { bg = 'NONE' })
+modify_hl('SnacksBackdrop', { bg = 'NONE' })
 modify_hl('SnacksNormal', { bg = 'NONE' })
 
 -- Render markdown
@@ -105,11 +105,11 @@ modify_hl('TroubleNormal', { bg = 'NONE' })
 
 -- Not Transparency but fun
 local function resolve_hl(name)
-    local hl = vim.api.nvim_get_hl(0, { name = name })
-    if hl.link then
-        return resolve_hl(hl.link)
-    end
-    return hl
+  local hl = vim.api.nvim_get_hl(0, { name = name })
+  if hl.link then
+    return resolve_hl(hl.link)
+  end
+  return hl
 end
 local fg_color = resolve_hl('@constant').fg
 modify_hl('CursorLineNr', { fg = fg_color, bold = true })
