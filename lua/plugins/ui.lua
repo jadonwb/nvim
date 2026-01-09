@@ -46,26 +46,6 @@ return {
       }
     end,
   },
-  -- {
-  --   'akinsho/bufferline.nvim',
-  --   event = 'VeryLazy',
-  --   opts = {
-  --     options = {
-  --       show_buffer_close_icons = false,
-  --       show_close_icon = false,
-  --     },
-  --   },
-  -- },
-  -- {
-  --   'MeanderingProgrammer/render-markdown.nvim',
-  --   lazy = false,
-  --   opts = {
-  --     code = {
-  --       -- language_info = false,
-  --       language_name = false,
-  --     },
-  --   },
-  -- },
   {
     "serhez/bento.nvim",
     opts = {
