@@ -24,6 +24,23 @@ return {
       {
         '<leader><space>',
         function()
+          Snacks.picker.buffers {
+            win = {
+              input = {
+                keys = {
+                  ['<bs>'] = 'bufdelete',
+                  ['<a-bs>'] = { 'bufdelete', mode = { 'n', 'i' } },
+                },
+              },
+              list = { keys = { ['<bs>'] = 'bufdelete' } },
+            },
+          }
+        end,
+        desc = 'Buffers',
+      },
+      {
+        '<leader>/',
+        function()
           Snacks.picker.lines()
         end,
         desc = 'Buffer Lines',
