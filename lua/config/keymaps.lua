@@ -18,10 +18,14 @@ del('n', '<leader>-')
 del('n', '<leader>|')
 del('n', '<leader>`')
 
+-- Delete ALT conflicts
+del('n', '<A-j>')
+del('n', '<A-k>')
+
 map('n', 'grq', vim.diagnostic.open_float, { desc = 'Hover Diagnostic' })
 
-map('n', '<M-o>', 'o<Esc>', { desc = 'New Line Down' })
-map('n', '<M-O>', 'O<Esc>', { desc = 'New Line Up' })
+map('n', '<down>', 'o<Esc>', { desc = 'New Line Down' })
+map('n', '<up>', 'O<Esc>', { desc = 'New Line Up' })
 map('n', '<C-r>', 'r', { silent = true }) -- replace a single character
 map('n', 'r', '<C-r>', { silent = true }) -- redo
 map('n', 'J', 'mzJ`z', { desc = 'Join lines and keep cursor position' })
@@ -35,6 +39,11 @@ del('n', '<leader>wd')
 map('n', '<c-w>d', '<C-W>c', { desc = 'Delete Window', remap = true })
 map('n', '<leader>qw', '<C-W>c', { desc = 'Delete Window', remap = true })
 del('n', '<leader>wm')
+
+-- map('n', '<C-h>', '<C-W><', { noremap = true, desc = 'Move window left', silent = true })
+-- map('n', '<C-j>', '<C-W>-', { noremap = true, desc = 'Decrease window height', silent = true })
+-- map('n', '<C-k>', '<C-W>+', { noremap = true, desc = 'Increase window height', silent = true })
+-- map('n', '<C-l>', '<C-W>>', { noremap = true, desc = 'Move window right', silent = true })
 
 map('n', '<left>', 'i<Space><Esc>')
 map('n', '<right>', 'a<Space><Esc>')
