@@ -40,6 +40,9 @@ map('n', '<c-w>d', '<C-W>c', { desc = 'Delete Window', remap = true })
 map('n', '<leader>qw', '<C-W>c', { desc = 'Delete Window', remap = true })
 del('n', '<leader>wm')
 
+map('n', '<leader>|', '<C-W>v', { desc = 'Split Vertical', remap = true })
+map('n', '<leader>\\', '<C-W>s', { desc = 'Split Horizontal', remap = true })
+
 -- map('n', '<C-h>', '<C-W><', { noremap = true, desc = 'Move window left', silent = true })
 -- map('n', '<C-j>', '<C-W>-', { noremap = true, desc = 'Decrease window height', silent = true })
 -- map('n', '<C-k>', '<C-W>+', { noremap = true, desc = 'Increase window height', silent = true })
