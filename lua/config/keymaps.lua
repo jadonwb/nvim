@@ -22,6 +22,16 @@ del('n', '<leader>`')
 del('n', '<A-j>')
 del('n', '<A-k>')
 
+-- Delete buffer movement
+del('n', '<S-h>')
+del('n', '<S-l>')
+
+-- Delete window movement
+del('n', '<C-Left>')
+del('n', '<C-Down>')
+del('n', '<C-Up>')
+del('n', '<C-Right>')
+
 map('n', 'grq', vim.diagnostic.open_float, { desc = 'Hover Diagnostic' })
 
 map('n', '<down>', 'o<Esc>', { desc = 'New Line Down' })
@@ -43,10 +53,10 @@ del('n', '<leader>wm')
 map('n', '<leader>|', '<C-W>v', { desc = 'Split Vertical', remap = true })
 map('n', '<leader>\\', '<C-W>s', { desc = 'Split Horizontal', remap = true })
 
--- map('n', '<C-h>', '<C-W><', { noremap = true, desc = 'Move window left', silent = true })
--- map('n', '<C-j>', '<C-W>-', { noremap = true, desc = 'Decrease window height', silent = true })
--- map('n', '<C-k>', '<C-W>+', { noremap = true, desc = 'Increase window height', silent = true })
--- map('n', '<C-l>', '<C-W>>', { noremap = true, desc = 'Move window right', silent = true })
+map('n', '<A-h>', '<cmd>vertical resize -2<cr>', { desc = 'Decrease Window Width' })
+map('n', '<A-j>', '<cmd>resize -2<cr>', { desc = 'Decrease Window Height' })
+map('n', '<A-k>', '<cmd>resize +2<cr>', { desc = 'Increase Window Height' })
+map('n', '<A-l>', '<cmd>vertical resize +2<cr>', { desc = 'Increase Window Width' })
 
 map('n', '<left>', 'i<Space><Esc>')
 map('n', '<right>', 'a<Space><Esc>')
