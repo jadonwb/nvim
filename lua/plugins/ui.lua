@@ -46,18 +46,18 @@ return {
       }
     end,
   },
-  {
-    'nanozuki/tabby.nvim',
-    opts = {
-      preset = 'tab_only',
-      option = {
-        tab_name = {
-          name_fallback = function()
-            return ''
-          end,
-        },
-        lualine_theme = 'auto',
-      },
-    },
-  },
+  -- {
+  --   'nanozuki/tabby.nvim',
+  --   opts = {
+  --     preset = 'tab_only',
+  --     option = {
+  --       tab_name = {
+  --         name_fallback = function()
+  --           return ''
+  --         end,
+  --       },
+  --       lualine_theme = 'auto',
+  --     },
+  --   },
+  -- },
 }

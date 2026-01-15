@@ -1,7 +1,7 @@
 vim.g.ai_cmp = false
 -- vim.g.lazyvim_rust_diagnostics = 'bacon-ls'
 -- vim.g.lazyvim_blink_main = true
-vim.o.showtabline = 2
+vim.o.showtabline = 0
 vim.o.cursorlineopt = 'number'
 vim.o.swapfile = false
 vim.o.shiftwidth = 4
