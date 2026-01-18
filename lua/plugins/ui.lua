@@ -46,6 +46,11 @@ return {
       }
     end,
   },
+  {
+    "nvim-zh/colorful-winsep.nvim",
+    config = true,
+    event = { "WinLeave" },
+  },
   -- {
   --   'nanozuki/tabby.nvim',
   --   opts = {

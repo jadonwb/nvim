@@ -61,6 +61,8 @@ map('n', '<A-l>', '<cmd>vertical resize +2<cr>', { desc = 'Increase Window Width
 map('n', '<left>', 'i<Space><Esc>')
 map('n', '<right>', 'a<Space><Esc>')
 
+map('n', '<bs>', '<cmd>e #<cr>', { silent = true })
+
 map('n', '<leader><tab>r', function()
   vim.ui.input({ prompt = 'Rename tab: ' }, function(input)
     if input then

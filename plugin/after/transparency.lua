@@ -89,10 +89,6 @@ modify_hl('SnacksPickerBoxTitle', { bg = 'NONE' })
 modify_hl('SnacksBackdrop', { bg = 'NONE' })
 modify_hl('SnacksNormal', { bg = 'NONE' })
 
--- Render markdown
-modify_hl('RenderMarkdownCode', { bg = 'NONE' })
-modify_hl('ColorColumn', { bg = 'NONE' })
-
 --Noice
 modify_hl('NoiceCmdline', { bg = 'NONE' })
 modify_hl('NoiceConfirm', { bg = 'NONE' })
@@ -113,5 +109,5 @@ local function resolve_hl(name)
 end
 local fg_color = resolve_hl('@constant').fg
 modify_hl('CursorLineNr', { fg = fg_color, bold = true })
--- modify_hl('SnacksPickerInputBorder', { fg = fg_color, link = nil })
 vim.api.nvim_set_hl(0, 'SnacksPickerInputBorder', { fg = fg_color })
+vim.api.nvim_set_hl(0, 'ColorfulWinSep', { fg = fg_color })
