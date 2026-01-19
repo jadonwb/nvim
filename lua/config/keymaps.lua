@@ -26,12 +26,6 @@ del('n', '<A-k>')
 del('n', '<S-h>')
 del('n', '<S-l>')
 
--- Delete window movement
-del('n', '<C-Left>')
-del('n', '<C-Down>')
-del('n', '<C-Up>')
-del('n', '<C-Right>')
-
 map('n', 'grq', vim.diagnostic.open_float, { desc = 'Hover Diagnostic' })
 
 map('n', '<down>', 'o<Esc>', { desc = 'New Line Down' })
@@ -52,11 +46,6 @@ del('n', '<leader>wm')
 
 map('n', '<leader>|', '<C-W>v', { desc = 'Split Vertical', remap = true })
 map('n', '<leader>\\', '<C-W>s', { desc = 'Split Horizontal', remap = true })
-
-map('n', '<A-h>', '<cmd>vertical resize -2<cr>', { desc = 'Decrease Window Width' })
-map('n', '<A-j>', '<cmd>resize -2<cr>', { desc = 'Decrease Window Height' })
-map('n', '<A-k>', '<cmd>resize +2<cr>', { desc = 'Increase Window Height' })
-map('n', '<A-l>', '<cmd>vertical resize +2<cr>', { desc = 'Increase Window Width' })
 
 map('n', '<left>', 'i<Space><Esc>')
 map('n', '<right>', 'a<Space><Esc>')
