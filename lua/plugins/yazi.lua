@@ -96,4 +96,11 @@ return {
       require('yazi.plugin').build_plugin(plugin)
     end,
   },
+  {
+    'alberti42/faster-piper.yazi',
+    lazy = true,
+    build = function(plugin)
+      require('yazi.plugin').build_plugin(plugin)
+    end,
+  },
 }

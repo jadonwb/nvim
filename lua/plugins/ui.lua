@@ -5,30 +5,30 @@ return {
     opts = function(_, opts)
       local icons = LazyVim.config.icons
 
-      local theme = opts.options.theme
-
-      if type(theme) == 'string' then
-        theme = require('lualine.themes.' .. theme)
-      end
-
-      local function safe_set_bg(section, subsection)
-        if theme[section] and theme[section][subsection] then
-          theme[section][subsection].bg = 'NONE'
-        end
-      end
-
-      local sections = { 'normal', 'insert', 'visual', 'replace', 'command', 'inactive' }
-      for _, section in ipairs(sections) do
-        safe_set_bg(section, 'c')
-        safe_set_bg(section, 'x')
-      end
-
-      safe_set_bg('inactive', 'a')
-      safe_set_bg('inactive', 'b')
-      safe_set_bg('inactive', 'y')
-      safe_set_bg('inactive', 'z')
-
-      opts.options.theme = theme
+      -- local theme = opts.options.theme
+      --
+      -- if type(theme) == 'string' then
+      --   theme = require('lualine.themes.' .. theme)
+      -- end
+      --
+      -- local function safe_set_bg(section, subsection)
+      --   if theme[section] and theme[section][subsection] then
+      --     theme[section][subsection].bg = 'NONE'
+      --   end
+      -- end
+      --
+      -- local sections = { 'normal', 'insert', 'visual', 'replace', 'command', 'inactive' }
+      -- for _, section in ipairs(sections) do
+      --   safe_set_bg(section, 'c')
+      --   safe_set_bg(section, 'x')
+      -- end
+      --
+      -- safe_set_bg('inactive', 'a')
+      -- safe_set_bg('inactive', 'b')
+      -- safe_set_bg('inactive', 'y')
+      -- safe_set_bg('inactive', 'z')
+      --
+      -- opts.options.theme = theme
 
       opts.sections.lualine_c = {
         LazyVim.lualine.root_dir(),
@@ -47,9 +47,9 @@ return {
     end,
   },
   {
-    "nvim-zh/colorful-winsep.nvim",
+    'nvim-zh/colorful-winsep.nvim',
     config = true,
-    event = { "WinLeave" },
+    event = { 'WinLeave' },
   },
   -- {
   --   'nanozuki/tabby.nvim',
