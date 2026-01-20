@@ -1,9 +1,26 @@
 return {
   {
-    'folke/flash.nvim',
-    keys = function()
-      return {}
-    end,
+    'folke/trouble.nvim',
+    opts = {
+      modes = {
+        symbols = {
+          win = {
+            relative = 'win',
+            type = 'split',
+            position = 'right',
+            size = 0.25,
+          },
+        },
+        lsp = {
+          win = {
+            relative = 'win',
+            type = 'split',
+            position = 'right',
+            size = 0.4,
+          },
+        },
+      },
+    },
   },
   {
     'folke/which-key.nvim',
