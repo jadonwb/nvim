@@ -31,7 +31,7 @@ map('n', 'grq', vim.diagnostic.open_float, { desc = 'Hover Diagnostic' })
 map('n', '<down>', 'o<Esc>', { desc = 'New Line Down' })
 map('n', '<up>', 'O<Esc>', { desc = 'New Line Up' })
 map('n', '<C-r>', 'r', { silent = true }) -- replace a single character
-map('n', 'r', '<C-r>', { silent = true }) -- redo
+map('n', 'U', '<C-r>', { silent = true }) -- redo
 map('n', 'J', 'mzJ`z', { desc = 'Join lines and keep cursor position' })
 map('n', '<C-d>', '<C-d>zz')
 map('n', '<C-u>', '<C-u>zz')
