@@ -3,19 +3,20 @@ return {
     'folke/snacks.nvim',
     opts = {
       dashboard = {
+        enabled = true,
         preset = {
           keys = {
-            { icon = " ", key = "e", desc = "Yazi", action = ":Yazi" },
-            { icon = " ", key = "g", desc = "LazyGit", action = ":lua Snacks.lazygit.open()" },
-            { icon = " ", key = "n", desc = "New File", action = ":ene | startinsert" },
-            { icon = " ", key = "f", desc = "Find File", action = ":lua Snacks.dashboard.pick('files')" },
-            { icon = " ", key = "s", desc = "Find Text", action = ":lua Snacks.dashboard.pick('live_grep')" },
-            { icon = " ", key = "l", desc = "Restore Session", section = "session" },
-            { icon = "󰒲 ", key = "L", desc = "Lazy", action = ":Lazy", enabled = package.loaded.lazy ~= nil },
-            { icon = "󰒲 ", key = "E", desc = "Extras", action = ":LazyExtras", enabled = package.loaded.lazy ~= nil },
-            { icon = " ", key = "q", desc = "Quit", action = ":qa" },
+            { icon = ' ', key = 'e', desc = 'Yazi', action = ':Yazi' },
+            { icon = ' ', key = 'g', desc = 'LazyGit', action = ':lua Snacks.lazygit.open()' },
+            { icon = ' ', key = 'n', desc = 'New File', action = ':ene | startinsert' },
+            { icon = ' ', key = 'f', desc = 'Find File', action = ":lua Snacks.dashboard.pick('files')" },
+            { icon = ' ', key = 's', desc = 'Find Text', action = ":lua Snacks.dashboard.pick('live_grep')" },
+            { icon = ' ', key = 'l', desc = 'Restore Session', section = 'session' },
+            { icon = '󰒲 ', key = 'L', desc = 'Lazy', action = ':Lazy', enabled = package.loaded.lazy ~= nil },
+            { icon = '󰒲 ', key = 'E', desc = 'Extras', action = ':LazyExtras', enabled = package.loaded.lazy ~= nil },
+            { icon = ' ', key = 'q', desc = 'Quit', action = ':qa' },
           },
-        }
+        },
       },
       explorer = {
         enabled = false,
@@ -36,8 +37,8 @@ return {
           --   corner_top = "╭",
           --   corner_bottom = "╰",
           -- }
-        }
-      }
+        },
+      },
     },
     keys = {
       {

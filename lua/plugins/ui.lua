@@ -66,29 +66,29 @@ return {
   --   },
   -- },
   {
-    "jadonwb/bento.nvim",
+    'jadonwb/bento.nvim',
     opts = {
-      main_keymap = "_",
-      ordering_metric = "edit",
+      main_keymap = '_',
+      ordering_metric = 'edit',
       ui = {
-        mode = "floating", -- "floating" | "tabline"
+        mode = 'floating', -- "floating" | "tabline"
         -- test
         floating = {
-          position = "middle-right", -- See position options below
+          position = 'middle-right', -- See position options below
           offset_x = 0, -- Horizontal offset from position
           offset_y = -11, -- Vertical offset from position
-          dash_char = "─", -- Character for collapsed dashes
-          border = "rounded", -- "rounded" | "single" | "double" | etc. (see :h winborder)
+          dash_char = '─', -- Character for collapsed dashes
+          border = 'rounded', -- "rounded" | "single" | "double" | etc. (see :h winborder)
           label_padding = 1, -- Padding around labels
-          minimal_menu = "filename", -- nil | "dashed" | "filename" | "full"
+          minimal_menu = 'filename', -- nil | "dashed" | "filename" | "full"
           max_rendered_buffers = nil, -- nil (no limit) or number for pagination
         },
       },
       actions = {
         split = {
-          key = "\\"
-        }
-      }
-    }
+          key = '\\',
+        },
+      },
+    },
   },
 }

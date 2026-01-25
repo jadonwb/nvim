@@ -2,7 +2,7 @@
   "LazyVim": { "branch": "main", "commit": "28db03f958d58dfff3c647ce28fdc1cb88ac158d" },
   "SchemaStore.nvim": { "branch": "main", "commit": "cd9e8c22f6ad2012ac395725080cc5737297d840" },
   "actions-preview.nvim": { "branch": "master", "commit": "cb938c25edaac38d362555f19244a9cb85d561e8" },
-  "arrowlake.nvim": { "branch": "main", "commit": "de2951dfbee3a5dac6e2111cdcd566a70219ee5b" },
+  "arrowlake.nvim": { "branch": "main", "commit": "1465bb2f525e9a18b85887bdac2e4d94f3157b41" },
   "bento.nvim": { "branch": "main", "commit": "31eaa758849586aa6937972c0b0bc950c79b536d" },
   "blink.cmp": { "branch": "main", "commit": "b19413d214068f316c78978b08264ed1c41830ec" },
   "bufferline.nvim": { "branch": "main", "commit": "655133c3b4c3e5e05ec549b9f8cc2894ac6f51b3" },

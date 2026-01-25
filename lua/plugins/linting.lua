@@ -3,7 +3,7 @@ return {
   opts = {
     linters_by_ft = {
       --   cmake = {},
-      bitbake = { 'oelint-adv' }
+      bitbake = { 'oelint-adv' },
     },
   },
 }

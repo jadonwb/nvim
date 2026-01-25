@@ -47,6 +47,14 @@ return {
         language_right = '',
         left_pad = 1,
       },
+      anti_conceal = {
+        ignore = {
+          code_background = true,
+          indent = true,
+          sign = true,
+          virtual_lines = true,
+        },
+      },
     },
   },
   {
