@@ -51,11 +51,6 @@ map('n', '<leader>\\', '<C-W>s', { desc = 'Split Horizontal', remap = true, sile
 map('n', '<left>', 'i<Space><Esc>')
 map('n', '<right>', 'a<Space><Esc>')
 
-map('n', '<bs>', '<cmd>e #<cr>', { silent = true })
-
-map("n", "<C-p>", "<cmd>bprevious<cr>", { desc = "Prev Buffer" })
-map("n", "<C-n>", "<cmd>bnext<cr>", { desc = "Next Buffer" })
-
 map('n', '<leader><tab>r', function()
   vim.ui.input({ prompt = 'Rename tab: ' }, function(input)
     if input then
