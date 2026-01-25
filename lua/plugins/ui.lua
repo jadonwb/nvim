@@ -76,7 +76,7 @@ return {
         floating = {
           position = "middle-right", -- See position options below
           offset_x = 0, -- Horizontal offset from position
-          offset_y = 0, -- Vertical offset from position
+          offset_y = -11, -- Vertical offset from position
           dash_char = "─", -- Character for collapsed dashes
           border = "rounded", -- "rounded" | "single" | "double" | etc. (see :h winborder)
           label_padding = 1, -- Padding around labels
