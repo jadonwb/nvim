@@ -29,6 +29,13 @@ return {
     },
     keys = {
       {
+        '<leader>qB',
+        function()
+          Snacks.bufdelete.other()
+        end,
+        desc = 'Delete Other Buffers',
+      },
+      {
         '<leader>n',
         function()
           Snacks.notifier.show_history()
