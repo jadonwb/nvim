@@ -12,6 +12,23 @@ return {
         enabled = false,
         replace_netrw = false,
       },
+      indent = {
+        indent = {
+          only_current = true,
+          only_scope = true,
+        },
+        scope = {
+          underline = true,
+          only_current = true,
+        },
+        chunk = {
+          enabled = true,
+          char = {
+            corner_top = "╭",
+            corner_bottom = "╰",
+          }
+        }
+      }
     },
     keys = {
       {

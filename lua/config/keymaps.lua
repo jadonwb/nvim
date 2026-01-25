@@ -42,15 +42,19 @@ map({ 'n', 'x', 's' }, 'X', '"_X', { noremap = true, silent = true })
 del('n', '<leader>wd')
 map('n', '<c-w>d', '<C-W>c', { desc = 'Delete Window', remap = true })
 map('n', '<leader>qw', '<C-W>c', { desc = 'Delete Window', remap = true })
+map('n', '<leader>qb', '<cmd>bdelete<cr>', { desc = 'Delete Buffer', remap = true })
 del('n', '<leader>wm')
 
-map('n', '<leader>|', '<C-W>v', { desc = 'Split Vertical', remap = true })
-map('n', '<leader>\\', '<C-W>s', { desc = 'Split Horizontal', remap = true })
+map('n', '<leader>|', '<C-W>v', { desc = 'Split Vertical', remap = true, silent = true })
+map('n', '<leader>\\', '<C-W>s', { desc = 'Split Horizontal', remap = true, silent = true })
 
 map('n', '<left>', 'i<Space><Esc>')
 map('n', '<right>', 'a<Space><Esc>')
 
 map('n', '<bs>', '<cmd>e #<cr>', { silent = true })
+
+map("n", "<C-p>", "<cmd>bprevious<cr>", { desc = "Prev Buffer" })
+map("n", "<C-n>", "<cmd>bnext<cr>", { desc = "Next Buffer" })
 
 map('n', '<leader><tab>r', function()
   vim.ui.input({ prompt = 'Rename tab: ' }, function(input)
