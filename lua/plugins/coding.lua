@@ -37,11 +37,6 @@ return {
           },
         },
       },
-      keymap = {
-        preset = 'default',
-        -- ['<C-space>'] = { 'show', 'hide' },
-        -- ['<C-k>'] = { 'show_documentation', 'hide_documentation' },
-      },
     },
   },
 }

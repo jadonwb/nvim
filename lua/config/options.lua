@@ -1,4 +1,4 @@
-vim.g.ai_cmp = false
+vim.g.ai_cmp = true
 -- vim.g.lazyvim_rust_diagnostics = 'bacon-ls'
 -- vim.g.lazyvim_blink_main = true
 vim.o.showtabline = 0
