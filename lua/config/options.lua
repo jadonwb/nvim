@@ -31,6 +31,9 @@ vim.o.errorbells = false
 vim.o.exrc = true
 vim.o.secure = true
 
+-- could be useful
+-- vim.opt.sessionoptions:append 'options,localoptions'
+
 -- Clipboard
 if vim.env.SSH_TTY then
   vim.opt.clipboard:append 'unnamedplus'
