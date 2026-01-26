@@ -21,18 +21,6 @@ return {
         desc = 'Write Buffer',
       },
       {
-        mode = { 'n', 'v', 's', 'x' },
-        '<leader>d',
-        [["_d]],
-        hidden = true,
-      },
-      {
-        mode = { 'x' },
-        '<leader>p',
-        [["_dP]],
-        hidden = true,
-      },
-      {
         '<leader>K',
         hidden = true,
       },
@@ -42,6 +30,12 @@ return {
       },
       {
         '<leader><tab>',
+        hidden = true,
+      },
+      {
+        mode = { 'n', 'v', 's', 'x' },
+        '<leader>d',
+        [["_d]],
         hidden = true,
       },
     },

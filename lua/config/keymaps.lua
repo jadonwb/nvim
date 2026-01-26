@@ -28,9 +28,7 @@ del('n', '<S-l>')
 
 map('n', 'grq', vim.diagnostic.open_float, { desc = 'Hover Diagnostic' })
 
-map('n', '<down>', 'o<Esc>', { desc = 'New Line Down' })
-map('n', '<up>', 'O<Esc>', { desc = 'New Line Up' })
-map('n', '<C-r>', 'r', { silent = true }) -- replace a single character
+-- map('n', '<C-r>', 'r', { silent = true }) -- replace a single character
 map('n', 'U', '<C-r>', { silent = true }) -- redo
 map('n', 'J', 'mzJ`z', { desc = 'Join lines and keep cursor position' })
 map('n', '<C-d>', '<C-d>zz')
@@ -51,17 +49,14 @@ map('n', '<leader>\\', '<C-W>s', { desc = 'Split Horizontal', remap = true, sile
 
 map('n', '<left>', 'i<Space><Esc>')
 map('n', '<right>', 'a<Space><Esc>')
+map('n', '<down>', 'o<Esc>', { desc = 'New Line Down' })
+map('n', '<up>', 'O<Esc>', { desc = 'New Line Up' })
+
+map({ 'x', 'v', 's' }, '<leader>p', [["_dP]], { silent = true })
 
 local opts = { noremap = true, silent = true }
 map('n', '<Tab>', '>>', opts)
 map('n', '<S-Tab>', '<<', opts)
 map('v', '<Tab>', '>gv', opts)
 map('v', '<S-Tab>', '<gv', opts)
-
-map('n', '<leader><tab>r', function()
-  vim.ui.input({ prompt = 'Rename tab: ' }, function(input)
-    if input then
-      vim.cmd('Tabby rename_tab ' .. input)
-    end
-  end)
-end, { desc = 'Rename Tab' })
+map('n', '<C-i>', '<C-i>', opts)

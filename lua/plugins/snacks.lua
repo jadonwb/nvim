@@ -31,7 +31,6 @@ return {
           only_scope = true,
         },
         scope = {
-          underline = true,
           only_current = true,
         },
         chunk = {

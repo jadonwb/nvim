@@ -78,7 +78,7 @@ return {
           offset_x = 0, -- Horizontal offset from position
           offset_y = -11, -- Vertical offset from position
           dash_char = '─', -- Character for collapsed dashes
-          border = 'rounded', -- "rounded" | "single" | "double" | etc. (see :h winborder)
+          -- border = 'rounded', -- "rounded" | "single" | "double" | etc. (see :h winborder)
           label_padding = 1, -- Padding around labels
           minimal_menu = 'filename', -- nil | "dashed" | "filename" | "full"
           max_rendered_buffers = nil, -- nil (no limit) or number for pagination
@@ -88,6 +88,9 @@ return {
         split = {
           key = '\\',
         },
+      },
+      highlights = {
+        current = '@markup.link',
       },
     },
   },

@@ -50,9 +50,15 @@ return {
       anti_conceal = {
         ignore = {
           code_background = true,
+          code_border = true,
+          code_language = true,
           indent = true,
           sign = true,
           virtual_lines = true,
+          bullet = true,
+          head_background = true,
+          dash = true,
+          table_border = true,
         },
       },
     },
