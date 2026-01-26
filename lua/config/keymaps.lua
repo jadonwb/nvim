@@ -40,7 +40,14 @@ map({ 'n', 'x', 's' }, 'X', '"_X', { noremap = true, silent = true })
 del('n', '<leader>wd')
 map('n', '<c-w>d', '<C-W>c', { desc = 'Delete Window', remap = true })
 map('n', '<leader>qw', '<C-W>c', { desc = 'Delete Window', remap = true })
-map('n', '<leader>qb', '<cmd>bdelete<cr>', { desc = 'Delete Buffer', remap = true })
+
+map('n', '<leader>qb', function()
+  pcall(function()
+    vim.cmd('argdelete ' .. vim.fn.expand '%')
+  end)
+  vim.cmd 'bdelete'
+end, { desc = 'Delete Buffer', remap = true })
+
 map('n', '<leader>qr', '<cmd>restart<cr>', { desc = 'Restart Neovim', remap = true })
 del('n', '<leader>wm')
 
@@ -55,8 +62,5 @@ map('n', '<up>', 'O<Esc>', { desc = 'New Line Up' })
 map({ 'x', 'v', 's' }, '<leader>p', [["_dP]], { silent = true })
 
 local opts = { noremap = true, silent = true }
-map('n', '<Tab>', '>>', opts)
-map('n', '<S-Tab>', '<<', opts)
-map('v', '<Tab>', '>gv', opts)
-map('v', '<S-Tab>', '<gv', opts)
-map('n', '<C-i>', '<C-i>', opts)
+map('n', '>', '>>', opts)
+map('n', '<', '<<', opts)
