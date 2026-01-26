@@ -39,6 +39,10 @@ return {
       pipe_table = {
         preset = 'heavy',
       },
+      indent = {
+        enabled = true,
+        skip_heading = true,
+      },
       code = {
         border = 'thick',
         -- position = 'right',
@@ -47,18 +51,14 @@ return {
         language_right = '',
         left_pad = 1,
       },
+      render_modes = true,
       anti_conceal = {
         ignore = {
           code_background = true,
-          code_border = true,
-          code_language = true,
           indent = true,
           sign = true,
           virtual_lines = true,
-          bullet = true,
           head_background = true,
-          dash = true,
-          table_border = true,
         },
       },
     },
