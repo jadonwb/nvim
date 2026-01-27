@@ -65,6 +65,25 @@ return {
           },
         },
       },
+      picker = {
+        layouts = {
+          default = {
+            layout = {
+              box = 'horizontal',
+              width = 0.88,
+              height = 0.88,
+              {
+                box = 'vertical',
+                border = 'rounded',
+                title = '{title} {live} {flags}',
+                { win = 'input', height = 1, border = 'bottom' },
+                { win = 'list', border = 'none' },
+              },
+              { win = 'preview', border = 'rounded', width = 0.6 },
+            },
+          },
+        },
+      },
       styles = {
         lazygit = {
           width = 0,
