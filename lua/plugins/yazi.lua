@@ -10,7 +10,7 @@ return {
         '<leader>e',
         mode = { 'n', 'v' },
         '<cmd>Yazi<cr>',
-        desc = 'Open yazi at the current file',
+        desc = 'which_key_ignore',
       },
       {
         '<leader>E',

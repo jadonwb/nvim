@@ -39,7 +39,7 @@ return {
         hidden = true,
       },
       {
-        '<leader>_',
+        '<leader><space>',
         '<cmd>BentoToggle<cr>',
         desc = 'Bento Toggle',
       },

@@ -81,23 +81,23 @@ return {
         end,
         desc = 'Notification History',
       },
-      {
-        '<leader><space>',
-        function()
-          Snacks.picker.buffers {
-            win = {
-              input = {
-                keys = {
-                  ['<bs>'] = 'bufdelete',
-                  ['<a-bs>'] = { 'bufdelete', mode = { 'n', 'i' } },
-                },
-              },
-              list = { keys = { ['<bs>'] = 'bufdelete' } },
-            },
-          }
-        end,
-        desc = 'Buffers',
-      },
+      -- {
+      --   '<leader><space>',
+      --   function()
+      --     Snacks.picker.buffers {
+      --       win = {
+      --         input = {
+      --           keys = {
+      --             ['<bs>'] = 'bufdelete',
+      --             ['<a-bs>'] = { 'bufdelete', mode = { 'n', 'i' } },
+      --           },
+      --         },
+      --         list = { keys = { ['<bs>'] = 'bufdelete' } },
+      --       },
+      --     }
+      --   end,
+      --   desc = 'Buffers',
+      -- },
       {
         '<leader>/',
         function()
