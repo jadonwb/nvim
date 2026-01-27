@@ -40,6 +40,31 @@ return {
           -- }
         },
       },
+      lazygit = {
+        config = {
+          os = {
+            edit = vim.v.progpath
+              .. [[ --server "$NVIM" --remote-send '<C-\><C-n>:q<CR>' ]]
+              .. [[ && ]]
+              .. [[ ]]
+              .. vim.v.progpath
+              .. [[ --server "$NVIM" --remote-silent {{filename}} ]],
+            editAtLine = vim.v.progpath
+              .. [[ --server "$NVIM" --remote-send '<C-\><C-n>:q<CR>' ]]
+              .. [[ && ]]
+              .. vim.v.progpath
+              .. [[ --server "$NVIM" --remote-silent {{filename}} ]]
+              .. [[ && ]]
+              .. vim.v.progpath
+              .. [[ --server "$NVIM" --remote-send ':{{line}}<CR>' ]],
+            openDirInEditor = vim.v.progpath
+              .. [[ --server "$NVIM" --remote-send '<C-\><C-n>:q<CR>' ]]
+              .. [[ && ]]
+              .. vim.v.progpath
+              .. [[ --server "$NVIM" --remote-silent {{dir}} ]],
+          },
+        },
+      },
     },
     keys = {
       {
