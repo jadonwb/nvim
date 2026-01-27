@@ -38,6 +38,11 @@ return {
         [["_d]],
         hidden = true,
       },
+      {
+        '<leader>_',
+        '<cmd>BentoToggle<cr>',
+        desc = 'Bento Toggle',
+      },
     },
   },
 }

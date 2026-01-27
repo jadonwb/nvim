@@ -51,8 +51,8 @@ end, { desc = 'Delete Buffer', remap = true })
 map('n', '<leader>qr', '<cmd>restart<cr>', { desc = 'Restart Neovim', remap = true })
 del('n', '<leader>wm')
 
-map('n', '<leader>|', '<C-W>v', { desc = 'Split Vertical', remap = true, silent = true })
-map('n', '<leader>\\', '<C-W>s', { desc = 'Split Horizontal', remap = true, silent = true })
+map('n', '<leader>|', '<C-W>v', { desc = 'which_key_ignore', remap = true, silent = true })
+map('n', '<leader>\\', '<C-W>s', { desc = 'which_key_ignore', remap = true, silent = true })
 
 map('n', '<left>', 'i<Space><Esc>')
 map('n', '<right>', 'a<Space><Esc>')
