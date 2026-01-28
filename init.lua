@@ -27,7 +27,19 @@ vim.api.nvim_create_autocmd({ 'VimEnter' }, {
       end
     end
 
-    if vim.fn.argc() == 0 and not vim.g.started_with_stdin then
+    -- check if nvim was opened with any arguments (files or commands)
+    local has_file_args = vim.fn.argc() > 0
+
+    -- check if nvim was opened with any argv that starts with '+'
+    local has_ex_commands = false
+    for i = 2, #vim.v.argv do
+      if vim.v.argv[i]:match '^%+' then
+        has_ex_commands = true
+        break
+      end
+    end
+
+    if not has_file_args and not has_ex_commands and not vim.g.started_with_stdin then
       vim.notify 'Restoring session...'
       require('persistence').load()
     else
