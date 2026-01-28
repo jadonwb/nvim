@@ -51,5 +51,3 @@ vim.api.nvim_create_autocmd('BufReadPre', {
     end
   end,
 })
-
-vim.api.nvim_create_autocmd('BufWritePost', { pattern = vim.fn.expand '$HOME/.config/kitty/kitty.conf', command = 'silent !kill -SIGUSR1 $(pgrep kitty)' })

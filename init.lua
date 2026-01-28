@@ -41,6 +41,9 @@ vim.api.nvim_create_autocmd({ 'VimEnter' }, {
 
     if not has_file_args and not has_ex_commands and not vim.g.started_with_stdin then
       vim.notify 'Restoring session...'
+      if vim.bo.filetype == 'lazy' then
+        vim.cmd 'close'
+      end
       require('persistence').load()
     else
       require('persistence').stop()
