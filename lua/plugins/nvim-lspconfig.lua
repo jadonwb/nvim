@@ -26,9 +26,6 @@ return {
     dependencies = {
       -- For LSP actions preview
       { 'aznhe21/actions-preview.nvim', opts = { backend = { 'snacks', 'nui' } } },
-
-      -- Preview for go to methods
-      { 'rmagatti/goto-preview', opts = { default_mappings = true, references = { provider = 'snacks' } }, event = 'VeryLazy' },
     },
     opts = {
       servers = {

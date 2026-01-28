@@ -43,6 +43,7 @@ return {
         '<cmd>BentoToggle<cr>',
         desc = 'Bento Toggle',
       },
+      { 'gr', group = 'LSP Jumps' },
     },
   },
 }
