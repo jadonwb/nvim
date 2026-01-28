@@ -1,6 +1,10 @@
 return {
   'folke/which-key.nvim',
   opts = {
+    delay = 333,
+    win = {
+      row = -2,
+    },
     spec = {
       {
         '<leader>w',
