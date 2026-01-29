@@ -1,0 +1,3 @@
+-- vim.opt_local.keywordprg = ':help'
+-- FIXME: set this as a fallback if no man page available for lua
+-- install some way to view lua docs as man pages
