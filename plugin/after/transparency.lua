@@ -107,7 +107,6 @@ local function resolve_hl(name)
   end
   return hl
 end
-local fg_color = resolve_hl('@constant').fg
-modify_hl('CursorLineNr', { fg = fg_color, bold = true })
-vim.api.nvim_set_hl(0, 'SnacksPickerInputBorder', { fg = fg_color })
-vim.api.nvim_set_hl(0, 'ColorfulWinSep', { fg = fg_color })
+local color = resolve_hl('@constant').fg
+modify_hl('CursorLineNr', { fg = color, bold = true })
+modify_hl('SnacksPickerInputBorder', { fg = color })
