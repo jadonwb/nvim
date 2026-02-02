@@ -83,6 +83,7 @@ modify_hl('BlinkCmpSignatureHelp', { bg = 'NONE' })
 modify_hl('BlinkCmpSignatureHelpBorder', { bg = 'NONE' })
 
 -- Snacks
+modify_hl('SnacksPickerBorder', { bg = 'NONE' })
 modify_hl('SnacksPickerInputBorder', { bg = 'NONE' })
 modify_hl('SnacksPickerInputTitle', { bg = 'NONE' })
 modify_hl('SnacksPickerBoxTitle', { bg = 'NONE' })
@@ -99,14 +100,13 @@ modify_hl('NoiceCmdlinePopupBorderSearch', { bg = 'NONE' })
 --Trouble
 modify_hl('TroubleNormal', { bg = 'NONE' })
 
--- Not Transparency but fun
-local function resolve_hl(name)
-  local hl = vim.api.nvim_get_hl(0, { name = name })
-  if hl.link then
-    return resolve_hl(hl.link)
-  end
-  return hl
-end
-local color = resolve_hl('@constant').fg
-modify_hl('CursorLineNr', { fg = color, bold = true })
-modify_hl('SnacksPickerInputBorder', { fg = color })
+-- local function resolve_hl(name)
+--   local hl = vim.api.nvim_get_hl(0, { name = name })
+--   if hl.link then
+--     return resolve_hl(hl.link)
+--   end
+--   return hl
+-- end
+-- local color = resolve_hl('@constant').fg
+-- modify_hl('CursorLineNr', { fg = color, bold = true })
+-- modify_hl('SnacksPickerInputBorder', { fg = color })
