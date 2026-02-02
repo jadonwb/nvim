@@ -2,7 +2,7 @@
   "LazyVim": { "branch": "main", "commit": "28db03f958d58dfff3c647ce28fdc1cb88ac158d" },
   "SchemaStore.nvim": { "branch": "main", "commit": "9b6a3ab14cecc7da9f3aa4fa0ae2a7390748aca5" },
   "actions-preview.nvim": { "branch": "master", "commit": "cb938c25edaac38d362555f19244a9cb85d561e8" },
-  "arrowlake.nvim": { "branch": "main", "commit": "49abdf4fa26c087454048cba235100b001907d21" },
+  "arrowlake.nvim": { "branch": "main", "commit": "2ffb969524b95a191ba7eb2e23826d411822b896" },
   "bento.nvim": { "branch": "main", "commit": "aee8a542bc1839ff1764992ef2aa41c981d0bba4" },
   "blink-copilot": { "branch": "main", "commit": "7ad8209b2f880a2840c94cdcd80ab4dc511d4f39" },
   "blink.cmp": { "branch": "main", "commit": "b19413d214068f316c78978b08264ed1c41830ec" },
@@ -49,7 +49,7 @@
   "ouch.yazi": { "branch": "main", "commit": "594b8a2b246633d46b03a3261c9aebd1c4b5abf3" },
   "persistence.nvim": { "branch": "main", "commit": "b20b2a7887bd39c1a356980b45e03250f3dce49c" },
   "plenary.nvim": { "branch": "master", "commit": "b9fd5226c2f76c951fc8ed5923d85e4de065e509" },
-  "render-markdown.nvim": { "branch": "main", "commit": "48934b49a2363b49ae1d698ed4cb30fb79d7efe8" },
+  "render-markdown.nvim": { "branch": "main", "commit": "b3efd6408e4e4d66d6caaee0579e72b579bc0884" },
   "rsync.yazi": { "branch": "main", "commit": "14d28283f49b39593a2763d7457e0dacb78f7597" },
   "rustaceanvim": { "branch": "master", "commit": "3ace64feb1ce3cf3c63e6297e1378a82fe548618" },
   "seeker.nvim": { "branch": "customize_picker_opts", "commit": "e80dc4456f5571939cf885edfae1c5f169f918a5" },
@@ -70,5 +70,5 @@
   "which-key.nvim": { "branch": "main", "commit": "3aab2147e74890957785941f0c1ad87d0a44c15a" },
   "wl-clipboard.yazi": { "branch": "master", "commit": "e9a38e47d07549968019702bdafdc4ed07151b7d" },
   "yazi-rs-plugins": { "branch": "main", "commit": "230b9c6055a3144f6974fef297ad1a91b46a6aac" },
-  "yazi.nvim": { "branch": "main", "commit": "7a5a72d915241a2f07901c324a14c02a30b8515e" }
+  "yazi.nvim": { "branch": "main", "commit": "46fd318814b13cdb27750c045973df3f80425e68" }
 }

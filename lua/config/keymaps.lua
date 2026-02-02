@@ -40,11 +40,7 @@ map({ 'n', 'x', 's' }, 'X', '"_X', { noremap = true, silent = true })
 del('n', '<leader>wd')
 map('n', '<c-w>d', '<C-W>c', { desc = 'Delete Window', remap = true })
 map('n', '<leader>qw', '<C-W>c', { desc = 'Delete Window', remap = true })
-
 map('n', '<leader>qb', function()
-  pcall(function()
-    vim.cmd('argdelete ' .. vim.fn.expand '%')
-  end)
   vim.cmd 'bdelete'
 end, { desc = 'Delete Buffer', remap = true })
 
