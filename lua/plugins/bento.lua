@@ -1,5 +1,5 @@
 return {
-  'serhez/bento.nvim',
+  'jadonwb/bento.nvim',
   opts = {
     main_keymap = '_',
     ordering_metric = 'access',
