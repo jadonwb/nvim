@@ -1,25 +1,11 @@
 return {
   'folke/flash.nvim',
+  -- stylua: ignore
   keys = {
-    {
-      's',
-      false,
-    },
-    {
-      'S',
-      false,
-    },
-    {
-      'r',
-      false,
-    },
-    {
-      'R',
-      false,
-    },
-    {
-      '<c-s>',
-      false,
-    },
+    { "s", mode = { "n", "x", "o" }, false },
+    { "S", mode = { "n", "o", "x" }, false },
+    { "r", mode = "o", false },
+    { "R", mode = { "o", "x" }, false },
+    { "<c-s>", mode = { "c" }, false },
   },
 }
