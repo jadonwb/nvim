@@ -3,6 +3,15 @@ return {
     'neovim/nvim-lspconfig',
     opts = {
       servers = {
+        lua_ls = {
+          settings = {
+            Lua = {
+              diagnostics = {
+                globals = { 'vim' },
+              },
+            },
+          },
+        },
         bitbake_ls = {
           cmd = { 'language-server-bitbake', '--stdio' },
           filetypes = { 'bitbake' },
