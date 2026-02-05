@@ -4,7 +4,7 @@ return {
   dependencies = { 'folke/snacks.nvim' },
   cmd = { 'Seeker' },
   keys = {
-    { '<leader>ff', ':Seeker files<CR>', desc = 'Seek Files' },
+    { '<leader>sf', ':Seeker files<CR>', desc = 'Seek inside files' },
   },
   opts = {
     picker_opts = {
