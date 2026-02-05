@@ -51,3 +51,21 @@ vim.api.nvim_create_autocmd('BufReadPre', {
     end
   end,
 })
+
+-- vim.api.nvim_create_autocmd('User', {
+--   pattern = 'PersistedSavePre',
+--   callback = function()
+--     local buffers = vim.api.nvim_list_bufs()
+--
+--     for _, buf in ipairs(buffers) do
+--       if vim.api.nvim_buf_is_loaded(buf) then
+--         local buftype = vim.api.nvim_get_option_value('buftype', { buf = buf })
+--         local modifiable = vim.api.nvim_get_option_value('modifiable', { buf = buf })
+--
+--         if buftype ~= '' or not modifiable then
+--           vim.api.nvim_buf_delete(buf, { force = true })
+--         end
+--       end
+--     end
+--   end,
+-- })
