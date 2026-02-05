@@ -1,27 +1,23 @@
 vim.g.ai_cmp = true
--- vim.g.lazyvim_rust_diagnostics = 'bacon-ls'
--- vim.g.lazyvim_blink_main = true
 vim.o.showtabline = 0
 vim.o.cursorlineopt = 'number'
 vim.o.swapfile = false
 vim.o.shiftwidth = 4
 vim.o.tabstop = 4
 vim.o.softtabstop = 4
-vim.o.expandtab = true
+vim.o.expandtab = false
 vim.o.autoindent = true
 vim.o.breakindent = true
 vim.o.incsearch = true
--- vim.o.winborder = 'rounded'
 vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
 vim.o.inccommand = 'split'
 vim.opt.fillchars = { eob = ' ' }
 vim.o.undofile = true
 vim.o.undodir = vim.fn.expand '~/.vim/undodir'
+-- FIXME: what do I want here?
 -- vim.o.timeoutlen = 50
-vim.opt.timeoutlen = 50
+-- vim.opt.timeoutlen = 50
 vim.o.autoread = true
--- vim.o.redrawtime = 10000
--- vim.o.maxmempattern = 20000
 local undodir = vim.fn.expand '~/.vim/undodir'
 if vim.fn.isdirectory(undodir) == 0 then
   vim.fn.mkdir(undodir, 'p')
@@ -31,9 +27,7 @@ vim.o.errorbells = false
 vim.o.exrc = true
 vim.o.secure = true
 
--- could be useful
--- vim.opt.sessionoptions:append 'options,localoptions'
-
+-- FIXME: not sure this still works
 -- Clipboard
 if vim.env.SSH_TTY then
   vim.opt.clipboard:append 'unnamedplus'
