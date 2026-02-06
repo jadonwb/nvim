@@ -16,6 +16,23 @@ return {
           '██████' .. ' ' .. '󰉰' .. ' ',
         },
       },
+      checkbox = {
+        enabled = true,
+        unchecked = {
+          icon = '✘ ',
+        },
+        checked = {
+          scope_highlight = '@markup.strikethrough',
+          icon = '✔ ',
+        },
+        custom = {
+          important = {
+            raw = '[~]',
+            rendered = '󰓎 ',
+            highlight = 'DiagnosticWarn',
+          },
+        },
+      },
       pipe_table = {
         preset = 'heavy',
       },
