@@ -6,6 +6,7 @@ return {
       'clang-format',
       'language-server-bitbake',
       'oelint-adv',
+      'prettier',
     },
   },
 }
