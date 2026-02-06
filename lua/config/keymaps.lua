@@ -60,3 +60,14 @@ map({ 'x', 'v', 's' }, '<leader>p', [["_dP]], { silent = true })
 local opts = { noremap = true, silent = true }
 map('n', '>', '>>', opts)
 map('n', '<', '<<', opts)
+
+local function toggle_tabs()
+  local current = vim.opt.listchars:get()
+  if current.tab == '» ' then
+    vim.opt.listchars = { tab = '  ', trail = '·', nbsp = '␣' }
+  else
+    vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
+  end
+end
+
+map('n', '<leader>ut', toggle_tabs, { desc = 'Toggle tab characters' })
