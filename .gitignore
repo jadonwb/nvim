@@ -9,3 +9,4 @@ main.c
 colorscheme.txt
 lazy-lock.json
 lua/plugins/theme.lua
+lazy-lock.json
