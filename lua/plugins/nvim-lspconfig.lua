@@ -3,6 +3,15 @@ return {
     'neovim/nvim-lspconfig',
     opts = {
       servers = {
+        copilot = {
+          on_attach = function(client, bufnr)
+            local ft = vim.bo[bufnr].filetype
+            if ft == 'markdown' then
+              client.stop()
+              return
+            end
+          end,
+        },
         lua_ls = {
           settings = {
             Lua = {

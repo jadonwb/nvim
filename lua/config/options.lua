@@ -1,4 +1,4 @@
-vim.g.ai_cmp = true
+vim.g.ai_cmp = false
 vim.o.showtabline = 0
 vim.o.cursorlineopt = 'number'
 vim.o.swapfile = false
