@@ -27,6 +27,9 @@ return {
           },
         },
       },
+      keymap = {
+        preset = 'default',
+      },
     },
   },
 }
