@@ -18,12 +18,8 @@ return {
       },
       checkbox = {
         enabled = true,
-        unchecked = {
-          icon = '✘ ',
-        },
         checked = {
           scope_highlight = '@markup.strikethrough',
-          icon = '✔ ',
         },
         custom = {
           important = {
