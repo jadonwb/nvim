@@ -28,9 +28,6 @@ return {
         },
         neocmake = {
           init_options = {
-            lint = {
-              enable = false,
-            },
             format = {
               enable = true,
             },
