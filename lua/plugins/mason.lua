@@ -9,6 +9,7 @@ return {
       'prettier',
       'harper-ls',
       'markdown-oxide',
+      'systemd-lsp',
     },
   },
 }
