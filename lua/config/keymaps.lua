@@ -75,4 +75,4 @@ local function toggle_tabs()
   end
 end
 
-map('n', '<leader>ut', toggle_tabs, { desc = 'Toggle tab characters' })
+map('n', '<leader>u<tab>', toggle_tabs, { desc = 'Toggle tab characters' })

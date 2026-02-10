@@ -1,0 +1,40 @@
+return {
+  {
+    'Wansmer/treesj',
+    keys = {
+      {
+        '<leader>cj',
+        '<cmd>TSJToggle<cr>',
+        mode = 'n',
+        desc = 'Join or Split Code Block',
+      },
+    },
+    dependencies = { 'nvim-treesitter/nvim-treesitter' },
+    opts = {
+      use_default_keymaps = false,
+      max_join_length = 168,
+      ensure_installed = {
+        'devicetree',
+        'lua',
+        'sql',
+        'go',
+        'regex',
+        'bash',
+        'markdown',
+        'markdown_inline',
+        'yaml',
+        'json',
+        'jsonc',
+        'cpp',
+        'csv',
+        'java',
+        'javascript',
+        'python',
+        'dockerfile',
+        'html',
+        'css',
+        'glsl',
+      },
+    },
+  },
+}

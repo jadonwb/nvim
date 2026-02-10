@@ -1,8 +1,58 @@
+local capabilities = require('blink.cmp').get_lsp_capabilities()
+
 return {
   {
     'neovim/nvim-lspconfig',
     opts = {
+      inlay_hints = { enabled = false },
+      diagnostics = {
+        float = {
+          border = 'rounded',
+        },
+      },
       servers = {
+        marksman = false,
+        markdown_oxide = {
+          cmd = { 'markdown-oxide' },
+          filetypes = { 'markdown' },
+          root_markers = { '.git' },
+          capabilities = vim.tbl_deep_extend('force', capabilities, {
+            workspace = {
+              didChangeWatchedFiles = { dynamicRegistration = true },
+            },
+          }),
+          on_attach = function(client, bufnr)
+            if client.name == 'markdown_oxide' then
+              vim.api.nvim_create_user_command('Daily', function(args)
+                local target = args.args ~= '' and args.args or 'today'
+                vim.lsp.buf.execute_command {
+                  command = 'jump',
+                  arguments = { target },
+                }
+              end, { desc = 'Open daily note', nargs = '*' })
+            end
+            local function check_codelens_support()
+              local clients = vim.lsp.get_active_clients { bufnr = 0 }
+              for _, c in ipairs(clients) do
+                if c.server_capabilities.codeLensProvider then
+                  return true
+                end
+              end
+              return false
+            end
+
+            vim.api.nvim_create_autocmd({ 'TextChanged', 'InsertLeave', 'CursorHold', 'LspAttach', 'BufEnter' }, {
+              buffer = bufnr,
+              callback = function()
+                if check_codelens_support() then
+                  vim.lsp.codelens.refresh { bufnr = 0 }
+                end
+              end,
+            })
+            -- trigger codelens refresh
+            vim.api.nvim_exec_autocmds('User', { pattern = 'LspAttached' })
+          end,
+        },
         copilot = {
           on_attach = function(client, bufnr)
             local ft = vim.bo[bufnr].filetype
@@ -16,7 +66,7 @@ return {
           settings = {
             Lua = {
               diagnostics = {
-                globals = { 'vim' },
+                globals = { 'vim', 'LazyVim' },
               },
             },
           },
@@ -30,6 +80,26 @@ return {
           init_options = {
             format = {
               enable = true,
+            },
+          },
+        },
+        harper_ls = {
+          enabled = true,
+          filetypes = { 'markdown', 'typst' },
+          settings = {
+            ['harper-ls'] = {
+              linters = {
+                -- https://github.com/Automattic/harper/issues/1573#issuecomment-3777776431
+                -- -- ToDoHyphen = false,
+                -- SentenceCapitalization = true,
+                -- SpellCheck = true,
+              },
+              isolateEnglish = true,
+              markdown = {
+                -- [ignores this part]()
+                -- [[ also ignores marksman links ]]
+                IgnoreLinkTitle = true,
+              },
             },
           },
         },

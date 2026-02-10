@@ -3,7 +3,7 @@ return {
   opts = {
     delay = 333,
     win = {
-      row = -2,
+      row = -3,
     },
     spec = {
       {

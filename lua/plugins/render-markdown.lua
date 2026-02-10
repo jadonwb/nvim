@@ -28,6 +28,12 @@ return {
             highlight = 'DiagnosticWarn',
           },
         },
+        html = {
+          enabled = true,
+          comment = {
+            conceal = false,
+          },
+        },
       },
       pipe_table = {
         preset = 'heavy',

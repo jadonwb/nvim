@@ -99,13 +99,6 @@ return {
         end,
         desc = 'Delete Other Buffers',
       },
-      {
-        '<leader>n',
-        function()
-          Snacks.notifier.show_history()
-        end,
-        desc = 'Notification History',
-      },
       -- {
       --   '<leader><space>',
       --   function()
