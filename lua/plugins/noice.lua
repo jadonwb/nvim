@@ -2,6 +2,15 @@ return {
   {
     'folke/noice.nvim',
     event = 'VeryLazy',
+    keys = {
+      {
+        '<leader>n',
+        function()
+          require('noice').cmd 'history'
+        end,
+        desc = 'Noice Notifications',
+      },
+    },
     opts = {
       presets = {
         bottom_search = false,
