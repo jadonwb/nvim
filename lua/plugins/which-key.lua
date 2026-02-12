@@ -2,9 +2,6 @@ return {
   'folke/which-key.nvim',
   opts = {
     delay = 333,
-    win = {
-      row = -3,
-    },
     show_help = false,
     show_keys = false,
     spec = {
