@@ -52,6 +52,64 @@ vim.api.nvim_create_autocmd('BufReadPre', {
   end,
 })
 
+vim.api.nvim_create_autocmd({ 'FileType' }, {
+  pattern = { '*' },
+  callback = function()
+    if vim.fn.expand('%:t'):match '%.tmpl$' then
+      -- vim.treesitter.stop()
+
+      vim.cmd [[
+        " Match entire lines that are chezmoi directives (if/else/end/range/etc)
+        syntax match ChezmoiDirective "^\s*{{-\?\s*\(if\|else\|end\|range\|with\|define\|template\|block\).*-\?}}\s*$"
+        " Also match lines with just delimiters
+        syntax match ChezmoiDirective "^\s*{{-\?.*-\?}}\s*$"
+        " Style as comment
+        highlight link ChezmoiDirective Comment
+      ]]
+    end
+  end,
+})
+
+vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
+  pattern = '*.tmpl',
+  callback = function()
+    local name = vim.api.nvim_buf_get_name(0)
+    local ft = nil
+
+    -- Pattern-based mappings
+    local patterns = {
+      { 'dot_zshrc%.tmpl$', 'zsh' },
+      { 'dot_zshenv%.tmpl$', 'zsh' },
+      { 'dot_zprofile%.tmpl$', 'zsh' },
+      { 'dot_gitconfig%.tmpl$', 'gitconfig' },
+      { 'ghostty/config%.tmpl$', 'config' },
+      { 'hypr/.*%.conf%.tmpl$', 'hyprlang' },
+      { 'tmux/tmux%.conf%.tmpl$', 'tmux' },
+      { 'kitty/kitty%.conf%.tmpl$', 'kitty' },
+    }
+
+    -- Check pattern matches first
+    for _, pattern in ipairs(patterns) do
+      if name:match(pattern[1]) then
+        ft = pattern[2]
+        break
+      end
+    end
+
+    -- Fall back to extension-based detection
+    if not ft then
+      local base = name:match '^.+%.([^%.]+)%.tmpl$'
+      if base and base ~= 'conf' then
+        ft = base
+      end
+    end
+
+    if ft then
+      vim.bo.filetype = ft
+    end
+  end,
+})
+
 -- vim.api.nvim_create_autocmd('User', {
 --   pattern = 'PersistedSavePre',
 --   callback = function()
