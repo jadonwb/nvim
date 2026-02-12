@@ -58,18 +58,19 @@ return {
           view = 'mini',
         },
         {
-          -- TODO: truncate if too long
           filter = {
             event = 'msg_show',
             min_length = 90,
+            ['not'] = {
+              kind = 'bufwrite',
+            },
           },
           view = 'messages',
         },
         {
           filter = {
             event = 'msg_show',
-            kind = '',
-            find = 'written',
+            kind = 'bufwrite',
           },
           opts = { skip = true },
         },
