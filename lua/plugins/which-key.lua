@@ -5,6 +5,8 @@ return {
     win = {
       row = -3,
     },
+    show_help = false,
+    show_keys = false,
     spec = {
       {
         '<leader>w',

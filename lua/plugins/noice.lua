@@ -52,6 +52,28 @@ return {
           },
         },
       },
+      routes = {
+        {
+          filter = { event = 'msg_showmode' },
+          view = 'mini',
+        },
+        {
+          -- TODO: truncate if too long
+          filter = {
+            event = 'msg_show',
+            min_length = 100,
+          },
+          view = 'messages',
+        },
+        {
+          filter = {
+            event = 'msg_show',
+            kind = '',
+            find = 'written',
+          },
+          opts = { skip = true },
+        },
+      },
     },
   },
 }

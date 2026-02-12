@@ -45,4 +45,11 @@ return {
       LazyVim.mini.pairs(opts)
     end,
   },
+  {
+    'nvim-mini/mini.surround',
+    event = 'VeryLazy',
+    opts = {
+      silent = true,
+    },
+  },
 }
