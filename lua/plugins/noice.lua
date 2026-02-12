@@ -61,7 +61,7 @@ return {
           -- TODO: truncate if too long
           filter = {
             event = 'msg_show',
-            min_length = 100,
+            min_length = 90,
           },
           view = 'messages',
         },
