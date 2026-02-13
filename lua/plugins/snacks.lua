@@ -6,7 +6,7 @@ return {
         enabled = false,
       },
       dashboard = {
-        enabled = false,
+        enabled = true,
         preset = {
           keys = {
             { icon = ' ', key = 'e', desc = 'Yazi', action = ':Yazi' },

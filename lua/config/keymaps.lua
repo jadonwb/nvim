@@ -42,7 +42,6 @@ map('n', '<c-w>d', '<C-W>c', { desc = 'Delete Window', remap = true })
 map('n', '<leader>qw', '<C-W>c', { desc = 'Delete Window', remap = true })
 map('n', '<leader>qa', '<cmd>bufdo bdelete<cr>', { desc = 'Delete All Buffers', remap = true })
 map('n', '<leader>qb', '<cmd>bdelete<cr>', { desc = 'Delete Buffer', remap = true })
-map('n', '<leader>qd', '<cmd>Persisted delete<cr>', { desc = 'Delete Session', remap = true })
 
 map('n', '<leader>qr', '<cmd>restart<cr>', { desc = 'Restart Neovim', remap = true })
 del('n', '<leader>wm')

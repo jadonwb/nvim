@@ -1,16 +1,36 @@
 require 'config.lazy'
 
-local persisted = require 'persisted'
+local persistenceGroup = vim.api.nvim_create_augroup('Persistence', { clear = true })
+local home = vim.fn.expand '~'
+local disabled_dirs = {
+  home,
+  home .. '/Downloads',
+  '/tmp',
+  '/media',
+  '/mnt',
+}
 
-vim.api.nvim_create_autocmd('VimEnter', {
-  nested = true,
+vim.api.nvim_create_autocmd({ 'VimEnter' }, {
+  group = persistenceGroup,
   callback = function()
-    if vim.g.started_with_stdin then
-      return
+    local cwd = vim.fn.getcwd()
+
+    for _, path in pairs(disabled_dirs) do
+      if path == cwd then
+        -- exact match
+        require('persistence').stop()
+        return
+      elseif path ~= home and vim.startswith(cwd, path .. '/') then
+        -- subdirectory match
+        require('persistence').stop()
+        return
+      end
     end
 
+    -- check if nvim was opened with any arguments (files or commands)
     local has_file_args = vim.fn.argc() > 0
 
+    -- check if nvim was opened with any argv that starts with '+'
     local has_ex_commands = false
     for i = 2, #vim.v.argv do
       if vim.v.argv[i]:match '^%+' then
@@ -19,15 +39,15 @@ vim.api.nvim_create_autocmd('VimEnter', {
       end
     end
 
-    local should_restore = not has_file_args and not has_ex_commands
-
-    if should_restore then
+    if not has_file_args and not has_ex_commands and not vim.g.started_with_stdin then
+      vim.notify 'Restoring session...'
       if vim.bo.filetype == 'lazy' then
         vim.cmd 'close'
       end
-      persisted.load()
+      require('persistence').load()
     else
-      persisted.stop()
+      require('persistence').stop()
     end
   end,
+  nested = true,
 })
