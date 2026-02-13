@@ -10,7 +10,6 @@ return {
       },
     },
     linters_by_ft = {
-      --   cmake = {},
       bitbake = { 'oelint-adv' },
     },
   },
