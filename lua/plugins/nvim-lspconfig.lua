@@ -1,5 +1,3 @@
-local capabilities = require('blink.cmp').get_lsp_capabilities()
-
 return {
   -- keymaps, preview support, and diagnostics UI
   {
@@ -91,9 +89,11 @@ return {
           cmd = { 'markdown-oxide' },
           filetypes = { 'markdown' },
           root_markers = { '.git' },
-          capabilities = vim.tbl_deep_extend('force', capabilities, {
+          capabilities = vim.tbl_deep_extend('force', vim.lsp.protocol.make_client_capabilities(), require('blink.cmp').get_lsp_capabilities(), {
             workspace = {
-              didChangeWatchedFiles = { dynamicRegistration = true },
+              didChangeWatchedFiles = {
+                dynamicRegistration = true,
+              },
             },
           }),
           on_attach = function(client, bufnr)
@@ -163,12 +163,12 @@ return {
           filetypes = { 'markdown', 'typst' },
           settings = {
             ['harper-ls'] = {
-              linters = {
-                -- https://github.com/Automattic/harper/issues/1573#issuecomment-3777776431
-                -- -- ToDoHyphen = false,
-                -- SentenceCapitalization = true,
-                -- SpellCheck = true,
-              },
+              -- linters = {
+              --   -- https://github.com/Automattic/harper/issues/1573#issuecomment-3777776431
+              --   -- -- ToDoHyphen = false,
+              --   -- SentenceCapitalization = true,
+              --   -- SpellCheck = true,
+              -- },
               isolateEnglish = true,
               markdown = {
                 -- [ignores this part]()

@@ -4,16 +4,17 @@ I switched from kickstart to LazyVim because I started using Omarchy
 
 ## Introduction
 
-My config for neovim, I think I am somewhere in the middle between minimal and full IDE.
+My config for neovim, I think I am somewhere in the middle between minimal and
+full IDE.
 
 ## Installation
 
 ### Install Neovim
 
-I use *only* the latest
+I use _only_ the latest
 ['stable'](https://github.com/neovim/neovim/releases/tag/stable) and latest
-['nightly'](https://github.com/neovim/neovim/releases/tag/nightly) of Neovim.
-If you are experiencing issues, please make sure you have the latest versions.
+['nightly'](https://github.com/neovim/neovim/releases/tag/nightly) of Neovim. If
+you are experiencing issues, please make sure you have the latest versions.
 
 ### Install External Dependencies
 
@@ -25,11 +26,13 @@ External Requirements:
 - Clipboard tool (xclip/xsel/wl-clipboard)
 - A [Nerd Font](https://www.nerdfonts.com/): optional, provides various icons
   - if you have it set `vim.g.have_nerd_font` in `init.lua` to true
-- Emoji fonts (Ubuntu only, and only if you want emoji!) `sudo apt install fonts-noto-color-emoji`
+- Emoji fonts (Ubuntu only, and only if you want emoji!)
+  `sudo apt install fonts-noto-color-emoji`
 - Language Setup:
   - If you want to write Golang, you will need `go`
   - If you want to write Rust, you will need `rustup`
-  - For Language Servers that aren't available via Mason, you will likely need `npm` and `python/pip`
+  - For Language Servers that aren't available via Mason, you will likely need
+    `npm` and `python/pip`
   - etc.
 
 ### Linux Install (The two distros I use, work and personal)

@@ -34,10 +34,10 @@ return {
         },
         chunk = {
           enabled = true,
-          -- char = {
-          --   corner_top = "╭",
-          --   corner_bottom = "╰",
-          -- }
+          char = {
+            corner_top = '╭',
+            corner_bottom = '╰',
+          },
         },
       },
       lazygit = {
@@ -67,6 +67,24 @@ return {
       },
       picker = {
         layouts = {
+          ivy = {
+            layout = {
+              box = 'vertical',
+              backdrop = false,
+              row = -1,
+              width = 0,
+              height = 0.5,
+              border = 'top',
+              title = ' {title} {live} {flags}',
+              title_pos = 'left',
+              { win = 'input', height = 1, border = 'bottom' },
+              {
+                box = 'horizontal',
+                { win = 'list', border = 'none' },
+                { win = 'preview', title = '{preview}', width = 0.5, border = 'left' },
+              },
+            },
+          },
           default = {
             layout = {
               box = 'horizontal',
@@ -83,6 +101,31 @@ return {
             },
           },
         },
+        matcher = {
+          frecency = true,
+        },
+        win = {
+          input = {
+            keys = {
+              -- Scrolling like in LazyGit
+              ['J'] = { 'preview_scroll_down', mode = { 'i', 'n' } },
+              ['K'] = { 'preview_scroll_up', mode = { 'i', 'n' } },
+              ['H'] = { 'preview_scroll_left', mode = { 'i', 'n' } },
+              ['L'] = { 'preview_scroll_right', mode = { 'i', 'n' } },
+            },
+          },
+        },
+        formatters = {
+          file = {
+            filename_first = true, -- display filename before the file path
+            truncate = 80,
+          },
+        },
+        layout = {
+          -- When reaching the bottom of the results in the picker, I don't want
+          -- it to cycle and go back to the top
+          cycle = false,
+        },
       },
       styles = {
         lazygit = {
@@ -93,29 +136,19 @@ return {
     },
     keys = {
       {
+        '<leader>qb',
+        function()
+          Snacks.bufdelete()
+        end,
+        desc = 'Delete Buffer',
+      },
+      {
         '<leader>qB',
         function()
           Snacks.bufdelete.other()
         end,
         desc = 'Delete Other Buffers',
       },
-      -- {
-      --   '<leader><space>',
-      --   function()
-      --     Snacks.picker.buffers {
-      --       win = {
-      --         input = {
-      --           keys = {
-      --             ['<bs>'] = 'bufdelete',
-      --             ['<a-bs>'] = { 'bufdelete', mode = { 'n', 'i' } },
-      --           },
-      --         },
-      --         list = { keys = { ['<bs>'] = 'bufdelete' } },
-      --       },
-      --     }
-      --   end,
-      --   desc = 'Buffers',
-      -- },
       {
         '<leader>/',
         function()
@@ -137,6 +170,27 @@ return {
       {
         '<leader>,',
         false,
+      },
+      {
+        '<leader><space>',
+        function()
+          Snacks.picker.files {
+            finder = 'files',
+            format = 'file',
+            show_empty = true,
+            supports_live = true,
+            layout = 'ivy',
+
+            win = {
+              input = {
+                keys = {
+                  ['<Esc>'] = { 'close', mode = { 'n', 'i' } },
+                },
+              },
+            },
+          }
+        end,
+        desc = 'Find Files',
       },
     },
   },
