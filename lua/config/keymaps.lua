@@ -26,8 +26,6 @@ del('n', '<A-k>')
 del('n', '<S-h>')
 del('n', '<S-l>')
 
-map('n', 'grq', vim.diagnostic.open_float, { desc = 'Hover Diagnostic' })
-
 -- map('n', '<C-r>', 'r', { silent = true }) -- replace a single character
 map('n', 'U', '<C-r>', { silent = true }) -- redo
 map('n', 'J', 'mzJ`z', { desc = 'Join lines and keep cursor position' })

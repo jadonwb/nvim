@@ -67,24 +67,6 @@ return {
       },
       picker = {
         layouts = {
-          ivy = {
-            layout = {
-              box = 'vertical',
-              backdrop = false,
-              row = -1,
-              width = 0,
-              height = 0.5,
-              border = 'top',
-              title = ' {title} {live} {flags}',
-              title_pos = 'left',
-              { win = 'input', height = 1, border = 'bottom' },
-              {
-                box = 'horizontal',
-                { win = 'list', border = 'none' },
-                { win = 'preview', title = '{preview}', width = 0.5, border = 'left' },
-              },
-            },
-          },
           default = {
             layout = {
               box = 'horizontal',
@@ -171,6 +153,50 @@ return {
         '<leader>,',
         false,
       },
+      { '<leader>fe', false },
+      { '<leader>fE', false },
+      {
+        '<leader>fd',
+        function()
+          vim.ui.input({ prompt = 'Enter directory: ' }, function(input)
+            if not input or input == '' then
+              return
+            end
+
+            local cwd = vim.fn.getcwd()
+            local path
+
+            -- Expand ~ and environment vars
+            input = vim.fn.expand(input)
+
+            -- If absolute path, use it directly
+            if vim.fn.isdirectory(input) == 1 then
+              path = input
+            else
+              -- Otherwise resolve relative to cwd
+              local candidate = vim.fs.normalize(cwd .. '/' .. input)
+              if vim.fn.isdirectory(candidate) == 1 then
+                path = candidate
+              end
+            end
+
+            if not path then
+              vim.notify('Invalid directory: ' .. input, vim.log.levels.ERROR)
+              return
+            end
+
+            Snacks.picker.files {
+              finder = 'files',
+              format = 'file',
+              show_empty = true,
+              supports_live = true,
+              ignored = true,
+              hidden = true,
+              cwd = path,
+            }
+          end)
+        end,
+      },
       {
         '<leader><space>',
         function()
@@ -179,7 +205,6 @@ return {
             format = 'file',
             show_empty = true,
             supports_live = true,
-            layout = 'ivy',
 
             win = {
               input = {

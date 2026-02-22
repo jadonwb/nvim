@@ -18,8 +18,6 @@ return {
         hack = { pattern = '%f[%w]()HACK()%f[%W]', group = 'MiniHipatternsHack' },
         todo = { pattern = '%f[%w]()TODO()%f[%W]', group = 'MiniHipatternsTodo' },
         note = { pattern = '%f[%w]()NOTE()%f[%W]', group = 'MiniHipatternsNote' },
-        perf = { pattern = '%f[%w]()PERF()%f[%W]', group = 'TodoBgTEST' },
-        test = { pattern = '%f[%w]()TEST()%f[%W]', group = 'TodoBgTEST' },
       },
     },
   },
