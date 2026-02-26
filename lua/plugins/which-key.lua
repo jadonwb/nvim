@@ -28,7 +28,7 @@ return {
         hidden = true,
       },
       {
-        '<leader>b',
+        '<leader>bb',
         hidden = true,
       },
       {

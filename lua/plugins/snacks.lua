@@ -118,18 +118,11 @@ return {
     },
     keys = {
       {
-        '<leader>qb',
+        '<leader>bd',
         function()
           Snacks.bufdelete()
         end,
         desc = 'Delete Buffer',
-      },
-      {
-        '<leader>qB',
-        function()
-          Snacks.bufdelete.other()
-        end,
-        desc = 'Delete Other Buffers',
       },
       {
         '<leader>/',
@@ -199,23 +192,24 @@ return {
       },
       {
         '<leader><space>',
-        function()
-          Snacks.picker.files {
-            finder = 'files',
-            format = 'file',
-            show_empty = true,
-            supports_live = true,
-
-            win = {
-              input = {
-                keys = {
-                  ['<Esc>'] = { 'close', mode = { 'n', 'i' } },
-                },
-              },
-            },
-          }
-        end,
-        desc = 'Find Files',
+        false,
+        -- function()
+        --   Snacks.picker.files {
+        --     finder = 'files',
+        --     format = 'file',
+        --     show_empty = true,
+        --     supports_live = true,
+        --
+        --     win = {
+        --       input = {
+        --         keys = {
+        --           ['<Esc>'] = { 'close', mode = { 'n', 'i' } },
+        --         },
+        --       },
+        --     },
+        --   }
+        -- end,
+        -- desc = 'Find Files',
       },
     },
   },
