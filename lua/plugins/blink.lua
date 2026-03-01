@@ -6,6 +6,11 @@ return {
     },
     opts = {
       completion = {
+        list = {
+          selection = {
+            preselect = false,
+          },
+        },
         menu = {
           draw = {
             components = {
@@ -28,7 +33,8 @@ return {
         },
       },
       keymap = {
-        preset = 'default',
+        preset = 'enter',
+        ['<C-space>'] = { 'show', 'hide' },
       },
     },
   },
