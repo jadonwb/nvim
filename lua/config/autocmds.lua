@@ -86,6 +86,7 @@ vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile' }, {
       { 'hypr/.*%.conf%.tmpl$', 'hyprlang' },
       { 'tmux/tmux%.conf%.tmpl$', 'tmux' },
       { 'kitty/kitty%.conf%.tmpl$', 'kitty' },
+      { 'opencode/opencode%.jsonc%.tmpl$', 'template' },
     }
 
     -- Check pattern matches first
