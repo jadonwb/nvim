@@ -8,4 +8,11 @@ return {
     { "R", mode = { "o", "x" }, false },
     { "<c-s>", mode = { "c" }, false },
   },
+  opts = {
+    modes = {
+      char = {
+        keys = { 'f', 'F', 't', 'T' },
+      },
+    },
+  },
 }

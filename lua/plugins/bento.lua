@@ -2,7 +2,8 @@ return {
   'jadonwb/bento.nvim',
   branch = 'jadon',
   opts = {
-    main_keymap = '_',
+    -- main_keymap = '_',
+    main_keymap = ';',
     ordering_metric = 'access',
     ui = {
       mode = 'floating', -- "floating" | "tabline"
