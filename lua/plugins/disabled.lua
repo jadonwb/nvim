@@ -4,10 +4,6 @@ return {
     enabled = false,
   },
   {
-    'folke/tokyonight.nvim',
-    enabled = false,
-  },
-  {
     'LazyVim/LazyVim',
     opts = {
       news = {
