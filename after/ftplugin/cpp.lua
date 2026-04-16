@@ -1,4 +1,4 @@
-vim.b.autoformat = false
+-- vim.b.autoformat = false
 
 local cppman = require 'cppman'
 
