@@ -90,10 +90,10 @@ return {
           input = {
             keys = {
               -- Scrolling like in LazyGit
-              ['J'] = { 'preview_scroll_down', mode = { 'i', 'n' } },
-              ['K'] = { 'preview_scroll_up', mode = { 'i', 'n' } },
-              ['H'] = { 'preview_scroll_left', mode = { 'i', 'n' } },
-              ['L'] = { 'preview_scroll_right', mode = { 'i', 'n' } },
+              ['J'] = { 'preview_scroll_down', mode = { 'n' } },
+              ['K'] = { 'preview_scroll_up', mode = { 'n' } },
+              ['H'] = { 'preview_scroll_left', mode = { 'n' } },
+              ['L'] = { 'preview_scroll_right', mode = { 'n' } },
             },
           },
         },
@@ -117,6 +117,23 @@ return {
       },
     },
     keys = {
+      {
+        '<leader><space>',
+        function()
+          Snacks.picker.buffers {
+            win = {
+              input = {
+                keys = {
+                  ['<bs>'] = 'bufdelete',
+                  ['<a-bs>'] = { 'bufdelete', mode = { 'n', 'i' } },
+                },
+              },
+              list = { keys = { ['<bs>'] = 'bufdelete' } },
+            },
+          }
+        end,
+        desc = 'Buffers',
+      },
       {
         '<leader>bd',
         function()
@@ -189,27 +206,6 @@ return {
             }
           end)
         end,
-      },
-      {
-        '<leader><space>',
-        false,
-        -- function()
-        --   Snacks.picker.files {
-        --     finder = 'files',
-        --     format = 'file',
-        --     show_empty = true,
-        --     supports_live = true,
-        --
-        --     win = {
-        --       input = {
-        --         keys = {
-        --           ['<Esc>'] = { 'close', mode = { 'n', 'i' } },
-        --         },
-        --       },
-        --     },
-        --   }
-        -- end,
-        -- desc = 'Find Files',
       },
     },
   },
