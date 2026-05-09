@@ -18,11 +18,15 @@ vim.api.nvim_create_autocmd({ 'VimEnter' }, {
     for _, path in pairs(disabled_dirs) do
       if path == cwd then
         -- exact match
-        require('persistence').stop()
+        vim.schedule(function()
+          require('persistence').stop()
+        end)
         return
       elseif path ~= home and vim.startswith(cwd, path .. '/') then
         -- subdirectory match
-        require('persistence').stop()
+        vim.schedule(function()
+          require('persistence').stop()
+        end)
         return
       end
     end
@@ -44,9 +48,13 @@ vim.api.nvim_create_autocmd({ 'VimEnter' }, {
       if vim.bo.filetype == 'lazy' then
         vim.cmd 'close'
       end
-      require('persistence').load()
+      vim.schedule(function()
+        require('persistence').load()
+      end)
     else
-      require('persistence').stop()
+      vim.schedule(function()
+        require('persistence').stop()
+      end)
     end
   end,
   nested = true,
