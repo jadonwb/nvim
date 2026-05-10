@@ -9,6 +9,7 @@ vim.o.expandtab = true
 vim.o.autoindent = true
 vim.o.breakindent = true
 vim.o.incsearch = true
+vim.o.scrolloff = 0
 vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
 vim.o.inccommand = 'split'
 vim.opt.fillchars = { eob = ' ' }
