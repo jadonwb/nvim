@@ -4,7 +4,7 @@ return {
     'neovim/nvim-lspconfig',
     dependencies = {
       -- For LSP actions preview
-      { 'aznhe21/actions-preview.nvim', opts = { backend = { 'snacks', 'nui' } } },
+      -- { 'aznhe21/actions-preview.nvim', opts = { backend = { 'snacks', 'nui' } } },
     },
     opts = {
       inlay_hints = { enabled = false },
@@ -56,13 +56,13 @@ return {
               end,
               desc = 'Goto Declaration',
             },
-            {
-              '<leader>ca',
-              function()
-                require('actions-preview').code_actions()
-              end,
-              desc = 'Code Action',
-            },
+            -- {
+            --   '<leader>ca',
+            --   function()
+            --     require('actions-preview').code_actions()
+            --   end,
+            --   desc = 'Code Action',
+            -- },
           },
         },
       },
