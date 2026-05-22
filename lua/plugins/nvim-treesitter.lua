@@ -14,6 +14,7 @@ return {
       use_default_keymaps = false,
       max_join_length = 168,
       ensure_installed = {
+        'bitbake',
         'devicetree',
         'lua',
         'sql',
