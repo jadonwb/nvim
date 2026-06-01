@@ -113,6 +113,7 @@ return {
       { '<leader>,', false },
       { '<leader>fe', false },
       { '<leader>fE', false },
+      { '<leader>fc', false },
       {
         '<leader><space>',
         function()
@@ -192,6 +193,7 @@ return {
             }
           end)
         end,
+        desc = 'Find in Directory',
       },
     },
   },

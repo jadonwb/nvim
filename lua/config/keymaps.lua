@@ -26,6 +26,10 @@ del('n', '<A-k>')
 del('n', '<S-h>')
 del('n', '<S-l>')
 
+-- Delete extra terminal keymaps
+del('n', '<leader>ft')
+del('n', '<leader>fT')
+
 -- map('n', '<C-r>', 'r', { silent = true }) -- replace a single character
 map('n', 'U', '<C-r>', { silent = true }) -- redo
 map('n', 'J', 'mzJ`z', { desc = 'Join lines and keep cursor position' })
