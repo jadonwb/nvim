@@ -113,6 +113,8 @@ return {
       { '<leader>,', false },
       { '<leader>fe', false },
       { '<leader>fE', false },
+      { '<leader>ft', false },
+      { '<leader>fT', false },
       {
         '<leader><space>',
         function()
