@@ -105,6 +105,14 @@ return {
       },
     },
     keys = {
+      { '<leader>gi', false },
+      { '<leader>gI', false },
+      { '<leader>gp', false },
+      { '<leader>gP', false },
+      { '<leader>sB', false },
+      { '<leader>,', false },
+      { '<leader>fe', false },
+      { '<leader>fE', false },
       {
         '<leader><space>',
         function()
@@ -143,16 +151,6 @@ return {
         end,
         desc = 'Grep Open Buffers',
       },
-      {
-        '<leader>sB',
-        false,
-      },
-      {
-        '<leader>,',
-        false,
-      },
-      { '<leader>fe', false },
-      { '<leader>fE', false },
       {
         '<leader>fd',
         function()
