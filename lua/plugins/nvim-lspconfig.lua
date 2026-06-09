@@ -85,49 +85,6 @@ return {
     opts = {
       servers = {
         marksman = false,
-        markdown_oxide = {
-          cmd = { 'markdown-oxide' },
-          filetypes = { 'markdown' },
-          root_markers = { '.git' },
-          capabilities = vim.tbl_deep_extend('force', vim.lsp.protocol.make_client_capabilities(), require('blink.cmp').get_lsp_capabilities(), {
-            workspace = {
-              didChangeWatchedFiles = {
-                dynamicRegistration = true,
-              },
-            },
-          }),
-          on_attach = function(client, bufnr)
-            if client.name == 'markdown_oxide' then
-              vim.api.nvim_create_user_command('Daily', function(args)
-                local target = args.args ~= '' and args.args or 'today'
-                vim.lsp.buf.execute_command {
-                  command = 'jump',
-                  arguments = { target },
-                }
-              end, { desc = 'Open daily note', nargs = '*' })
-            end
-            local function check_codelens_support()
-              local clients = vim.lsp.get_active_clients { bufnr = 0 }
-              for _, c in ipairs(clients) do
-                if c.server_capabilities.codeLensProvider then
-                  return true
-                end
-              end
-              return false
-            end
-
-            vim.api.nvim_create_autocmd({ 'TextChanged', 'InsertLeave', 'CursorHold', 'LspAttach', 'BufEnter' }, {
-              buffer = bufnr,
-              callback = function()
-                if check_codelens_support() then
-                  vim.lsp.codelens.refresh { bufnr = 0 }
-                end
-              end,
-            })
-            -- trigger codelens refresh
-            vim.api.nvim_exec_autocmds('User', { pattern = 'LspAttached' })
-          end,
-        },
         lua_ls = {
           settings = {
             Lua = {
@@ -151,7 +108,7 @@ return {
         },
         harper_ls = {
           enabled = true,
-          filetypes = { 'markdown', 'typst' },
+          filetypes = { 'markdown' },
           settings = {
             ['harper-ls'] = {
               -- linters = {

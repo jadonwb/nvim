@@ -8,7 +8,6 @@ return {
       'oelint-adv',
       'prettier',
       'harper-ls',
-      'markdown-oxide',
       'systemd-lsp',
     },
   },
