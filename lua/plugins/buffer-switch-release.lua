@@ -61,10 +61,10 @@ return {
 
     -- Window styling
     window = {
-      width = 84, -- Use an integer (columns) or float (0.0 to 1.0 for % of screen width)
+      width = 0.4, -- Use an integer (columns) or float (0.0 to 1.0 for % of screen width)
       max_height = 15, -- Max rows to show
       border = 'rounded', -- "single", "double", "rounded", "shadow", or "none"
-      title = ' Switch Buffer ',
+      title = '',
       title_pos = 'center',
       enable_devicons = true, -- Requires nvim-web-devicons
     },
