@@ -3,7 +3,7 @@ return {
   opts = {
     -- Key configuration
     keymap = {
-      hold = 'alt', -- "control", "alt", "shift", or "super"
+      hold = 'control', -- "control", "alt", "shift", or "super"
       navigate = ';', -- key pressed to trigger/navigate
       auto_map = true, -- automatically register the trigger keymap in Neovim
     },
