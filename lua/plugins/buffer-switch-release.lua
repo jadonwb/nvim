@@ -3,8 +3,8 @@ return {
   opts = {
     -- Key configuration
     keymap = {
-      hold = 'control', -- "control", "alt", "shift", or "super"
-      navigate = 'e', -- key pressed to trigger/navigate
+      hold = 'alt', -- "control", "alt", "shift", or "super"
+      navigate = ';', -- key pressed to trigger/navigate
       auto_map = true, -- automatically register the trigger keymap in Neovim
     },
 
@@ -25,6 +25,10 @@ return {
       end,
     },
 
+    -- 'l',
+    -- ';',
+    -- "'",
+    -- 'h',
     -- Snipe quick-jump options
     snipe = {
       enabled = true,
@@ -32,8 +36,6 @@ return {
         'j',
         'k',
         'l',
-        ';',
-        "'",
         'h',
         'n',
         'y',
