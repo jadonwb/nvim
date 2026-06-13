@@ -20,7 +20,6 @@ local default_config = {
       's',
       'd',
       'f',
-      'g',
       'q',
       'w',
       'e',
@@ -249,6 +248,8 @@ local function cycle_highlight(dir)
   pcall(vim.api.nvim_win_set_cursor, state.win, { line, 0 })
 end
 
+local delete_hovered
+
 local function setup_switcher_mappings()
   state.saved_mappings = {}
   state.source_buf = vim.api.nvim_get_current_buf()
@@ -290,6 +291,23 @@ local function setup_switcher_mappings()
 
   save_and_map_local(state.source_buf, '<Up>', function()
     cycle_highlight(-1)
+  end)
+
+  save_and_map_local(state.source_buf, 'gg', function()
+    if #state.buffers_list > 0 then
+      pcall(vim.api.nvim_win_set_cursor, state.win, { 1, 0 })
+    end
+  end)
+
+  save_and_map_local(state.source_buf, 'G', function()
+    local count = #state.buffers_list
+    if count > 0 then
+      pcall(vim.api.nvim_win_set_cursor, state.win, { count, 0 })
+    end
+  end)
+
+  save_and_map_local(state.source_buf, '<BS>', function()
+    delete_hovered()
   end)
 
   if M.config.mappings then
@@ -462,6 +480,28 @@ local function show_floating_switcher()
       close_switcher()
     end,
   })
+end
+
+delete_hovered = function()
+  if not state.win or not vim.api.nvim_win_is_valid(state.win) then
+    return
+  end
+  local cursor = vim.api.nvim_win_get_cursor(state.win)
+  local idx = cursor[1]
+  local buf_info = state.buffers_list[idx]
+  if not buf_info then
+    return
+  end
+  local bufnr = buf_info.bufnr
+  if not vim.api.nvim_buf_is_valid(bufnr) then
+    return
+  end
+  local ok = pcall(vim.api.nvim_buf_delete, bufnr, { force = true })
+  if not ok then
+    vim.notify('Buffer-Switch: Failed to delete buffer', vim.log.levels.ERROR)
+    return
+  end
+  show_floating_switcher()
 end
 
 function M.toggle()
