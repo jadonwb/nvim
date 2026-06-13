@@ -2,7 +2,7 @@ local M = {}
 
 local default_config = {
   keymap = {
-    trigger = '<C-;>',
+    trigger = ';',
     auto_map = true,
   },
   search_dir = function()
@@ -465,7 +465,7 @@ end
 
 function M.toggle()
   if state.active then
-    cycle_highlight(1)
+    confirm_selection()
   else
     show_floating_switcher()
   end
