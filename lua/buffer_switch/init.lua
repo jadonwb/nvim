@@ -3,6 +3,7 @@ local M = {}
 local default_config = {
   keymap = {
     trigger = ';',
+    toggle_action = 'close', -- 'close', 'confirm', or 'cycle'
     auto_map = true,
   },
   search_dir = function()
@@ -465,7 +466,14 @@ end
 
 function M.toggle()
   if state.active then
-    confirm_selection()
+    local action = M.config.keymap.toggle_action or 'close'
+    if action == 'confirm' then
+      confirm_selection()
+    elseif action == 'cycle' then
+      cycle_highlight(1)
+    else
+      close_switcher()
+    end
   else
     show_floating_switcher()
   end

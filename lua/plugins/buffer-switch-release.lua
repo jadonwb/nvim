@@ -4,6 +4,7 @@ return {
   opts = {
     keymap = {
       trigger = ';',
+      toggle_action = 'close', -- 'close', 'confirm', or 'cycle'
       auto_map = true,
     },
     search_dir = function()
