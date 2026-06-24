@@ -454,6 +454,7 @@ local function show_floating_switcher()
   })
 
   vim.wo[state.win].cursorline = true
+  vim.wo[state.win].cursorlineopt = 'both'
 
   local alt_buf = vim.fn.bufnr '#'
   local default_index = 1

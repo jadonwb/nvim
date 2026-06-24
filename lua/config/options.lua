@@ -1,6 +1,6 @@
 vim.g.ai_cmp = false
 vim.o.showtabline = 0
--- vim.o.cursorlineopt = 'number'
+vim.o.cursorlineopt = 'number'
 vim.o.swapfile = false
 vim.o.shiftwidth = 4
 vim.o.tabstop = 4
