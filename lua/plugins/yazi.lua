@@ -68,13 +68,6 @@ return {
     end,
   },
   {
-    'TD-sky/sudo.yazi',
-    lazy = true,
-    build = function(plugin)
-      require('yazi.plugin').build_plugin(plugin)
-    end,
-  },
-  {
     'grappas/wl-clipboard.yazi',
     lazy = true,
     build = function(plugin)
