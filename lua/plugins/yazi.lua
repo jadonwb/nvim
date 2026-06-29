@@ -95,4 +95,11 @@ return {
       require('yazi.plugin').build_plugin(plugin)
     end,
   },
+  {
+    'MasouShizuka/close-and-restore-tab.yazi',
+    lazy = true,
+    build = function(plugin)
+      require('yazi.plugin').build_plugin(plugin)
+    end,
+  },
 }
