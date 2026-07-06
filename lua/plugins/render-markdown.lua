@@ -4,7 +4,7 @@ return {
     opts = {
       heading = {
         width = 'block',
-        min_width = 80,
+        min_width = 101,
         border = true,
         border_virtual = true,
         icons = {
