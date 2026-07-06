@@ -43,6 +43,8 @@ return {
         skip_heading = true,
       },
       code = {
+        width = 'block',
+        min_width = 80,
         border = 'thick',
         -- position = 'right',
         language_left = '',
