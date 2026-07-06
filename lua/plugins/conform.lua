@@ -25,6 +25,9 @@ return {
           end,
           args = { '--config', vim.fn.expand '$HOME/.markdownlint-cli2.yaml', '--fix', '$FILENAME' },
         },
+        prettier = {
+          prepend_args = { '--prose-wrap', 'always', '--print-width', '80' },
+        },
       },
       formatters_by_ft = {
         ['markdown'] = { 'prettier', 'markdownlint-cli2' },
