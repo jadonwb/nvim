@@ -28,25 +28,75 @@ vim.o.errorbells = false
 vim.o.exrc = true
 vim.o.secure = true
 
--- FIXME: not sure this still works
--- Clipboard
--- if vim.env.SSH_TTY then
---   vim.opt.clipboard:append 'unnamedplus'
---   local function paste()
---     return vim.split(vim.fn.getreg '', '\n')
---   end
---   vim.g.clipboard = {
---     name = 'OSC 52',
---     copy = {
---       ['+'] = require('vim.ui.clipboard.osc52').copy '+',
---       ['*'] = require('vim.ui.clipboard.osc52').copy '*',
---     },
---     paste = {
---       ['+'] = paste,
---       ['*'] = paste,
---     },
---   }
--- end
+-- Always sync unnamed register with system clipboard (overrides LazyVim's SSH disable)
+vim.opt.clipboard = "unnamedplus"
+
+-- When in SSH, use a hybrid clipboard: server clipboard (wl-copy) + client clipboard (OSC 52)
+if vim.env.SSH_CONNECTION then
+  local osc52 = require("vim.ui.clipboard.osc52")
+
+  ---Pipe text to wl-copy (server clipboard)
+  local function pipe_to(text)
+    local f = io.popen("wl-copy", "w")
+    if f then
+      f:write(text)
+      f:close()
+    end
+  end
+
+  ---Read from wl-paste (server clipboard)
+  ---@return string|nil
+  local function read_paste()
+    local f = io.popen("wl-paste --no-newline", "r")
+    if f then
+      local content = f:read("*a")
+      f:close()
+      return content
+    end
+    return nil
+  end
+
+  vim.g.clipboard = {
+    name = "hybrid (wl-copy + OSC52)",
+    copy = {
+      ["+"] = function(lines)
+        local text = table.concat(lines, "\n")
+        pipe_to(text)            -- server clipboard via wl-copy
+        osc52.copy("+")(lines)  -- client clipboard via OSC 52
+      end,
+      ["*"] = function(lines)
+        local text = table.concat(lines, "\n")
+        pipe_to(text)
+        osc52.copy("*")(lines)
+      end,
+    },
+    paste = {
+      ["+"] = function()
+        -- Try server clipboard first (fast), fall back to OSC 52 (client clipboard)
+        local content = read_paste()
+        if content and #content > 0 then
+          return vim.split(content, "\n")
+        end
+        local result = osc52.paste("+")()
+        if type(result) == "table" then
+          return result
+        end
+        return { "" }
+      end,
+      ["*"] = function()
+        local content = read_paste()
+        if content and #content > 0 then
+          return vim.split(content, "\n")
+        end
+        local result = osc52.paste("*")()
+        if type(result) == "table" then
+          return result
+        end
+        return { "" }
+      end,
+    },
+  }
+end
 
 vim.filetype.add {
   extension = {
