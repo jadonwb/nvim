@@ -132,6 +132,13 @@ return {
         desc = 'Buffers',
       },
       {
+        '<leader>n',
+        function()
+          Snacks.notifier.show_history()
+        end,
+        desc = 'Notifications',
+      },
+      {
         '<leader>bd',
         function()
           Snacks.bufdelete()
