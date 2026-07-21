@@ -32,6 +32,11 @@ return {
         group = 'buffer',
       },
       {
+        '<leader>bn',
+        '<cmd>enew<cr>',
+        desc = 'New Buffer',
+      },
+      {
         '<leader><tab>',
         hidden = true,
       },
