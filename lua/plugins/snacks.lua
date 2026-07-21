@@ -114,6 +114,21 @@ return {
       { '<leader>fe', false },
       { '<leader>fE', false },
       { '<leader>fc', false },
+      { '<leader>ff', false },
+      { '<leader>sg', false },
+      { '<leader>sG', false },
+      { '<leader>sw', false },
+      { '<leader>sW', false },
+      { '<leader>S', false },
+      { '<leader>.', false },
+      { '<leader>:', false },
+      { '<leader>fb', false },
+      { '<leader>fd', false },
+      { '<leader>fB', false },
+      { '<leader>fg', false },
+      { '<leader>fR', false },
+      { '<leader>fF', false },
+      { '<leader>fp', false },
       {
         '<leader><space>',
         function()
@@ -130,13 +145,6 @@ return {
           }
         end,
         desc = 'Buffers',
-      },
-      {
-        '<leader>n',
-        function()
-          Snacks.notifier.show_history()
-        end,
-        desc = 'Notifications',
       },
       {
         '<leader>bd',
@@ -158,49 +166,6 @@ return {
           Snacks.picker.grep_buffers()
         end,
         desc = 'Grep Open Buffers',
-      },
-      {
-        '<leader>fd',
-        function()
-          vim.ui.input({ prompt = 'Enter directory: ' }, function(input)
-            if not input or input == '' then
-              return
-            end
-
-            local cwd = vim.fn.getcwd()
-            local path
-
-            -- Expand ~ and environment vars
-            input = vim.fn.expand(input)
-
-            -- If absolute path, use it directly
-            if vim.fn.isdirectory(input) == 1 then
-              path = input
-            else
-              -- Otherwise resolve relative to cwd
-              local candidate = vim.fs.normalize(cwd .. '/' .. input)
-              if vim.fn.isdirectory(candidate) == 1 then
-                path = candidate
-              end
-            end
-
-            if not path then
-              vim.notify('Invalid directory: ' .. input, vim.log.levels.ERROR)
-              return
-            end
-
-            Snacks.picker.files {
-              finder = 'files',
-              format = 'file',
-              show_empty = true,
-              supports_live = true,
-              ignored = true,
-              hidden = true,
-              cwd = path,
-            }
-          end)
-        end,
-        desc = 'Find in Directory',
       },
     },
   },
