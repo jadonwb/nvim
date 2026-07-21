@@ -126,6 +126,7 @@ return {
       { '<leader>fd', false },
       { '<leader>fB', false },
       { '<leader>fg', false },
+      { '<leader>fr', false },
       { '<leader>fR', false },
       { '<leader>fF', false },
       { '<leader>fp', false },

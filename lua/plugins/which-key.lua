@@ -47,6 +47,8 @@ return {
         desc = 'Bento Toggle',
       },
       { 'gr', group = 'LSP Jumps' },
+      { '<leader>s', group = 'Snacks' },
+      { '<leader>f', group = 'Find' },
     },
   },
 }
