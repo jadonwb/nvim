@@ -28,8 +28,8 @@ return {
         hidden = true,
       },
       {
-        '<leader>bb',
-        hidden = true,
+        '<leader>b',
+        group = 'buffer',
       },
       {
         '<leader><tab>',
