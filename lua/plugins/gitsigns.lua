@@ -20,7 +20,7 @@ map('n', '<leader>ghP', function()
       return
     end
   end
-end, { desc = 'Preview Hunk (popup)', silent = true })
+end, { desc = 'Preview Hunk Popup', silent = true })
 
 -- Gitsigns: send all hunks to gf
 map('n', '<leader>gha', function()
@@ -32,15 +32,6 @@ return {
   opts = {
     preview_config = {
       border = 'rounded',
-    },
-  },
-  keys = {
-    {
-      'n',
-      '<leader>gha',
-      function()
-        require('gitsigns').setqflist 'all'
-      end,
     },
   },
 }
