@@ -15,6 +15,7 @@ del({ 'n', 'x' }, '<leader>gY')
 del({ 'n', 'x' }, '<leader>gB')
 del('n', '<leader>?')
 del('n', '<leader>L')
+del('n', '<leader>fn')
 
 -- Delete profiler keymaps
 del('n', '<leader>dpp')
