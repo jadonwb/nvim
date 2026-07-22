@@ -31,7 +31,7 @@ return {
       desc = 'Find Files',
     },
     {
-      '<leader>fg',
+      '<leader>fs',
       function()
         require('fff').live_grep()
       end,
