@@ -7,6 +7,7 @@ vim.api.nvim_create_autocmd('FileType', {
   desc = 'Disable New Line Comment',
 })
 
+-- FIXME: necessary?
 vim.api.nvim_create_autocmd('BufReadPre', {
   callback = function()
     local root = require('lazyvim.util.root').get()
