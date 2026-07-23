@@ -13,6 +13,9 @@ return {
       preview_position = 'right',
       preview_size = 0.6,
     },
+    file_picker = {
+      fuzzy_query_highlighting = true,
+    },
     grep = {
       modes = { 'plain', 'regex', 'fuzzy' },
     },
