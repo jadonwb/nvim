@@ -6,8 +6,8 @@ return {
   opts = {
     prompt_vim_mode = true,
     layout = {
-      height = 0.9,
-      width = 0.9,
+      height = 0.91,
+      width = 0.91,
       prompt_position = 'top',
       preview_position = 'right',
       preview_size = 0.6,

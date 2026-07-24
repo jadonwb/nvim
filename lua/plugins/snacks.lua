@@ -173,13 +173,18 @@ return {
     opts = function(_, opts)
       local border = require('arrowlake').border_style()
       return vim.tbl_deep_extend('force', {}, {
+        styles = {
+          lazygit = {
+            border = border,
+          },
+        },
         picker = {
           layouts = {
             default = {
               layout = {
                 box = 'horizontal',
-                width = 0.88,
-                height = 0.88,
+                width = 0.91,
+                height = 0.91,
                 {
                   box = 'vertical',
                   border = border,
