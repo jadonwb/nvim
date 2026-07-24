@@ -69,23 +69,6 @@ return {
         },
       },
       picker = {
-        layouts = {
-          default = {
-            layout = {
-              box = 'horizontal',
-              width = 0.88,
-              height = 0.88,
-              {
-                box = 'vertical',
-                border = 'rounded',
-                title = '{title} {live} {flags}',
-                { win = 'input', height = 1, border = 'bottom' },
-                { win = 'list', border = 'none' },
-              },
-              { win = 'preview', border = 'rounded', width = 0.6 },
-            },
-          },
-        },
         matcher = {
           frecency = true,
         },
@@ -184,5 +167,32 @@ return {
         desc = 'Grep Open Buffers',
       },
     },
+  },
+  {
+    'folke/snacks.nvim',
+    opts = function(_, opts)
+      local border = require('arrowlake').border_style()
+      return vim.tbl_deep_extend('force', {}, {
+        picker = {
+          layouts = {
+            default = {
+              layout = {
+                box = 'horizontal',
+                width = 0.88,
+                height = 0.88,
+                {
+                  box = 'vertical',
+                  border = border,
+                  title = '{title} {live} {flags}',
+                  { win = 'input', height = 1, border = 'bottom' },
+                  { win = 'list', border = 'none' },
+                },
+                { win = 'preview', border = border, width = 0.6 },
+              },
+            },
+          },
+        },
+      }, opts or {})
+    end,
   },
 }

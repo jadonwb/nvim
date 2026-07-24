@@ -76,12 +76,6 @@ return {
               },
             },
           },
-          border = 'rounded',
-        },
-        documentation = {
-          window = {
-            border = 'rounded',
-          },
         },
       },
       keymap = {
