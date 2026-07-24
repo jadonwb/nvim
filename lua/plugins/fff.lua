@@ -1,6 +1,5 @@
 return {
-  'dmtrKovalenko/fff.nvim',
-  pin = true,
+  'dmtrKovalenko/fff',
   build = function()
     require('fff.download').download_or_build_binary()
   end,
