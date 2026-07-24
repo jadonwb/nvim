@@ -19,7 +19,14 @@ return {
       modes = { 'plain', 'regex', 'fuzzy' },
     },
     debug = {
-      enabled = false,
+      enabled = true,
+      show_scores = true,
+      show_file_info = {
+        file_info = true,
+        score_breakdown = false,
+        timings = false,
+        full_path = false,
+      },
     },
     git = {
       status_text_color = true,

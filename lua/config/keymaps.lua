@@ -55,9 +55,6 @@ map('n', '<leader>bq', '<cmd>bufdo bdelete<cr>', { desc = 'Delete All Buffers', 
 map('n', '<leader>qr', '<cmd>restart<cr>', { desc = 'Restart Neovim', remap = true })
 del('n', '<leader>wm')
 
-map('n', '<leader>|', '<C-W>v', { desc = 'which_key_ignore', remap = true, silent = true })
-map('n', '<leader>\\', '<C-W>s', { desc = 'which_key_ignore', remap = true, silent = true })
-
 map('n', '<left>', 'i<Space><Esc>')
 map('n', '<right>', 'a<Space><Esc>')
 map('n', '<down>', 'o<Esc>', { desc = 'New Line Down' })
