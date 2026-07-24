@@ -12,6 +12,9 @@ return {
       preview_position = 'right',
       preview_size = 0.6,
     },
+    -- preview = {
+    --   line_numbers = true,
+    -- },
     file_picker = {
       fuzzy_query_highlighting = true,
     },
@@ -19,7 +22,7 @@ return {
       modes = { 'plain', 'regex', 'fuzzy' },
     },
     debug = {
-      enabled = true,
+      enabled = false,
       show_scores = true,
       show_file_info = {
         file_info = true,
