@@ -6,7 +6,6 @@ return {
       'language-server-bitbake',
       'oelint-adv',
       'prettier',
-      'harper-ls',
       'systemd-lsp',
     },
   },

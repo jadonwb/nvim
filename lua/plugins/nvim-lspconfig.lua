@@ -101,26 +101,6 @@ return {
             },
           },
         },
-        harper_ls = {
-          enabled = true,
-          filetypes = { 'markdown' },
-          settings = {
-            ['harper-ls'] = {
-              -- linters = {
-              --   -- https://github.com/Automattic/harper/issues/1573#issuecomment-3777776431
-              --   -- -- ToDoHyphen = false,
-              --   -- SentenceCapitalization = true,
-              --   -- SpellCheck = true,
-              -- },
-              isolateEnglish = true,
-              markdown = {
-                -- [ignores this part]()
-                -- [[ also ignores marksman links ]]
-                IgnoreLinkTitle = true,
-              },
-            },
-          },
-        },
         systemd_lsp = {},
       },
     },
