@@ -40,21 +40,6 @@ return {
         '<cmd>enew<cr>',
         desc = 'New Buffer',
       },
-      {
-        '<leader><tab>',
-        hidden = true,
-      },
-      {
-        mode = { 'n', 'v', 's', 'x' },
-        '<leader>d',
-        [["_d]],
-        hidden = true,
-      },
-      {
-        '<leader>u_',
-        '<cmd>BentoToggle<cr>',
-        desc = 'Bento Toggle',
-      },
       { 'gr', group = 'LSP Jumps' },
       { '<leader>s', group = 'snacks' },
       { '<leader>f', group = 'find' },
