@@ -26,6 +26,12 @@ return {
       explorer = {
         enabled = false,
       },
+      notifier = {
+        enabled = true,
+        timeout = 3000,
+        level = vim.log.levels.DEBUG,
+        date_format = '%T',
+      },
       indent = {
         indent = {
           only_current = true,
@@ -138,6 +144,14 @@ return {
         notification = {
           border = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' },
         },
+        notification_history = {
+          backdrop = false,
+          border = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' },
+          keys = {
+            q = 'close',
+            ['<Esc>'] = 'close',
+          },
+        },
       },
     },
     keys = {
@@ -170,6 +184,7 @@ return {
       { '<leader>fR', false },
       { '<leader>fF', false },
       { '<leader>fp', false },
+      { '<leader>n', false },
       {
         '<leader><space>',
         function()
