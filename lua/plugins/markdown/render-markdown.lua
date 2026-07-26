@@ -3,6 +3,7 @@ return {
     'MeanderingProgrammer/render-markdown.nvim',
     opts = {
       heading = {
+        sign = true,
         width = 'block',
         min_width = 90,
         border = true,
@@ -17,23 +18,7 @@ return {
         },
       },
       checkbox = {
-        enabled = true,
-        checked = {
-          scope_highlight = '@markup.strikethrough',
-        },
-        custom = {
-          important = {
-            raw = '[~]',
-            rendered = '󰓎 ',
-            highlight = 'DiagnosticWarn',
-          },
-        },
-        html = {
-          enabled = true,
-          comment = {
-            conceal = false,
-          },
-        },
+        enabled = false,
       },
       pipe_table = {
         preset = 'heavy',
@@ -46,7 +31,6 @@ return {
         width = 'block',
         min_width = 80,
         border = 'thick',
-        -- position = 'right',
         language_left = '',
         language_border = ' ',
         language_right = '',
