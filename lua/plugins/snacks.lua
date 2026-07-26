@@ -89,13 +89,11 @@ return {
         },
         formatters = {
           file = {
-            filename_first = true, -- display filename before the file path
+            filename_first = true,
             truncate = 80,
           },
         },
         layout = {
-          -- When reaching the bottom of the results in the picker, I don't want
-          -- it to cycle and go back to the top
           cycle = false,
         },
       },
