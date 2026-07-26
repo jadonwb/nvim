@@ -12,6 +12,8 @@ return {
           },
         },
         menu = {
+          -- FIXME: why does this break it?
+          -- border = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' },
           draw = {
             components = {
               label = {
@@ -25,10 +27,14 @@ return {
             },
           },
         },
+        documentation = {
+          window = {
+            border = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' },
+          },
+        },
       },
       keymap = {
         preset = 'enter',
-        ['<C-space>'] = { 'show', 'hide' },
       },
     },
   },
