@@ -9,6 +9,7 @@ del('n', 'grr')
 del('n', 'gO')
 
 -- Delete some misc LazyVim keymaps
+del('n', '<leader>gb')
 del('n', '<leader>gL')
 del('n', '<leader>gG')
 del({ 'n', 'x' }, '<leader>gY')

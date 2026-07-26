@@ -69,9 +69,6 @@ return {
         },
       },
       picker = {
-        matcher = {
-          frecency = true,
-        },
         win = {
           preview = {
             wo = {
