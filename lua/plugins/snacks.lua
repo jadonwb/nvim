@@ -73,6 +73,13 @@ return {
           frecency = true,
         },
         win = {
+          preview = {
+            wo = {
+              number = false,
+              relativenumber = false,
+              signcolumn = 'no',
+            },
+          },
           input = {
             keys = {
               -- Scrolling like in LazyGit
