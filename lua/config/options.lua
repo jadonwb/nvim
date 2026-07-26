@@ -1,29 +1,122 @@
-vim.g.ai_cmp = false
-vim.o.showtabline = 0
+vim.g.mapleader = ' '
+vim.g.localmapleader = '\\'
+
+vim.opt.termguicolors = true
+
+vim.opt.number = true
+vim.opt.relativenumber = true
+vim.opt.numberwidth = 4
+vim.opt.cursorline = true
 vim.o.cursorlineopt = 'number'
-vim.o.swapfile = false
-vim.o.shiftwidth = 4
-vim.o.tabstop = 4
-vim.o.softtabstop = 4
-vim.o.expandtab = true
-vim.o.autoindent = true
-vim.o.breakindent = true
-vim.o.incsearch = true
-vim.o.scrolloff = 0
+vim.opt.signcolumn = 'yes'
+
+vim.opt.expandtab = true
+vim.opt.shiftwidth = 4
+vim.opt.smartindent = true
+vim.opt.tabstop = 4
+vim.opt.softtabstop = 4
+
+vim.opt.timeoutlen = 500
+
+vim.opt.scrolloff = 4
+vim.opt.sidescrolloff = 8
+
+vim.opt.autowrite = true
+vim.opt.autoread = true
+
+vim.opt.clipboard = vim.env.SSH_TTY and '' or 'unnamedplus'
+
+vim.opt.laststatus = 3
+vim.opt.showmode = false
+vim.opt.ruler = false
+
+vim.opt.smoothscroll = true
+
+vim.opt.completeopt = 'menu,menuone,noselect'
+
+vim.opt.pumblend = 10
+vim.opt.pumheight = 10
+
+vim.opt.wildmode = 'longest:full,full'
+
+vim.opt.list = true
 vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
-vim.o.inccommand = 'split'
-vim.opt.fillchars = { eob = ' ' }
-vim.o.undofile = true
-vim.o.undodir = vim.fn.expand '~/.vim/undodir'
-vim.o.autoread = true
-local undodir = vim.fn.expand '~/.vim/undodir'
-if vim.fn.isdirectory(undodir) == 0 then
-  vim.fn.mkdir(undodir, 'p')
-end
+
+vim.opt.fillchars:append { eob = ' ' }
+
+vim.opt.conceallevel = 2
+
+vim.opt.ignorecase = true
+vim.opt.smartcase = true
+
+vim.opt.mouse = 'a'
+
+vim.opt.splitright = true
+vim.opt.splitbelow = true
+vim.opt.equalalways = true
+vim.opt.splitkeep = 'screen'
+
+vim.opt.winminwidth = 5
+
+vim.opt.inccommand = 'nosplit'
+
+vim.opt.wrap = false
+vim.opt.linebreak = true
+
+vim.o.foldenable = true
+vim.o.foldcolumn = '1'
+vim.o.foldlevel = 99
+vim.o.foldlevelstart = 99
+
+vim.opt.shiftround = true
+
+vim.opt.whichwrap:append {
+  ['<'] = true,
+  ['>'] = true,
+  ['['] = true,
+  [']'] = true,
+  h = true,
+  l = true,
+}
+
+vim.opt.jumpoptions = 'view'
+
+vim.opt.virtualedit = 'block'
+
+vim.opt.grepprg = 'rg --vimgrep'
+vim.opt.grepformat = '%f:%l:%c:%m'
+
+vim.opt.spelllang = { 'en' }
+
+vim.opt.shortmess:append {
+  W = true,
+  I = true,
+  c = true,
+  C = true,
+  s = true,
+}
+
+vim.opt.updatetime = 200
+
+vim.opt.swapfile = false
+
+vim.opt.incsearch = true
+
+vim.opt.undofile = true
+vim.opt.undolevels = 10000
+
+vim.opt.confirm = true
+
+vim.opt.sessionoptions = { 'buffers', 'curdir', 'tabpages', 'winsize', 'help', 'globals', 'skiprtp', 'folds' }
+
 vim.o.hidden = true
+
 vim.o.errorbells = false
+
 vim.o.exrc = true
 vim.o.secure = true
+
+vim.g.markdown_recommended_style = 0
 
 vim.filetype.add {
   extension = {
