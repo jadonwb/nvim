@@ -23,10 +23,6 @@ return {
       pipe_table = {
         preset = 'heavy',
       },
-      indent = {
-        enabled = true,
-        skip_heading = true,
-      },
       code = {
         width = 'block',
         min_width = 80,
