@@ -1,6 +1,9 @@
 return {
   'mason-org/mason.nvim',
   opts = {
+    ui = {
+      backdrop = 100,
+    },
     ensure_installed = {
       'clang-format',
       'language-server-bitbake',
