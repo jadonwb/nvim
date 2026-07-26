@@ -18,7 +18,6 @@ vim.api.nvim_create_autocmd('BufReadPre', {
   end,
 })
 
---override lazyvim's markdown settings
 vim.api.nvim_create_autocmd('FileType', {
   pattern = { 'markdown' },
   callback = function()
