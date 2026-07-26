@@ -31,11 +31,16 @@ return {
       LazyVim.mini.pairs(opts)
     end,
   },
-  {
-    'nvim-mini/mini.surround',
-    event = 'VeryLazy',
-    opts = {
-      silent = true,
-    },
-  },
+  -- FIXME: only remap s during visual mode? I prefer to highlight the textobject before I do surrounding keymap
+  -- {
+  --   'nvim-mini/mini.surround',
+  --   opts = {
+  --     silent = true,
+  --     mappings = {
+  --       add = 'sa',
+  --       replace = 'sc',
+  --       delete = 'sd',
+  --     },
+  --   },
+  -- },
 }
