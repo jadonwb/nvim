@@ -4,6 +4,23 @@ return {
   opts = function(_, opts)
     local icons = LazyVim.config.icons
 
+    -- Single letter mode indicator
+    opts.sections.lualine_a = {
+      {
+        'mode',
+        fmt = function(str)
+          return ' ' .. str:sub(1, 1) .. ' '
+        end,
+      },
+    }
+
+    -- Remove separators for square look
+    opts.options = vim.tbl_deep_extend('force', opts.options or {}, {
+      section_separators = { left = '', right = '' },
+      component_separators = { left = '', right = '' },
+    })
+
+    -- Make nice path and modified indicator
     opts.sections.lualine_c = {
       LazyVim.lualine.root_dir(),
       {
