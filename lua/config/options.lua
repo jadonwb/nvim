@@ -62,7 +62,6 @@ vim.opt.mouse = 'a'
 
 vim.opt.splitright = true
 vim.opt.splitbelow = true
-vim.opt.equalalways = true
 vim.opt.splitkeep = 'screen'
 
 vim.opt.winminwidth = 5
@@ -97,19 +96,14 @@ vim.opt.grepformat = '%f:%l:%c:%m'
 
 vim.opt.spelllang = { 'en' }
 
+-- W, I, c, C from LazyVim
 vim.opt.shortmess:append {
-  W = true,
-  I = true,
-  c = true,
-  C = true,
   s = true,
 }
 
 vim.opt.updatetime = 200
 
 vim.opt.swapfile = false
-
-vim.opt.incsearch = true
 
 vim.opt.undofile = true
 vim.opt.undolevels = 10000
