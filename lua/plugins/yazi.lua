@@ -21,7 +21,7 @@ return {
     ---@type YaziConfig | {}
     opts = {
       open_for_directories = true,
-      yazi_floating_window_border = 'none',
+      yazi_floating_window_border = 'rounded',
       floating_window_scaling_factor = 1,
       keymaps = {
         show_help = '<f1>',
