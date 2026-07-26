@@ -93,7 +93,7 @@ return {
             layout = {
               box = 'horizontal',
               backdrop = false,
-              width = vim.o.columns >= 180 and 0.75 or 0.95,
+              width = vim.o.columns >= 180 and 0.75 or 0.9,
               height = 0.9,
               border = 'none',
               {

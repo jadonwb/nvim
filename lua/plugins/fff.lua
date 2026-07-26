@@ -9,8 +9,8 @@ return {
     return {
       prompt_vim_mode = true,
       layout = {
-        height = 0.91,
-        width = is_wide and 0.75 or 0.95,
+        height = 0.9,
+        width = is_wide and 0.75 or 0.9,
         border = {
           { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' },
           { ' ', ' ', ' ', ' ', ' ' },
