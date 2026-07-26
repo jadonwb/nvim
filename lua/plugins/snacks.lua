@@ -1,3 +1,4 @@
+
 return {
   {
     'folke/snacks.nvim',
@@ -70,13 +71,6 @@ return {
       },
       picker = {
         win = {
-          preview = {
-            wo = {
-              number = false,
-              relativenumber = false,
-              signcolumn = 'no',
-            },
-          },
           input = {
             keys = {
               -- Scrolling like in LazyGit
@@ -96,11 +90,54 @@ return {
         layout = {
           cycle = false,
         },
+        layouts = {
+          default = {
+            layout = {
+              box = 'horizontal',
+              backdrop = false,
+              width = vim.o.columns >= 180 and 0.75 or 0.95,
+              height = 0.9,
+              border = 'none',
+              {
+                box = 'vertical',
+                border = 'none',
+                {
+                  win = 'input',
+                  height = 1,
+                  title = '{title} {live}',
+                  title_pos = 'center',
+                  border = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' },
+                },
+                {
+                  win = 'list',
+                  border = { '', '', '', ' ', '', '', '', ' ' },
+                },
+              },
+              {
+                win = 'preview',
+                title = '{preview}',
+                border = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' },
+                width = 0.6,
+              },
+            },
+          },
+        },
       },
       styles = {
+        terminal = {
+          wo = {
+            winhighlight = 'Normal:Normal,NormalNC:SnacksNormalNC,WinBar:SnacksWinBar,'
+              .. 'WinBarNC:SnacksWinBarNC,FloatTitle:SnacksTitle,FloatFooter:SnacksFooter,'
+              .. 'WinSeparator:SnacksWinSeparator',
+          },
+        },
         lazygit = {
           width = 0,
           height = 0,
+        },
+        float = { backdrop = false },
+        notification = {
+          border = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' },
         },
       },
     },
@@ -134,6 +171,31 @@ return {
         '<leader><space>',
         function()
           Snacks.picker.buffers {
+            layout = {
+              layout = {
+                box = 'vertical',
+                backdrop = false,
+                width = vim.o.columns >= 180 and 0.4 or 0.5,
+                height = 0.7,
+                border = 'none',
+                {
+                  win = 'input',
+                  height = 1,
+                  title = '{title} {live}',
+                  title_pos = 'center',
+                  border = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' },
+                },
+                {
+                  win = 'list',
+                  border = { '', '', '', ' ', '', '', '', ' ' },
+                },
+                {
+                  win = 'preview',
+                  title = '{preview}',
+                  border = { ' ', '─', ' ', ' ', ' ', ' ', ' ', ' ' },
+                },
+              },
+            },
             win = {
               input = {
                 keys = {
@@ -169,37 +231,5 @@ return {
         desc = 'Grep Open Buffers',
       },
     },
-  },
-  {
-    'folke/snacks.nvim',
-    opts = function(_, opts)
-      local border = require('arrowlake').border_style()
-      return vim.tbl_deep_extend('force', {}, {
-        styles = {
-          lazygit = {
-            border = border,
-          },
-        },
-        picker = {
-          layouts = {
-            default = {
-              layout = {
-                box = 'horizontal',
-                width = 0.91,
-                height = 0.91,
-                {
-                  box = 'vertical',
-                  border = border,
-                  title = '{title} {live} {flags}',
-                  { win = 'input', height = 1, border = 'bottom' },
-                  { win = 'list', border = 'none' },
-                },
-                { win = 'preview', border = border, width = 0.6 },
-              },
-            },
-          },
-        },
-      }, opts or {})
-    end,
   },
 }
