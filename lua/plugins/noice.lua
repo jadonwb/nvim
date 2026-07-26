@@ -14,6 +14,18 @@ return {
             col = '50%',
           },
         },
+        hover = {
+          border = {
+            style = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' },
+            padding = { 1, 2 },
+          },
+          position = { row = 3 },
+        },
+        notify = {
+          border = {
+            style = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' },
+          },
+        },
       },
     },
   },
