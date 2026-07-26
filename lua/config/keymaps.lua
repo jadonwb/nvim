@@ -60,10 +60,10 @@ map('n', 'J', 'mzJ`z', { desc = 'Join lines and keep cursor position' })
 map('n', '<C-d>', '<C-d>zz')
 map('n', '<C-u>', '<C-u>zz')
 
-map('n', '<Tab>', '>>', { desc = 'Indent' })
-map('n', '<S-Tab>', '<<', { desc = 'Unindent' })
-map('v', '<Tab>', '>>', { desc = 'Indent' })
-map('v', '<S-Tab>', '<<', { desc = 'Unindent' })
+-- map('n', '<Tab>', '>>', { desc = 'Indent' })
+-- map('n', '<S-Tab>', '<<', { desc = 'Unindent' })
+-- map('v', '<Tab>', '>>', { desc = 'Indent' })
+-- map('v', '<S-Tab>', '<<', { desc = 'Unindent' })
 
 -- ── Don't yank on delete ──
 map({ 'n', 'x', 's' }, 'x', '"_x', { noremap = true, silent = true })
