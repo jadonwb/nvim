@@ -18,7 +18,7 @@ vim.opt.softtabstop = 4
 
 vim.opt.timeoutlen = 500
 
-vim.opt.scrolloff = 4
+vim.opt.scrolloff = 0
 vim.opt.sidescrolloff = 8
 
 vim.opt.autowrite = true
