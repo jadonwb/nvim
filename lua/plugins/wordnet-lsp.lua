@@ -1,0 +1,37 @@
+return {
+  {
+    'jadonwb/wordnet-lsp.nvim',
+    config = function()
+      require('wordnet-lsp').setup({
+
+        -- ── Startup ──────────────────────────────────
+        auto_start = true,
+        filetypes = { 'text', 'markdown', 'txt' },
+
+        -- ── Dictionary server (word completion) ─────
+        dictionary = {
+          enabled = true,
+          search_threshold = 3,
+        },
+
+        -- ── Thesaurus server (hover + code actions) ──
+        thesaurus = {
+          enabled = true,
+
+          hover = {
+            keymap = nil,
+            use_morphology = true,
+            definition_pointers = { '!', '&', '^', '@', '~' },
+          },
+
+          code_actions = {
+            use_morphology = true,
+            max_results = 100,
+            search_threshold = 3,
+            similarity_depth = 2,
+          },
+        },
+      })
+    end,
+  },
+}
