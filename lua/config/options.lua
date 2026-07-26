@@ -83,8 +83,6 @@ vim.opt.whichwrap:append {
   ['>'] = true,
   ['['] = true,
   [']'] = true,
-  h = true,
-  l = true,
 }
 
 vim.opt.jumpoptions = 'view'
