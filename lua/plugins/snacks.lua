@@ -181,7 +181,7 @@ return {
                   height = 1,
                   title = '{title} {live}',
                   title_pos = 'center',
-                  border = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' },
+                  border = { ' ', ' ', ' ', ' ', ' ', '─', ' ', ' ' },
                 },
                 {
                   win = 'list',
