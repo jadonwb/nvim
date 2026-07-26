@@ -21,6 +21,17 @@ return {
     })
 
     -- Make nice path and modified indicator
+    opts.sections.lualine_x = {
+      {
+        function()
+          return require('noice').api.status.lsp_progress.get_hl()
+        end,
+        cond = function()
+          return package.loaded['noice']
+            and require('noice').api.status.lsp_progress.has()
+        end,
+      },
+    }
     opts.sections.lualine_c = {
       LazyVim.lualine.root_dir(),
       {
