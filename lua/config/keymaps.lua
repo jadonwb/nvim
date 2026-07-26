@@ -71,10 +71,14 @@ local function toggle_tabs()
   local current = vim.opt.listchars:get()
   if current.tab == '» ' then
     vim.notify('Disabled **Tabs**', vim.log.levels.WARN, { title = 'Tabs' })
-    vim.opt.listchars = { tab = '  ', trail = '·', nbsp = '␣' }
+    vim.opt.listchars:append {
+      tab = '  ',
+    }
   else
     vim.notify('Enabled **Tabs**', vim.log.levels.INFO, { title = 'Tabs' })
-    vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
+    vim.opt.listchars:append {
+      tab = '» ',
+    }
   end
 end
 

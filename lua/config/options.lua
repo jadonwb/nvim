@@ -40,9 +40,18 @@ vim.opt.pumheight = 10
 vim.opt.wildmode = 'longest:full,full'
 
 vim.opt.list = true
-vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
+vim.opt.listchars = {
+  tab = '» ',
+  trail = '·',
+  precedes = '←',
+  extends = '→',
+  nbsp = '␣',
+}
 
-vim.opt.fillchars:append { eob = ' ' }
+vim.opt.fillchars:append {
+  eob = ' ',
+  diff = '',
+}
 
 vim.opt.conceallevel = 2
 
