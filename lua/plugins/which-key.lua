@@ -4,6 +4,10 @@ return {
     delay = 333,
     show_help = false,
     show_keys = false,
+    win = {
+      border = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' },
+      row = -3,
+    },
     spec = {
       {
         '<leader>w',
