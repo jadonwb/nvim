@@ -1,4 +1,3 @@
-
 return {
   {
     'folke/snacks.nvim',
@@ -26,7 +25,6 @@ return {
       },
       explorer = {
         enabled = false,
-        replace_netrw = false,
       },
       indent = {
         indent = {
@@ -106,7 +104,7 @@ return {
                   height = 1,
                   title = '{title} {live}',
                   title_pos = 'center',
-                  border = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' },
+                  border = { ' ', ' ', ' ', ' ', ' ', '─', ' ', ' ' },
                 },
                 {
                   win = 'list',
@@ -176,7 +174,7 @@ return {
                 box = 'vertical',
                 backdrop = false,
                 width = vim.o.columns >= 180 and 0.4 or 0.5,
-                height = 0.7,
+                height = 0.8,
                 border = 'none',
                 {
                   win = 'input',
