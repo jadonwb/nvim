@@ -23,7 +23,7 @@ require('lazy').setup {
     { import = 'plugins/ai' },
     { import = 'plugins/git' },
     { import = 'plugins/lsp' },
-    { import = 'plugins/markdown' },
+    { import = 'plugins/lsp/languages' },
   },
   ui = {
     backdrop = 100,
