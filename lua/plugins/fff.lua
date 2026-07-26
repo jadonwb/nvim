@@ -1,40 +1,45 @@
 return {
-  'dmtrKovalenko/fff.nvim',
+  'jadonwb/fff',
+  branch = 'main',
   build = function()
     require('fff.download').download_or_build_binary()
   end,
-  opts = {
-    prompt_vim_mode = true,
-    layout = {
-      height = 0.91,
-      width = 0.91,
-      prompt_position = 'top',
-      preview_position = 'right',
-      preview_size = 0.6,
-    },
-    -- preview = {
-    --   line_numbers = true,
-    -- },
-    file_picker = {
-      fuzzy_query_highlighting = true,
-    },
-    grep = {
-      modes = { 'plain', 'regex', 'fuzzy' },
-    },
-    debug = {
-      enabled = false,
-      show_scores = true,
-      show_file_info = {
-        file_info = true,
-        score_breakdown = false,
-        timings = false,
-        full_path = false,
+  opts = function()
+    local is_wide = vim.o.columns >= 180
+    return {
+      prompt_vim_mode = true,
+      layout = {
+        height = 0.91,
+        width = is_wide and 0.75 or 0.95,
+        border = {
+          { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' },
+          { ' ', ' ', ' ', ' ', ' ' },
+        },
+        prompt_position = 'top',
+        preview_position = 'right',
+        preview_size = 0.6,
       },
-    },
-    git = {
-      status_text_color = true,
-    },
-  },
+      file_picker = {
+        fuzzy_query_highlighting = true,
+      },
+      grep = {
+        modes = { 'plain', 'regex', 'fuzzy' },
+      },
+      debug = {
+        enabled = false,
+        show_scores = true,
+        show_file_info = {
+          file_info = true,
+          score_breakdown = false,
+          timings = false,
+          full_path = false,
+        },
+      },
+      git = {
+        status_text_color = true,
+      },
+    }
+  end,
   keys = {
     {
       '<leader>ff',
