@@ -10,7 +10,7 @@ return {
         {
           '<leader>cd',
           function()
-            require('utils.diagnostic-popup').show()
+            require('utils.lsp-popup').show()
           end,
           desc = 'Diagnostics Under Cursor',
         },
