@@ -1,5 +1,5 @@
--- Alex-style LSP popup: hover (via handler override) and diagnostics with severity pill badges.
--- Uses nui.nvim (transitive dep of noice.nvim). Takes over hover from noice.
+-- alex35mil style LSP popup: hover (via direct LSP request) and diagnostics with severity pill badges.
+-- Uses nui.nvim (transitive dep of noice.nvim).
 
 local M = {}
 
@@ -164,10 +164,6 @@ local function focus_existing(winid)
   return true
 end
 
---============================================================================
--- Hover (bypasses handler system — makes its own LSP request like Alex)
---============================================================================
-
 function M.show_hover()
   local parent = vim.api.nvim_get_current_win()
   if focus_existing(parent) then
@@ -209,6 +205,7 @@ function M.show_hover()
       if not popup then
         return
       end
+      -- FIXME: deprecated
       vim.api.nvim_buf_set_option(popup.bufnr, 'filetype', 'markdown')
       local ns = vim.api.nvim_create_namespace 'lsp_hover'
       message:render(popup.bufnr, ns)
@@ -216,10 +213,6 @@ function M.show_hover()
     end)
   end)
 end
-
---============================================================================
--- Diagnostics (with severity pill badges)
---============================================================================
 
 function M.show()
   local parent = vim.api.nvim_get_current_win()
@@ -281,6 +274,7 @@ function M.show()
 
     lnum = lnum + #msgs + 1
   end
+  -- FIXME: deprecated
   vim.api.nvim_buf_set_option(popup.bufnr, 'modifiable', false)
 end
 
