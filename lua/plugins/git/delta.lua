@@ -1,17 +1,15 @@
 return {
   'alex35mil/delta.nvim',
-  cmd = { 'DeltaPicker', 'DeltaSpotlight', 'DeltaFileDiff' },
+  event = 'VeryLazy',
 
   opts = function()
     local pi_ok, pi = pcall(require, 'pi')
     local delta = require 'delta'
     local picker = delta.picker
     local spotlight = delta.spotlight
-    local diff = delta.diff
 
-    -- ── custom action: send selected file to pi as @mention ──
+    -- ── custom action: send file to pi as @mention ──────
     local function send_to_pi(close_after)
-      ---@param ctx delta.picker.ActionContext
       return function(ctx)
         local node = ctx.node
         if not node or not node.path or node.path == '' then
@@ -27,9 +25,8 @@ return {
       end
     end
 
-    -- ── custom action: open file, switching pi to side layout ──
+    -- ── custom action: open file, switching pi to side if float ──
     local function open_with_pi_side(action)
-      ---@param ctx delta.picker.ActionContext
       return function(ctx)
         if pi_ok and pi.is_visible and pi.is_visible() and pi.layout and pi.layout() == 'float' then
           pi.toggle_layout(function()
@@ -41,6 +38,8 @@ return {
       end
     end
 
+    local border_none = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' }
+
     return {
       picker = {
         initial_mode = 'n',
@@ -48,10 +47,16 @@ return {
           height = { 0.5, 0.9 },
           main = {
             width = 0.25,
+            border = border_none,
+            title = function(source)
+              local icon = source == 'agent' and '󰫮󰫴󰫲󰫻󰬁' or '󰫴󰫶󰬁'
+              return ' Delta ' .. icon .. ' '
+            end,
           },
           preview = {
             enabled = true,
             width = 0.5,
+            border = border_none,
           },
         },
         sources = {
@@ -59,7 +64,6 @@ return {
           agent = pi_ok and { label = 'Agent', files = pi.changed_files } or nil,
         },
         actions = {
-          -- keep existing defaults and add pi integrations
           open = { '<CR>', open_with_pi_side(picker.actions.open) },
           open_vsplit = { '<C-v>', open_with_pi_side(picker.actions.open_vsplit) },
           open_hsplit = { '<C-x>', open_with_pi_side(picker.actions.open_hsplit) },
@@ -68,8 +72,9 @@ return {
           send_to_pi_and_close = { '<Leader>p', send_to_pi(true) },
           move_up = { { { 'k', modes = 'n' }, '<Up>' }, picker.actions.move(-1) },
           move_down = { { { 'j', modes = 'n' }, '<Down>' }, picker.actions.move(1) },
-          close = { { '<Esc>', modes = 'n' }, picker.actions.close },
-          toggle_preview = { '<M-p>', picker.actions.toggle_preview },
+          close = { '<Esc>', picker.actions.close },
+          close_q = { { 'q', modes = 'n' }, picker.actions.close },
+          toggle_preview = { '<C-P>', picker.actions.toggle_preview },
           cycle_source = { '<Tab>', picker.actions.cycle_source },
           cycle_source_back = { '<S-Tab>', picker.actions.cycle_source_back },
           toggle_stage = { '<C-CR>', picker.actions.toggle_stage },
@@ -82,27 +87,33 @@ return {
         autosave_before_stage = true,
         reopen_picker_after_stage = true,
         actions = {
+          -- ── hunk navigation (global so they work even when spotlight isn't focused) ──
+          next_hunk = { ']h', spotlight.actions.next_hunk, global = true },
+          prev_hunk = { '[h', spotlight.actions.prev_hunk, global = true },
+          -- ── spotlight-only actions (auto-cleared when spotlight exits) ──
+          toggle_stage_hunk = { '<CR>', spotlight.actions.toggle_stage_hunk },
+          reset_hunk = { { 'gr', modes = { 'n', 'v' } }, spotlight.actions.reset_hunk },
+          reset_file = { 'gR', spotlight.actions.reset_file },
           expand_context = { '+', spotlight.actions.expand_context },
           shrink_context = { '-', spotlight.actions.shrink_context },
           cycle_mode = { 'm', spotlight.actions.cycle_mode },
           exit = { 'q', spotlight.actions.exit },
-          next_hunk = { ']h', spotlight.actions.next_hunk, global = true },
-          prev_hunk = { '[h', spotlight.actions.prev_hunk, global = true },
-          toggle_stage_file = { '<C-CR>', spotlight.actions.toggle_stage_file },
-          toggle_stage_hunk = { '<CR>', spotlight.actions.toggle_stage_hunk, global = true },
-          reset_file = { 'gR', spotlight.actions.reset_file, global = true },
-          reset_hunk = { { 'gr', modes = { 'n', 'v' } }, spotlight.actions.reset_hunk, global = true },
+          -- ── open hunk diff popup from within spotlight ──
+          open_hunk_popup = {
+            { 'gd', modes = 'n' },
+            function()
+              require('delta.diff').open_hunk()
+            end,
+          },
         },
       },
 
       diff = {
-        file = {
-          keys = {
-            close = 'q',
-          },
-        },
         hunk = {
           mode = 'auto',
+          layout = {
+            border = border_none,
+          },
           keys = {
             scroll_up = '<C-u>',
             scroll_down = '<C-d>',
@@ -110,10 +121,6 @@ return {
             focus_right = { '<Tab>', '<Right>' },
             close = { 'q', '<Esc>' },
           },
-        },
-        actions = {
-          open_hunk_diff = { { 'gd', modes = 'n' }, diff.actions.open_hunk_diff },
-          open_file_diff = { { 'gD', modes = 'n' }, diff.actions.open_file_diff },
         },
       },
 
@@ -123,7 +130,6 @@ return {
     }
   end,
 
-  -- ── global keymaps ────────────────────────────────────────
   keys = {
     {
       '<Leader>gp',
@@ -147,18 +153,22 @@ return {
       desc = 'Delta Spotlight (inline hunks)',
     },
     {
-      '<Leader>gd',
+      'gd',
       function()
         require('delta.diff').open_hunk()
       end,
+      mode = 'n',
       desc = 'Delta Hunk Diff',
     },
     {
-      '<Leader>gD',
-      function()
-        require('delta.diff').open_file()
-      end,
-      desc = 'Delta File Diff',
+      ']h',
+      mode = 'n',
+      desc = 'Delta Next Hunk (load)',
+    },
+    {
+      '[h',
+      mode = 'n',
+      desc = 'Delta Prev Hunk (load)',
     },
   },
 }
