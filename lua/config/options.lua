@@ -69,10 +69,10 @@ vim.opt.inccommand = 'nosplit'
 vim.opt.wrap = false
 vim.opt.linebreak = true
 
-vim.o.foldenable = true
-vim.o.foldcolumn = '1'
-vim.o.foldlevel = 99
-vim.o.foldlevelstart = 99
+vim.opt.foldenable = true
+vim.opt.foldcolumn = '1'
+vim.opt.foldlevel = 99
+vim.opt.foldlevelstart = 99
 
 vim.opt.shiftround = true
 
