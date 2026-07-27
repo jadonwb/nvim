@@ -5,9 +5,10 @@ return {
   event = 'VeryLazy',
   keys = {
     {
-      '<C-BS>',
+      '<Leader><tab>t',
       function()
         tabline_mode = tabline_mode == 'filepath' and 'lsp_symbol' or 'filepath'
+        vim.notify('Tabline: ' .. (tabline_mode == 'filepath' and 'filepath' or 'LSP symbols'), vim.log.levels.INFO, { title = 'Tabline' })
       end,
       desc = 'Toggle Tabline (filepath / LSP symbols)',
     },
@@ -88,8 +89,7 @@ return {
               })
               return ok and result.get() or ''
             end
-            return vim.fn.expand '%:.:h' == '.' and vim.fn.expand '%:t'
-              or vim.fn.expand '%:.:h' .. '/' .. vim.fn.expand '%:t'
+            return vim.fn.expand '%:.:h' == '.' and vim.fn.expand '%:t' or vim.fn.expand '%:.:h' .. '/' .. vim.fn.expand '%:t'
           end,
         },
       },
