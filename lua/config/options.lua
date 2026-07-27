@@ -1,6 +1,3 @@
-vim.g.mapleader = ' '
-vim.g.localmapleader = '\\'
-
 vim.opt.termguicolors = true
 
 vim.opt.number = true
@@ -16,7 +13,7 @@ vim.opt.smartindent = true
 vim.opt.tabstop = 4
 vim.opt.softtabstop = 4
 
-vim.opt.timeoutlen = 500
+vim.opt.timeoutlen = 300
 
 vim.opt.scrolloff = 0
 vim.opt.sidescrolloff = 8
