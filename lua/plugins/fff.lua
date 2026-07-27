@@ -1,5 +1,5 @@
 return {
-  'jadonwb/fff',
+  'dmtrKovalenko/fff.nvim',
   branch = 'main',
   build = function()
     require('fff.download').download_or_build_binary()
@@ -9,12 +9,12 @@ return {
     return {
       prompt_vim_mode = true,
       layout = {
-        height = 0.9,
+        height = 0.88,
         width = is_wide and 0.75 or 0.9,
-        border = {
-          { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' },
-          { ' ', ' ', ' ', ' ', ' ' },
-        },
+        -- border = {
+        --   { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' },
+        --   { ' ', ' ', ' ', ' ', ' ' },
+        -- },
         prompt_position = 'top',
         preview_position = 'right',
         preview_size = 0.6,
@@ -39,7 +39,7 @@ return {
         status_text_color = true,
       },
       hl = {
-        title = 'FFFFileInfoSection',
+        title = 'FloatTitle',
       },
     }
   end,
