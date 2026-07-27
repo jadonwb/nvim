@@ -23,12 +23,16 @@ return {
     -- Make nice path and modified indicator
     opts.sections.lualine_x = {
       {
+        require('noice').api.status.mode.get,
+        cond = require('noice').api.status.mode.has,
+        color = 'DiagnosticWarn',
+      },
+      {
         function()
           return require('noice').api.status.lsp_progress.get_hl()
         end,
         cond = function()
-          return package.loaded['noice']
-            and require('noice').api.status.lsp_progress.has()
+          return package.loaded['noice'] and require('noice').api.status.lsp_progress.has()
         end,
       },
     }
