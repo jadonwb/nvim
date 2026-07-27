@@ -65,6 +65,13 @@ return {
               end,
               desc = 'Code Action',
             },
+            {
+              '<leader>cd',
+              function()
+                require('utils.lsp-popup').show()
+              end,
+              desc = 'Diagnostics Under Cursor',
+            },
           },
         },
       },
