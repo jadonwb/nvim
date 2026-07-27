@@ -98,7 +98,7 @@ return {
       desc = 'Close Diffview',
     },
     {
-      '<Leader>gh',
+      '<Leader>gf',
       '<Cmd>DiffviewFileHistory %<CR>',
       desc = 'Diffview File History',
     },
