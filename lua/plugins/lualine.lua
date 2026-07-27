@@ -1,6 +1,17 @@
+local tabline_mode = 'filepath'
+
 return {
   'nvim-lualine/lualine.nvim',
   event = 'VeryLazy',
+  keys = {
+    {
+      '<C-BS>',
+      function()
+        tabline_mode = tabline_mode == 'filepath' and 'lsp_symbol' or 'filepath'
+      end,
+      desc = 'Toggle Tabline (filepath / LSP symbols)',
+    },
+  },
   opts = function(_, opts)
     local icons = LazyVim.config.icons
 
@@ -18,6 +29,7 @@ return {
     opts.options = vim.tbl_deep_extend('force', opts.options or {}, {
       section_separators = { left = '', right = '' },
       component_separators = { left = '', right = '' },
+      always_show_tabline = false,
     })
 
     -- Make nice path and modified indicator
@@ -49,6 +61,39 @@ return {
       },
       { 'filetype', icon_only = true, separator = '', padding = { left = 1, right = 0 } },
       { LazyVim.lualine.pretty_path { modified_sign = ' ●' } },
+    }
+
+    -- Tabline: project name | filepath / LSP symbol | tab list
+    -- DiagnosticFloatingHintLabel: dark fg on cyan bg (pill badge style from arrowlake)
+    opts.tabline = {
+      lualine_a = {
+        {
+          function()
+            return ' ' .. vim.fn.fnamemodify(vim.fn.getcwd(), ':t'):upper() .. ' '
+          end,
+          color = 'DiagnosticFloatingHintLabel',
+          padding = 1,
+        },
+      },
+      lualine_c = {
+        {
+          function()
+            if tabline_mode == 'lsp_symbol' then
+              local ok, result = pcall(require('trouble').statusline, {
+                mode = 'lsp_document_symbols',
+                groups = {},
+                title = '',
+                filter = { range = true },
+                format = '{kind_icon}{filename}:{symbol.name}',
+              })
+              return ok and result.get() or ''
+            end
+            return vim.fn.expand '%:.:h' == '.' and vim.fn.expand '%:t'
+              or vim.fn.expand '%:.:h' .. '/' .. vim.fn.expand '%:t'
+          end,
+        },
+      },
+      lualine_z = { 'tabs' },
     }
   end,
 }
