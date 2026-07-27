@@ -1,3 +1,6 @@
+-- FIXME: how to make it use my color theme?
+-- FIXME: how to make it attach the path of the image to pi before image is even done? aka async no blocking
+
 --- Screenshot utility: generate syntax-highlighted code images with silicon
 --- and attach them to the pi.nvim chat as VLM (vision language model) context.
 ---
@@ -34,10 +37,10 @@ function M.screenshot_and_attach(opts)
   end
 
   -- ensure output directory exists
-  local output_dir = vim.fn.stdpath('cache') .. '/pi-screenshots'
+  local output_dir = vim.fn.stdpath 'cache' .. '/pi-screenshots'
   vim.fn.mkdir(output_dir, 'p')
 
-  local filename = output_dir .. '/silicon_' .. os.date('%Y-%m-%d_%H-%M-%S') .. '.png'
+  local filename = output_dir .. '/silicon_' .. os.date '%Y-%m-%d_%H-%M-%S' .. '.png'
 
   -- merge user opts over defaults
   local merged = vim.tbl_extend('force', {
