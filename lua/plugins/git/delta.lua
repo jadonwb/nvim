@@ -2,6 +2,21 @@ return {
   'alex35mil/delta.nvim',
   event = 'VeryLazy',
 
+  config = function(_, opts)
+    require('delta').setup(opts)
+    -- Label delta file diff tabs via buffer name pattern (delta://diff/*)
+    vim.api.nvim_create_autocmd('BufEnter', {
+      group = vim.api.nvim_create_augroup('delta-tab-label', { clear = true }),
+      callback = function()
+        local name = vim.api.nvim_buf_get_name(0)
+        if name:match('^delta://diff/') then
+          vim.api.nvim_tabpage_set_var(vim.api.nvim_get_current_tabpage(), 'tab_label', '  diff')
+          pcall(require('lualine').refresh, { place = 'tabline' })
+        end
+      end,
+    })
+  end,
+
   opts = function()
     local pi_ok, pi = pcall(require, 'pi')
     local delta = require 'delta'
@@ -159,9 +174,7 @@ return {
     },
     {
       'gD',
-      function()
-        require('delta.diff').open_file()
-      end,
+      function() require('delta.diff').open_file() end,
       mode = 'n',
       desc = 'Delta File Diff',
     },
