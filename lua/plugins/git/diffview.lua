@@ -58,10 +58,36 @@ return {
 
       -- File panel (the tree listing on the left)
       file_panel = {
-        { 'n', 'j', function() require('diffview.actions').next_entry() end, { desc = 'Next entry' } },
-        { 'n', 'k', function() require('diffview.actions').prev_entry() end, { desc = 'Previous entry' } },
-        { 'n', '<Down>', function() require('diffview.actions').next_entry() end },
-        { 'n', '<Up>', function() require('diffview.actions').prev_entry() end },
+        {
+          'n',
+          'j',
+          function()
+            require('diffview.actions').next_entry()
+          end,
+          { desc = 'Next entry' },
+        },
+        {
+          'n',
+          'k',
+          function()
+            require('diffview.actions').prev_entry()
+          end,
+          { desc = 'Previous entry' },
+        },
+        {
+          'n',
+          '<Down>',
+          function()
+            require('diffview.actions').next_entry()
+          end,
+        },
+        {
+          'n',
+          '<Up>',
+          function()
+            require('diffview.actions').prev_entry()
+          end,
+        },
         {
           'n',
           '<Left>',
@@ -94,8 +120,22 @@ return {
           end,
           { desc = 'Stage / unstage entry' },
         },
-        { 'n', 'A', function() require('diffview.actions').stage_all() end, { desc = 'Stage all' } },
-        { 'n', 'U', function() require('diffview.actions').unstage_all() end, { desc = 'Unstage all' } },
+        {
+          'n',
+          'A',
+          function()
+            require('diffview.actions').stage_all()
+          end,
+          { desc = 'Stage all' },
+        },
+        {
+          'n',
+          'U',
+          function()
+            require('diffview.actions').unstage_all()
+          end,
+          { desc = 'Unstage all' },
+        },
         {
           'n',
           'X',
@@ -124,7 +164,7 @@ return {
           'n',
           '?',
           function()
-            require('diffview.actions').help('file_panel')
+            require('diffview.actions').help 'file_panel'
           end,
           { desc = 'Open help' },
         },
@@ -169,7 +209,7 @@ return {
     },
     -- Open diffview for current file's history
     {
-      '<Leader>gh',
+      '<Leader>gf',
       '<Cmd>DiffviewFileHistory %<CR>',
       desc = 'Diffview File History',
     },

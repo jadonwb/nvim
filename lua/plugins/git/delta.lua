@@ -4,7 +4,7 @@ return {
 
   opts = function()
     local pi_ok, pi = pcall(require, 'pi')
-    local delta = require('delta')
+    local delta = require 'delta'
     local picker = delta.picker
     local spotlight = delta.spotlight
     local diff = delta.diff
@@ -135,7 +135,7 @@ return {
     {
       '<Leader>gP',
       function()
-        require('delta.picker').toggle({ source = 'agent' })
+        require('delta.picker').toggle { source = 'agent' }
       end,
       desc = 'Delta Picker (agent changes)',
     },
