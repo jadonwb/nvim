@@ -93,7 +93,19 @@ return {
           end,
         },
       },
-      lualine_z = { 'tabs' },
+      lualine_z = {
+        {
+          'tabs',
+          mode = 2,
+          fmt = function(name, ctx)
+            local label = vim.fn.gettabvar(ctx.tabnr, 'tab_label')
+            if label and label ~= '' then
+              return label
+            end
+            return '' .. name .. ' '
+          end,
+        },
+      },
     }
   end,
 }
