@@ -55,21 +55,21 @@ return {
       { '<leader>xT', false },
 
       {
-        '<leader>tq',
+        '<leader>xT',
         function()
           picker_list { 'TODO!', 'FIXME!' }
         end,
         desc = 'High Priority TODOs (Trouble)',
       },
       {
-        '<leader>tt',
+        '<leader>xt',
         function()
           picker_list { 'TODO!', 'TODO' }
         end,
         desc = 'All TODOs (Trouble)',
       },
       {
-        '<leader>tf',
+        '<leader>xf',
         function()
           picker_list { 'FIXME!', 'FIXME' }
         end,
