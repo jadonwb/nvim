@@ -13,7 +13,7 @@ return {
 
     -- ── models ──────────────────────────────────────────────
     models = {
-      { match = 'opus', latest = true },
+      -- { match = 'opus', latest = true },
       -- add more models as needed, e.g.:
       -- { match = 'sonnet', latest = true },
       -- { match = 'gpt-5', exact = true },
@@ -150,7 +150,7 @@ return {
   config = function(_, opts)
     require('pi').setup(opts)
 
-    local pi = require('pi')
+    local pi = require 'pi'
     local group = vim.api.nvim_create_augroup('pi-custom-keybinds', { clear = true })
 
     local function map(buf, key, action, modes)
