@@ -109,6 +109,11 @@ return {
       },
 
       diff = {
+        file = {
+          keys = {
+            close = 'q',
+          },
+        },
         hunk = {
           mode = 'auto',
           layout = {
@@ -151,6 +156,14 @@ return {
         require('delta.spotlight').toggle()
       end,
       desc = 'Delta Spotlight (inline hunks)',
+    },
+    {
+      'gD',
+      function()
+        require('delta.diff').open_file()
+      end,
+      mode = 'n',
+      desc = 'Delta File Diff',
     },
     {
       'gd',
