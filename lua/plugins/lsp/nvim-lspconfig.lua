@@ -17,6 +17,13 @@ return {
             { 'gy', false },
             { 'gD', false },
             {
+              'K',
+              function()
+                require('utils.lsp-popup').show_hover()
+              end,
+              desc = 'Hover',
+            },
+            {
               'grd',
               function()
                 require('snacks').picker.lsp_definitions()

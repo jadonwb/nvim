@@ -38,7 +38,9 @@ local SEVERITY = {
 -- Close popup and clean up registry entry
 local function close(winid)
   local popup = popups[winid]
-  if not popup then return end
+  if not popup then
+    return
+  end
   if popup.winid and vim.api.nvim_win_is_valid(popup.winid) then
     pcall(popup.unmount, popup)
   end
@@ -47,7 +49,7 @@ end
 
 -- Smart position: above cursor if more room, else below
 local function resolve_position(height)
-  local cursor_row = vim.fn.screenpos(vim.fn.win_getid(), vim.fn.line('.'), 1).row
+  local cursor_row = vim.fn.screenpos(vim.fn.win_getid(), vim.fn.line '.', 1).row
   local ui_lines = vim.o.lines - vim.o.cmdheight - 1
   local space_above = cursor_row - 2
   local space_below = ui_lines - cursor_row - 1
@@ -58,20 +60,23 @@ local function resolve_position(height)
   return { row = 2, col = 0 }
 end
 
--- Shared nui.popup factory
-local function create_popup(lines, height)
-  local parent = vim.api.nvim_get_current_win()
+-- Shared nui.popup factory. parent_win is passed explicitly so the
+-- vim.schedule callback in hover_handler doesn't capture the wrong window.
+local function create_popup(lines, height, parent_win)
+  local parent = parent_win or vim.api.nvim_get_current_win()
   close(parent)
 
   local max_w = 20
   for _, l in ipairs(lines) do
-    if #l > max_w then max_w = #l end
+    if #l > max_w then
+      max_w = #l
+    end
   end
   max_w = math.min(max_w + 2, math.floor(vim.o.columns * 0.6))
 
   local pos = resolve_position(height)
 
-  local popup = NuiPopup({
+  local popup = NuiPopup {
     enter = false,
     focusable = true,
     relative = 'cursor',
@@ -84,21 +89,26 @@ local function create_popup(lines, height)
     win_options = {
       winhighlight = 'Normal:NormalFloat,FloatBorder:FloatBorder',
     },
-  })
+  }
 
   popup:mount()
-  vim.api.nvim_buf_set_lines(popup.bufnr, 0, -1, false, lines)
-  vim.api.nvim_buf_set_option(popup.bufnr, 'modifiable', false)
 
   -- Autocmds: close, reposition
   local group = vim.api.nvim_create_augroup('LspPopup_' .. parent, { clear = true })
   vim.api.nvim_create_autocmd({ 'CursorMoved', 'InsertEnter' }, {
-    group = group, once = true,
-    callback = function() close(parent) end,
+    group = group,
+    once = true,
+    callback = function()
+      close(parent)
+    end,
   })
   vim.api.nvim_create_autocmd('BufLeave', {
-    group = group, buffer = popup.bufnr, once = true,
-    callback = function() close(parent) end,
+    group = group,
+    buffer = popup.bufnr,
+    once = true,
+    callback = function()
+      close(parent)
+    end,
   })
   vim.api.nvim_create_autocmd('WinScrolled', {
     group = group,
@@ -113,21 +123,28 @@ local function create_popup(lines, height)
   })
 
   -- Close bindings
-  for _, key in ipairs({ 'q', '<Esc>', '<C-c>' }) do
-    vim.keymap.set('n', key, function() close(parent) end, {
-      buffer = popup.bufnr, nowait = true,
+  for _, key in ipairs { 'q', '<Esc>', '<C-c>' } do
+    vim.keymap.set('n', key, function()
+      close(parent)
+    end, {
+      buffer = popup.bufnr,
+      nowait = true,
     })
   end
 
   -- Scroll: nui first, noice fallback
   vim.keymap.set('n', '<C-d>', function()
     if not pcall(require('noice.util.nui').scroll, popup.winid, 4) then
-      pcall(function() require('noice.lsp').scroll(4) end)
+      pcall(function()
+        require('noice.lsp').scroll(4)
+      end)
     end
   end, { buffer = popup.bufnr, nowait = true })
   vim.keymap.set('n', '<C-u>', function()
     if not pcall(require('noice.util.nui').scroll, popup.winid, -4) then
-      pcall(function() require('noice.lsp').scroll(-4) end)
+      pcall(function()
+        require('noice.lsp').scroll(-4)
+      end)
     end
   end, { buffer = popup.bufnr, nowait = true })
 
@@ -148,47 +165,55 @@ local function focus_existing(winid)
 end
 
 --============================================================================
--- Hover (takes over from noice via handler override)
+-- Hover (bypasses handler system — makes its own LSP request like Alex)
 --============================================================================
 
-local function hover_handler(_, result, ctx, config)
-  if not (result and result.contents) then return end
-
+function M.show_hover()
   local parent = vim.api.nvim_get_current_win()
-  if focus_existing(parent) then return end
+  if focus_existing(parent) then
+    return
+  end
 
-  vim.schedule(function()
-    close(parent)
+  close(parent)
 
-    -- Use noice's formatter for markdown rendering
-    local has_noice, message_mod = pcall(require, 'noice.message')
-    if not has_noice then
-      local bufnr = vim.lsp.util.open_floating_preview(
-        vim.lsp.util.convert_input_to_markdown_lines(result.contents),
-        'markdown', config or {}
-      )
-      if not bufnr then return end
-      popups[parent] = { winid = vim.api.nvim_get_current_win() }
+  local params = vim.lsp.util.make_position_params(parent, 'utf-16')
+  vim.lsp.buf_request(0, 'textDocument/hover', params, function(_, result, ctx, _)
+    if not result or not result.contents then
+      vim.notify('No hover information', vim.log.levels.INFO)
       return
     end
 
-    local message = message_mod.Message('lsp', 'hover')
-    local ok = pcall(function()
-      require('noice.lsp.format').format(message, result.contents, { ft = vim.bo.filetype })
-    end)
-    if not ok then return end
+    local has_noice, Message = pcall(require, 'noice.message')
+    if not has_noice then
+      return
+    end
 
-    -- Compute size from rendered lines
-    local lines = vim.api.nvim_buf_get_lines(message.bufnr, 0, -1, false)
-    if #lines == 0 then lines = { '(empty)' } end
+    local message = Message('lsp', 'hover')
+    local ok = pcall(function()
+      require('noice.lsp.format').format(message, result.contents, { ft = vim.bo[ctx.bufnr].filetype })
+    end)
+    if not ok then
+      vim.notify('Failed to format hover', vim.log.levels.ERROR)
+      return
+    end
+
+    local content = message:content()
+    local lines = vim.split(content, '\n')
+    if #lines == 0 then
+      lines = { '(empty)' }
+    end
     local height = math.min(#lines, 30)
 
-    local popup = create_popup(lines, height)
-    if not popup then return end
-
-    vim.api.nvim_buf_set_option(popup.bufnr, 'filetype', 'markdown')
-    local ns = vim.api.nvim_create_namespace('lsp_hover')
-    message:render(popup.bufnr, ns)
+    vim.schedule(function()
+      local popup = create_popup(lines, height, parent)
+      if not popup then
+        return
+      end
+      vim.api.nvim_buf_set_option(popup.bufnr, 'filetype', 'markdown')
+      local ns = vim.api.nvim_create_namespace 'lsp_hover'
+      message:render(popup.bufnr, ns)
+      vim.api.nvim_buf_set_option(popup.bufnr, 'modifiable', false)
+    end)
   end)
 end
 
@@ -198,9 +223,11 @@ end
 
 function M.show()
   local parent = vim.api.nvim_get_current_win()
-  if focus_existing(parent) then return end
+  if focus_existing(parent) then
+    return
+  end
 
-  local cursor_line = vim.fn.line('.') - 1
+  local cursor_line = vim.fn.line '.' - 1
   local diagnostics = vim.diagnostic.get(0, { lnum = cursor_line })
   if vim.tbl_isempty(diagnostics) then
     diagnostics = vim.diagnostic.get(0, { lnum = cursor_line - 1 })
@@ -223,11 +250,14 @@ function M.show()
 
   local height = math.min(#lines, 30)
   local popup = create_popup(lines, height)
-  if not popup then return end
+  if not popup then
+    return
+  end
+  vim.api.nvim_buf_set_lines(popup.bufnr, 0, -1, false, lines)
 
   -- Apply severity highlights and pill badges
-  local ns = vim.api.nvim_create_namespace('diag_popup')
-  local vt_ns = vim.api.nvim_create_namespace('diag_popup_vt')
+  local ns = vim.api.nvim_create_namespace 'diag_popup'
+  local vt_ns = vim.api.nvim_create_namespace 'diag_popup_vt'
   local lnum = 0
 
   for _, d in ipairs(diagnostics) do
@@ -251,12 +281,7 @@ function M.show()
 
     lnum = lnum + #msgs + 1
   end
+  vim.api.nvim_buf_set_option(popup.bufnr, 'modifiable', false)
 end
-
---============================================================================
--- Register hover handler on load (replaces noice hover)
---============================================================================
-
-vim.lsp.handlers['textDocument/hover'] = vim.lsp.with(hover_handler, {})
 
 return M
