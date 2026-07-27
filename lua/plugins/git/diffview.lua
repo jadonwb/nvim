@@ -53,6 +53,17 @@ return {
 
     -- ── hooks: tab renaming + diff2 highlighting ──────────────
     hooks = {
+      -- Label the diffview tab so it reads nicely in the tabline
+      view_opened = function(view)
+        vim.api.nvim_tabpage_set_var(view.tabpage, 'tab_label', '  diff')
+        vim.schedule(function()
+          pcall(require('lualine').refresh, { place = 'tabline' })
+        end)
+      end,
+      view_closed = function()
+        -- tab is being destroyed, no cleanup needed
+      end,
+      -- Better diff2 highlight colors
       diff_buf_win_enter = function(_bufnr, _winid, ctx)
         if ctx.layout_name:match '^diff2' then
           if ctx.symbol == 'a' then
