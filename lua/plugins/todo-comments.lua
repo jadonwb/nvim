@@ -50,6 +50,10 @@ return {
       { '<leader>st', false },
       { '<leader>sT', false },
 
+      -- Disable LazyVim's trouble todo keys (replaced by ours)
+      { '<leader>xt', false },
+      { '<leader>xT', false },
+
       {
         '<leader>tq',
         function()
