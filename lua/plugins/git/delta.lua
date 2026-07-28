@@ -64,7 +64,7 @@ return {
             width = 0.25,
             border = border_none,
             title = function(source)
-              local icon = source == 'agent' and '󰫮󰫴󰫲󰫻󰬁' or '󰫴󰫶󰬁'
+              local icon = source == 'agent' and '󰫮󰫴󰫲󰫻󰬁' or '󰫴󰫶󰬁' -- FIXME: ?
               return ' Delta ' .. icon .. ' '
             end,
           },
@@ -90,10 +90,11 @@ return {
           close = { { '<Esc>', modes = 'n' }, picker.actions.close },
           close_q = { { 'q', modes = 'n' }, picker.actions.close },
           toggle_preview = { '<C-S-p>', picker.actions.toggle_preview },
-          cycle_source = { '<Tab>', picker.actions.cycle_source },
-          cycle_source_back = { '<S-Tab>', picker.actions.cycle_source_back },
+          cycle_source = { '<Tab>', picker.actions.cycle_source }, -- FIXME: ?
+          cycle_source_back = { '<S-Tab>', picker.actions.cycle_source_back }, -- FIXME: ?
           toggle_stage = { '<C-CR>', picker.actions.toggle_stage },
-          reset = { 'R', picker.actions.reset },
+          reset = { { 'R', modes = 'n' }, picker.actions.reset },
+          --
         },
       },
 
