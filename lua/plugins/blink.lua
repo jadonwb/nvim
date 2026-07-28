@@ -1,3 +1,10 @@
+-- vim.api.nvim_create_autocmd('FileType', {
+--   pattern = { 'oil', 'gitcommit', 'pi-dialog' },
+--   callback = function()
+--     vim.b.completion = false
+--   end,
+-- })
+
 return {
   {
     'saghen/blink.cmp',
@@ -5,12 +12,27 @@ return {
       { 'xzbdmw/colorful-menu.nvim', opts = {} },
     },
     opts = {
+      sources = {
+        per_filetype = {
+          ['pi-chat-prompt'] = { 'pi' },
+        },
+        providers = {
+          pi = { name = 'Pi', module = 'pi.completion.blink' },
+        },
+      },
       completion = {
         list = {
           selection = {
             preselect = false,
           },
         },
+        documentation = {
+          auto_show = true,
+          window = {
+            border = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' },
+          },
+        },
+        -- ghost_text = { enabled = false },
         menu = {
           -- FIXME: why does this break it?
           -- border = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' },
@@ -25,11 +47,6 @@ return {
                 end,
               },
             },
-          },
-        },
-        documentation = {
-          window = {
-            border = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' },
           },
         },
       },
