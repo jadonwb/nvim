@@ -57,7 +57,7 @@ return {
 
     return {
       picker = {
-        initial_mode = 'n',
+        initial_mode = 'i',
         layout = {
           height = { 0.5, 0.9 },
           main = {
@@ -87,7 +87,7 @@ return {
           send_to_pi_and_close = { '<Leader>p', send_to_pi(true) },
           move_up = { { { 'k', modes = 'n' }, '<Up>' }, picker.actions.move(-1) },
           move_down = { { { 'j', modes = 'n' }, '<Down>' }, picker.actions.move(1) },
-          close = { '<Esc>', picker.actions.close },
+          close = { { '<Esc>', modes = 'n' }, picker.actions.close },
           close_q = { { 'q', modes = 'n' }, picker.actions.close },
           toggle_preview = { '<C-S-p>', picker.actions.toggle_preview },
           cycle_source = { '<Tab>', picker.actions.cycle_source },
