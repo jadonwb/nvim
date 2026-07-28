@@ -12,12 +12,7 @@ return {
     },
 
     -- ── models ──────────────────────────────────────────────
-    models = {
-      -- { match = 'opus', latest = true },
-      -- add more models as needed, e.g.:
-      -- { match = 'sonnet', latest = true },
-      -- { match = 'gpt-5', exact = true },
-    },
+    -- models = {},
 
     -- ── startup ─────────────────────────────────────────────
     expand_startup_details = false,
@@ -77,15 +72,8 @@ return {
     -- ── zen mode ────────────────────────────────────────────
     zen = {
       keys = {
-        toggle = { '<M-z>', modes = { 'n', 'i' } },
+        toggle = { '<leader>pz', modes = { 'n', 'i' } },
         exit = { { '<Esc>', modes = 'n' } },
-      },
-    },
-
-    -- ── dialog ──────────────────────────────────────────────
-    dialog = {
-      keys = {
-        confirm = { { '<C-CR>', modes = { 'n', 'i' } } },
       },
     },
   },
@@ -93,7 +81,7 @@ return {
   -- ── global keymaps ────────────────────────────────────────
   keys = {
     {
-      '<Leader>pa',
+      '<Leader>pp',
       function()
         vim.cmd 'Pi layout=side'
       end,
@@ -101,7 +89,7 @@ return {
       desc = 'Pi (side panel)',
     },
     {
-      '<Leader>pA',
+      '<Leader>pf',
       function()
         vim.cmd 'Pi layout=float'
       end,
@@ -115,16 +103,28 @@ return {
       desc = 'Pi Toggle Layout',
     },
     {
-      '<Leader>pc',
+      '<Leader>psR',
       '<Cmd>PiContinue<CR>',
       mode = { 'n', 'v' },
       desc = 'Pi Continue Session',
     },
     {
-      '<Leader>pr',
+      '<Leader>psl',
       '<Cmd>PiResume<CR>',
       mode = { 'n', 'v' },
-      desc = 'Pi Resume Session',
+      desc = 'Pi List Sessions',
+    },
+    {
+      '<Leader>psn',
+      '<Cmd>PiNewSession<CR>',
+      mode = { 'n', 'v' },
+      desc = 'Pi New Session',
+    },
+    {
+      '<Leader>psr',
+      '<Cmd>PiSessionName<CR>',
+      mode = { 'n', 'v' },
+      desc = 'Pi Name Session',
     },
     {
       '<Leader>pm',
@@ -133,16 +133,22 @@ return {
       desc = 'Pi Send Mention',
     },
     {
-      '<Leader>pn',
+      '<Leader>pa',
       '<Cmd>PiAttention<CR>',
       mode = { 'n', 'v' },
       desc = 'Pi Attention',
     },
     {
-      '<Leader>pC',
+      '<Leader>pq',
       '<Cmd>PiToggleChat<CR>',
       mode = { 'n', 'v' },
       desc = 'Pi Toggle Chat',
+    },
+    {
+      '<Leader>pQ',
+      '<Cmd>PiStop<CR>',
+      mode = { 'n', 'v' },
+      desc = 'Pi Stop ',
     },
   },
 
@@ -173,7 +179,9 @@ return {
       group = group,
       pattern = 'pi-chat-history',
       callback = function(event)
-        map(event.buf, '<S-Down>', pi.focus_chat_prompt)
+        map(event.buf, 'q', pi.toggle, { 'n' })
+        map(event.buf, '<Esc>', pi.toggle, { 'n' })
+        map(event.buf, '<C-j>', pi.focus_chat_prompt)
       end,
     })
 
@@ -182,20 +190,21 @@ return {
       group = group,
       pattern = 'pi-chat-prompt',
       callback = function(event)
-        map(event.buf, '<S-Up>', pi.focus_chat_history)
-        map(event.buf, '<S-Down>', pi.focus_chat_attachments)
-        map(event.buf, '<C-Up>', function()
+        map(event.buf, 'q', pi.toggle, { 'n' })
+        map(event.buf, '<Esc>', pi.toggle, { 'n' })
+        map(event.buf, '<C-k>', pi.focus_chat_history)
+        map(event.buf, '<C-j>', pi.focus_chat_attachments)
+        map(event.buf, '<A-k>', function()
           pi.scroll_chat_history('up', 2)
         end)
-        map(event.buf, '<C-Down>', function()
+        map(event.buf, '<A-j>', function()
           pi.scroll_chat_history('down', 2)
         end)
-        map(event.buf, '<M-m>', pi.cycle_model)
-        map(event.buf, '<M-M>', pi.select_model)
-        map(event.buf, '<M-t>', pi.cycle_thinking_level)
-        map(event.buf, '<M-T>', pi.select_thinking_level)
-        map(event.buf, '<M-n>', pi.new_session)
-        map(event.buf, '<M-x>', pi.compact)
+        map(event.buf, '<C-m>', pi.cycle_model)
+        map(event.buf, '<C-S-m>', pi.select_model)
+        map(event.buf, '<C-t>', pi.cycle_thinking_level)
+        map(event.buf, '<C-S-t>', pi.select_thinking_level)
+        map(event.buf, '<C-S-x>', pi.compact)
         map(event.buf, '<C-v>', pi.paste_image)
         map(event.buf, '<S-Tab>', function()
           pi.invoke '/permission-toggle-auto-accept'
@@ -208,7 +217,7 @@ return {
       group = group,
       pattern = 'pi-chat-attachments',
       callback = function(event)
-        map(event.buf, '<S-Up>', pi.focus_chat_prompt)
+        map(event.buf, '<C-k>', pi.focus_chat_prompt)
         map(event.buf, '<C-v>', pi.paste_image)
       end,
     })
