@@ -32,7 +32,7 @@ return {
         return {
           width = wide and 0.6 or 0.8,
           height = 0.85,
-          border = 'rounded',
+          border = { ' ', ' ', ' ', ' ', ' ', '─', ' ', ' ' },
         }
       end,
     },
