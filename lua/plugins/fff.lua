@@ -38,9 +38,9 @@ return {
       git = {
         status_text_color = true,
       },
-      hl = {
-        title = 'FloatTitle',
-      },
+      -- hl = {
+      --   title = 'FloatTitle',
+      -- },
     }
   end,
   keys = {
