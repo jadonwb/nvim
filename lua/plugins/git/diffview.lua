@@ -88,6 +88,11 @@ return {
 
   keys = {
     {
+      '<Leader>ge',
+      '<Cmd>DiffviewToggleFiles<CR>',
+      desc = 'Diffview File Toggle',
+    },
+    {
       '<Leader>gv',
       '<Cmd>DiffviewOpen<CR>',
       desc = 'Diffview (branch/commit diffs)',
