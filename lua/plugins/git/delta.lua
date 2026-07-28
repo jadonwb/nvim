@@ -57,7 +57,7 @@ return {
 
     return {
       picker = {
-        initial_mode = 'i',
+        initial_mode = 'n',
         layout = {
           height = { 0.5, 0.9 },
           main = {
