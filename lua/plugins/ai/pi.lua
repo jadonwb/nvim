@@ -139,12 +139,6 @@ return {
       desc = 'Pi Attention',
     },
     {
-      '<Leader>pq',
-      '<Cmd>PiToggleChat<CR>',
-      mode = { 'n', 'v' },
-      desc = 'Pi Toggle Chat',
-    },
-    {
       '<Leader>pQ',
       '<Cmd>PiStop<CR>',
       mode = { 'n', 'v' },
@@ -168,8 +162,10 @@ return {
       group = group,
       pattern = { 'pi-chat-history', 'pi-chat-prompt', 'pi-chat-attachments' },
       callback = function(event)
+        map(event.buf, 'q', pi.toggle_chat, { 'n' })
+        map(event.buf, '<Esc>', pi.toggle_chat, { 'n' })
         map(event.buf, '<C-q>', '<Cmd>PiToggleChat<CR>')
-        map(event.buf, '<M-c>', '<Cmd>PiAbort<CR>')
+        map(event.buf, '<C-c>', '<Cmd>PiAbort<CR>')
         map(event.buf, '<C-o>', pi.toggle_history_blocks)
       end,
     })
@@ -179,8 +175,6 @@ return {
       group = group,
       pattern = 'pi-chat-history',
       callback = function(event)
-        map(event.buf, 'q', pi.toggle, { 'n' })
-        map(event.buf, '<Esc>', pi.toggle, { 'n' })
         map(event.buf, '<C-j>', pi.focus_chat_prompt)
       end,
     })
@@ -190,8 +184,6 @@ return {
       group = group,
       pattern = 'pi-chat-prompt',
       callback = function(event)
-        map(event.buf, 'q', pi.toggle, { 'n' })
-        map(event.buf, '<Esc>', pi.toggle, { 'n' })
         map(event.buf, '<C-k>', pi.focus_chat_history)
         map(event.buf, '<C-j>', pi.focus_chat_attachments)
         map(event.buf, '<A-k>', function()
