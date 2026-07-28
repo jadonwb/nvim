@@ -6,6 +6,7 @@ return {
     cli = {
       bin = 'pi',
       args = {
+        '--approve',
         '--fff-mode',
         'tools-and-ui', -- adds fffind/ffgrep as extra tools + FFF @ autocomplete
       },
