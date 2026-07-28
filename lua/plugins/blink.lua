@@ -1,10 +1,3 @@
--- vim.api.nvim_create_autocmd('FileType', {
---   pattern = { 'oil', 'gitcommit', 'pi-dialog' },
---   callback = function()
---     vim.b.completion = false
---   end,
--- })
-
 return {
   {
     'saghen/blink.cmp',
