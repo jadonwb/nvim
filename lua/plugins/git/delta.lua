@@ -9,7 +9,7 @@ return {
       group = vim.api.nvim_create_augroup('delta-tab-label', { clear = true }),
       callback = function()
         local name = vim.api.nvim_buf_get_name(0)
-        if name:match('^delta://diff/') then
+        if name:match '^delta://diff/' then
           vim.api.nvim_tabpage_set_var(vim.api.nvim_get_current_tabpage(), 'tab_label', '  diff')
           pcall(require('lualine').refresh, { place = 'tabline' })
         end
@@ -69,7 +69,7 @@ return {
             end,
           },
           preview = {
-            enabled = true,
+            enabled = false,
             width = 0.5,
             border = border_none,
           },
@@ -174,7 +174,9 @@ return {
     },
     {
       'gD',
-      function() require('delta.diff').open_file() end,
+      function()
+        require('delta.diff').open_file()
+      end,
       mode = 'n',
       desc = 'Delta File Diff',
     },
