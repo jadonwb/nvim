@@ -41,6 +41,8 @@ return {
     statusline = {
       layout = {
         left = {
+          -- 'tokens',
+          -- 'cost',
           'context',
           '  ',
           -- show permission status from agentic-af extension
