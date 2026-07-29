@@ -1,3 +1,5 @@
+local borders = require 'config.borders'
+
 return {
   {
     'folke/snacks.nvim',
@@ -110,21 +112,26 @@ return {
                   height = 1,
                   title = '{title} {live}',
                   title_pos = 'center',
-                  border = { ' ', ' ', ' ', ' ', ' ', '─', ' ', ' ' },
+                  border = borders.bottom_hr,
                 },
                 {
                   win = 'list',
-                  border = { '', '', '', ' ', '', '', '', ' ' },
+                  border = borders.left_none,
                 },
               },
               {
                 win = 'preview',
                 title = '{preview}',
-                border = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' },
+                border = borders.padded,
                 width = 0.6,
               },
             },
           },
+        },
+      },
+      input = {
+        win = {
+          border = borders.padded,
         },
       },
       styles = {
@@ -142,11 +149,11 @@ return {
         },
         float = { backdrop = false },
         notification = {
-          border = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' },
+          border = borders.padded,
         },
         notification_history = {
           backdrop = false,
-          border = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' },
+          border = borders.padded,
           keys = {
             q = 'close',
             ['<Esc>'] = 'close',
@@ -201,16 +208,16 @@ return {
                   height = 1,
                   title = '{title} {live}',
                   title_pos = 'center',
-                  border = { ' ', ' ', ' ', ' ', ' ', '─', ' ', ' ' },
+                  border = borders.bottom_hr,
                 },
                 {
                   win = 'list',
-                  border = { '', '', '', ' ', '', '', '', ' ' },
+                  border = borders.left_none,
                 },
                 {
                   win = 'preview',
                   title = '{preview}',
-                  border = { ' ', '─', ' ', ' ', ' ', ' ', ' ', ' ' },
+                  border = borders.top_hr,
                 },
               },
             },
