@@ -11,7 +11,6 @@ return {
         local name = vim.api.nvim_buf_get_name(0)
         if name:match '^delta://diff/' then
           vim.api.nvim_tabpage_set_var(vim.api.nvim_get_current_tabpage(), 'tab_label', '  diff')
-          pcall(require('lualine').refresh, { place = 'tabline' })
         end
       end,
     })
