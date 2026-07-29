@@ -53,7 +53,8 @@ return {
     end
 
     local borders = require 'config.borders'
-    local delta_border = borders.padded
+    local hunk_border = borders.padded
+    local picker_border = 'rounded'
 
     return {
       picker = {
@@ -62,7 +63,7 @@ return {
           height = { 0.5, 0.9 },
           main = {
             width = 0.25,
-            border = delta_border,
+            border = picker_border,
             title = function(source)
               local icon = source == 'agent' and '󰫮󰫴󰫲󰫻󰬁' or '󰫴󰫶󰬁' -- FIXME: really thick, make smaller?
               return ' Delta ' .. icon .. ' '
@@ -71,7 +72,7 @@ return {
           preview = {
             enabled = false,
             width = 0.5,
-            border = delta_border,
+            border = picker_border,
           },
         },
         sources = {
@@ -133,7 +134,7 @@ return {
         hunk = {
           mode = 'auto',
           layout = {
-            border = delta_border,
+            border = hunk_border,
           },
           keys = {
             scroll_up = '<C-u>',
