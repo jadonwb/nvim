@@ -18,9 +18,9 @@ return {
       local modified = vim.bo[props.buf].modified
 
       -- Resolve colors from theme highlight groups (updates on colorscheme change)
-      local float_hl = vim.api.nvim_get_hl(0, { name = 'NormalFloat', link = false })
+      local bg_hl = vim.api.nvim_get_hl(0, { name = 'StatusLine', link = false })
       local comment_hl = vim.api.nvim_get_hl(0, { name = 'Comment', link = false })
-      local bg = float_hl.bg and string.format('#%06x', float_hl.bg)
+      local bg = bg_hl.bg and string.format('#%06x', bg_hl.bg)
       local fg = comment_hl.fg and string.format('#%06x', comment_hl.fg)
 
       return {
