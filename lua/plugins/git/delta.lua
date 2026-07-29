@@ -52,7 +52,8 @@ return {
       end
     end
 
-    local border_none = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' }
+    local borders = require 'config.borders'
+    local delta_border = borders.padded
 
     return {
       picker = {
@@ -61,7 +62,7 @@ return {
           height = { 0.5, 0.9 },
           main = {
             width = 0.25,
-            border = border_none,
+            border = delta_border,
             title = function(source)
               local icon = source == 'agent' and '󰫮󰫴󰫲󰫻󰬁' or '󰫴󰫶󰬁' -- FIXME: ?
               return ' Delta ' .. icon .. ' '
@@ -70,7 +71,7 @@ return {
           preview = {
             enabled = false,
             width = 0.5,
-            border = border_none,
+            border = delta_border,
           },
         },
         sources = {
@@ -132,7 +133,7 @@ return {
         hunk = {
           mode = 'auto',
           layout = {
-            border = border_none,
+            border = delta_border,
           },
           keys = {
             scroll_up = '<C-u>',

@@ -1,3 +1,5 @@
+local borders = require('config.borders')
+
 return {
   {
     'saghen/blink.cmp',
@@ -22,7 +24,7 @@ return {
         documentation = {
           auto_show = true,
           window = {
-            border = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' },
+            border = borders.padded,
           },
         },
         -- ghost_text = { enabled = false },

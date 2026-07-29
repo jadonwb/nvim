@@ -1,3 +1,5 @@
+local borders = require('config.borders')
+
 return {
   'dmtrKovalenko/fff.nvim',
   branch = 'main',
@@ -11,10 +13,7 @@ return {
       layout = {
         height = 0.88,
         width = is_wide and 0.75 or 0.9,
-        border = {
-          { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' },
-          { ' ', ' ', ' ', ' ', ' ' },
-        },
+        border = borders.fff_border,
         prompt_position = 'top',
         preview_position = 'right',
         preview_size = 0.6,

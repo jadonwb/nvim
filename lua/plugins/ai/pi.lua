@@ -1,3 +1,5 @@
+local borders = require('config.borders')
+
 return {
   'alex35mil/pi.nvim',
   dependencies = { 'HakonHarnes/img-clip.nvim' },
@@ -33,7 +35,7 @@ return {
         return {
           width = wide and 0.6 or 0.8,
           height = 0.85,
-          border = { ' ', ' ', ' ', ' ', ' ', '─', ' ', ' ' },
+          border = borders.bottom_hr,
         }
       end,
     },
@@ -74,7 +76,7 @@ return {
 
     -- ── dialogs ────────────────────────────────────────────
     dialog = {
-      border = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' },
+      border = borders.padded,
     },
 
     -- ── zen mode ────────────────────────────────────────────
