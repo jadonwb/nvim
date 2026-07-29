@@ -127,6 +127,26 @@ return {
               },
             },
           },
+          select = {
+            layout = {
+              box = 'vertical',
+              backdrop = false,
+              width = 0.5,
+              height = 0.5,
+              border = 'none',
+              {
+                win = 'input',
+                height = 1,
+                title = '{title}',
+                title_pos = 'center',
+                border = borders.bottom_hr,
+              },
+              {
+                win = 'list',
+                border = borders.left_none,
+              },
+            },
+          },
         },
       },
       input = {
