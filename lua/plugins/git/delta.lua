@@ -1,6 +1,5 @@
 return {
   'alex35mil/delta.nvim',
-  event = 'VeryLazy',
 
   config = function(_, opts)
     require('delta').setup(opts)
