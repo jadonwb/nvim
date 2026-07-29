@@ -64,7 +64,7 @@ return {
             width = 0.25,
             border = delta_border,
             title = function(source)
-              local icon = source == 'agent' and '󰫮󰫴󰫲󰫻󰬁' or '󰫴󰫶󰬁' -- FIXME: ?
+              local icon = source == 'agent' and '󰫮󰫴󰫲󰫻󰬁' or '󰫴󰫶󰬁' -- FIXME: really thick, make smaller?
               return ' Delta ' .. icon .. ' '
             end,
           },
