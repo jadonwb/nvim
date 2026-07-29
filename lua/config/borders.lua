@@ -9,8 +9,8 @@ M.bottom_hr = { ' ', ' ', ' ', ' ', ' ', '─', ' ', ' ' }
 --- Top edge horizontal rule
 M.top_hr = { ' ', '─', ' ', ' ', ' ', ' ', ' ', ' ' }
 
---- No left / right / top edges — only the right-side inner separator.
-M.left_none = { '', '', '', ' ', '', '', '', ' ' }
+--- No top-left / top-right / top edges
+M.top_none = { '', '', '', ' ', ' ', ' ', ' ', ' ' }
 
 --- fff.nvim nested border (outer 8-element + junction 5-element array).
 M.fff_border = {

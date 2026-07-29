@@ -116,7 +116,7 @@ return {
                 },
                 {
                   win = 'list',
-                  border = borders.left_none,
+                  border = borders.top_none,
                 },
               },
               {
@@ -143,7 +143,35 @@ return {
               },
               {
                 win = 'list',
-                border = borders.left_none,
+                border = borders.top_none,
+              },
+            },
+          },
+          vscode = {
+            hidden = { 'preview' },
+            layout = {
+              backdrop = false,
+              row = 1,
+              width = 0.4,
+              min_width = 80,
+              height = 0.4,
+              border = 'none',
+              box = 'vertical',
+              {
+                win = 'input',
+                height = 1,
+                border = borders.bottom_hr,
+                title = '{title} {live} {flags}',
+                title_pos = 'center',
+              },
+              {
+                win = 'list',
+                border = borders.top_none,
+              },
+              {
+                win = 'preview',
+                title = '{preview}',
+                border = borders.padded,
               },
             },
           },
@@ -232,7 +260,7 @@ return {
                 },
                 {
                   win = 'list',
-                  border = borders.left_none,
+                  border = borders.top_none,
                 },
                 {
                   win = 'preview',
