@@ -78,6 +78,7 @@ return {
         sources = {
           git = { label = 'Git' },
           agent = pi_ok and { label = 'Agent', files = pi.changed_files } or nil,
+          -- FIXME: can integrate chezmoi?
         },
         actions = {
           open = { '<CR>', open_with_pi_side(picker.actions.open) },
@@ -91,8 +92,8 @@ return {
           close = { { '<Esc>', modes = 'n' }, picker.actions.close },
           close_q = { { 'q', modes = 'n' }, picker.actions.close },
           toggle_preview = { '<C-S-p>', picker.actions.toggle_preview },
-          cycle_source = { '<Tab>', picker.actions.cycle_source }, -- FIXME: ?
-          cycle_source_back = { '<S-Tab>', picker.actions.cycle_source_back }, -- FIXME: ?
+          cycle_source = { '<Tab>', picker.actions.cycle_source }, -- FIXME: toggle title too?
+          cycle_source_back = { '<S-Tab>', picker.actions.cycle_source_back }, -- FIXME: toggle title too?
           toggle_stage = { '<C-CR>', picker.actions.toggle_stage },
           reset = { { 'R', modes = 'n' }, picker.actions.reset },
           --
