@@ -87,6 +87,11 @@ return {
 
   keys = {
     {
+      '<Leader>gl',
+      '<Cmd>DiffviewFileHistory<CR>',
+      desc = 'Diffview File History (Commits)',
+    },
+    {
       '<Leader>gd',
       '<Cmd>DiffviewOpen<CR>',
       desc = 'Diffview (branch/commit diffs)',
@@ -99,7 +104,7 @@ return {
     {
       '<Leader>gf',
       '<Cmd>DiffviewFileHistory %<CR>',
-      desc = 'Diffview File History',
+      desc = 'Diffview File History (This File)',
     },
   },
 }
