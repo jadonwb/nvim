@@ -1,4 +1,4 @@
-local borders = require('config.borders')
+local borders = require 'config.borders'
 
 return {
   'dmtrKovalenko/fff.nvim',
@@ -37,9 +37,9 @@ return {
       git = {
         status_text_color = true,
       },
-      -- hl = {
-      --   title = 'FloatTitle',
-      -- },
+      hl = {
+        title = 'FloatTitle',
+      },
     }
   end,
   keys = {
