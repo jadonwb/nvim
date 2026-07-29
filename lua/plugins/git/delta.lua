@@ -137,8 +137,8 @@ return {
             border = hunk_border,
           },
           keys = {
-            scroll_up = '<C-u>',
-            scroll_down = '<C-d>',
+            -- scroll_up = '<C-u>',
+            -- scroll_down = '<C-d>',
             focus_left = { '<Tab>', '<Left>' },
             focus_right = { '<Tab>', '<Right>' },
             close = { 'q', '<Esc>' },
