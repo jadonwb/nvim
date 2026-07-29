@@ -12,7 +12,6 @@ local del = vim.keymap.del
 del('n', '<leader>gb') -- Git Blame Line
 del('n', '<leader>gL') -- Git Log (cwd)
 del('n', '<leader>gG') -- Lazygit (cwd)
-del('n', '<leader>gl') -- Git Log
 del({ 'n', 'x' }, '<leader>gY') -- Git Browse (copy)
 del({ 'n', 'x' }, '<leader>gB') -- Git Browse (open)
 
