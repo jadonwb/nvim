@@ -7,6 +7,18 @@ return {
       focused_win = true,
       only_win = false,
     },
+    highlight = {
+      groups = {
+        InclineNormal = {
+          default = true,
+          group = 'StatusLine',
+        },
+        InclineNormalNC = {
+          default = true,
+          group = 'StatusLineNC',
+        },
+      },
+    },
     render = function(props)
       local bufname = vim.api.nvim_buf_get_name(props.buf)
       if bufname == '' then
