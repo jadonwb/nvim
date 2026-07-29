@@ -1,6 +1,8 @@
 -- alex35mil style LSP popup: hover (via direct LSP request) and diagnostics with severity pill badges.
 -- Uses nui.nvim (transitive dep of noice.nvim).
 
+-- FIXME: disable spell on hover/popup window/buffer
+
 local M = {}
 
 local has_nui, NuiPopup = pcall(require, 'nui.popup')
