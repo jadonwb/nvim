@@ -25,13 +25,12 @@ return {
       { '<leader>h', group = 'Haunt', icon = '󱙝' },
 
       { '<leader>ha', mode = 'n', haunt.annotate, desc = 'Annotate', icon = '' },
-      { '<leader>ht', mode = 'n', haunt.toggle_annotation, desc = 'Toggle annotation' },
-      { '<leader>hT', mode = 'n', haunt.toggle_all_lines, desc = 'Toggle all annotations' },
+      { '<leader>ht', mode = 'n', haunt.toggle_all_lines, desc = 'Toggle all annotations' },
       { '<leader>hd', mode = 'n', haunt.delete, desc = 'Delete bookmark', icon = '' },
-      { '<leader>hC', mode = 'n', haunt.clear_all, desc = 'Delete all bookmarks', icon = '' },
+      { '<leader>hD', mode = 'n', haunt.clear_all, desc = 'Delete all bookmarks', icon = '' },
 
-      { '<leader>hp', mode = 'n', haunt.prev, desc = 'Previous bookmark', icon = '' },
-      { '<leader>hn', mode = 'n', haunt.next, desc = 'Next bookmark', icon = '' },
+      { '[n', mode = 'n', haunt.prev, desc = 'Previous bookmark', icon = '' },
+      { ']n', mode = 'n', haunt.next, desc = 'Next bookmark', icon = '' },
 
       { '<leader>hl', mode = 'n', haunt_picker.show, desc = 'Picker' },
 
