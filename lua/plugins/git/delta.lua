@@ -64,7 +64,7 @@ return {
             width = 0.25,
             border = picker_border,
             title = function(source)
-              local icon = source == 'agent' and '󰫮󰫴󰫲󰫻󰬁' or '󰫴󰫶󰬁' -- FIXME: really thick, make smaller?
+              local icon = source:lower() == 'agent' and '󰫮󰫴󰫲󰫻󰬁' or '󰫴󰫶󰬁'
               return ' Delta ' .. icon .. ' '
             end,
           },
@@ -91,11 +91,10 @@ return {
           close = { { '<Esc>', modes = 'n' }, picker.actions.close },
           close_q = { { 'q', modes = 'n' }, picker.actions.close },
           toggle_preview = { '<C-S-p>', picker.actions.toggle_preview },
-          cycle_source = { '<Tab>', picker.actions.cycle_source }, -- FIXME: toggle title too?
-          cycle_source_back = { '<S-Tab>', picker.actions.cycle_source_back }, -- FIXME: toggle title too?
+          cycle_source = { '<Tab>', picker.actions.cycle_source },
+          cycle_source_back = { '<S-Tab>', picker.actions.cycle_source_back },
           toggle_stage = { '<C-CR>', picker.actions.toggle_stage },
           reset = { { 'R', modes = 'n' }, picker.actions.reset },
-          --
         },
       },
 
@@ -156,14 +155,7 @@ return {
       function()
         require('delta.picker').toggle()
       end,
-      desc = 'Delta Picker (changed files)',
-    },
-    {
-      '<Leader>gP',
-      function()
-        require('delta.picker').toggle { source = 'agent' }
-      end,
-      desc = 'Delta Picker (agent changes)',
+      desc = 'Delta Picker',
     },
     {
       '<Leader>gs',
