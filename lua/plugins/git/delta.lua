@@ -115,6 +115,10 @@ return {
       },
 
       diff = {
+        actions = {
+          open_hunk_diff = { { 'gd', modes = 'n' }, delta.diff.actions.open_hunk_diff },
+          open_file_diff = { { 'gD', modes = 'n' }, delta.diff.actions.open_file_diff },
+        },
         file = {
           keys = {
             close = 'q',
@@ -153,22 +157,6 @@ return {
         require('delta.spotlight').toggle()
       end,
       desc = 'Delta Spotlight',
-    },
-    {
-      '<leader>dD',
-      function()
-        require('delta.diff').open_file()
-      end,
-      mode = 'n',
-      desc = 'Delta File Diff',
-    },
-    {
-      'gd',
-      function()
-        require('delta.diff').open_hunk()
-      end,
-      mode = 'n',
-      desc = 'Delta Hunk Diff',
     },
   },
 }
