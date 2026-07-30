@@ -3,6 +3,7 @@ return {
   opts = {
     ui = {
       backdrop = 100,
+      height = 0.8,
     },
     ensure_installed = {
       'clang-format',
