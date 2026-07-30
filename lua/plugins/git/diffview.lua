@@ -94,12 +94,7 @@ return {
     {
       '<Leader>gd',
       '<Cmd>DiffviewOpen<CR>',
-      desc = 'Diffview (branch/commit diffs)',
-    },
-    {
-      '<Leader>gD',
-      '<Cmd>DiffviewClose<CR>',
-      desc = 'Close Diffview',
+      desc = 'Diffview',
     },
     {
       '<Leader>gL',
@@ -109,7 +104,7 @@ return {
     {
       '<Leader>gh',
       '<Cmd>DiffviewFileHistory % --pin-local<CR>',
-      desc = 'Diffview File History (Pinned to Working Tree)',
+      desc = 'File History (Pinned to Working Tree)',
     },
   },
 }

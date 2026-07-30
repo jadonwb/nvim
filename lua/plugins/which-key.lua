@@ -49,6 +49,7 @@ return {
       { '<Leader>dp', desc = 'Delta Picker' },
       { '<leader>i', group = 'image', icon = ' ' },
       { '<leader>p', group = 'pi', icon = 'π ' },
+      { '<leader>gh' },
     },
   },
 }
