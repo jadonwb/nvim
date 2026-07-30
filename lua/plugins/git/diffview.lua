@@ -89,7 +89,7 @@ return {
     {
       '<Leader>gl',
       '<Cmd>DiffviewFileHistory<CR>',
-      desc = 'Diffview File History (Commits)',
+      desc = 'Diffview Log',
     },
     {
       '<Leader>gd',
