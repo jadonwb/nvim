@@ -108,7 +108,7 @@ return {
     },
     {
       '<Leader>gh',
-      '<Cmd>DiffviewFileHistory --pin-local<CR>',
+      '<Cmd>DiffviewFileHistory % --pin-local<CR>',
       desc = 'Diffview File History (Pinned to Working Tree)',
     },
   },
