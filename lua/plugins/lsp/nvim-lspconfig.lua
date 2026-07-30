@@ -72,6 +72,26 @@ return {
               end,
               desc = 'Diagnostics Under Cursor',
             },
+            {
+              ']d',
+              function()
+                vim.diagnostic.jump { count = 1, float = false }
+                vim.schedule(function()
+                  require('utils.lsp-popup').show()
+                end)
+              end,
+              desc = 'Next Diagnostic',
+            },
+            {
+              '[d',
+              function()
+                vim.diagnostic.jump { count = -1, float = false }
+                vim.schedule(function()
+                  require('utils.lsp-popup').show()
+                end)
+              end,
+              desc = 'Previous Diagnostic',
+            },
           },
         },
       },
