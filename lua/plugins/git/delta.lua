@@ -1,5 +1,6 @@
 return {
   'alex35mil/delta.nvim',
+  lazy = false,
 
   config = function(_, opts)
     require('delta').setup(opts)
@@ -105,12 +106,11 @@ return {
           prev_hunk = { '[h', spotlight.actions.prev_hunk, global = true },
           -- ── spotlight-only actions (auto-cleared when spotlight exits) ──
           toggle_stage_hunk = { '<CR>', spotlight.actions.toggle_stage_hunk },
-          reset_hunk = { { 'gr', modes = { 'n', 'v' } }, spotlight.actions.reset_hunk },
-          reset_file = { 'gR', spotlight.actions.reset_file },
+          reset_hunk = { { '<leader>dr', modes = { 'n', 'v' } }, spotlight.actions.reset_hunk },
+          reset_file = { '<leader>dR', spotlight.actions.reset_file },
           expand_context = { '+', spotlight.actions.expand_context },
           shrink_context = { '-', spotlight.actions.shrink_context },
           cycle_mode = { 'm', spotlight.actions.cycle_mode },
-          exit = { 'gq', spotlight.actions.exit },
         },
       },
 
@@ -141,21 +141,21 @@ return {
 
   keys = {
     {
-      '<Leader>gp',
+      '<Leader>dp',
       function()
         require('delta.picker').toggle()
       end,
       desc = 'Delta Picker',
     },
     {
-      '<Leader>gs',
+      '<Leader>ds',
       function()
         require('delta.spotlight').toggle()
       end,
-      desc = 'Delta Spotlight (inline hunks)',
+      desc = 'Delta Spotlight',
     },
     {
-      'gD',
+      '<leader>dD',
       function()
         require('delta.diff').open_file()
       end,
@@ -169,16 +169,6 @@ return {
       end,
       mode = 'n',
       desc = 'Delta Hunk Diff',
-    },
-    {
-      ']h',
-      mode = 'n',
-      desc = 'Delta Next Hunk (load)',
-    },
-    {
-      '[h',
-      mode = 'n',
-      desc = 'Delta Prev Hunk (load)',
     },
   },
 }

@@ -1,4 +1,4 @@
-local borders = require('config.borders')
+local borders = require 'config.borders'
 
 return {
   'folke/which-key.nvim',
@@ -43,8 +43,10 @@ return {
         desc = 'New Buffer',
       },
       { 'gr', group = 'LSP Jumps' },
-      { '<leader>s', group = 'snacks' },
+      { '<leader>s', group = 'snacks/search', icon = '󱥰' },
       { '<leader>f', group = 'find' },
+      { '<leader>d', group = 'Delta', icon = '󰇂 ' },
+      { '<Leader>dp', desc = 'Delta Picker' },
     },
   },
 }
