@@ -43,10 +43,12 @@ return {
         desc = 'New Buffer',
       },
       { 'gr', group = 'LSP Jumps' },
-      { '<leader>s', group = 'snacks/search', icon = '󱥰' },
+      { '<leader>s', group = 'snacks/search', icon = '󱥰 ' },
       { '<leader>f', group = 'find' },
       { '<leader>d', group = 'Delta', icon = '󰇂 ' },
       { '<Leader>dp', desc = 'Delta Picker' },
+      { '<leader>i', group = 'image', icon = ' ' },
+      { '<leader>p', group = 'pi', icon = 'π ' },
     },
   },
 }
