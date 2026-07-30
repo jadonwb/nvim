@@ -53,6 +53,28 @@ return {
         desc = 'Yank locations (buffer)',
       },
       { '<leader>hY', mode = 'n', haunt.yank_locations, desc = 'Yank locations (all)', icon = '' },
+
+      {
+        '<leader>hs',
+        mode = 'n',
+        function()
+          local bookmarks = require('haunt.api').get_bookmarks()
+          if vim.tbl_isempty(bookmarks) then
+            vim.notify('No bookmarks to send', vim.log.levels.WARN)
+            return
+          end
+          local pi = require('pi')
+          for _, bm in ipairs(bookmarks) do
+            pi.send_mention(
+              { path = bm.file, start_line = bm.line, note = bm.note },
+              { focus = false }
+            )
+          end
+          pi.focus_chat_prompt()
+          vim.notify(string.format('Sent %d haunt(s) to Pi', #bookmarks), vim.log.levels.INFO)
+        end,
+        desc = 'Send to Pi',
+      },
     }
   end,
 }

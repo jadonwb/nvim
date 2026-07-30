@@ -1,7 +1,7 @@
-local borders = require('config.borders')
+local borders = require 'config.borders'
 
 return {
-  'alex35mil/pi.nvim',
+  'jadonwb/pi.nvim',
   dependencies = { 'HakonHarnes/img-clip.nvim' },
   opts = {
     -- ── pi binary & pi-fff integration ──────────────────────
