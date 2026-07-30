@@ -77,7 +77,7 @@ return {
         sources = {
           git = { label = 'Git' },
           agent = pi_ok and { label = 'Agent', files = pi.changed_files } or nil,
-          -- FIXME: can integrate chezmoi?
+          -- chezmoi = { label = 'Chezmoi', files = "" }, -- TODO: implement, call chezmoi status and parse lines?
         },
         actions = {
           open = { '<CR>', open_with_pi_side(picker.actions.open) },
@@ -99,9 +99,6 @@ return {
       },
 
       spotlight = {
-        title = '󱦇 Spotlight',
-        autosave_before_stage = true,
-        reopen_picker_after_stage = true,
         actions = {
           -- ── hunk navigation (global so they work even when spotlight isn't focused) ──
           next_hunk = { ']h', spotlight.actions.next_hunk, global = true },
@@ -113,14 +110,7 @@ return {
           expand_context = { '+', spotlight.actions.expand_context },
           shrink_context = { '-', spotlight.actions.shrink_context },
           cycle_mode = { 'm', spotlight.actions.cycle_mode },
-          exit = { 'q', spotlight.actions.exit },
-          -- ── open hunk diff popup from within spotlight ──
-          open_hunk_popup = {
-            { 'gd', modes = 'n' },
-            function()
-              require('delta.diff').open_hunk()
-            end,
-          },
+          exit = { 'gq', spotlight.actions.exit },
         },
       },
 
