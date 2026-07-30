@@ -102,9 +102,9 @@ return {
       desc = 'Close Diffview',
     },
     {
-      '<Leader>gf',
+      '<Leader>gL',
       '<Cmd>DiffviewFileHistory %<CR>',
-      desc = 'Diffview File History (This File)',
+      desc = 'Diffview Log (This File)',
     },
     {
       '<Leader>gh',
