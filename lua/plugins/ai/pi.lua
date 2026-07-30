@@ -1,7 +1,8 @@
 local borders = require 'config.borders'
 
 return {
-  'jadonwb/pi.nvim',
+  -- 'jadonwb/pi.nvim',
+  dir = '~/c/pi.nvim',
   dependencies = { 'HakonHarnes/img-clip.nvim' },
   opts = {
     -- ── pi binary & pi-fff integration ──────────────────────

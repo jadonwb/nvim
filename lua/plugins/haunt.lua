@@ -63,12 +63,9 @@ return {
             vim.notify('No bookmarks to send', vim.log.levels.WARN)
             return
           end
-          local pi = require('pi')
+          local pi = require 'pi'
           for _, bm in ipairs(bookmarks) do
-            pi.send_mention(
-              { path = bm.file, start_line = bm.line, note = bm.note },
-              { focus = false }
-            )
+            pi.send_mention({ path = bm.file, start_line = bm.line, note = bm.note }, { focus = false, newline = true, append = true })
           end
           pi.focus_chat_prompt()
           vim.notify(string.format('Sent %d haunt(s) to Pi', #bookmarks), vim.log.levels.INFO)
