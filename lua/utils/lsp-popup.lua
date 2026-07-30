@@ -251,8 +251,6 @@ function M.show()
   vim.api.nvim_buf_set_lines(popup.bufnr, 0, -1, false, lines)
 
   -- Apply severity highlights and pill badges
-  local ns = vim.api.nvim_create_namespace 'diag_popup'
-  local vt_ns = vim.api.nvim_create_namespace 'diag_popup_vt'
   local lnum = 0
 
   for _, d in ipairs(diagnostics) do
@@ -260,15 +258,28 @@ function M.show()
     local msgs = vim.split(d.message, '\n')
 
     -- Pill badge as inline virtual text at line start
-    vim.api.nvim_buf_set_extmark(popup.bufnr, vt_ns, lnum, 0, {
-      virt_text = { { sev.label, sev.label_hl } },
+    vim.api.nvim_buf_set_extmark(popup.bufnr, popup.ns_id, lnum, 0, {
+      virt_text = { { sev.label, sev.label_hl }, { ' ', nil } },
       virt_text_pos = 'inline',
+      hl_mode = 'replace',
     })
+
+    -- Pad subsequent lines for alignment (multi-line diagnostics)
+    if #msgs > 1 then
+      local pad_width = vim.fn.strdisplaywidth(sev.label) + 1
+      for i = 1, #msgs - 1 do
+        vim.api.nvim_buf_set_extmark(popup.bufnr, popup.ns_id, lnum + i, 0, {
+          virt_text = { { string.rep(' ', pad_width), nil } },
+          virt_text_pos = 'inline',
+          hl_mode = 'replace',
+        })
+      end
+    end
 
     -- Message highlight for each line
     for i = 0, #msgs - 1 do
       local line = lines[lnum + i + 1]
-      vim.api.nvim_buf_set_extmark(popup.bufnr, ns, lnum + i, 0, {
+      vim.api.nvim_buf_set_extmark(popup.bufnr, popup.ns_id, lnum + i, 0, {
         end_col = #line,
         hl_group = sev.msg_hl,
       })
