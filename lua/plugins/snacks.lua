@@ -36,14 +36,16 @@ return {
       },
       indent = {
         indent = {
-          only_current = true,
-          only_scope = true,
+          enabled = false,
+          -- only_current = true,
+          -- only_scope = true,
         },
         scope = {
           only_current = true,
         },
         chunk = {
           enabled = true,
+          only_current = true,
           char = {
             corner_top = '╭',
             corner_bottom = '╰',
