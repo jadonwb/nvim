@@ -8,6 +8,11 @@ return {
     },
     opts = {
       inlay_hints = { enabled = false },
+      underline = {
+        severity = {
+          min = vim.diagnostic.severity.WARN,
+        },
+      },
       servers = {
         ['*'] = {
           keys = {
