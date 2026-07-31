@@ -1,0 +1,7 @@
+Add this to ~/.config/chezmoi/chezmoi.toml:
+[merge]
+    command = "nvim"
+    args = [
+        "-c",
+        "DiffviewMergeFiles {{ .Destination }} {{ .Source }} {{ .Target }}",
+    ]
