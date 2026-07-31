@@ -1,5 +1,6 @@
 return {
   'dlyongemallo/diffview-plus.nvim',
+  lazy = false,
   opts = function()
     local actions = require 'diffview.actions'
 
@@ -15,19 +16,19 @@ return {
       { 'n', '<leader>cB', false },
       { 'n', '<leader>cA', false },
       -- Replacements: per-hunk
-      { 'n', '<leader>do',  actions.conflict_choose('ours'),        { desc = 'Choose OURS' } },
-      { 'n', '<leader>dt',  actions.conflict_choose('theirs'),      { desc = 'Choose THEIRS' } },
-      { 'n', '<leader>db',  actions.conflict_choose('base'),        { desc = 'Choose BASE' } },
-      { 'n', '<leader>da',  actions.conflict_choose('all'),         { desc = 'Choose ALL' } },
+      { 'n', '<leader>do', actions.conflict_choose 'ours', { desc = 'Choose OURS' } },
+      { 'n', '<leader>dt', actions.conflict_choose 'theirs', { desc = 'Choose THEIRS' } },
+      { 'n', '<leader>db', actions.conflict_choose 'base', { desc = 'Choose BASE' } },
+      { 'n', '<leader>da', actions.conflict_choose 'all', { desc = 'Choose ALL' } },
       -- Replacements: whole-file
-      { 'n', '<leader>dO',  actions.conflict_choose_all('ours'),    { desc = 'Choose OURS (whole file)' } },
-      { 'n', '<leader>dT',  actions.conflict_choose_all('theirs'),  { desc = 'Choose THEIRS (whole file)' } },
-      { 'n', '<leader>dB',  actions.conflict_choose_all('base'),    { desc = 'Choose BASE (whole file)' } },
-      { 'n', '<leader>dA',  actions.conflict_choose_all('all'),     { desc = 'Choose ALL (whole file)' } },
+      { 'n', '<leader>dO', actions.conflict_choose_all 'ours', { desc = 'Choose OURS (whole file)' } },
+      { 'n', '<leader>dT', actions.conflict_choose_all 'theirs', { desc = 'Choose THEIRS (whole file)' } },
+      { 'n', '<leader>dB', actions.conflict_choose_all 'base', { desc = 'Choose BASE (whole file)' } },
+      { 'n', '<leader>dA', actions.conflict_choose_all 'all', { desc = 'Choose ALL (whole file)' } },
       -- New: whole-buffer side replacement (no default to disable)
-      { 'n', '<leader>dSo', actions.conflict_choose_side('ours'),    { desc = 'Replace buffer with OURS' } },
-      { 'n', '<leader>dSt', actions.conflict_choose_side('theirs'),  { desc = 'Replace buffer with THEIRS' } },
-      { 'n', '<leader>dSb', actions.conflict_choose_side('base'),    { desc = 'Replace buffer with BASE' } },
+      { 'n', '<leader>dSo', actions.conflict_choose_side 'ours', { desc = 'Replace buffer with OURS' } },
+      { 'n', '<leader>dSt', actions.conflict_choose_side 'theirs', { desc = 'Replace buffer with THEIRS' } },
+      { 'n', '<leader>dSb', actions.conflict_choose_side 'base', { desc = 'Replace buffer with BASE' } },
     }
 
     return {
@@ -71,8 +72,7 @@ return {
         view_opened = function(view)
           vim.api.nvim_tabpage_set_var(view.tabpage, 'tab_label', '  diff')
         end,
-        view_closed = function()
-        end,
+        view_closed = function() end,
         diff_buf_win_enter = function(_bufnr, _winid, ctx)
           if ctx.layout_name:match '^diff2' then
             if ctx.symbol == 'a' then
