@@ -18,4 +18,6 @@ M.fff_border = {
   { ' ', ' ', ' ', ' ', ' ' },
 }
 
+M.rounded = 'rounded'
+
 return M

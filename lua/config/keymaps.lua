@@ -9,6 +9,7 @@ local del = vim.keymap.del
 -- ============================================================================
 
 -- ── Git ──
+del('n', '<leader>gf') -- Git File History
 del('n', '<leader>gb') -- Git Blame Line
 del('n', '<leader>gG') -- Lazygit (cwd)
 del({ 'n', 'x' }, '<leader>gY') -- Git Browse (copy)
