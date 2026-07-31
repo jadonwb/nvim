@@ -3,49 +3,63 @@ return {
   opts = function()
     local actions = require 'diffview.actions'
 
+    -- Remap default <leader>c* conflict keymaps to <leader>d*
+    local conflict_d = {
+      -- Disable defaults
+      { 'n', '<leader>co', false },
+      { 'n', '<leader>ct', false },
+      { 'n', '<leader>cb', false },
+      { 'n', '<leader>ca', false },
+      { 'n', '<leader>cO', false },
+      { 'n', '<leader>cT', false },
+      { 'n', '<leader>cB', false },
+      { 'n', '<leader>cA', false },
+      -- Replacements: per-hunk
+      { 'n', '<leader>do',  actions.conflict_choose('ours'),        { desc = 'Choose OURS' } },
+      { 'n', '<leader>dt',  actions.conflict_choose('theirs'),      { desc = 'Choose THEIRS' } },
+      { 'n', '<leader>db',  actions.conflict_choose('base'),        { desc = 'Choose BASE' } },
+      { 'n', '<leader>da',  actions.conflict_choose('all'),         { desc = 'Choose ALL' } },
+      -- Replacements: whole-file
+      { 'n', '<leader>dO',  actions.conflict_choose_all('ours'),    { desc = 'Choose OURS (whole file)' } },
+      { 'n', '<leader>dT',  actions.conflict_choose_all('theirs'),  { desc = 'Choose THEIRS (whole file)' } },
+      { 'n', '<leader>dB',  actions.conflict_choose_all('base'),    { desc = 'Choose BASE (whole file)' } },
+      { 'n', '<leader>dA',  actions.conflict_choose_all('all'),     { desc = 'Choose ALL (whole file)' } },
+      -- New: whole-buffer side replacement (no default to disable)
+      { 'n', '<leader>dSo', actions.conflict_choose_side('ours'),    { desc = 'Replace buffer with OURS' } },
+      { 'n', '<leader>dSt', actions.conflict_choose_side('theirs'),  { desc = 'Replace buffer with THEIRS' } },
+      { 'n', '<leader>dSb', actions.conflict_choose_side('base'),    { desc = 'Replace buffer with BASE' } },
+    }
+
     return {
       enhanced_diff_hl = true,
       show_help_hints = false,
       watch_index = true,
 
       keymaps = {
-        -- Diff view (when looking at a file's diff)
         -- stylua: ignore
         view = {
           { 'n', 'q', actions.close, { desc = 'Close Diffview' } },
-          { "n", "<leader>co", false },
-          { "n", "<leader>ct", false },
-          { "n", "<leader>cb", false },
-          { "n", "<leader>ca", false },
-          { "n", "<leader>cO", false },
-          { "n", "<leader>cT", false },
-          { "n", "<leader>cB", false },
-          { "n", "<leader>cA", false },
-          { "n", "<leader>do", actions.conflict_choose("ours"),        { desc = "Choose the OURS version of a conflict" } },
-          { "n", "<leader>dt", actions.conflict_choose("theirs"),      { desc = "Choose the THEIRS version of a conflict" } },
-          { "n", "<leader>db", actions.conflict_choose("base"),        { desc = "Choose the BASE version of a conflict" } },
-          { "n", "<leader>da", actions.conflict_choose("all"),         { desc = "Choose all the versions of a conflict" } },
-          { "n", "<leader>dO", actions.conflict_choose_all("ours"),    { desc = "Choose the OURS version of a conflict for the whole file" } },
-          { "n", "<leader>dT", actions.conflict_choose_all("theirs"),  { desc = "Choose the THEIRS version of a conflict for the whole file" } },
-          { "n", "<leader>dB", actions.conflict_choose_all("base"),    { desc = "Choose the BASE version of a conflict for the whole file" } },
-          { "n", "<leader>dA", actions.conflict_choose_all("all"),     { desc = "Choose all the versions of a conflict for the whole file" } },
         },
 
-        -- File panel (the tree listing on the left)
+        -- diff1/diff3/diff4: identical conflict keymaps, only non-conflict extras differ
+        diff1 = conflict_d,
+        diff3 = conflict_d,
+        diff4 = conflict_d,
+
+        -- file_panel: whole-file conflict resolution only
         -- stylua: ignore
         file_panel = {
           { 'n', 'q', actions.close, { desc = 'Close Diffview' } },
-          { "n", "<leader>cO", false },
-          { "n", "<leader>cT", false },
-          { "n", "<leader>cB", false },
-          { "n", "<leader>cA", false },
-          { "n", "<leader>dO", actions.conflict_choose_all("ours"),    { desc = "Choose the OURS version of a conflict for the whole file" } },
-          { "n", "<leader>dT", actions.conflict_choose_all("theirs"),  { desc = "Choose the THEIRS version of a conflict for the whole file" } },
-          { "n", "<leader>dB", actions.conflict_choose_all("base"),    { desc = "Choose the BASE version of a conflict for the whole file" } },
-          { "n", "<leader>dA", actions.conflict_choose_all("all"),     { desc = "Choose all the versions of a conflict for the whole file" } },
+          { 'n', '<leader>cO', false },
+          { 'n', '<leader>cT', false },
+          { 'n', '<leader>cB', false },
+          { 'n', '<leader>cA', false },
+          { 'n', '<leader>dO', actions.conflict_choose_all('ours'),    { desc = 'Choose OURS (whole file)' } },
+          { 'n', '<leader>dT', actions.conflict_choose_all('theirs'),  { desc = 'Choose THEIRS (whole file)' } },
+          { 'n', '<leader>dB', actions.conflict_choose_all('base'),    { desc = 'Choose BASE (whole file)' } },
+          { 'n', '<leader>dA', actions.conflict_choose_all('all'),     { desc = 'Choose ALL (whole file)' } },
         },
 
-        -- File history panel (the bottom split)
         -- stylua: ignore
         file_history_panel = {
           { 'n', 'q', actions.close, { desc = 'Close Diffview' } },
@@ -55,13 +69,10 @@ return {
       -- ── hooks: tab renaming + diff2 highlighting ──────────────
       hooks = {
         view_opened = function(view)
-          -- Label the diffview tab so it reads nicely in the tabline
           vim.api.nvim_tabpage_set_var(view.tabpage, 'tab_label', '  diff')
         end,
         view_closed = function()
-          -- tab is being destroyed, no cleanup needed
         end,
-        -- Better diff2 highlight colors
         diff_buf_win_enter = function(_bufnr, _winid, ctx)
           if ctx.layout_name:match '^diff2' then
             if ctx.symbol == 'a' then
