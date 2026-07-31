@@ -68,7 +68,7 @@ git add test.txt && git commit -m "main change"
 # Trigger the merge conflict
 git merge feature
 # CONFLICT! Now open with:
-nvim -c "DiffviewOpen"
+git mergetool
 ```
 
 You'll see the `diff3_horizontal` layout with three panes. Test your `<leader>dX` bindings and see how `2do`/`3do` work.
