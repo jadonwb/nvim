@@ -86,21 +86,21 @@ return {
     end,
     keys = {
       {
-        '<leader>xe',
+        '<leader>xde',
         function()
           open_trouble { severity = vim.diagnostic.severity.ERROR }
         end,
         desc = 'Workspace Errors (Trouble)',
       },
       {
-        '<leader>xw',
+        '<leader>xdw',
         function()
           open_trouble { severity = vim.diagnostic.severity.WARN }
         end,
         desc = 'Workspace Warnings (Trouble)',
       },
       {
-        '<leader>xx',
+        '<leader>xdd',
         function()
           open_trouble()
         end,

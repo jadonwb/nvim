@@ -1,12 +1,10 @@
+-- TODO: make per buffer keymaps, xT for buffer todo
 local function picker_list(types)
-  local tags = vim.tbl_map(function(t)
-    return t:gsub('!', '_NOW')
-  end, types)
   require('trouble').open {
     mode = 'todo',
     focus = true,
-    filter = { tag = tags },
-    win = { position = 'top', size = 0.4 },
+    filter = { tag = types },
+    win = { position = 'top', size = 0.3 },
     groups = {
       { 'directory' },
       { 'filename', format = '{file_icon} {basename} {count}' },
@@ -43,7 +41,7 @@ return {
       merge_keywords = false,
     },
     keys = {
-      -- Disable LazyVim's telescope-based todo keymaps
+      -- Disable LazyVim's picker todo keymaps
       { '<leader>st', false },
       { '<leader>sT', false },
 
@@ -52,23 +50,16 @@ return {
       { '<leader>xT', false },
 
       {
-        '<leader>xT',
+        '<leader>xtt',
         function()
-          picker_list { 'TODO!', 'FIXME!' }
-        end,
-        desc = 'High Priority TODOs (Trouble)',
-      },
-      {
-        '<leader>xt',
-        function()
-          picker_list { 'TODO!', 'TODO' }
+          picker_list { 'TODO' }
         end,
         desc = 'All TODOs (Trouble)',
       },
       {
-        '<leader>xf',
+        '<leader>xtf',
         function()
-          picker_list { 'FIXME!', 'FIXME' }
+          picker_list { 'FIXME' }
         end,
         desc = 'All FIXMEs (Trouble)',
       },
