@@ -1,17 +1,3 @@
--- TODO: make per buffer keymaps, xT for buffer todo
-local function picker_list(types)
-  require('trouble').open {
-    mode = 'todo',
-    focus = true,
-    filter = { tag = types },
-    win = { position = 'top', size = 0.3 },
-    groups = {
-      { 'directory' },
-      { 'filename', format = '{file_icon} {basename} {count}' },
-    },
-  }
-end
-
 return {
   {
     'folke/todo-comments.nvim',
@@ -39,30 +25,6 @@ return {
         pattern = [=[\b(KEYWORDS)[!?]?(\([^)]*\)|\[[^\]]*\])?:]=],
       },
       merge_keywords = false,
-    },
-    keys = {
-      -- Disable LazyVim's picker todo keymaps
-      { '<leader>st', false },
-      { '<leader>sT', false },
-
-      -- Disable LazyVim's trouble todo keys (replaced by ours)
-      { '<leader>xt', false },
-      { '<leader>xT', false },
-
-      {
-        '<leader>xtt',
-        function()
-          picker_list { 'TODO' }
-        end,
-        desc = 'All TODOs (Trouble)',
-      },
-      {
-        '<leader>xtf',
-        function()
-          picker_list { 'FIXME' }
-        end,
-        desc = 'All FIXMEs (Trouble)',
-      },
     },
   },
 }
