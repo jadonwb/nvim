@@ -25,14 +25,14 @@ return {
     layout = {
       default = 'side',
       side = function()
-        local wide = vim.o.columns >= 180
+        local wide = require("utils.screen").is_large()
         return {
           position = 'right',
           width = wide and 0.35 or 0.45,
         }
       end,
       float = function()
-        local wide = vim.o.columns >= 180
+        local wide = require("utils.screen").is_large()
         return {
           width = wide and 0.6 or 0.8,
           height = 0.85,

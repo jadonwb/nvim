@@ -7,7 +7,7 @@ return {
     require('fff.download').download_or_build_binary()
   end,
   opts = function()
-    local is_wide = vim.o.columns >= 180
+    local is_wide = require("utils.screen").is_large()
     return {
       prompt_vim_mode = true,
       layout = {

@@ -1,5 +1,7 @@
 local borders = require 'config.borders'
 
+local screen = require("utils.screen")
+
 return {
   {
     'folke/snacks.nvim',
@@ -103,7 +105,7 @@ return {
             layout = {
               box = 'horizontal',
               backdrop = false,
-              width = vim.o.columns >= 180 and 0.75 or 0.9,
+              width = screen.is_large() and 0.75 or 0.9,
               height = 0.9,
               border = 'none',
               {
@@ -221,7 +223,7 @@ return {
               layout = {
                 box = 'vertical',
                 backdrop = false,
-                width = vim.o.columns >= 180 and 0.4 or 0.5,
+                width = screen.is_large() and 0.4 or 0.5,
                 height = 0.8,
                 border = 'none',
                 {

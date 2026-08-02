@@ -3,7 +3,7 @@ return {
     'folke/noice.nvim',
     event = 'VeryLazy',
     opts = function()
-      local is_large = vim.o.columns >= 180
+      local is_large = require("utils.screen").is_large()
 
       local common_border = {
         style = 'none',
