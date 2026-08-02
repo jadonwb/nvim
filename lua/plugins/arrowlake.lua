@@ -2,7 +2,7 @@ return {
   {
     'jadonwb/arrowlake.nvim',
     opts = {
-      transparent = false,
+      transparent = true,
       styles = {
         functions = { bold = true },
       },
