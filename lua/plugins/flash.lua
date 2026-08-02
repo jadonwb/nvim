@@ -1,11 +1,5 @@
 return {
   'folke/flash.nvim',
-  -- stylua: ignore
-  keys = {
-    { "s", mode = { "n", "x", "o" }, false },
-    { "S", mode = { "n", "o", "x" }, false },
-    { "r", mode = "o", false },
-    { "R", mode = { "o", "x" }, false },
-    { "<c-s>", mode = { "c" }, false },
-  },
+  -- All default flash keymaps disabled (moved to disabled.lua).
+  -- Flash is kept loaded for its Lua API (e.g., used by other plugins).
 }

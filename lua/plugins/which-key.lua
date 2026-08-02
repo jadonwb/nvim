@@ -30,26 +30,17 @@ return {
         desc = 'Write Buffer',
       },
       {
-        '<leader>K',
-        hidden = true,
-      },
-      {
-        '<leader>b',
-        group = 'buffer',
-      },
-      {
         '<leader>bn',
         '<cmd>enew<cr>',
         desc = 'New Buffer',
       },
-      { 'gr', group = 'LSP Jumps' },
+      { 'gr', group = 'LSP Jumps', icon = '' },
+      { '<leader>b', group = 'buffer' },
       { '<leader>s', group = 'snacks/search', icon = '󱥰 ' },
       { '<leader>f', group = 'find' },
       { '<leader>d', group = 'Delta', icon = '󰇂 ' },
       { '<leader>i', group = 'image', icon = ' ' },
       { '<leader>p', group = 'pi', icon = 'π ' },
-      { '<Leader>dp' },
-      { '<leader>gh' },
     },
   },
 }

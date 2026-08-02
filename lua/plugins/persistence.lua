@@ -1,8 +1,4 @@
 return {
   'folke/persistence.nvim',
-  keys = {
-    { '<leader>ql', false },
-    { '<leader>qS', false },
-    { '<leader>qd', false },
-  },
+  -- Default session keymaps disabled (moved to disabled.lua).
 }
