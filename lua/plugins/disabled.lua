@@ -135,6 +135,10 @@ return {
             -- ── LSP ─────────────────────────────────────────────
             safe_del('n', 'gra') -- Code Action (now <leader>ca)
             safe_del('n', 'grn') -- Rename (now <leader>cr)
+
+            -- ── zen and Zoom ─────────────────────────────────────
+            safe_del('n', '<leader>uz') -- zen mode
+            safe_del('n', '<leader>uZ') -- zoom
           end) -- vim.schedule
         end,
       })
