@@ -20,7 +20,13 @@ map('n', '<c-w>d', '<C-W>c', { desc = 'Delete Window', remap = true })
 map('n', '<leader>bq', '<cmd>bufdo bdelete<cr>', { desc = 'Delete All Buffers', remap = true })
 
 -- ── Restart Neovim ──
-map('n', '<leader>qr', '<cmd>restart<cr>', { desc = 'Restart Neovim', remap = true })
+map('n', '<leader>qr', function()
+  -- FIXME: why does it require another key input
+  require('persistence').save()
+  vim.schedule(function()
+    vim.cmd 'restart'
+  end)
+end, { desc = 'Save session and restart' })
 
 -- ── Arrow keys: insert space / new line ──
 map('n', '<left>', 'i<Space><Esc>')
