@@ -301,7 +301,6 @@ end
 
 -- === Plugin spec ===
 local borders = require 'config.borders'
-local screen = require 'utils.screen'
 
 return {
   {
@@ -313,10 +312,20 @@ return {
             local items = {}
 
             if NVLazy.anything_missing() then
-              table.insert(items, { icon = ' ', key = 'i', desc = 'Install Plugins', action = function() NVLazy.install() end })
+              table.insert(items, {
+                icon = ' ',
+                key = 'i',
+                desc = 'Install Plugins',
+                action = function()
+                  NVLazy.install()
+                end,
+              })
             end
 
-            table.insert(items, { icon = ' ', key = 's', desc = 'Restore Session', section = 'session' })
+            if NVPersistence.has_session() then
+              table.insert(items, { icon = ' ', key = 's', desc = 'Restore Session', section = 'session' })
+            end
+
             table.insert(items, { icon = ' ', key = 'e', desc = 'Browse Files', action = ':Yazi' })
             table.insert(items, { icon = ' ', key = 'q', desc = 'Quit', action = ':qa' })
 
