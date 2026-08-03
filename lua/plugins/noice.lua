@@ -1,12 +1,59 @@
 NVNoice = {}
 
+local fn = {}
+
 function NVNoice.ensure_hidden()
+  if fn.ensure_command_line_hidden() then
+    return true
+  end
+
+  if fn.ensure_signature_hidden() then
+    return true
+  end
+
+  if fn.is_noice_window() then
+    fn.close_split()
+    return true
+  end
+
+  return false
+end
+
+function fn.ensure_command_line_hidden()
+  if vim.fn.mode() == 'c' then
+    require('utils.keys').send('<Esc>', { mode = 'n' })
+    return true
+  end
+  return false
+end
+
+function fn.ensure_signature_hidden()
   local ok, noice = pcall(require, 'noice')
   if not ok then
     return false
   end
-  pcall(noice.cmd, 'dismiss')
+  local ok2, lsp = pcall(require, 'noice.lsp')
+  if not ok2 then
+    return false
+  end
+  local ok3, docs = pcall(require, 'noice.lsp.docs')
+  if not ok3 then
+    return false
+  end
+  local signature = docs.get(lsp.kinds.signature)
+  if #signature:wins() == 0 then
+    return false
+  end
+  docs.hide(signature)
   return true
+end
+
+function fn.is_noice_window()
+  return vim.bo.filetype == 'noice'
+end
+
+function fn.close_split()
+  vim.cmd.close()
 end
 
 --- noice.nvim custom configuration.

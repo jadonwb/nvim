@@ -296,17 +296,22 @@ end
 --- Hide the LSP popup if one is active. Used by the cooperative UI chain.
 --- Returns true if a popup was hidden.
 function M.ensure_hidden()
-  -- Check if any popup is currently open in the registry
-  if popups and next(popups) then
-    for winid, _ in pairs(popups) do
-      if vim.api.nvim_win_is_valid(winid) then
-        vim.api.nvim_win_close(winid, true)
-      end
-    end
-    popups = {}
-    return true
+  if not popups or not next(popups) then
+    return false
   end
-  return false
+
+  -- Collect keys to avoid mutating the table during iteration
+  local keys = {}
+  for k in pairs(popups) do
+    keys[#keys + 1] = k
+  end
+
+  -- Close each popup via the proper close() helper (which calls unmount and cleans registry)
+  for _, parent_winid in ipairs(keys) do
+    close(parent_winid)
+  end
+
+  return true
 end
 
 return M
