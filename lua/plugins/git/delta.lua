@@ -65,8 +65,13 @@ return {
             width = 0.25,
             border = picker_border,
             title = function(source)
-              local icon = source:lower() == 'agent' and '󰫮󰫴󰫲󰫻󰬁' or '󰫴󰫶󰬁'
-              return ' Delta ' .. icon .. ' '
+              local label
+              if source == 'git' then
+                label = '󰫴󰫶󰬁'
+              elseif source == 'agent' then
+                label = '󰫮󰫴󰫲󰫻󰬁'
+              end
+              return ' 󰫱󰫲󰫹󰬁󰫮' .. ' ⋆ ' .. label .. ' '
             end,
           },
           preview = {
@@ -76,8 +81,8 @@ return {
           },
         },
         sources = {
-          git = { label = 'Git' },
-          agent = pi_ok and { label = 'Agent', files = pi.changed_files } or nil,
+          git = { label = 'git' },
+          agent = pi_ok and { label = 'agent', files = pi.changed_files } or nil,
           -- chezmoi = { label = 'Chezmoi', files = "" }, -- TODO: implement, call chezmoi status and parse lines?
         },
         actions = {

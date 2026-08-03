@@ -1,135 +1,393 @@
-local borders = require 'config.borders'
+NVSPickers = {}
+NVSZoom = {}
+NVSLazygit = {}
+NVSTerminal = {}
+NVSNotifier = {}
+NVSInput = {}
+NVSnacksDashboard = {}
 
+NVSPickerVerticalLayout = {
+  large_screen_width = 0.4,
+  small_screen_width = 0.5,
+}
+
+NVSPickerHorizontalLayout = {
+  large_screen_width = 0.75,
+  small_screen_width = 0.95,
+}
+
+function NVSPickerVerticalLayout.build(opts)
+  local config = vim.tbl_extend('keep', opts or {}, {
+    width = NVScreen.is_large() and NVSPickerVerticalLayout.large_screen_width or NVSPickerVerticalLayout.small_screen_width,
+    height = 0.7,
+  })
+  return {
+    layout = {
+      box = 'vertical',
+      width = config.width,
+      height = config.height,
+      border = 'none',
+      backdrop = false,
+      { win = 'input', height = 1, title = '{title} {live}', title_pos = 'center', border = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' } },
+      { win = 'list', border = { '', '', '', ' ', '', '', '', ' ' } },
+      { win = 'preview', title = '{preview}', border = { ' ', '─', ' ', ' ', ' ', ' ', ' ', ' ' } },
+    },
+  }
+end
+
+function NVSPickerHorizontalLayout.build(opts)
+  local config = vim.tbl_extend('keep', opts or {}, {
+    width = NVScreen.is_large() and NVSPickerHorizontalLayout.large_screen_width or NVSPickerHorizontalLayout.small_screen_width,
+    height = 0.9,
+  })
+  return {
+    layout = {
+      box = 'horizontal',
+      width = config.width,
+      height = config.height,
+      backdrop = false,
+      {
+        box = 'vertical',
+        { win = 'input', height = 1, title = '{title} {live}', title_pos = 'center', border = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' } },
+        { win = 'list', border = { '', '', '', ' ', ' ', ' ', ' ', ' ' } },
+      },
+      { win = 'preview', title = '{preview}', border = { '', ' ', ' ', ' ', ' ', ' ', '', '' } },
+    },
+  }
+end
+
+-- Shared picker keymaps applied to ALL picker windows
+NVSPickers.keys = {
+  ['<M-f>'] = { 'toggle_maximize', mode = { 'n', 'i', 'v' } },
+  ['<C-CR>'] = { 'edit_vsplit', mode = { 'n', 'i', 'v' } },
+  ['<C-S-CR>'] = { 'edit_split', mode = { 'n', 'i', 'v' } },
+  ['<C-Tab>'] = { 'cycle_win', mode = { 'n', 'i', 'v' } },
+  ['<C-Up>'] = { 'list_scroll_up', mode = { 'n', 'i', 'v' } },
+  ['<C-Down>'] = { 'list_scroll_down', mode = { 'n', 'i', 'v' } },
+  ['<M-Up>'] = { 'x_list_scroll_up_bit', mode = { 'n', 'i', 'v' } },
+  ['<M-Down>'] = { 'x_list_scroll_down_bit', mode = { 'n', 'i', 'v' } },
+  ['<C-S-Up>'] = { 'preview_scroll_up', mode = { 'n', 'i', 'v' } },
+  ['<C-S-Down>'] = { 'preview_scroll_down', mode = { 'n', 'i', 'v' } },
+  ['<C-l>'] = { 'focus_list', mode = { 'n', 'i', 'v' } },
+  ['<C-i>'] = { 'focus_input', mode = { 'n', 'i', 'v' } },
+  ['<C-p>'] = { 'focus_preview', mode = { 'n', 'i', 'v' } },
+  ['<M-w>'] = { 'close', mode = { 'n', 'i', 'v' } },
+}
+
+-- Custom picker actions
+NVSPickers.actions = {
+  x_list_scroll_up_bit = function(picker)
+    picker.list:scroll(-2)
+  end,
+  x_list_scroll_down_bit = function(picker)
+    picker.list:scroll(2)
+  end,
+  x_copy_absolute_path = function(_, item)
+    NVSPickers.copy_path(item, 'absolute')
+  end,
+  x_copy_relative_path = function(_, item)
+    NVSPickers.copy_path(item, 'relative')
+  end,
+  x_copy_filename = function(_, item)
+    NVSPickers.copy_path(item, 'filename')
+  end,
+  x_copy_filestem = function(_, item)
+    NVSPickers.copy_path(item, 'filestem')
+  end,
+}
+
+function NVSPickers.copy_path(item, fmt)
+  if item == nil then
+    vim.notify('No item selected', vim.log.levels.INFO)
+    return
+  end
+  local fs = require 'utils.fs'
+  local result = fs.format_path(item.file, fmt)
+  if result ~= nil then
+    require('editor.clipboard').yank(result)
+    vim.notify('Copied: ' .. result, vim.log.levels.INFO)
+  end
+end
+
+-- Picker helper functions (called by other modules)
+function NVSPickers.files()
+  Snacks.picker.files {
+    show_empty = true,
+    hidden = true,
+    ignored = false,
+    follow = false,
+    supports_live = true,
+    layout = NVSPickerVerticalLayout.build(),
+  }
+end
+
+function NVSPickers.buffers()
+  Snacks.picker.buffers {
+    hidden = true,
+    unloaded = false,
+    current = false,
+    sort_lastused = true,
+    layout = NVSPickerVerticalLayout.build(),
+    filter = {
+      filter = function(item, _)
+        if string.find(item.file, '^diffview://') then
+          return false
+        end
+        if string.find(item.file, '^term://') then
+          return false
+        end
+        if string.find(item.file, '^oil://') then
+          return false
+        end
+        if NVLayoutManager.is_sidepad_buf(item.buf) then
+          return false
+        end
+        if item.file == '[Scratch]' or item.file == '' then
+          return false
+        end
+        return true
+      end,
+    },
+    win = {
+      input = { keys = { ['<BS>'] = { 'bufdelete', mode = { 'n' } } } },
+      list = { keys = { ['dd'] = 'bufdelete' } },
+    },
+  }
+end
+
+function NVSPickers.text_search()
+  Snacks.picker.grep {
+    hidden = true,
+    ignored = false,
+    regex = false,
+    layout = NVSPickerHorizontalLayout.build(),
+  }
+end
+
+function NVSPickers.git_branches()
+  Snacks.picker.git_branches {
+    layout = NVSPickerVerticalLayout.build(),
+  }
+end
+
+function NVSPickers.lsp_document_symbols()
+  Snacks.picker.lsp_symbols {
+    layout = NVSPickerVerticalLayout.build {
+      width = NVScreen.is_large() and 0.5 or 0.8,
+      height = 0.9,
+    },
+  }
+end
+
+function NVSPickers.lsp_workspace_symbols()
+  Snacks.picker.lsp_workspace_symbols {
+    layout = NVSPickerVerticalLayout.build {
+      width = NVScreen.is_large() and 0.5 or 0.8,
+      height = 0.9,
+    },
+  }
+end
+
+function NVSPickers.lsp_references()
+  Snacks.picker.lsp_references {
+    auto_confirm = false,
+    layout = NVSPickerHorizontalLayout.build(),
+  }
+end
+
+function NVSPickers.lsp_implementations()
+  Snacks.picker.lsp_implementations {
+    auto_confirm = false,
+    layout = NVSPickerHorizontalLayout.build(),
+  }
+end
+
+function NVSPickers.lsp_definitions()
+  Snacks.picker.lsp_definitions {
+    auto_confirm = true,
+    layout = NVSPickerVerticalLayout.build(),
+  }
+end
+
+function NVSPickers.lsp_type_definitions()
+  Snacks.picker.lsp_type_definitions {
+    auto_confirm = true,
+    layout = NVSPickerVerticalLayout.build(),
+  }
+end
+
+function NVSPickers.lsp_declarations()
+  Snacks.picker.lsp_declarations {
+    auto_confirm = true,
+    layout = NVSPickerVerticalLayout.build(),
+  }
+end
+
+function NVSPickers.highlights()
+  Snacks.picker.highlights {
+    layout = NVSPickerHorizontalLayout.build(),
+  }
+end
+
+-- Zoom
+function NVSZoom.activate()
+  Snacks.zen.zoom()
+end
+
+function NVSZoom.ensure_deactivated()
+  local win = Snacks.zen.win
+  if win then
+    Snacks.zen.zoom()
+    return true
+  end
+  return false
+end
+
+-- Terminal
+function NVSTerminal.is_app(app, bufid)
+  bufid = bufid or vim.api.nvim_get_current_buf()
+  local buf_info = vim.fn.getbufinfo(bufid)[1]
+  if buf_info and buf_info.variables.snacks_terminal and buf_info.variables.snacks_terminal.cmd then
+    local cmd = buf_info.variables.snacks_terminal.cmd
+    if type(cmd) == 'string' then
+      return string.find(cmd, app) ~= nil
+    elseif type(cmd) == 'table' and cmd[1] then
+      return string.find(cmd[1], app) ~= nil
+    end
+  end
+  return false
+end
+
+-- Notifier
+function NVSNotifier.log()
+  Snacks.notifier.show_history()
+end
+
+function NVSNotifier.hide()
+  Snacks.notifier.hide()
+end
+
+-- Lazygit
+function NVSLazygit.show()
+  Snacks.lazygit()
+end
+
+function NVSLazygit.ensure_hidden()
+  if NVSTerminal.is_app 'lazygit' then
+    Snacks.lazygit()
+    return true
+  end
+  return false
+end
+
+-- Input
+function NVSInput.is_input(bufid)
+  bufid = bufid or vim.api.nvim_get_current_buf()
+  return vim.bo[bufid].filetype == 'snacks_input'
+end
+
+function NVSInput.ensure_hidden()
+  if NVSInput.is_input() then
+    vim.cmd.close()
+    return true
+  end
+  return false
+end
+
+-- Dashboard
+function NVSnacksDashboard.is_active()
+  return vim.bo.filetype == 'snacks_dashboard'
+end
+
+-- === Plugin spec ===
+local borders = require 'config.borders'
 local screen = require 'utils.screen'
 
 return {
   {
     'folke/snacks.nvim',
     opts = {
-      scroll = {
-        enabled = false,
-      },
       dashboard = {
-        enabled = true,
         preset = {
-          keys = {
-            { icon = ' ', key = 'f', desc = 'Find File', action = "<cmd>lua require('fff').find_files()<CR>" },
-            { icon = ' ', key = 's', desc = 'Find Text', action = "<cmd>lua require('fff').live_grep()<CR>" },
-            { icon = ' ', key = 'r', desc = 'Recent Files', action = ":lua Snacks.dashboard.pick('oldfiles')" },
-            { icon = ' ', key = 'c', desc = 'Config', action = "<cmd>lua require('fff').find_files_in_dir(vim.fn.stdpath('config'))<CR>" },
-            { icon = ' ', key = 'n', desc = 'New File', action = ':ene | startinsert' },
-            { icon = ' ', key = 'e', desc = 'Yazi', action = ':Yazi' },
-            { icon = ' ', key = 'g', desc = 'LazyGit', action = ':lua Snacks.lazygit.open()' },
-            { icon = ' ', key = 'S', desc = 'Restore Session', section = 'session' },
-            { icon = '󰒲 ', key = 'l', desc = 'Lazy', action = ':Lazy', enabled = package.loaded.lazy ~= nil },
-            { icon = '󰒲 ', key = 'x', desc = 'Extras', action = ':LazyExtras', enabled = package.loaded.lazy ~= nil },
-            { icon = ' ', key = 'q', desc = 'Quit', action = ':qa' },
-          },
+          keys = function()
+            local items = {}
+
+            if NVLazy.anything_missing() then
+              table.insert(items, { icon = ' ', key = 'i', desc = 'Install Plugins', action = function() NVLazy.install() end })
+            end
+
+            table.insert(items, { icon = ' ', key = 's', desc = 'Restore Session', section = 'session' })
+            table.insert(items, { icon = ' ', key = 'e', desc = 'Browse Files', action = ':Yazi' })
+            table.insert(items, { icon = ' ', key = 'q', desc = 'Quit', action = ':qa' })
+
+            return items
+          end,
         },
       },
-      explorer = {
-        enabled = false,
-      },
+      explorer = { enabled = false },
+      scroll = { enabled = false },
       notifier = {
         enabled = true,
         timeout = 3000,
         level = vim.log.levels.DEBUG,
         date_format = '%T',
+        filter = function(n)
+          local tab_label = vim.t.tab_label
+          if tab_label and tab_label.name and tab_label.name:find 'diff' then
+            if string.find(n.msg, '^Client %S+ quit with exit code %d+ and signal %d+%.') or string.find(n.msg, '^%[null%-ls%] failed to run generator') then
+              return false
+            end
+          end
+          return true
+        end,
       },
       indent = {
-        indent = {
-          enabled = false,
-          -- only_current = true,
-          -- only_scope = true,
-        },
-        scope = {
-          only_current = true,
-        },
-        chunk = {
-          enabled = true,
-          only_current = true,
-          char = {
-            corner_top = '╭',
-            corner_bottom = '╰',
-          },
-        },
+        indent = { enabled = false },
+        scope = { only_current = true },
+        chunk = { enabled = true, only_current = true, char = { corner_top = '╭', corner_bottom = '╰' } },
       },
       lazygit = {
         config = {
           os = {
             edit = vim.v.progpath
-              .. [[ --server "$NVIM" --remote-send '<C-\><C-n>:q<CR>' ]]
-              .. [[ && ]]
-              .. [[ ]]
+              .. [[ --server "$NVIM" --remote-send '<C-\><C-n>:q<CR>' && ]]
               .. vim.v.progpath
               .. [[ --server "$NVIM" --remote-silent {{filename}} ]],
             editAtLine = vim.v.progpath
-              .. [[ --server "$NVIM" --remote-send '<C-\><C-n>:q<CR>' ]]
-              .. [[ && ]]
+              .. [[ --server "$NVIM" --remote-send '<C-\><C-n>:q<CR>' && ]]
               .. vim.v.progpath
-              .. [[ --server "$NVIM" --remote-silent {{filename}} ]]
-              .. [[ && ]]
+              .. [[ --server "$NVIM" --remote-silent {{filename}} && ]]
               .. vim.v.progpath
               .. [[ --server "$NVIM" --remote-send ':{{line}}<CR>' ]],
             openDirInEditor = vim.v.progpath
-              .. [[ --server "$NVIM" --remote-send '<C-\><C-n>:q<CR>' ]]
-              .. [[ && ]]
+              .. [[ --server "$NVIM" --remote-send '<C-\><C-n>:q<CR>' && ]]
               .. vim.v.progpath
               .. [[ --server "$NVIM" --remote-silent {{dir}} ]],
           },
         },
       },
+      zen = {
+        zoom = {
+          show = { statusline = true, tabline = true },
+          win = { width = 0, backdrop = false },
+        },
+      },
       picker = {
+        prompt = '❯ ',
+        ui_select = true,
+        layout = vim.tbl_extend('force', NVSPickerHorizontalLayout.build(), { cycle = false }),
         win = {
-          input = {
-            keys = {
-              -- Scrolling like in LazyGit
-              ['J'] = { 'preview_scroll_down', mode = { 'n' } },
-              ['K'] = { 'preview_scroll_up', mode = { 'n' } },
-              ['H'] = { 'preview_scroll_left', mode = { 'n' } },
-              ['L'] = { 'preview_scroll_right', mode = { 'n' } },
-            },
-          },
+          input = { keys = NVSPickers.keys },
+          list = { keys = NVSPickers.keys },
+          preview = { keys = NVSPickers.keys },
         },
+        actions = NVSPickers.actions,
         formatters = {
-          file = {
-            filename_first = true,
-            truncate = 80,
-          },
-        },
-        layout = {
-          cycle = false,
+          file = { filename_first = true, truncate = 80 },
         },
         layouts = {
           default = {
-            layout = {
-              box = 'horizontal',
-              backdrop = false,
-              width = screen.is_large() and 0.75 or 0.9,
-              height = 0.9,
-              border = 'none',
-              {
-                box = 'vertical',
-                border = 'none',
-                {
-                  win = 'input',
-                  height = 1,
-                  title = '{title} {live}',
-                  title_pos = 'center',
-                  border = borders.bottom_hr,
-                },
-                {
-                  win = 'list',
-                  border = borders.top_none,
-                },
-              },
-              {
-                win = 'preview',
-                title = '{preview}',
-                border = borders.padded,
-                width = 0.6,
-              },
-            },
+            layout = NVSPickerHorizontalLayout.build(),
           },
           select = {
             layout = {
@@ -138,17 +396,8 @@ return {
               width = 0.5,
               height = 0.5,
               border = 'none',
-              {
-                win = 'input',
-                height = 1,
-                title = '{title}',
-                title_pos = 'center',
-                border = borders.bottom_hr,
-              },
-              {
-                win = 'list',
-                border = borders.top_none,
-              },
+              { win = 'input', height = 1, title = '{title}', title_pos = 'center', border = borders.bottom_hr },
+              { win = 'list', border = borders.top_none },
             },
           },
           vscode = {
@@ -161,108 +410,82 @@ return {
               height = 0.4,
               border = 'none',
               box = 'vertical',
-              {
-                win = 'input',
-                height = 1,
-                border = borders.bottom_hr,
-                title = '{title} {live} {flags}',
-                title_pos = 'center',
-              },
-              {
-                win = 'list',
-                border = borders.top_none,
-              },
-              {
-                win = 'preview',
-                title = '{preview}',
-                border = borders.padded,
-              },
+              { win = 'input', height = 1, border = borders.bottom_hr, title = '{title} {live} {flags}', title_pos = 'center' },
+              { win = 'list', border = borders.top_none },
+              { win = 'preview', title = '{preview}', border = borders.padded },
             },
           },
         },
       },
       input = {
-        win = {
-          border = borders.padded,
-        },
+        win = { border = borders.padded },
       },
       styles = {
         terminal = {
           wo = {
-            winhighlight = 'Normal:Normal,NormalNC:SnacksNormalNC,WinBar:SnacksWinBar,'
-              .. 'WinBarNC:SnacksWinBarNC,FloatTitle:SnacksTitle,FloatFooter:SnacksFooter,'
-              .. 'WinSeparator:SnacksWinSeparator,FloatBorder:Border',
+            winhighlight = 'Normal:Normal,NormalNC:SnacksNormalNC,WinBar:SnacksWinBar,WinBarNC:SnacksWinBarNC,FloatTitle:SnacksTitle,FloatFooter:SnacksFooter,WinSeparator:SnacksWinSeparator,FloatBorder:Border',
           },
         },
-        lazygit = {
-          width = 0,
-          height = 0,
-          border = 'rounded',
-        },
+        lazygit = { width = 0, height = 0, border = 'rounded' },
         float = { backdrop = false },
-        notification = {
-          border = borders.padded,
-        },
+        notification = { border = borders.padded },
         notification_history = {
           backdrop = false,
           border = borders.padded,
-          keys = {
-            q = 'close',
-            ['<Esc>'] = 'close',
-          },
+          keys = { q = 'close', ['<Esc>'] = 'close' },
         },
       },
     },
+    init = function()
+      local dashboard_setup = {}
+      vim.api.nvim_create_autocmd('FileType', {
+        pattern = 'snacks_dashboard',
+        callback = function()
+          local buf = vim.api.nvim_get_current_buf()
+          if dashboard_setup[buf] then
+            return
+          end
+          dashboard_setup[buf] = true
+          NVLualine.hide_everything()
+          vim.api.nvim_create_autocmd('BufWipeout', {
+            callback = function(args)
+              if args.buf ~= buf then
+                return
+              end
+              dashboard_setup[buf] = nil
+              NVTabs.set_label_if_empty { icon = NVTabs.editor_icon, name = 'main' }
+              NVLualine.show_everything()
+              NVLayoutManager.enable()
+            end,
+          })
+        end,
+      })
+      if vim.bo.filetype == 'snacks_dashboard' then
+        vim.api.nvim_exec_autocmds('FileType', { pattern = 'snacks_dashboard' })
+      end
+      local layout_enabled = false
+      vim.api.nvim_create_autocmd('BufEnter', {
+        callback = function()
+          if layout_enabled then
+            return true
+          end
+          local ft = vim.bo.filetype
+          if ft == 'snacks_dashboard' or ft == '' or ft == 'nofile' then
+            return
+          end
+          layout_enabled = true
+          NVLualine.show_everything()
+          NVLayoutManager.enable()
+        end,
+      })
+    end,
     keys = {
-
       {
         '<leader><space>',
         function()
-          Snacks.picker.buffers {
-            layout = {
-              layout = {
-                box = 'vertical',
-                backdrop = false,
-                width = screen.is_large() and 0.4 or 0.5,
-                height = 0.8,
-                border = 'none',
-                {
-                  win = 'input',
-                  height = 1,
-                  title = '{title} {live}',
-                  title_pos = 'center',
-                  border = borders.bottom_hr,
-                },
-                {
-                  win = 'list',
-                  border = borders.top_none,
-                },
-                {
-                  win = 'preview',
-                  title = '{preview}',
-                  border = borders.top_hr,
-                },
-              },
-            },
-            win = {
-              input = {
-                keys = {
-                  ['<bs>'] = 'bufdelete',
-                  ['<a-bs>'] = { 'bufdelete', mode = { 'n', 'i' } },
-                },
-              },
-              list = { keys = { ['<bs>'] = 'bufdelete' } },
-            },
-          }
+          NVSPickers.buffers()
         end,
         desc = 'Buffers',
-      },
-      {
-        '<leader>/',
-        function()
-          Snacks.picker.lines()
-        end,
-        desc = 'Buffer Lines',
       },
       {
         '<leader>sb',
@@ -270,6 +493,13 @@ return {
           Snacks.picker.grep_buffers()
         end,
         desc = 'Grep Open Buffers',
+      },
+      {
+        '<leader>sH',
+        function()
+          NVSPickers.highlights()
+        end,
+        desc = 'Search Highlights',
       },
     },
   },

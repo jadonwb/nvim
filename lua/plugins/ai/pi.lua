@@ -1,3 +1,24 @@
+-- === Wrapper functions (set globals on load) ===
+
+NVPi = {}
+
+function NVPi.open_float()
+  local ok = pcall(vim.cmd, 'Pi layout=float')
+  if not ok then
+    pcall(function()
+      require('pi').layout 'float'
+    end)
+  end
+end
+
+function NVPi.is_visible()
+  local ok, pi = pcall(require, 'pi')
+  if ok and pi.is_visible then
+    return pi.is_visible()
+  end
+  return false
+end
+
 local borders = require 'config.borders'
 
 return {
@@ -25,14 +46,14 @@ return {
     layout = {
       default = 'side',
       side = function()
-        local wide = require("utils.screen").is_large()
+        local wide = require('utils.screen').is_large()
         return {
           position = 'right',
           width = wide and 0.35 or 0.45,
         }
       end,
       float = function()
-        local wide = require("utils.screen").is_large()
+        local wide = require('utils.screen').is_large()
         return {
           width = wide and 0.6 or 0.8,
           height = 0.85,

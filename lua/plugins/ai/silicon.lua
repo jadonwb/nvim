@@ -20,7 +20,7 @@ return {
     gobble = false,
     debug = false,
     output = function()
-      return vim.fn.stdpath('cache') .. '/pi-screenshots/silicon_' .. os.date('%Y-%m-%d_%H-%M-%S') .. '.png'
+      return vim.fn.stdpath 'cache' .. '/pi-screenshots/silicon_' .. os.date '%Y-%m-%d_%H-%M-%S' .. '.png'
     end,
   },
   keys = {
@@ -28,7 +28,7 @@ return {
     {
       '<Leader>is',
       function()
-        require('silicon').visualise_api({ to_clip = false })
+        require('silicon').visualise_api { to_clip = false }
       end,
       mode = 'v',
       desc = 'Silicon: Screenshot selection',
@@ -37,7 +37,7 @@ return {
     {
       '<Leader>iS',
       function()
-        require('silicon').visualise_api({ to_clip = false, show_buf = true })
+        require('silicon').visualise_api { to_clip = false, show_buf = true }
       end,
       mode = 'v',
       desc = 'Silicon: Full buffer + highlight selection',
@@ -46,7 +46,7 @@ return {
     {
       '<Leader>il',
       function()
-        require('silicon').visualise_api({ to_clip = false })
+        require('silicon').visualise_api { to_clip = false }
       end,
       mode = 'n',
       desc = 'Silicon: Screenshot current line',
@@ -55,7 +55,7 @@ return {
     {
       '<Leader>iv',
       function()
-        require('silicon').visualise_api({ to_clip = false, visible = true })
+        require('silicon').visualise_api { to_clip = false, visible = true }
       end,
       mode = 'n',
       desc = 'Silicon: Screenshot visible portion',
@@ -73,7 +73,7 @@ return {
     {
       '<Leader>iP',
       function()
-        require('utils.screenshot').screenshot_and_attach({ show_buf = true })
+        require('utils.screenshot').screenshot_and_attach { show_buf = true }
       end,
       mode = 'v',
       desc = 'Screenshot full buffer → Pi',
@@ -87,9 +87,9 @@ return {
     vim.api.nvim_create_autocmd('ColorScheme', {
       group = vim.api.nvim_create_augroup('SiliconRefresh', { clear = true }),
       callback = function()
-        local utils = require('silicon.utils')
+        local utils = require 'silicon.utils'
         utils.build_tmTheme()
-        utils.reload_silicon_cache({ async = true })
+        utils.reload_silicon_cache { async = true }
       end,
       desc = 'Reload silicon theme cache on colorscheme switch',
     })

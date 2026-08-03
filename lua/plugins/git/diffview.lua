@@ -1,3 +1,71 @@
+-- === Wrapper functions (set globals on load) ===
+
+NVDiffview = {}
+
+local dv_fn = {}
+
+function NVDiffview.is_diffview_tab(tabid)
+  local ok, dv = pcall(require, 'diffview.lib')
+  if not ok or not dv.views then
+    return false
+  end
+  for _, view in ipairs(dv.views) do
+    if view.tabpage == tabid then
+      return true
+    end
+  end
+  return false
+end
+
+function NVDiffview.ensure_current_hidden()
+  local current_diff = dv_fn.current_diff()
+  if current_diff then
+    dv_fn.hide_current_diff()
+    return true
+  end
+  return false
+end
+
+function NVDiffview.ensure_all_hidden()
+  local current_diff = dv_fn.current_diff()
+  if current_diff then
+    dv_fn.hide_current_diff()
+  end
+  local inactive_diff_tab = dv_fn.inactive_diff()
+  if inactive_diff_tab then
+    local tab_nr = vim.api.nvim_tabpage_get_number(inactive_diff_tab)
+    vim.cmd.tabclose(tab_nr)
+  end
+end
+
+function dv_fn.current_diff()
+  local ok, dv = pcall(require, 'diffview.lib')
+  if not ok then
+    return nil
+  end
+  return dv.get_current_view()
+end
+
+function dv_fn.hide_current_diff()
+  vim.cmd 'DiffviewClose'
+end
+
+function dv_fn.inactive_diff()
+  local ok, dv = pcall(require, 'diffview.lib')
+  if not ok or not dv.views then
+    return nil
+  end
+  local tabs = vim.api.nvim_list_tabpages()
+  for _, tabpage in ipairs(tabs) do
+    for _, view in ipairs(dv.views) do
+      if view.tabpage == tabpage then
+        return tabpage
+      end
+    end
+  end
+  return nil
+end
+
 return {
   'dlyongemallo/diffview-plus.nvim',
   lazy = false,
@@ -70,7 +138,8 @@ return {
       -- ── hooks: tab renaming + diff2 highlighting ──────────────
       hooks = {
         view_opened = function(view)
-          vim.api.nvim_tabpage_set_var(view.tabpage, 'tab_label', '  diff')
+          local tabs = require 'editor.tabs'
+          tabs.set_label { icon = '', name = 'diff' }
         end,
         view_closed = function() end,
         diff_buf_win_enter = function(_bufnr, _winid, ctx)
@@ -98,22 +167,22 @@ return {
 
   keys = {
     {
-      '<Leader>gl',
+      '<Leader>dl',
       '<Cmd>DiffviewFileHistory<CR>',
       desc = 'Diffview Log',
     },
     {
-      '<Leader>gd',
+      '<Leader>dv',
       '<Cmd>DiffviewOpen<CR>',
       desc = 'Diffview',
     },
     {
-      '<Leader>gL',
+      '<Leader>dL',
       '<Cmd>DiffviewFileHistory %<CR>',
       desc = 'Diffview Log (This File)',
     },
     {
-      '<Leader>gh',
+      '<Leader>dh',
       '<Cmd>DiffviewFileHistory % --pin-local<CR>',
       desc = 'File History (Pinned to Working Tree)',
     },

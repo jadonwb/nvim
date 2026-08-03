@@ -17,9 +17,9 @@ local M = {}
 ---@param type?    string  Dialog type: "Question" (default), "Error", "Warning", "Info"
 ---@return integer  The index of the chosen button (1-based), or 0 if aborted
 function M.confirm(msg, choices, default, type)
-    -- extui workaround: force prompt to a separate line
-    msg = msg .. "\n"
-    return vim.fn.confirm(msg, choices, default or 1, type or "Question")
+  -- extui workaround: force prompt to a separate line
+  msg = msg .. '\n'
+  return vim.fn.confirm(msg, choices, default or 1, type or 'Question')
 end
 
 return M

@@ -1,3 +1,19 @@
+-- === Wrapper functions (set globals on load) ===
+
+NVGitsigns = {}
+
+function NVGitsigns.ensure_preview_hidden()
+  local ok, gs = pcall(require, 'gitsigns')
+  if not ok then
+    return false
+  end
+  if gs.popup and gs.popup.handler and gs.popup.handler.close then
+    gs.popup.handler.close()
+    return true
+  end
+  return false
+end
+
 return {
   'lewis6991/gitsigns.nvim',
   opts = {

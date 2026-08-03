@@ -24,42 +24,42 @@ return {
             {
               'K',
               function()
-                require('utils.lsp-popup').show_hover()
+                NVLspPopup.show_hover()
               end,
               desc = 'Hover',
             },
             {
               'grd',
               function()
-                require('snacks').picker.lsp_definitions()
+                NVSPickers.lsp_definitions()
               end,
               desc = 'Goto Definition',
             },
             {
               'grr',
               function()
-                require('snacks').picker.lsp_references()
+                NVSPickers.lsp_references()
               end,
               desc = 'Goto References',
             },
             {
               'gri',
               function()
-                require('snacks').picker.lsp_implementations()
+                NVSPickers.lsp_implementations()
               end,
               desc = 'Goto Implementation',
             },
             {
               'grt',
               function()
-                require('snacks').picker.lsp_type_definitions()
+                NVSPickers.lsp_type_definitions()
               end,
               desc = 'Goto Type Definition',
             },
             {
               'grD',
               function()
-                require('snacks').picker.lsp_declarations()
+                NVSPickers.lsp_declarations()
               end,
               desc = 'Goto Declaration',
             },
@@ -73,7 +73,7 @@ return {
             {
               '<leader>cd',
               function()
-                require('utils.lsp-popup').show()
+                NVLspPopup.show()
               end,
               desc = 'Diagnostics Under Cursor',
             },

@@ -1,3 +1,20 @@
+-- === Wrapper functions (set globals on load) ===
+
+NVMason = {}
+
+function NVMason.ensure_hidden()
+  local ok, mason = pcall(require, 'mason')
+  if not ok then
+    return false
+  end
+  local winid = vim.fn.bufwinid 'mason.nvim'
+  if winid ~= -1 then
+    vim.api.nvim_win_close(winid, true)
+    return true
+  end
+  return false
+end
+
 return {
   'mason-org/mason.nvim',
   opts = {

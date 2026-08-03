@@ -4,6 +4,7 @@
 -- FIXME: disable spell on hover/popup window/buffer
 
 local M = {}
+NVLspPopup = M
 
 local has_nui, NuiPopup = pcall(require, 'nui.popup')
 if not has_nui then
@@ -290,6 +291,22 @@ function M.show()
   end
   -- FIXME: deprecated
   vim.api.nvim_buf_set_option(popup.bufnr, 'modifiable', false)
+end
+
+--- Hide the LSP popup if one is active. Used by the cooperative UI chain.
+--- Returns true if a popup was hidden.
+function M.ensure_hidden()
+  -- Check if any popup is currently open in the registry
+  if popups and next(popups) then
+    for winid, _ in pairs(popups) do
+      if vim.api.nvim_win_is_valid(winid) then
+        vim.api.nvim_win_close(winid, true)
+      end
+    end
+    popups = {}
+    return true
+  end
+  return false
 end
 
 return M

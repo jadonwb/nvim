@@ -1,3 +1,31 @@
+NVLualine = {}
+
+function NVLualine.show_everything()
+  vim.opt.laststatus = 3
+  vim.opt.showtabline = 1
+end
+
+function NVLualine.hide_everything()
+  vim.opt.laststatus = 0
+  vim.opt.showtabline = 0
+end
+
+function NVLualine.show_tabline()
+  pcall(function()
+    require('lualine').hide { place = 'tabline', unhide = true }
+  end)
+end
+
+function NVLualine.hide_tabline()
+  pcall(function()
+    require('lualine').hide { place = 'tabline', unhide = false }
+  end)
+end
+
+function NVLualine.rename_tab(label)
+  vim.cmd('LualineRenameTab ' .. label)
+end
+
 local tabline_mode = 'filepath'
 
 return {

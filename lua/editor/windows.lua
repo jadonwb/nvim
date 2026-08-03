@@ -1,14 +1,4 @@
---- Window management: navigation, repositioning, resizing, and layout equalizing.
----
---- Keybindings:
----   <S-Left/Right/Up/Down>  — Move focus between windows
----   <M-S-Left/Right/Up/Down> — Move window (needs winshift.nvim)
----   <M-s>                    — Swap windows (needs winshift.nvim)
----   <M-C-Up>/<M-C-Down>      — Increase/decrease layout width
----   <M-C-S-Up>/<M-C-S-Down>  — Increase/decrease window height
----   <A-e>                    — Equalize layout (reset width + wincmd =)
----   <leader>nh               — New buffer in horizontal split
----   <leader>nn               — New buffer in vertical split
+--- Window nav, move, resize. S-arrows: focus, M-S-arrows: move, M-s: swap, M-C-Up/Down: width, A-e: equalize.
 
 local K = require 'utils.keymap'
 local log = require 'utils.log'
@@ -17,6 +7,7 @@ local M = {
   maximized_width = 1, -- 100%
   window_picker_keys = 'UHKMETJWNSABCDFGILOPQRVXYZ1234567890',
 }
+NVWindows = M
 
 local fn = {}
 
@@ -153,7 +144,7 @@ function M.get_tab_windows_with_listed_buffers(options)
 
   for _, win in ipairs(windows) do
     local buf = vim.api.nvim_win_get_buf(win)
-    local is_help = vim.bo[buf].filetype == 'help'
+    local is_help = require('editor.help').is_help(buf)
     local incl_if_help = opts.incl_help and is_help
     local is_listed = vim.bo[buf].buflisted
 

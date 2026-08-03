@@ -27,16 +27,6 @@ vim.api.nvim_create_autocmd('FileType', {
   end,
 })
 
--- Auto-reload files when they change externally
-vim.api.nvim_create_autocmd({ 'BufEnter', 'FocusGained', 'CursorHold', 'CursorHoldI' }, {
-  pattern = '*',
-  callback = function()
-    if vim.api.nvim_get_option_value('buftype', { buf = 0 }) == '' then
-      vim.cmd 'checktime'
-    end
-  end,
-})
-
 vim.api.nvim_create_autocmd('FileType', {
   pattern = { 'gitcommit', 'pi-dialog' },
   callback = function()

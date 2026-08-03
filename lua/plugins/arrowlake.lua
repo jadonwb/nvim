@@ -7,6 +7,7 @@ return {
         functions = { bold = true },
       },
       lualine_bold = true,
+      popup = 'normal',
     },
     keys = {
       {

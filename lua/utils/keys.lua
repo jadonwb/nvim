@@ -1,9 +1,9 @@
---- Key-sequence feeding helper with mode-aware terminal code handling.
---- Used to programmatically send key sequences in different Neovim modes.
+--- Mode-aware key sequence feeding (n/x/t modes).
 
-local log = require("utils.log")
+local log = require 'utils.log'
 
 local M = {}
+NVKeys = M
 
 --- Feed a key sequence into Neovim's input queue.
 ---
@@ -14,20 +14,20 @@ local M = {}
 ---@param keys    string  The key sequence to send (may include <keycode> notation)
 ---@param options table   { mode: "n"|"x"|"t" }
 function M.send(keys, options)
-    local mode = options.mode
+  local mode = options.mode
 
-    if mode == "n" then
-        local termcodes = vim.api.nvim_replace_termcodes(keys, true, true, true)
-        vim.api.nvim_feedkeys(termcodes, "n", false)
-    elseif mode == "x" then
-        local termcodes = vim.api.nvim_replace_termcodes(keys, true, false, true)
-        vim.api.nvim_feedkeys(termcodes, "x", false)
-    elseif mode == "t" then
-        -- Terminal mode: feed raw keys without termcode replacement
-        vim.api.nvim_feedkeys(keys, "t", false)
-    else
-        log.error("Unexpected mode in NVKeys.send: " .. tostring(mode))
-    end
+  if mode == 'n' then
+    local termcodes = vim.api.nvim_replace_termcodes(keys, true, true, true)
+    vim.api.nvim_feedkeys(termcodes, 'n', false)
+  elseif mode == 'x' then
+    local termcodes = vim.api.nvim_replace_termcodes(keys, true, false, true)
+    vim.api.nvim_feedkeys(termcodes, 'x', false)
+  elseif mode == 't' then
+    -- Terminal mode: feed raw keys without termcode replacement
+    vim.api.nvim_feedkeys(keys, 't', false)
+  else
+    log.error('Unexpected mode in NVKeys.send: ' .. tostring(mode))
+  end
 end
 
 return M
