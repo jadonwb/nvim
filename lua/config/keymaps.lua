@@ -32,6 +32,7 @@ map('n', '<up>', 'O<Esc>', { desc = 'New Line Up' })
 map({ 'x', 'v', 's' }, '<leader>p', [["_dP]], { silent = true })
 
 -- ── Toggle tab characters ──
+-- TODO: make a more general toggle for listchars? to display whitespace as well for diffing purposes?
 local function toggle_tabs()
   local current = vim.opt.listchars:get()
   if current.tab == '» ' then

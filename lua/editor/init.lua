@@ -10,4 +10,8 @@ return {
     layout_manager = require("editor.features.layout-manager"),
     focus_mode = require("editor.features.focus-mode"),
     git_commit = require("editor.features.git-commit"),
+    git_worktrees = require("editor.features.git-worktrees"),
+    tabs = require("editor.tabs"),
+    windows = require("editor.windows"),
+    buffers = require("editor.buffers"),
 }

@@ -53,6 +53,8 @@ return {
       { '<leader>:', false },
       { '<leader>,', false },
       { '<leader>n', false },
+      -- Buffer
+      { '<leader>bd', false },
     },
   },
   -- ── persistence.nvim — disable session keymaps ──────────────────────

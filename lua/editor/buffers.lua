@@ -1,0 +1,296 @@
+--- Buffer management with cooperative UI protocol.
+---
+--- The cooperative UI protocol ensures that pressing the close key
+--- first hides any active floating UI (git-commit, focus-mode, etc.)
+--- before deleting the underlying buffer.
+---
+--- Keybindings:
+---   <M-w>     — Delete current buffer (smart: hides floating UI first)
+---   <M-S-w>   — Delete current buffer and close its window
+
+local K = require("utils.keymap")
+local dialogs = require("utils.dialogs")
+local keys = require("utils.keys")
+local log = require("utils.log")
+
+local M = {}
+
+local fn = {}
+
+--- Cooperative UI chain: modules that get a chance to consume the close
+--- event before the buffer is deleted. Each entry's fn() should return
+--- true if it handled the event (consumed it).
+--- Ordered: specific floating UIs first, mode-like states last.
+local cooperative_ui = {
+    -- Floating UIs (close window first, don't delete buffer)
+    {
+        name = "git_commit",
+        fn = function()
+            local ok, m = pcall(require, "editor.features.git-commit")
+            return ok and m.ensure_hidden and m.ensure_hidden() or false
+        end,
+    },
+    -- Mode-like states (deactivate the mode, don't delete buffer)
+    -- These go last because they represent persistent UI states
+    -- rather than transient floating windows.
+    {
+        name = "focus_mode",
+        fn = function()
+            local ok, m = pcall(require, "editor.features.focus-mode")
+            return ok and m.ensure_deactivated_if_active and m.ensure_deactivated_if_active() or false
+        end,
+    },
+    -- Future modules to add as they are ported:
+    -- NVNoice.ensure_hidden(), NVLazy.ensure_hidden(), NVMason.ensure_hidden(),
+    -- NVTrouble.ensure_hidden(), NVLspPopup.ensure_hidden(), NVSLazygit.ensure_hidden(),
+    -- NVGitsigns.ensure_preview_hidden(), NVDiffview.ensure_current_hidden(),
+    -- NVGrugFar.ensure_current_hidden(), NVSZoom.ensure_deactivated()
+}
+
+function M.keymaps()
+    K.map({
+        K.keys.close,
+        "Delete current buffer, but do not close current window if there are multiple",
+        fn.delete_buf,
+        mode = { "n", "v", "i", "t", "c" },
+    })
+
+    K.map({
+        "<M-S-w>",
+        "Delete current buffer and close current window if there are multiple",
+        fn.delete_buf_and_close_win,
+        mode = { "n", "i", "v", "t", "c" },
+    })
+end
+
+function M.autocmds()
+    -- Auto-reload files when they change externally
+    vim.api.nvim_create_autocmd({ "BufEnter", "FocusGained", "CursorHold", "CursorHoldI" }, {
+        pattern = "*",
+        callback = function()
+            if vim.api.nvim_get_option_value("buftype", { buf = 0 }) == "" then
+                vim.cmd("checktime")
+            end
+        end,
+    })
+end
+
+---@param bufid BufID
+---@return boolean
+function M.is_buf_listed(bufid)
+    local buf = fn.get_buf_info(bufid)
+    return buf and buf.listed == 1
+end
+
+---@param opts {sort_lastused: boolean}?
+---@return vim.fn.getbufinfo.ret.item[]
+function M.get_listed_bufs(opts)
+    opts = opts or {}
+    local bufs = vim.fn.getbufinfo({ buflisted = 1 })
+
+    if opts.sort_lastused then
+        table.sort(bufs, function(a, b)
+            return a.lastused > b.lastused
+        end)
+    end
+
+    return bufs
+end
+
+---@param bufid BufID
+function fn.get_buf_info(bufid)
+    return vim.fn.getbufinfo(bufid)[1]
+end
+
+function fn.delete_buf()
+    -- Guard: don't delete buffers when on starter/dashboard
+    -- (stub for now — returns false since we don't have mini-starter yet)
+    -- if vim.bo.filetype == "ministarter" then return end
+
+    -- ── Cooperative UI protocol ────────────────────
+    -- Give each registered floating UI/mode a chance to consume the close event
+    for _, ui in ipairs(cooperative_ui) do
+        local ok, consumed = pcall(ui.fn)
+        if ok and consumed then
+            return -- UI handled it, don't delete the buffer
+        end
+    end
+
+    if vim.bo.readonly then
+        vim.cmd.close()
+        return
+    end
+
+    local current_win = vim.api.nvim_get_current_win()
+    local current_buf = vim.api.nvim_get_current_buf()
+    local current_buf_info = fn.get_buf_info(current_buf)
+
+    if current_buf_info == nil then
+        log.error("Can't get current buffer info")
+        return
+    end
+
+    -- Don't write if file was deleted from disk or if it's an unnamed modified buffer
+    local file_exists = current_buf_info.name ~= "" and vim.fn.filereadable(current_buf_info.name) == 1
+
+    if current_buf_info.name == "" and current_buf_info.changed == 1 then
+        if dialogs.confirm("Buffer has unsaved changes. Discard?", "&Yes\n&No", 2) ~= 1 then
+            return
+        end
+    end
+
+    local mode = vim.fn.mode()
+
+    if mode ~= "n" then
+        keys.send("<Esc>", { mode = "x" })
+    end
+
+    local NVWindows = require("editor.windows")
+    local tab_windows = NVWindows.get_tab_windows_with_listed_buffers({ incl_help = true })
+
+    if tab_windows == nil then
+        log.error("No windows in the current tab")
+        return
+    end
+
+    local is_opened_elsewhere = nil
+
+    local tabs = vim.api.nvim_list_tabpages()
+    local current_tab = vim.api.nvim_get_current_tabpage()
+
+    if #tab_windows > 1 or #tabs > 1 then
+        is_opened_elsewhere = fn.is_opened_elsewhere(tabs, current_tab, current_win, current_buf)
+    end
+
+    local bufs = M.get_listed_bufs({ sort_lastused = true })
+
+    -- Searching for the next buffer to show in the current window
+    local next_buf = nil
+
+    for _, buf in ipairs(bufs) do
+        if buf.bufnr ~= current_buf then
+            -- If there are multiple windows opened, we don't want to show the buffer
+            -- that is already opened in another window. So if it's the case,
+            -- we skip it and continue searching for the next buffer.
+            local is_opened_elsewhere_in_current_tab = false
+
+            for _, win in ipairs(tab_windows) do
+                local win_buf = vim.api.nvim_win_get_buf(win)
+                if win_buf == buf.bufnr then
+                    is_opened_elsewhere_in_current_tab = true
+                    break
+                end
+            end
+
+            if not is_opened_elsewhere_in_current_tab then
+                -- that's the one
+                next_buf = buf.bufnr
+                break
+            end
+        end
+    end
+
+    if next_buf ~= nil then
+        if file_exists then
+            vim.cmd("silent! write")
+        end
+        vim.api.nvim_set_current_buf(next_buf)
+        if not is_opened_elsewhere then
+            vim.api.nvim_buf_delete(current_buf, { force = not file_exists })
+        end
+    else
+        if #tab_windows > 1 then
+            if file_exists then
+                vim.cmd("silent! write")
+            end
+            vim.cmd.close()
+            if not is_opened_elsewhere then
+                vim.api.nvim_buf_delete(current_buf, { force = not file_exists })
+            end
+        else
+            local empty_buf = vim.api.nvim_create_buf(true, false)
+
+            if empty_buf == 0 then
+                log.error("Failed to create empty buffer")
+                if file_exists then
+                    vim.cmd("silent! write")
+                end
+            else
+                if file_exists then
+                    vim.cmd("silent! write")
+                end
+                vim.api.nvim_set_current_buf(empty_buf)
+            end
+
+            vim.api.nvim_buf_delete(current_buf, { force = not file_exists })
+        end
+    end
+end
+
+function fn.delete_buf_and_close_win()
+    local NVWindows = require("editor.windows")
+    local NVTabs = require("editor.tabs")
+
+    local tab_windows = NVWindows.get_tab_windows_with_listed_buffers({ incl_help = true })
+
+    if tab_windows == nil then
+        vim.cmd("q")
+        return
+    end
+
+    local is_last_window_in_tab = #tab_windows <= 1
+    local non_temporary_tabs = NVTabs.get_non_temporary()
+
+    if is_last_window_in_tab then
+        if #non_temporary_tabs > 1 then
+            if dialogs.confirm("Close tab?", "&Yes\n&No", 2) == 1 then
+                vim.cmd("tabclose")
+            end
+        else
+            -- Last non-temporary tab: create empty buffer instead of closing
+            local current_buf = vim.api.nvim_get_current_buf()
+            local empty_buf = vim.api.nvim_create_buf(true, false)
+
+            if empty_buf ~= 0 then
+                vim.api.nvim_set_current_buf(empty_buf)
+                vim.api.nvim_buf_delete(current_buf, { force = true })
+            end
+        end
+    else
+        vim.cmd("q")
+    end
+end
+
+---@param tabs TabID[]
+---@param current_tab TabID
+---@param current_win WinID
+---@param current_buf BufID
+---@return "current_tab" | "other_tab" | nil
+function fn.is_opened_elsewhere(tabs, current_tab, current_win, current_buf)
+    local current_tab_wins = vim.api.nvim_tabpage_list_wins(current_tab)
+
+    for _, win in ipairs(current_tab_wins) do
+        if win ~= current_win then
+            local win_buf = vim.api.nvim_win_get_buf(win)
+            if current_buf == win_buf then
+                return "current_tab"
+            end
+        end
+    end
+
+    for _, tabpage in ipairs(tabs) do
+        if tabpage ~= current_tab then
+            local tab_wins = vim.api.nvim_tabpage_list_wins(tabpage)
+            for _, win in ipairs(tab_wins) do
+                local win_buf = vim.api.nvim_win_get_buf(win)
+                if current_buf == win_buf then
+                    return "other_tab"
+                end
+            end
+        end
+    end
+
+    return nil
+end
+
+return M

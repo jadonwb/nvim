@@ -1,6 +1,6 @@
 local borders = require 'config.borders'
 
-local screen = require("utils.screen")
+local screen = require 'utils.screen'
 
 return {
   {
@@ -256,13 +256,6 @@ return {
           }
         end,
         desc = 'Buffers',
-      },
-      {
-        '<leader>bd',
-        function()
-          Snacks.bufdelete()
-        end,
-        desc = 'Delete Buffer',
       },
       {
         '<leader>/',

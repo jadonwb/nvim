@@ -32,5 +32,25 @@ return {
         -- ── Git Commit Form ─────────────────────────────
         -- <leader>gc / ga / gr for floating commit UI
         editor.git_commit.keymaps()
+
+        -- ── Git Worktrees ───────────────────────────────
+        -- <C-S-n> to create, <leader>gw to pick/switch
+        editor.git_worktrees.keymaps()
+
+        -- ── Tabs ────────────────────────────────────────
+        -- <leader>tn new tab, <leader>tc close tab,
+        -- <C-Left/Right> navigate, <M-S-Left/Right> reorder
+        editor.tabs.keymaps()
+
+        -- ── Windows ─────────────────────────────────────
+        -- <S-arrows> navigate, <M-S-arrows> move/swap,
+        -- <M-C-Up/Down> resize width, <A-e> equalize
+        editor.windows.keymaps()
+
+        -- ── Buffers ─────────────────────────────────────
+        -- <M-w> smart close (floating UI aware),
+        -- <M-S-w> close buffer + window
+        editor.buffers.keymaps()
+        editor.buffers.autocmds()
     end,
 }

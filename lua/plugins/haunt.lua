@@ -4,7 +4,8 @@ return {
   ---@class HauntConfig
   opts = {
     sign = '󱙝',
-    sign_hl = 'DiagnosticInfo',
+    -- TODO: move into arrowlake
+    sign_hl = 'HauntSign',
     virt_text_hl = 'HauntAnnotation',
     annotation_prefix = ' 󰆉 ',
     line_hl = nil,
@@ -12,7 +13,7 @@ return {
     data_dir = nil,
     picker_keys = {
       delete = { key = 'd', mode = { 'n' } },
-      edit_annotation = { key = 'a', mode = { 'n' } },
+      edit_annotation = { key = 'a', mode = { 'n' } }, -- TODO: try e ?
     },
   },
   -- recommended keymaps, with a helpful prefix alias

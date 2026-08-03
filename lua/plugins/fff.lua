@@ -7,7 +7,7 @@ return {
     require('fff.download').download_or_build_binary()
   end,
   opts = function()
-    local is_wide = require("utils.screen").is_large()
+    local is_wide = require('utils.screen').is_large()
     return {
       prompt_vim_mode = true,
       layout = {
@@ -34,9 +34,9 @@ return {
           full_path = false,
         },
       },
-      git = {
-        status_text_color = true,
-      },
+      -- git = {
+      --   status_text_color = true,
+      -- },
       hl = {
         title = 'FloatTitle',
       },
