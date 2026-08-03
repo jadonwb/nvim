@@ -5,10 +5,19 @@ function NVPersistence.has_session()
   if not ok then
     return false
   end
-  local sessions = plugin.list() or {}
+  -- FIXME: this doesn't handle all the edge cases
   local current = plugin.current()
-  for _, s in ipairs(sessions) do
-    if s == current then
+  if not current then
+    return false
+  end
+  if vim.fn.filereadable(current) ~= 1 then
+    return false
+  end
+
+  -- Check if session has buffers with actual file paths (not just empty [No Name] buffers).
+  -- Session files use "badd +0" for empty buffers and "badd +line /path" for real buffers.
+  for _, line in ipairs(vim.fn.readfile(current)) do
+    if line:find '^badd .+/' then
       return true
     end
   end
