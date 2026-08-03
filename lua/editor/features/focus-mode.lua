@@ -3,7 +3,7 @@
 --- remembers the original tab/window, and restores on exit.
 ---
 --- Keybindings:
----   <leader>zf — Toggle focus mode
+---   <leader>uz — Toggle focus mode
 
 local K = require("utils.keymap")
 local log = require("utils.log")

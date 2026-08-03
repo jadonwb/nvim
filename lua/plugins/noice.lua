@@ -3,7 +3,7 @@ return {
     'folke/noice.nvim',
     event = 'VeryLazy',
     opts = function()
-      local is_large = require("utils.screen").is_large()
+      local is_large = require('utils.screen').is_large()
 
       local common_border = {
         style = 'none',

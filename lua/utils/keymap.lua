@@ -60,7 +60,7 @@ M.keys = {
     commit_push = "<M-CR>",       -- Commit and push (Alt+Enter)
 
     -- Focus mode
-    focus       = "<leader>zf",   -- Toggle focus mode
+    focus       = "<leader>uz",   -- Toggle focus mode
 
     -- Layout width
     inc_width   = "<M-C-Up>",     -- Alt+Ctrl+Up: increase layout width

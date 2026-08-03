@@ -89,6 +89,7 @@ local function create_popup(lines, height, parent_win)
       padding = { top = 1, bottom = 1, left = 3, right = 3 },
     },
     win_options = {
+      spell = false,
       winhighlight = 'Normal:NormalFloat,FloatBorder:FloatBorder',
     },
   }

@@ -13,6 +13,14 @@ return {
         local keys = "UHKMETJWNSABCDFGILOPQRVXYZ1234567890"
 
         return {
+            highlight_moving_win = true,
+            focused_hl_group = "WinShiftMove",
+            moving_win_options = {
+                wrap = false,
+                cursorline = false,
+                cursorcolumn = false,
+                colorcolumn = "",
+            },
             ---@diagnostic disable-next-line: missing-fields
             keymaps = {
                 disable_defaults = true,

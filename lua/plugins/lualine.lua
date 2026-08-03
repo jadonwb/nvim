@@ -99,8 +99,8 @@ return {
           mode = 2,
           fmt = function(name, ctx)
             local label = vim.fn.gettabvar(ctx.tabnr, 'tab_label')
-            if label and label ~= '' then
-              return label
+            if type(label) == 'table' and label.icon and label.name then
+              return label.icon .. ' ' .. label.name
             end
             return '' .. name .. ' '
           end,
