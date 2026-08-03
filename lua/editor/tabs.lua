@@ -5,8 +5,8 @@
 ---   <leader>tc     — Close tab (worktree-aware)
 ---   <C-Left>       — Previous tab
 ---   <C-Right>      — Next tab
----   <M-S-Left>     — Move tab left
----   <M-S-Right>    — Move tab right
+---   <C-S-Left>     — Move tab left
+---   <C-S-Right>    — Move tab right
 ---
 --- Tab labels are stored in vim.t.tab_label per tabpage and
 --- displayed by lualine's tabline component.
@@ -31,8 +31,8 @@ function M.keymaps()
     K.map({ "<leader>tc", "Close tab", fn.close_tab, mode = { "n", "i", "v", "t" }, nowait = true })
     K.map({ "<C-Right>", "Next tab", "<Cmd>tabnext<CR>", mode = { "n", "i", "v" } })
     K.map({ "<C-Left>", "Previous tab", "<Cmd>tabprev<CR>", mode = { "n", "i", "v" } })
-    K.map({ "<M-S-Right>", "Move tab to the right", "<Cmd>tabmove +1<CR>", mode = { "n", "i", "v" } })
-    K.map({ "<M-S-Left>", "Move tab to the left", "<Cmd>tabmove -1<CR>", mode = { "n", "i", "v" } })
+    K.map({ "<C-S-Right>", "Move tab to the right", "<Cmd>tabmove +1<CR>", mode = { "n", "i", "v" } })
+    K.map({ "<C-S-Left>", "Move tab to the left", "<Cmd>tabmove -1<CR>", mode = { "n", "i", "v" } })
 end
 
 function fn.create_tab()
