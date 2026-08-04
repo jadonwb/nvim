@@ -10,7 +10,7 @@ local fn = {}
 
 function NVGitWorktrees.keymaps()
   K.map { '<C-S-n>', 'Create new tab with git worktree', fn.create_tab_with_worktree, mode = { 'n', 'i', 'v', 't' } }
-  K.map { '<leader>gw', 'Show worktree picker', fn.pick_worktree, mode = { 'n', 'i', 'v', 't' } }
+  K.map { '<leader>gw', 'Show worktree picker', fn.pick_worktree, mode = { 'n', 'v', 't' } }
 end
 
 function fn.create_tab_with_worktree()
