@@ -75,7 +75,7 @@ return {
       callback = function()
         -- Restore tab labels
         pcall(function()
-          require('editor.tabs').restore_labels()
+          NVTabs.restore_labels()
         end)
 
         -- Restore lualine (hidden by dashboard)
@@ -83,7 +83,7 @@ return {
 
         -- Enable layout manager
         pcall(function()
-          require('editor.features.layout-manager').enable()
+          NVLayoutManager.enable()
         end)
       end,
     })

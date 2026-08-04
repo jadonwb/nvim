@@ -1,7 +1,6 @@
-local M = {}
-NVIcons = M
+NVIcons = {}
 
-M.lsp = {
+NVIcons.lsp = {
   mini = {
     error = '󰫲',
     warn = '󰬄',
@@ -18,4 +17,4 @@ M.lsp = {
   },
 }
 
-return M
+return NVIcons

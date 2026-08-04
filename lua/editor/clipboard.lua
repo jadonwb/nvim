@@ -1,8 +1,6 @@
-local M = {}
-NVClipboard = M
+NVClipboard = {}
 
-function M.yank(text)
+function NVClipboard.yank(text)
   vim.fn.setreg('+', text)
 end
 
-return M

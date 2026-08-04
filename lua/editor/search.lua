@@ -1,8 +1,7 @@
-local M = {}
-NVSearch = M
+NVSearch = {}
 
-M.cmd = 'rg'
-M.base_args = {
+NVSearch.cmd = 'rg'
+NVSearch.base_args = {
   '--follow',
   '--color=never',
   '--no-heading',
@@ -10,11 +9,10 @@ M.base_args = {
   '--line-number',
   '--column',
 }
-M.optional_args = {
+NVSearch.optional_args = {
   with_hidden = '--hidden',
   with_ignored = '--no-ignore-vcs',
   smart_case = '--smart-case',
   ignore_case = '--ignore-case',
 }
 
-return M

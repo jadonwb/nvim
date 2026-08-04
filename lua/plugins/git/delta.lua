@@ -1,3 +1,4 @@
+-- TODO!: modularize and stuff!
 return {
   'alex35mil/delta.nvim',
   lazy = false,
@@ -87,17 +88,27 @@ return {
         },
         actions = {
           open = { '<CR>', open_with_pi_side(picker.actions.open) },
-          open_vsplit = { '<C-v>', open_with_pi_side(picker.actions.open_vsplit) },
-          open_hsplit = { '<C-x>', open_with_pi_side(picker.actions.open_hsplit) },
+          open_vsplit = { NVKeymaps.open_vsplit, open_with_pi_side(picker.actions.open_vsplit) },
+          open_hsplit = { NVKeymaps.open_hsplit, open_with_pi_side(picker.actions.open_hsplit) },
           spotlight = { '<S-CR>', open_with_pi_side(picker.actions.spotlight) },
-          send_to_pi = { '<C-p>', send_to_pi(false) },
-          send_to_pi_and_close = { '<Leader>p', send_to_pi(true) },
+          collapse = { { '<Left>', modes = 'n' }, picker.actions.collapse },
+          expand = { { '<Right>', modes = 'n' }, picker.actions.expand },
+          send_to_pi = { '<C-a>', send_to_pi(false) },
+          send_to_pi_and_close = { '<C-S-a>', send_to_pi(true) },
+          jump_up = { NVKeymaps.scroll.up, picker.actions.move(-5) },
+          jump_down = { NVKeymaps.scroll.down, picker.actions.move(5) },
+          jump_top = { { 'gg', modes = 'n' }, picker.actions.move_to_top },
+          jump_bottom = { { 'G', modes = 'n' }, picker.actions.move_to_bottom },
+          scroll_left = { '<D-S-Left>', picker.actions.scroll_horizontal(-8) },
+          scroll_right = { '<D-S-Right>', picker.actions.scroll_horizontal(8) },
+          scroll_preview_up = { NVKeymaps.scroll_ctx.up, picker.actions.scroll_preview(-5) },
+          scroll_preview_down = { NVKeymaps.scroll_ctx.down, picker.actions.scroll_preview(5) },
           move_up = { { { 'k', modes = 'n' }, '<Up>' }, picker.actions.move(-1) },
           move_down = { { { 'j', modes = 'n' }, '<Down>' }, picker.actions.move(1) },
-          close_q = { { 'q', modes = 'n' }, picker.actions.close },
+          close = { { NVKeymaps.close, { '<Esc>', modes = 'n' } }, picker.actions.close },
           toggle_preview = { '<C-S-p>', picker.actions.toggle_preview },
           toggle_stage = { '<C-CR>', picker.actions.toggle_stage },
-          reset = { { 'R', modes = 'n' }, picker.actions.reset },
+          reset = { { '<C-x>', modes = 'n' }, picker.actions.reset },
         },
       },
 
@@ -108,15 +119,15 @@ return {
           prev_hunk = { '[h', spotlight.actions.prev_hunk, global = true },
           -- ── spotlight-only actions (auto-cleared when spotlight exits) ──
           toggle_stage_hunk = { '<CR>', spotlight.actions.toggle_stage_hunk },
-          reset_hunk = { { '<leader>dr', modes = { 'n', 'v' } }, spotlight.actions.reset_hunk },
-          reset_file = { '<leader>dR', spotlight.actions.reset_file },
+          reset_file = { '<C-S-x>', spotlight.actions.reset_file, global = true },
+          reset_hunk = { { '<M-S-x>', modes = { 'n', 'v' } }, spotlight.actions.reset_hunk, global = true },
         },
       },
 
       diff = {
         actions = {
           open_hunk_diff = { { 'gd', modes = 'n' }, delta.diff.actions.open_hunk_diff },
-          open_file_diff = { { 'gD', modes = 'n' }, delta.diff.actions.open_file_diff },
+          open_file_diff = { { '<leader>dd', modes = 'n' }, delta.diff.actions.open_file_diff },
         },
         file = {
           keys = {
@@ -131,7 +142,7 @@ return {
           keys = {
             focus_left = { '<Tab>', '<Left>' },
             focus_right = { '<Tab>', '<Right>' },
-            close = { 'q', '<Esc>' },
+            close = { NVKeymaps.close_q, NVKeymaps.close_esc },
           },
         },
       },

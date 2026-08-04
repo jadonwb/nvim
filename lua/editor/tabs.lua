@@ -1,24 +1,16 @@
---- Tab create/close/nav. C-Left/Right: prev/next, C-S-Left/Right: move. Labels in vim.t.tab_label, rendered by lualine.
-
-local K = require 'utils.keymap'
-local dialogs = require 'utils.dialogs'
-local git = require 'utils.git'
-local log = require 'utils.log'
-
 ---@class TabLabel
 ---@field icon string
 ---@field name string
 
-local M = {
-  editor_icon = '󰊄',
+NVTabs = {
+  editor_icon = '',
 }
-NVTabs = M
 
 local fn = {}
 
-function M.keymaps()
-  K.map { '<leader>tn', 'Create new tab', fn.create_tab, mode = { 'n', 'i', 'v', 't' } }
-  K.map { '<leader>tc', 'Close tab', fn.close_tab, mode = { 'n', 'i', 'v', 't' }, nowait = true }
+function NVTabs.keymaps()
+  K.map { '<C-n>', 'Create new tab', fn.create_tab, mode = { 'n', 'i', 'v', 't' } }
+  K.map { '<C-w>', 'Close tab', fn.close_tab, mode = { 'n', 'i', 'v', 't' }, nowait = true }
   K.map { '<C-Right>', 'Next tab', '<Cmd>tabnext<CR>', mode = { 'n', 'i', 'v' } }
   K.map { '<C-Left>', 'Previous tab', '<Cmd>tabprev<CR>', mode = { 'n', 'i', 'v' } }
   K.map {
@@ -50,7 +42,7 @@ function fn.create_tab()
   vim.ui.input({ prompt = 'Tab name: ' }, function(name)
     if name and name ~= '' then
       vim.cmd 'tabnew'
-      M.set_label { icon = M.editor_icon, name = name }
+      NVTabs.set_label { icon = NVTabs.editor_icon, name = name }
 
       -- Open pi.nvim in the new tab
       NVPi.open_float()
@@ -59,10 +51,10 @@ function fn.create_tab()
 end
 
 function fn.close_tab()
-  local info = git.get_worktree_info()
+  local info = NVGit.get_worktree_info()
 
   if not info then
-    if dialogs.confirm('Close tab?', '&Yes\n&No', 2) == 1 then
+    if NVDialogs.confirm('Close tab?', '&Yes\n&No', 2) == 1 then
       vim.cmd 'tabclose'
     end
     return
@@ -73,22 +65,22 @@ function fn.close_tab()
   worktrees.close_tab(info)
 end
 
-function M.render_label(label)
+function NVTabs.render_label(label)
   return label.icon .. ' ' .. label.name
 end
 
-function M.set_label(label)
+function NVTabs.set_label(label)
   vim.t.tab_label = label
-  NVLualine.rename_tab(M.render_label(label))
+  NVLualine.rename_tab(NVTabs.render_label(label))
 end
 
-function M.set_label_if_empty(label)
+function NVTabs.set_label_if_empty(label)
   if not vim.t.tab_label then
-    M.set_label(label)
+    NVTabs.set_label(label)
   end
 end
 
-function M.save_labels()
+function NVTabs.save_labels()
   local cwd = vim.fn.getcwd(-1, 0) -- first tab cwd
   local tab_labels = {}
 
@@ -104,7 +96,7 @@ function M.save_labels()
   vim.g.NVTABS = all
 end
 
-function M.restore_labels()
+function NVTabs.restore_labels()
   local cwd = vim.fn.getcwd(-1, 0) -- first tab cwd
   local all = vim.g.NVTABS or {}
   local tab_labels = all[cwd]
@@ -113,7 +105,7 @@ function M.restore_labels()
     return
   end
 
-  M.restoring = true
+  NVTabs.restoring = true
 
   local tabs = vim.api.nvim_list_tabpages()
   local current_tab = vim.api.nvim_get_current_tabpage()
@@ -122,34 +114,31 @@ function M.restore_labels()
     local tab = tabs[tonumber(i)]
     if tab and tab_label.icon and tab_label.name then
       vim.api.nvim_set_current_tabpage(tab)
-      M.set_label(tab_label)
+      NVTabs.set_label(tab_label)
     end
   end
 
   vim.api.nvim_set_current_tabpage(current_tab)
 
-  M.restoring = false
+  NVTabs.restoring = false
 end
 
 ---@param tabid TabID
 ---@return boolean
-function M.is_temporary(tabid)
-  local focus = require 'editor.features.focus-mode'
-  return focus.is_focus_tab(tabid) or NVDiffview.is_diffview_tab(tabid)
+function NVTabs.is_temporary(tabid)
+  return NVFocusMode.is_focus_tab(tabid) or NVDiffview.is_diffview_tab(tabid)
 end
 
 ---@return TabID[]
-function M.get_non_temporary()
+function NVTabs.get_non_temporary()
   local tabs = vim.api.nvim_list_tabpages()
   local result = {}
 
   for _, tabid in ipairs(tabs) do
-    if not M.is_temporary(tabid) then
+    if not NVTabs.is_temporary(tabid) then
       table.insert(result, tabid)
     end
   end
 
   return result
 end
-
-return M

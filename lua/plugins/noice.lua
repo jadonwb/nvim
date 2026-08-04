@@ -21,7 +21,7 @@ end
 
 function fn.ensure_command_line_hidden()
   if vim.fn.mode() == 'c' then
-    require('utils.keys').send('<Esc>', { mode = 'n' })
+    NVKeys.send('<Esc>', { mode = 'n' })
     return true
   end
   return false
@@ -63,7 +63,7 @@ return {
   event = 'VeryLazy',
 
   config = function(_, opts)
-    local is_large = require('utils.screen').is_large()
+    local is_large = NVScreen.is_large()
 
     local common_border = {
       style = 'none',
@@ -120,8 +120,8 @@ return {
           position = { row = '40%', col = '50%' },
           border = common_border,
           size = {
-            width = require('editor.features.layout-manager').default_width(),
-            height = require('utils.screen').is_large() and 30 or 15,
+            width = NVLayoutManager.default_width(),
+            height = NVScreen.is_large() and 30 or 15,
           },
           win_options = common_win_opts,
           close = {

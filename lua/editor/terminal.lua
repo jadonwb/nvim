@@ -1,9 +1,7 @@
-local K = require 'utils.keymap'
 
-local M = {}
-NVTerminal = M
+NVTerminal = {}
 
-function M.keymaps()
+function NVTerminal.keymaps()
   K.map {
     '<C-v>',
     'Paste text',
@@ -27,4 +25,3 @@ function M.keymaps()
   })
 end
 
-return M

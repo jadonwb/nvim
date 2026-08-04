@@ -40,7 +40,7 @@ return {
       { '<leader>f', group = 'find' },
       { '<leader>d', group = 'Delta', icon = '󰇂 ' },
       { '<leader>i', group = 'image', icon = ' ' },
-      { '<leader>p', group = 'pi', icon = 'π ' },
+      { '<leader>a', group = 'pi', icon = 'π ' },
     },
   },
 }

@@ -64,7 +64,7 @@ return {
     {
       '<Leader>ip',
       function()
-        require('utils.screenshot').screenshot_and_attach()
+        require('editor.screenshot').screenshot_and_attach()
       end,
       mode = 'v',
       desc = 'Screenshot selection → Pi',
@@ -73,7 +73,7 @@ return {
     {
       '<Leader>iP',
       function()
-        require('utils.screenshot').screenshot_and_attach { show_buf = true }
+        require('editor.screenshot').screenshot_and_attach { show_buf = true }
       end,
       mode = 'v',
       desc = 'Screenshot full buffer → Pi',

@@ -1,17 +1,14 @@
 --- Window nav, move, resize. S-arrows: focus, M-S-arrows: move, M-s: swap, M-C-Up/Down: width, A-e: equalize.
 
-local K = require 'utils.keymap'
-local log = require 'utils.log'
 
-local M = {
+NVWindows = {
   maximized_width = 1, -- 100%
   window_picker_keys = 'UHKMETJWNSABCDFGILOPQRVXYZ1234567890',
 }
-NVWindows = M
 
 local fn = {}
 
-function M.keymaps()
+function NVWindows.keymaps()
   -- New buffers in splits
   K.map { '<leader>bs', 'Create new buffer in a horizontal split', '<Cmd>new<CR>', mode = 'n' }
   K.map { '<leader>bv', 'Create new buffer in a vertical split', '<Cmd>vnew<CR>', mode = 'n' }
@@ -66,7 +63,7 @@ function M.keymaps()
 
   -- Layout width adjustment (delegates to layout-manager)
   K.map {
-    K.keys.inc_width,
+    NVKeymaps.inc_width,
     'Increase window width',
     function()
       fn.change_window_width 'up'
@@ -74,7 +71,7 @@ function M.keymaps()
     mode = { 'n', 'i', 'v', 't' },
   }
   K.map {
-    K.keys.dec_width,
+    NVKeymaps.dec_width,
     'Decrease window width',
     function()
       fn.change_window_width 'down'
@@ -105,13 +102,13 @@ function M.keymaps()
 end
 
 ---@param winid WinID
-function M.is_window_floating(winid)
+function NVWindows.is_window_floating(winid)
   local win = vim.api.nvim_win_get_config(winid)
   return win.relative ~= ''
 end
 
 ---@return WinID[]?
-function M.get_floating_tab_windows()
+function NVWindows.get_floating_tab_windows()
   local windows = fn.get_tab_windows()
 
   if not windows then
@@ -121,7 +118,7 @@ function M.get_floating_tab_windows()
   local result = {}
 
   for _, winnr in ipairs(windows) do
-    if M.is_window_floating(winnr) then
+    if NVWindows.is_window_floating(winnr) then
       table.insert(result, winnr)
     end
   end
@@ -131,7 +128,7 @@ end
 
 ---@param options {incl_help: boolean}?
 ---@return WinID[]?
-function M.get_tab_windows_with_listed_buffers(options)
+function NVWindows.get_tab_windows_with_listed_buffers(options)
   local opts = vim.tbl_extend('keep', options or {}, { incl_help = false })
 
   local windows = fn.get_normal_tab_windows()
@@ -144,7 +141,7 @@ function M.get_tab_windows_with_listed_buffers(options)
 
   for _, win in ipairs(windows) do
     local buf = vim.api.nvim_win_get_buf(win)
-    local is_help = require('editor.help').is_help(buf)
+    local is_help = NVHelp.is_help(buf)
     local incl_if_help = opts.incl_help and is_help
     local is_listed = vim.bo[buf].buflisted
 
@@ -246,7 +243,7 @@ function fn.get_normal_tab_windows()
   local layout = require 'editor.features.layout-manager'
 
   for _, winid in ipairs(windows) do
-    if not M.is_window_floating(winid) then
+    if not NVWindows.is_window_floating(winid) then
       if not layout.is_sidepad_win(winid) then
         table.insert(result, winid)
       end
@@ -256,4 +253,3 @@ function fn.get_normal_tab_windows()
   return result
 end
 
-return M

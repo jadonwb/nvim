@@ -82,7 +82,7 @@ return {
               function()
                 vim.diagnostic.jump { count = 1, float = false }
                 vim.schedule(function()
-                  require('utils.lsp-popup').show()
+                  NVLspPopup.show()
                 end)
               end,
               desc = 'Next Diagnostic',
@@ -92,7 +92,7 @@ return {
               function()
                 vim.diagnostic.jump { count = -1, float = false }
                 vim.schedule(function()
-                  require('utils.lsp-popup').show()
+                  NVLspPopup.show()
                 end)
               end,
               desc = 'Previous Diagnostic',

@@ -1,12 +1,8 @@
-local K = require 'utils.keymap'
+NVEditing = {}
 
-local M = {}
-NVEditing = M
-
-function M.esc()
+function NVEditing.esc()
   -- Hide floating UIs first
-  local ok, lsp_popup = pcall(require, 'utils.lsp-popup')
-  if ok and lsp_popup.ensure_hidden and lsp_popup.ensure_hidden() then
+  if NVLspPopup.ensure_hidden and NVLspPopup.ensure_hidden() then
     return
   end
 
@@ -20,12 +16,12 @@ function M.esc()
   vim.cmd 'silent noh'
 end
 
-function M.keymaps()
+function NVEditing.keymaps()
   K.map {
     '<Esc>',
     'Drop noise and escape',
     function()
-      M.esc()
+      NVEditing.esc()
       vim.cmd 'stopinsert'
     end,
     mode = 'n',
@@ -36,7 +32,7 @@ function M.keymaps()
     '<M-k>',
     'Save all files',
     function()
-      M.esc()
+      NVEditing.esc()
       vim.cmd 'silent w'
       vim.cmd 'silent! wa'
     end,
@@ -48,6 +44,37 @@ function M.keymaps()
     '<Esc><Cmd>silent w<CR><Cmd>silent! wa<CR>',
     mode = { 'i', 'v' },
   }
+
+  K.map {
+    '<leader>yd',
+    'Duplicate line',
+    'yyp',
+    mode = 'n',
+  }
+  -- FIXME?: not working
+  K.map {
+    '<leader>yd',
+    'Duplicate selection',
+    [["yy']y"ypgv]],
+    mode = 'v',
+  }
+
+  K.map {
+    '<leader>C-S-v',
+    'Paste without auto-formatting (insert mode)',
+    function()
+      local saved_paste = vim.o.paste
+      local saved_fo = vim.o.formatoptions
+      vim.o.paste = true
+      vim.o.formatoptions = saved_fo:gsub('[crota]', '')
+      NVKeys.send('<C-r>+', { mode = 'n' })
+      vim.defer_fn(function()
+        vim.o.paste = saved_paste
+        vim.o.formatoptions = saved_fo
+      end, 10)
+    end,
+    mode = 'i',
+  }
 end
 
-return M
+return NVEditing

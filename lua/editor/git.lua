@@ -1,4 +1,4 @@
-local M = {}
+NVGit = {}
 
 ---
 --- Worktrees
@@ -8,7 +8,7 @@ local M = {}
 
 ---@param name string
 ---@return string
-function M.normalize_worktree_name(name)
+function NVGit.normalize_worktree_name(name)
   local result = name:lower()
   result = result:gsub('[%s_]+', '-')
   result = result:gsub('[^%w%-]', '')
@@ -19,7 +19,7 @@ end
 
 ---@param path? string
 ---@return GitWorktreeInfo?
-function M.get_worktree_info(path)
+function NVGit.get_worktree_info(path)
   path = path or vim.fn.getcwd(-1, 0)
 
   -- Check if this is actually a secondary worktree (not the main repo)
@@ -47,7 +47,7 @@ function M.get_worktree_info(path)
   return nil
 end
 
-function M.get_all_worktrees()
+function NVGit.get_all_worktrees()
   local output = vim.fn.systemlist 'git worktree list --porcelain'
   local worktrees = {}
   local current = {}
@@ -66,7 +66,7 @@ function M.get_all_worktrees()
   return worktrees
 end
 
-function M.find_worktree_for_branch(branch)
+function NVGit.find_worktree_for_branch(branch)
   local output = vim.fn.systemlist 'git worktree list --porcelain'
   local current_path = nil
   for _, line in ipairs(output) do
@@ -79,14 +79,14 @@ function M.find_worktree_for_branch(branch)
   return nil
 end
 
-function M.worktree_has_changes(path)
+function NVGit.worktree_has_changes(path)
   local output = vim.fn.system('git -C ' .. vim.fn.shellescape(path) .. ' status --porcelain 2>&1')
   return vim.v.shell_error == 0 and vim.trim(output) ~= ''
 end
 
-function M.create_worktree(branch, path)
+function NVGit.create_worktree(branch, path)
   -- Check if branch already has a worktree
-  local existing = M.find_worktree_for_branch(branch)
+  local existing = NVGit.find_worktree_for_branch(branch)
   if existing then
     return existing, 'exists'
   end
@@ -110,18 +110,18 @@ function M.create_worktree(branch, path)
   return path, 'created'
 end
 
-function M.remove_worktree(path, force)
+function NVGit.remove_worktree(path, force)
   local cmd = 'git worktree remove ' .. (force and '--force ' or '') .. vim.fn.shellescape(path)
   vim.fn.system(cmd)
   return vim.v.shell_error == 0
 end
 
-function M.delete_branch(branch)
+function NVGit.delete_branch(branch)
   vim.fn.system('git branch -D ' .. branch)
   return vim.v.shell_error == 0
 end
 
-function M.get_worktree_config_path(worktree_path)
+function NVGit.get_worktree_config_path(worktree_path)
   -- Get the gitdir for this worktree which contains its config
   local gitdir = vim.fn.systemlist('git -C ' .. vim.fn.shellescape(worktree_path) .. ' rev-parse --git-dir')[1]
   if vim.v.shell_error ~= 0 or not gitdir then
@@ -134,8 +134,8 @@ function M.get_worktree_config_path(worktree_path)
   return gitdir .. '/config.worktree'
 end
 
-function M.get_worktree_label(path)
-  local config_path = M.get_worktree_config_path(path)
+function NVGit.get_worktree_label(path)
+  local config_path = NVGit.get_worktree_config_path(path)
   if not config_path then
     return nil
   end
@@ -146,8 +146,8 @@ function M.get_worktree_label(path)
   return nil
 end
 
-function M.set_worktree_label(path, label)
-  local config_path = M.get_worktree_config_path(path)
+function NVGit.set_worktree_label(path, label)
+  local config_path = NVGit.get_worktree_config_path(path)
   if not config_path then
     return false
   end
@@ -159,7 +159,7 @@ end
 --- Repo
 ---
 
-function M.get_repo_info()
+function NVGit.get_repo_info()
   local git_root = vim.fn.systemlist('git rev-parse --show-toplevel')[1]
   if vim.v.shell_error ~= 0 then
     return nil
@@ -176,17 +176,17 @@ end
 --- Diffs
 ---
 
-function M.has_staged_changes()
+function NVGit.has_staged_changes()
   vim.fn.system 'git diff --cached --quiet'
   return vim.v.shell_error ~= 0
 end
 
-function M.has_unstaged_changes()
+function NVGit.has_unstaged_changes()
   vim.fn.system 'git diff --quiet'
   return vim.v.shell_error ~= 0
 end
 
-function M.get_staged_files_count()
+function NVGit.get_staged_files_count()
   local output = vim.fn.systemlist 'git diff --cached --name-only 2>/dev/null'
   if vim.v.shell_error ~= 0 then
     return 0
@@ -202,7 +202,7 @@ end
 ---@param body? string
 ---@param extra_args? string[]
 ---@return string output
-function M.commit(subject, body, extra_args)
+function NVGit.commit(subject, body, extra_args)
   local args = { 'git', 'commit', '-m', subject }
   if body and body ~= '' then
     table.insert(args, '-m')
@@ -218,7 +218,7 @@ end
 
 ---@param count number
 ---@return string[]
-function M.get_recent_commits(count)
+function NVGit.get_recent_commits(count)
   local output = vim.fn.systemlist('git log --max-count=' .. count .. " --format='%s · %cr' 2>/dev/null")
   if vim.v.shell_error ~= 0 then
     return {}
@@ -241,25 +241,25 @@ function M.get_recent_commits(count)
 end
 
 ---@return string subject, string body
-function M.get_last_commit_message()
+function NVGit.get_last_commit_message()
   local subject = vim.fn.system('git log -1 --format=%s 2>/dev/null'):gsub('\n', '')
   local body = vim.fn.system('git log -1 --format=%b 2>/dev/null'):gsub('\n$', '')
   return subject, body
 end
 
-function M.push()
+function NVGit.push()
   vim.fn.system 'git push'
   return vim.v.shell_error == 0
 end
 
-function M.push_force_with_lease()
+function NVGit.push_force_with_lease()
   vim.fn.system 'git push --force-with-lease'
   return vim.v.shell_error == 0
 end
 
 ---Amend last commit without changing the message
 ---@return string output
-function M.amend_no_edit()
+function NVGit.amend_no_edit()
   return vim.fn.system 'git commit --amend --no-edit'
 end
 
@@ -267,7 +267,7 @@ end
 ---@param subject string
 ---@param body? string
 ---@return string output
-function M.amend_message(subject, body)
+function NVGit.amend_message(subject, body)
   local args = { 'git', 'commit', '--amend', '-m', subject }
   if body and body ~= '' then
     table.insert(args, '-m')
@@ -275,5 +275,3 @@ function M.amend_message(subject, body)
   end
   return vim.fn.system(args)
 end
-
-return M

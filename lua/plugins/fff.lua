@@ -1,13 +1,29 @@
-local K = require 'utils.keymap'
-local screen = require 'utils.screen'
 local borders = require 'config.borders'
+
+NVFff = {}
+
+function NVFff.ensure_hidden()
+  local ft = vim.bo.filetype
+  if ft ~= 'fff_input' and ft ~= 'fff_list' and ft ~= 'fff_preview' and ft ~= 'fff_file_info' then
+    return false
+  end
+
+  -- Use fff's own close which properly closes all windows, deletes all buffers,
+  -- saves snapshot for resume, clears namespaces, and deletes the augroup.
+  local ok, picker = pcall(require, 'fff.picker_ui.picker_ui')
+  if ok and picker.state and picker.state.active then
+    picker.close()
+  end
+
+  return true
+end
 
 NVFffPickerLayout = {}
 
 function NVFffPickerLayout.build(opts)
   local config = vim.tbl_extend('keep', opts or {}, {
     height = 0.88,
-    width = screen.is_large() and 0.75 or 0.9,
+    width = NVScreen.is_large() and 0.75 or 0.9,
   })
   return {
     height = config.height,
@@ -25,53 +41,48 @@ return {
   build = function()
     require('fff.download').download_or_build_binary()
   end,
-  opts = function()
-    return vim.tbl_extend('force', {
-      prompt_vim_mode = true,
-      layout = NVFffPickerLayout.build(),
-    }, {
-      -- Additional opts that aren't layout-related
-      file_picker = {
-        fuzzy_query_highlighting = true,
-      },
-      grep = {
-        modes = { 'plain', 'regex', 'fuzzy' },
-      },
-      debug = {
-        enabled = false,
-        show_scores = true,
-        show_file_info = { file_info = true, score_breakdown = false, timings = false, full_path = false },
-      },
-      hl = {
-        title = 'FloatTitle',
-      },
-      mappings = {
-        ['<C-Tab>'] = 'toggle_preview_tab',
-        ['<C-l>'] = 'focus_list',
-        ['<C-p>'] = 'focus_preview',
-        [K.keys.close] = 'close',
-      },
-    })
-  end,
+  opts = {
+    prompt_vim_mode = true,
+    file_picker = {
+      fuzzy_query_highlighting = true,
+    },
+    grep = {
+      modes = { 'plain', 'regex', 'fuzzy' },
+    },
+    debug = {
+      enabled = false,
+      show_scores = true,
+      show_file_info = { file_info = true, score_breakdown = false, timings = false, full_path = false },
+    },
+    hl = {
+      title = 'FloatTitle',
+    },
+    mappings = {
+      ['<C-Tab>'] = 'toggle_preview_tab',
+      ['<C-l>'] = 'focus_list',
+      ['<C-p>'] = 'focus_preview',
+      [NVKeymaps.close] = 'close',
+    },
+  },
   keys = {
     {
       '<leader>ff',
       function()
-        require('fff').find_files()
+        require('fff').find_files { layout = NVFffPickerLayout.build() }
       end,
       desc = 'Find Files',
     },
     {
       '<leader>fs',
       function()
-        require('fff').live_grep()
+        require('fff').live_grep { layout = NVFffPickerLayout.build() }
       end,
       desc = 'Live Grep',
     },
     {
       '<leader>fw',
       function()
-        require('fff').live_grep_under_cursor()
+        require('fff').live_grep_under_cursor { layout = NVFffPickerLayout.build() }
       end,
       mode = { 'n', 'x' },
       desc = 'Grep Word',
@@ -82,38 +93,6 @@ return {
         require('fff').resume()
       end,
       desc = 'Resume Last Search',
-    },
-    {
-      '<leader>fd',
-      function()
-        vim.ui.input({ prompt = 'Enter directory: ' }, function(input)
-          if not input or input == '' then
-            return
-          end
-
-          local cwd = vim.fn.getcwd()
-          local path
-
-          input = vim.fn.expand(input)
-
-          if vim.fn.isdirectory(input) == 1 then
-            path = input
-          else
-            local candidate = vim.fs.normalize(cwd .. '/' .. input)
-            if vim.fn.isdirectory(candidate) == 1 then
-              path = candidate
-            end
-          end
-
-          if not path then
-            vim.notify('Invalid directory: ' .. input, vim.log.levels.ERROR)
-            return
-          end
-
-          require('fff').find_files_in_dir(path)
-        end)
-      end,
-      desc = 'Find in Directory',
     },
   },
 }

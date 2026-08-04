@@ -1,15 +1,13 @@
-local K = require 'utils.keymap'
-local git = require 'utils.git'
+local git = require 'editor.git'
 
-local M = {}
-NVGitCommit = M
+NVGitCommit = {}
 
 -- If changing those, don't forget to update footer labels
 local keymaps = {
   commit_from_subject = '<CR>',
   commit_from_body = '<C-CR>',
-  commit_and_push = K.keys.commit_push,
-  cancel = { K.keys.close, K.keys.close_esc },
+  commit_and_push = NVKeymaps.commit_push,
+  cancel = { NVKeymaps.close, NVKeymaps.close_esc },
   next_field = { '<Tab>', '<S-CR>' },
   prev_field = '<S-Tab>',
 }
@@ -560,7 +558,7 @@ end
 --- Public API
 ---
 
-function M.new()
+function NVGitCommit.new()
   if git.get_repo_info() == nil then
     alert.error 'Not in a git repository'
     return
@@ -568,7 +566,7 @@ function M.new()
   open_form { mode = 'commit' }
 end
 
-function M.rename()
+function NVGitCommit.rename()
   if git.get_repo_info() == nil then
     alert.error 'Not in a git repository'
     return
@@ -576,7 +574,7 @@ function M.rename()
   open_form { mode = 'rename' }
 end
 
-function M.amend()
+function NVGitCommit.amend()
   if git.get_repo_info() == nil then
     alert.error 'Not in a git repository'
     return
@@ -588,7 +586,7 @@ function M.amend()
   open_form { mode = 'amend' }
 end
 
-function M.ensure_hidden()
+function NVGitCommit.ensure_hidden()
   if state.subject.win and vim.api.nvim_win_is_valid(state.subject.win) then
     abort_form()
     return true
@@ -596,10 +594,10 @@ function M.ensure_hidden()
   return false
 end
 
-function M.keymaps()
-  K.map { K.keys.commit, 'Git: Commit', M.new, mode = { 'n', 'i', 'v' } }
-  K.map { K.keys.amend, 'Git: Amend', M.amend, mode = { 'n', 'i', 'v' } }
-  K.map { K.keys.rename_msg, 'Git: Rename commit message', M.rename, mode = { 'n', 'i', 'v' } }
+function NVGitCommit.keymaps()
+  -- FIXME: if intended to be used in insert mode, cannot be a <leader> keymap, causes major latency and bad behavior since we have space as leader
+  K.map { NVKeymaps.commit, 'Git: Commit', NVGitCommit.new, mode = { 'n', 'v' } }
+  K.map { NVKeymaps.amend, 'Git: Amend', NVGitCommit.amend, mode = { 'n', 'v' } }
+  K.map { NVKeymaps.rename_msg, 'Git: Rename commit message', NVGitCommit.rename, mode = { 'n', 'v' } }
 end
 
-return M

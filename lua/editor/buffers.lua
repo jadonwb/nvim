@@ -1,13 +1,8 @@
 --- Buffer close with cooperative UI: floating UIs are hidden before buffer deletion.
 --- <M-w>: delete buffer, <M-S-w>: delete buffer and close window.
 
-local K = require 'utils.keymap'
-local dialogs = require 'utils.dialogs'
-local keys = require 'utils.keys'
-local log = require 'utils.log'
 
-local M = {}
-NVBuffers = M
+NVBuffers = {}
 
 local fn = {}
 
@@ -45,7 +40,7 @@ local cooperative_ui = {
   {
     name = 'lsp_popup',
     fn = function()
-      local ok, m = pcall(require, 'utils.lsp-popup')
+      local ok, m = pcall(require, 'editor.features.lsp-popup')
       return ok and m.ensure_hidden and m.ensure_hidden() or false
     end,
   },
@@ -93,6 +88,12 @@ local cooperative_ui = {
     end,
   },
   {
+    name = 'fff',
+    fn = function()
+      return NVFff.ensure_hidden()
+    end,
+  },
+  {
     name = 'gitsigns',
     fn = function()
       return NVGitsigns.ensure_preview_hidden()
@@ -108,9 +109,9 @@ local cooperative_ui = {
   },
 }
 
-function M.keymaps()
+function NVBuffers.keymaps()
   K.map {
-    K.keys.close,
+    NVKeymaps.close,
     'Delete current buffer, but do not close current window if there are multiple',
     fn.delete_buf,
     mode = { 'n', 'v', 'i', 't', 'c' },
@@ -124,7 +125,7 @@ function M.keymaps()
   }
 end
 
-function M.autocmds()
+function NVBuffers.autocmds()
   -- Auto-reload files when they change externally
   vim.api.nvim_create_autocmd({ 'BufEnter', 'FocusGained', 'CursorHold', 'CursorHoldI' }, {
     pattern = '*',
@@ -138,14 +139,14 @@ end
 
 ---@param bufid BufID
 ---@return boolean
-function M.is_buf_listed(bufid)
+function NVBuffers.is_buf_listed(bufid)
   local buf = fn.get_buf_info(bufid)
   return buf and buf.listed == 1
 end
 
 ---@param opts {sort_lastused: boolean}?
 ---@return vim.fn.getbufinfo.ret.item[]
-function M.get_listed_bufs(opts)
+function NVBuffers.get_listed_bufs(opts)
   opts = opts or {}
   local bufs = vim.fn.getbufinfo { buflisted = 1 }
 
@@ -193,7 +194,7 @@ function fn.delete_buf()
   local file_exists = current_buf_info.name ~= '' and vim.fn.filereadable(current_buf_info.name) == 1
 
   if current_buf_info.name == '' and current_buf_info.changed == 1 then
-    if dialogs.confirm('Buffer has unsaved changes. Discard?', '&Yes\n&No', 2) ~= 1 then
+    if NVDialogs.confirm('Buffer has unsaved changes. Discard?', '&Yes\n&No', 2) ~= 1 then
       return
     end
   end
@@ -201,10 +202,9 @@ function fn.delete_buf()
   local mode = vim.fn.mode()
 
   if mode ~= 'n' then
-    keys.send('<Esc>', { mode = 'x' })
+    NVKeys.send('<Esc>', { mode = 'x' })
   end
 
-  local NVWindows = require 'editor.windows'
   local tab_windows = NVWindows.get_tab_windows_with_listed_buffers { incl_help = true }
 
   if tab_windows == nil then
@@ -221,7 +221,7 @@ function fn.delete_buf()
     is_opened_elsewhere = fn.is_opened_elsewhere(tabs, current_tab, current_win, current_buf)
   end
 
-  local bufs = M.get_listed_bufs { sort_lastused = true }
+  local bufs = NVBuffers.get_listed_bufs { sort_lastused = true }
 
   -- Searching for the next buffer to show in the current window
   local next_buf = nil
@@ -287,9 +287,6 @@ function fn.delete_buf()
 end
 
 function fn.delete_buf_and_close_win()
-  local NVWindows = require 'editor.windows'
-  local NVTabs = require 'editor.tabs'
-
   local tab_windows = NVWindows.get_tab_windows_with_listed_buffers { incl_help = true }
 
   if tab_windows == nil then
@@ -302,7 +299,7 @@ function fn.delete_buf_and_close_win()
 
   if is_last_window_in_tab then
     if #non_temporary_tabs > 1 then
-      if dialogs.confirm('Close tab?', '&Yes\n&No', 2) == 1 then
+      if NVDialogs.confirm('Close tab?', '&Yes\n&No', 2) == 1 then
         vim.cmd 'tabclose'
       end
     else
@@ -352,4 +349,3 @@ function fn.is_opened_elsewhere(tabs, current_tab, current_win, current_buf)
   return nil
 end
 
-return M

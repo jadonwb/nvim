@@ -5,11 +5,11 @@
 --- and attach them to the pi.nvim chat as VLM (vision language model) context.
 ---
 --- Usage:
----   require('utils.screenshot').screenshot_and_attach()          -- selection → pi
----   require('utils.screenshot').screenshot_and_attach({ show_buf = true })  -- full buffer → pi
----   require('utils.screenshot').screenshot_and_attach({ visible = true })   -- visible → pi
+---   require('editor.screenshot').screenshot_and_attach()          -- selection → pi
+---   require('editor.screenshot').screenshot_and_attach({ show_buf = true })  -- full buffer → pi
+---   require('editor.screenshot').screenshot_and_attach({ visible = true })   -- visible → pi
 
-local M = {}
+NVScreenshot = {}
 
 --- Generate a silicon screenshot of the current visual selection and
 --- attach it to the pi chat as an image.
@@ -24,7 +24,7 @@ local M = {}
 ---     font = "JetBrains Mono"
 ---     theme = "Dracula"
 ---     line_number = false
-function M.screenshot_and_attach(opts)
+function NVScreenshot.screenshot_and_attach(opts)
   local silicon_ok, silicon = pcall(require, 'silicon')
   if not silicon_ok then
     vim.notify('silicon.lua not available', vim.log.levels.ERROR)
@@ -64,4 +64,3 @@ function M.screenshot_and_attach(opts)
   end
 end
 
-return M

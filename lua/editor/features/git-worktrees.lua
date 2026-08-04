@@ -4,17 +4,13 @@
 ---   <C-S-n>      — Create a new tab with a git worktree
 ---   <leader>gw   — Show worktree picker (switch/create/delete)
 
-local K = require 'utils.keymap'
-local git = require 'utils.git'
-local dialogs = require 'utils.dialogs'
-local log = require 'utils.log'
+local git = require 'editor.git'
 
-local M = {}
-NVGitWorktrees = M
+NVGitWorktrees = {}
 
 local fn = {}
 
-function M.keymaps()
+function NVGitWorktrees.keymaps()
   K.map { '<C-S-n>', 'Create new tab with git worktree', fn.create_tab_with_worktree, mode = { 'n', 'i', 'v', 't' } }
   K.map { '<leader>gw', 'Show worktree picker', fn.pick_worktree, mode = { 'n', 'i', 'v', 't' } }
 end
@@ -128,8 +124,7 @@ function fn.open_worktree_tab(label, path)
   vim.cmd 'tabnew'
   vim.cmd('tcd ' .. vim.fn.fnameescape(path))
 
-  local tabs_mod = require 'editor.tabs'
-  tabs_mod.set_label { icon = '󰙅', name = label }
+  NVTabs.set_label { icon = '󰙅', name = label }
 
   -- Open same file in new worktree if it exists
   if relative_path then
@@ -163,7 +158,7 @@ function fn.switch_to_worktree(worktree)
 end
 
 ---@param info GitWorktreeInfo
-function M.close_tab(info)
+function NVGitWorktrees.close_tab(info)
   local Snacks = require 'snacks'
   Snacks.picker {
     title = 'Close: ' .. info.branch,
@@ -189,7 +184,7 @@ function M.close_tab(info)
       -- Confirm before removing worktree with uncommitted changes
       local has_changes = git.worktree_has_changes(info.path)
       if has_changes then
-        if dialogs.confirm('Worktree has uncommitted changes. Force remove?', '&Yes\n&No', 2) ~= 1 then
+        if NVDialogs.confirm('Worktree has uncommitted changes. Force remove?', '&Yes\n&No', 2) ~= 1 then
           return
         end
       end
@@ -214,5 +209,3 @@ function M.close_tab(info)
     layout = { preset = 'select' },
   }
 end
-
-return M

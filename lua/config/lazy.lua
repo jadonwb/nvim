@@ -14,6 +14,13 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
+-- Load foundational globals before lazy.nvim processes plugin specs.
+-- Plugin specs at lua/plugins/ reference NVKeymaps, NVScreen, etc. at module load time.
+require 'editor.keymap'  -- K global, NVKeymaps
+require 'editor.log'     -- log global
+require 'editor.screen'  -- NVScreen global
+require 'editor.keys'    -- NVKeys global
+
 require('lazy').setup {
   spec = {
     -- add LazyVim and import its plugins

@@ -1,15 +1,9 @@
--- alex35mil style LSP popup: hover (via direct LSP request) and diagnostics with severity pill badges.
--- Uses nui.nvim (transitive dep of noice.nvim).
-
--- FIXME: disable spell on hover/popup window/buffer
-
-local M = {}
-NVLspPopup = M
+NVLspPopup = {}
 
 local has_nui, NuiPopup = pcall(require, 'nui.popup')
 if not has_nui then
   vim.notify('nui.nvim not available for LSP popups', vim.log.levels.WARN)
-  return M
+  return NVLspPopup
 end
 
 -- Popup registry: one popup per parent window
@@ -168,7 +162,7 @@ local function focus_existing(winid)
   return true
 end
 
-function M.show_hover()
+function NVLspPopup.show_hover()
   local parent = vim.api.nvim_get_current_win()
   if focus_existing(parent) then
     return
@@ -218,7 +212,7 @@ function M.show_hover()
   end)
 end
 
-function M.show()
+function NVLspPopup.show()
   local parent = vim.api.nvim_get_current_win()
   if focus_existing(parent) then
     return
@@ -295,7 +289,7 @@ end
 
 --- Hide the LSP popup if one is active. Used by the cooperative UI chain.
 --- Returns true if a popup was hidden.
-function M.ensure_hidden()
+function NVLspPopup.ensure_hidden()
   if not popups or not next(popups) then
     return false
   end
@@ -313,5 +307,3 @@ function M.ensure_hidden()
 
   return true
 end
-
-return M

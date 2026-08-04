@@ -1,9 +1,9 @@
-local M = {}
+NVDisabled = {}
 
 --- Disable LazyVim default keymaps that conflict with our own.
 --- NOTE: only delete mappings that will be guarenteed defined after,
 --- other plugin keymaps might be defined earlier and get deleted
-function M.disable_keymaps()
+function NVDisabled.disable_keymaps()
   local function del(mode, lhs)
     pcall(vim.keymap.del, mode, lhs)
   end
@@ -62,4 +62,3 @@ function M.disable_keymaps()
   del('n', '<leader>uZ') -- zoom
 end
 
-return M

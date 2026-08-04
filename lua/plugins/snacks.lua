@@ -58,20 +58,25 @@ end
 
 -- Shared picker keymaps applied to ALL picker windows
 NVSPickers.keys = {
-  ['<M-f>'] = { 'toggle_maximize', mode = { 'n', 'i', 'v' } },
-  ['<C-CR>'] = { 'edit_vsplit', mode = { 'n', 'i', 'v' } },
-  ['<C-S-CR>'] = { 'edit_split', mode = { 'n', 'i', 'v' } },
+  ['<M-S-f>'] = { 'toggle_maximize', mode = { 'n', 'i', 'v' } },
+  [NVKeymaps.open_vsplit] = { 'edit_vsplit', mode = { 'n', 'i', 'v' } },
+  [NVKeymaps.open_hsplit] = { 'edit_split', mode = { 'n', 'i', 'v' } },
   ['<C-Tab>'] = { 'cycle_win', mode = { 'n', 'i', 'v' } },
-  ['<C-Up>'] = { 'list_scroll_up', mode = { 'n', 'i', 'v' } },
-  ['<C-Down>'] = { 'list_scroll_down', mode = { 'n', 'i', 'v' } },
-  ['<M-Up>'] = { 'x_list_scroll_up_bit', mode = { 'n', 'i', 'v' } },
-  ['<M-Down>'] = { 'x_list_scroll_down_bit', mode = { 'n', 'i', 'v' } },
-  ['<C-S-Up>'] = { 'preview_scroll_up', mode = { 'n', 'i', 'v' } },
-  ['<C-S-Down>'] = { 'preview_scroll_down', mode = { 'n', 'i', 'v' } },
-  ['<C-l>'] = { 'focus_list', mode = { 'n', 'i', 'v' } },
+  [NVKeymaps.scroll.up] = { 'list_scroll_up', mode = { 'n', 'i', 'v' } },
+  [NVKeymaps.scroll.down] = { 'list_scroll_down', mode = { 'n', 'i', 'v' } },
+  [NVKeymaps.scroll_alt.up] = { 'x_list_scroll_up_bit', mode = { 'n', 'i', 'v' } },
+  [NVKeymaps.scroll_alt.down] = { 'x_list_scroll_down_bit', mode = { 'n', 'i', 'v' } },
+  [NVKeymaps.scroll_ctx.up] = { 'preview_scroll_up', mode = { 'n', 'i', 'v' } },
+  [NVKeymaps.scroll_ctx.down] = { 'preview_scroll_down', mode = { 'n', 'i', 'v' } },
+  ['<C-S-l>'] = { 'focus_list', mode = { 'n', 'i', 'v' } },
   ['<C-i>'] = { 'focus_input', mode = { 'n', 'i', 'v' } },
   ['<C-p>'] = { 'focus_preview', mode = { 'n', 'i', 'v' } },
-  ['<M-w>'] = { 'close', mode = { 'n', 'i', 'v' } },
+  ['<C-S-p>'] = { 'toggle_preview', mode = { 'n', 'i', 'v' } },
+  ['<C-S-c>'] = { 'x_copy_absolute_path', mode = { 'n', 'i', 'v' } },
+  ['<C-S-r>'] = { 'x_copy_relative_path', mode = { 'n', 'i', 'v' } },
+  ['<C-S-f>'] = { 'x_copy_filename', mode = { 'n', 'i', 'v' } },
+  ['<C-S-s>'] = { 'x_copy_filestem', mode = { 'n', 'i', 'v' } },
+  [NVKeymaps.close] = { 'close', mode = { 'n', 'i', 'v' } },
 }
 
 -- Custom picker actions
@@ -94,17 +99,31 @@ NVSPickers.actions = {
   x_copy_filestem = function(_, item)
     NVSPickers.copy_path(item, 'filestem')
   end,
+  bufdelete = function(picker)
+    NVSPickers.bufdelete(picker)
+  end,
 }
+
+-- FIXME: reset / enforce current = false? list updates and current is shown again.
+function NVSPickers.bufdelete(picker)
+  picker.preview:reset()
+  for _, item in ipairs(picker:selected { fallback = true }) do
+    -- TODO?: ensure saved
+    if item.buf then
+      vim.cmd('bwipeout! ' .. item.buf)
+    end
+  end
+  picker:refresh()
+end
 
 function NVSPickers.copy_path(item, fmt)
   if item == nil then
     vim.notify('No item selected', vim.log.levels.INFO)
     return
   end
-  local fs = require 'utils.fs'
-  local result = fs.format_path(item.file, fmt)
+  local result = NVFS.format(item.file, fmt)
   if result ~= nil then
-    require('editor.clipboard').yank(result)
+    NVClipboard.yank(result)
     vim.notify('Copied: ' .. result, vim.log.levels.INFO)
   end
 end
@@ -124,33 +143,42 @@ end
 function NVSPickers.buffers()
   Snacks.picker.buffers {
     hidden = true,
-    unloaded = false,
+    unloaded = true,
     current = false,
     sort_lastused = true,
     layout = NVSPickerVerticalLayout.build(),
     filter = {
       filter = function(item, _)
-        if string.find(item.file, '^diffview://') then
+        local file = item.file or ''
+        if file:find '^diffview://' then
           return false
         end
-        if string.find(item.file, '^term://') then
+        if file:find '^term://' then
           return false
         end
-        if string.find(item.file, '^oil://') then
+        if file:find '^oil://' then
           return false
         end
         if NVLayoutManager.is_sidepad_buf(item.buf) then
           return false
         end
-        if item.file == '[Scratch]' or item.file == '' then
+        if file == '[Scratch]' or file == '' then
           return false
         end
         return true
       end,
     },
     win = {
-      input = { keys = { ['<BS>'] = { 'bufdelete', mode = { 'n' } } } },
-      list = { keys = { ['dd'] = 'bufdelete' } },
+      input = {
+        keys = {
+          ['<BS>'] = { 'bufdelete', mode = { 'n' } },
+        },
+      },
+      list = {
+        keys = {
+          ['dd'] = 'bufdelete',
+        },
+      },
     },
   }
 end
@@ -441,7 +469,7 @@ return {
         notification_history = {
           backdrop = false,
           border = borders.padded,
-          keys = { q = 'close', ['<Esc>'] = 'close' },
+          keys = { q = 'close', ['<Esc>'] = 'close' }, -- TODO: cleanup and use nvkeymaps, remove q?
         },
       },
     },
@@ -495,13 +523,6 @@ return {
           NVSPickers.buffers()
         end,
         desc = 'Buffers',
-      },
-      {
-        '<leader>sb',
-        function()
-          Snacks.picker.grep_buffers()
-        end,
-        desc = 'Grep Open Buffers',
       },
       {
         '<leader>sH',

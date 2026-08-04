@@ -1,13 +1,10 @@
-local K = require 'utils.keymap'
-
-local M = {}
-NVNavigation = M
+NVNavigation = {}
 
 local fn = {}
 
-function M.keymaps()
+function NVNavigation.keymaps()
   K.map {
-    '<C-Up>',
+    NVKeymaps.scroll.up,
     'Scroll up',
     function()
       fn.scroll_vertical 'up'
@@ -15,7 +12,7 @@ function M.keymaps()
     mode = { 'n', 'v', 'i' },
   }
   K.map {
-    '<C-Down>',
+    NVKeymaps.scroll.down,
     'Scroll down',
     function()
       fn.scroll_vertical 'down'
@@ -23,13 +20,44 @@ function M.keymaps()
     mode = { 'n', 'v', 'i' },
   }
 
-  K.map { '<M-Up>', 'Scroll up a bit', '<Cmd>normal 2<C-y><CR>', mode = { 'n', 'v', 'i' } }
-  K.map { '<M-Down>', 'Scroll down a bit', '<Cmd>normal 2<C-e><CR>', mode = { 'n', 'v', 'i' } }
+  K.map { NVKeymaps.scroll_ctx.up, 'Scroll up a bit', '<Cmd>normal 2<C-y><CR>', mode = { 'n', 'v', 'i' } }
+  K.map { NVKeymaps.scroll_ctx.down, 'Scroll down a bit', '<Cmd>normal 2<C-e><CR>', mode = { 'n', 'v', 'i' } }
+
+  K.map {
+    '<S-Left>',
+    'Scroll left',
+    function()
+      fn.scroll_horizontal 'left'
+    end,
+    mode = { 'n', 'v', 'i' },
+  }
+  K.map {
+    '<S-Right>',
+    'Scroll right',
+    function()
+      fn.scroll_horizontal 'right'
+    end,
+    mode = { 'n', 'v', 'i' },
+  }
+
+  -- K.map { '<D-[>', 'History: back', '<C-o>', mode = 'n' }
+  -- K.map { '<D-]>', 'History: forward', '<C-i>', mode = 'n' }
 end
 
+---@param direction "left" | "right"
+function fn.scroll_horizontal(direction)
+  if direction == 'left' then
+    vim.cmd 'normal! 7zh'
+  elseif direction == 'right' then
+    vim.cmd 'normal! 7zl'
+  else
+    log.error 'Unexpected scroll direction'
+  end
+end
+
+---@param direction "up" | "down"
 function fn.scroll_vertical(direction)
-  local lsp_popup = require 'utils.lsp-popup'
-  lsp_popup.ensure_hidden()
+  NVLspPopup.ensure_hidden()
 
   if direction == 'up' and vim.fn.line 'w0' == 1 then
     vim.api.nvim_win_set_cursor(0, { 1, 0 })
@@ -49,14 +77,12 @@ function fn.scroll_vertical(direction)
   local is_i_mode = vim.fn.mode() == 'i'
 
   if is_i_mode then
-    require('utils.keys').send('<Esc>', { mode = 'n' })
+    NVKeys.send('<Esc>', { mode = 'n' })
   end
 
-  require('utils.keys').send(cmd, { mode = 'n' })
+  NVKeys.send(cmd, { mode = 'n' })
 
   if is_i_mode then
-    require('utils.keys').send('a', { mode = 'n' })
+    NVKeys.send('a', { mode = 'n' })
   end
 end
-
-return M

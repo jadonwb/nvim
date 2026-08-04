@@ -6,18 +6,12 @@ map('n', 'J', 'mzJ`z', { desc = 'Join lines and keep cursor position' })
 map('n', '<C-d>', '<C-d>zz')
 map('n', '<C-u>', '<C-u>zz')
 
--- map('n', '<Tab>', '>>', { desc = 'Indent' })
--- map('n', '<S-Tab>', '<<', { desc = 'Unindent' })
--- map('v', '<Tab>', '>>', { desc = 'Indent' })
--- map('v', '<S-Tab>', '<<', { desc = 'Unindent' })
-
 -- ── Don't yank on delete ──
 map({ 'n', 'x', 's' }, 'x', '"_x', { noremap = true, silent = true })
 map({ 'n', 'x', 's' }, 'X', '"_X', { noremap = true, silent = true })
 
 -- ── Window management ──
-map('n', '<c-w>d', '<C-W>c', { desc = 'Delete Window', remap = true })
-map('n', '<leader>bq', '<cmd>bufdo bdelete<cr>', { desc = 'Delete All Buffers', remap = true })
+-- map('n', '<c-w>d', '<C-W>c', { desc = 'Delete Window', remap = true })
 
 -- ── Restart Neovim ──
 map('n', '<leader>qr', function()
@@ -29,10 +23,10 @@ map('n', '<leader>qr', function()
 end, { desc = 'Save session and restart' })
 
 -- ── Arrow keys: insert space / new line ──
-map('n', '<left>', 'i<Space><Esc>')
-map('n', '<right>', 'a<Space><Esc>')
-map('n', '<down>', 'o<Esc>', { desc = 'New Line Down' })
-map('n', '<up>', 'O<Esc>', { desc = 'New Line Up' })
+-- map('n', '<left>', 'i<Space><Esc>')
+-- map('n', '<right>', 'a<Space><Esc>')
+map('n', '<M-o>', 'o<Esc>', { desc = 'New Line Down' })
+map('n', '<M-S-o>', 'O<Esc>', { desc = 'New Line Up' })
 
 -- ── Visual paste without yanking ──
 map({ 'x', 'v', 's' }, '<leader>p', [["_dP]], { silent = true })

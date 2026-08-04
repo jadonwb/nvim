@@ -30,6 +30,7 @@ return {
       { '<leader>gS', false },
       -- Search
       { '<leader>/', false },
+      { '<leader>sb', false },
       { '<leader>sB', false },
       { '<leader>sg', false },
       { '<leader>sG', false },
