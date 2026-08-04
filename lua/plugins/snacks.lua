@@ -387,19 +387,33 @@ return {
         config = {
           os = {
             edit = vim.v.progpath
-              .. [[ --server "$NVIM" --remote-send '<C-\><C-n>:q<CR>' && ]]
+              .. ' --server '
+              .. vim.v.servername
+              .. [[ --remote-send '<Cmd>lua require("snacks").lazygit()<CR>' && ]]
               .. vim.v.progpath
-              .. [[ --server "$NVIM" --remote-silent {{filename}} ]],
+              .. ' --server '
+              .. vim.v.servername
+              .. [[ --remote-silent {{filename}} ]],
             editAtLine = vim.v.progpath
-              .. [[ --server "$NVIM" --remote-send '<C-\><C-n>:q<CR>' && ]]
+              .. ' --server '
+              .. vim.v.servername
+              .. [[ --remote-send '<Cmd>lua require("snacks").lazygit()<CR>' && ]]
               .. vim.v.progpath
-              .. [[ --server "$NVIM" --remote-silent {{filename}} && ]]
+              .. ' --server '
+              .. vim.v.servername
+              .. [[ --remote-silent {{filename}} && ]]
               .. vim.v.progpath
-              .. [[ --server "$NVIM" --remote-send ':{{line}}<CR>' ]],
+              .. ' --server '
+              .. vim.v.servername
+              .. [[ --remote-send ':{{line}}<CR>' ]],
             openDirInEditor = vim.v.progpath
-              .. [[ --server "$NVIM" --remote-send '<C-\><C-n>:q<CR>' && ]]
+              .. ' --server '
+              .. vim.v.servername
+              .. [[ --remote-send '<Cmd>lua require("snacks").lazygit()<CR>' && ]]
               .. vim.v.progpath
-              .. [[ --server "$NVIM" --remote-silent {{dir}} ]],
+              .. ' --server '
+              .. vim.v.servername
+              .. [[ --remote-silent {{dir}} ]],
           },
         },
       },
