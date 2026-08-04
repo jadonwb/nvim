@@ -7,7 +7,7 @@ return {
         functions = { bold = true },
       },
       lualine_bold = true,
-      popup = 'normal',
+      -- popup = 'normal', -- FIXME!: not working
     },
     keys = {
       {
