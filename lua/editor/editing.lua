@@ -17,16 +17,7 @@ function NVEditing.esc()
 end
 
 function NVEditing.keymaps()
-  K.map {
-    '<Esc>',
-    'Drop noise and escape',
-    function()
-      NVEditing.esc()
-      vim.cmd 'stopinsert'
-    end,
-    mode = 'n',
-    silent = false,
-  }
+  K.map { '<Esc>', 'Drop all the noise and Esc', '<Cmd>lua NVEditing.esc()<CR><Esc>', mode = 'n', silent = false }
 
   K.map {
     '<M-k>',
