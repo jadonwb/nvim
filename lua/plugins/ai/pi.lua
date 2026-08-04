@@ -183,6 +183,9 @@ function NVPi.autocmds()
       keymap(NVKeymaps.close, event, function()
         vim.cmd 'PiToggleChat'
       end)
+      keymap(NVKeymaps.close_esc, event, function()
+        vim.cmd 'PiToggleChat'
+      end, { 'n' })
       keymap('<C-c>', event, function()
         vim.cmd 'PiAbort'
       end)
@@ -289,14 +292,6 @@ function NVPi.is_visible()
   local ok, pi = pcall(require, 'pi')
   if ok and pi.is_visible then
     return pi.is_visible()
-  end
-  return false
-end
-
-function NVPi.ensure_hidden()
-  if NVPi.is_visible() then
-    vim.cmd 'PiToggleChat'
-    return true
   end
   return false
 end

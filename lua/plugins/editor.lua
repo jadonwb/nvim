@@ -19,6 +19,7 @@ return {
       NVLayoutManager.autocmds()
       NVFocusMode.autocmds()
       NVBuffers.autocmds()
+      NVPi.autocmds()
     end,
   },
 

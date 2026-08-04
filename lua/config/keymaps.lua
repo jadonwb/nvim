@@ -23,8 +23,8 @@ map('n', '<leader>qr', function()
 end, { desc = 'Save session and restart' })
 
 -- ── Arrow keys: insert space / new line ──
--- map('n', '<left>', 'i<Space><Esc>')
--- map('n', '<right>', 'a<Space><Esc>')
+map('n', '<left>', 'i<Space><Esc>')
+map('n', '<right>', 'a<Space><Esc>')
 map('n', '<M-o>', 'o<Esc>', { desc = 'New Line Down' })
 map('n', '<M-S-o>', 'O<Esc>', { desc = 'New Line Up' })
 
