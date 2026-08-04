@@ -5,7 +5,8 @@ NVKeymaps = {
   close_esc = '<Esc>',
   close_q = 'q',
 
-  -- FIXME: move into git-commit
+  -- FIXME: move into git-commit?
+  -- or move all keymaps into here?
   commit = '<leader>gc',
   amend = '<leader>ga',
   rename_msg = '<leader>gr',
@@ -22,7 +23,7 @@ NVKeymaps = {
 
   open_vsplit = '<C-CR>',
   open_hsplit = '<C-S-CR>',
-  open_tab = '<M-S-CR>', -- FIXME!:
+  open_tab = '<M-S-CR>', -- FIXME!: need to work on / find consistency between when to use ctrl vs alt and buffer vs tab,
 }
 
 local default_keymap_options = { noremap = true, silent = true }
