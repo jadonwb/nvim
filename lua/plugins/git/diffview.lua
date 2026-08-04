@@ -105,6 +105,7 @@ return {
       watch_index = true,
 
       -- TODO!: make default merge diff3_horizontal I think
+      -- TODO!: integrate NVKeymaps more for closing
 
       keymaps = {
         -- stylua: ignore
