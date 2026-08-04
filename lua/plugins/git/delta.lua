@@ -119,8 +119,8 @@ return {
           prev_hunk = { '[h', spotlight.actions.prev_hunk, global = true },
           -- ── spotlight-only actions (auto-cleared when spotlight exits) ──
           toggle_stage_hunk = { '<CR>', spotlight.actions.toggle_stage_hunk },
-          reset_file = { 'gR', spotlight.actions.reset_file, global = true }, -- FIXME: make different?
-          reset_hunk = { { 'gr', modes = { 'n', 'v' } }, spotlight.actions.reset_hunk, global = true }, -- FIXME: make different?
+          reset_file = { '<C-S-x>', spotlight.actions.reset_file, global = true }, -- FIXME: make different?
+          reset_hunk = { { '<C-x>', modes = { 'n', 'v' } }, spotlight.actions.reset_hunk, global = true }, -- FIXME: make different?
         },
       },
 
