@@ -1,5 +1,3 @@
-local git = require 'editor.git'
-
 NVGitCommit = {}
 
 -- If changing those, don't forget to update footer labels
@@ -156,11 +154,11 @@ local function do_commit(push)
   local action
 
   if state.mode == 'commit' then
-    if not git.has_staged_changes() then
+    if not NVGit.has_staged_changes() then
       alert.warn 'Nothing staged to commit'
       return
     end
-    result = git.commit(subject, body)
+    result = NVGit.commit(subject, body)
     action = 'Committed'
   elseif state.mode == 'rename' then
     -- Rename: only change message, no staging
@@ -170,15 +168,15 @@ local function do_commit(push)
       alert.info 'No changes made'
       return
     end
-    result = git.amend_message(subject, body)
+    result = NVGit.amend_message(subject, body)
     action = 'Renamed'
   elseif state.mode == 'amend' then
     -- Amend: add staged changes, optionally change message
     if message_changed() then
-      result = git.amend_message(subject, body)
+      result = NVGit.amend_message(subject, body)
       action = 'Amended'
     else
-      result = git.amend_no_edit()
+      result = NVGit.amend_no_edit()
       action = 'Amended'
     end
   end
@@ -196,9 +194,9 @@ local function do_commit(push)
   -- Push if requested (rename/amend rewrite history, use force-with-lease)
   if push then
     if state.mode == 'commit' then
-      git.push()
+      NVGit.push()
     else
-      git.push_force_with_lease()
+      NVGit.push_force_with_lease()
     end
   end
 
@@ -275,6 +273,7 @@ local function setup_char_counter(winid, bufnr)
 
     local conf = vim.api.nvim_win_get_config(winid)
     local action_labels = { commit = 'commit', rename = 'rename', amend = 'amend' }
+    -- TODO: make this dynamic with keyamps? or keep hardcoded here?
     conf.footer = {
       { ' ↵  ', highlights.footer_key },
       { action_labels[state.mode], highlights.footer_action },
@@ -398,7 +397,7 @@ local function create_body_window(initial_text)
   local lines = initial_text and vim.split(initial_text, '\n') or { '' }
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 
-  local staged_count = git.get_staged_files_count()
+  local staged_count = NVGit.get_staged_files_count()
   local footer
   if staged_count > 0 then
     footer = {
@@ -451,7 +450,7 @@ end
 local function create_preview_window()
   local width = MAX_SUBJECT_LEN + 2
 
-  local commits = git.get_recent_commits(PREVIEW_LINES)
+  local commits = NVGit.get_recent_commits(PREVIEW_LINES)
   local height = math.min(#commits, PREVIEW_LINES)
 
   if height == 0 then
@@ -525,7 +524,7 @@ local function open_form(opts)
   local body_text = ''
 
   if state.mode == 'rename' or state.mode == 'amend' then
-    subject_text, body_text = git.get_last_commit_message()
+    subject_text, body_text = NVGit.get_last_commit_message()
     -- Store original for change detection
     state.original_msg = { subject = subject_text, body = body_text }
   else
@@ -559,7 +558,7 @@ end
 ---
 
 function NVGitCommit.new()
-  if git.get_repo_info() == nil then
+  if NVGit.get_repo_info() == nil then
     alert.error 'Not in a git repository'
     return
   end
@@ -567,7 +566,7 @@ function NVGitCommit.new()
 end
 
 function NVGitCommit.rename()
-  if git.get_repo_info() == nil then
+  if NVGit.get_repo_info() == nil then
     alert.error 'Not in a git repository'
     return
   end
@@ -575,11 +574,11 @@ function NVGitCommit.rename()
 end
 
 function NVGitCommit.amend()
-  if git.get_repo_info() == nil then
+  if NVGit.get_repo_info() == nil then
     alert.error 'Not in a git repository'
     return
   end
-  if not git.has_staged_changes() then
+  if not NVGit.has_staged_changes() then
     alert.info 'Nothing staged to amend'
     return
   end
@@ -600,4 +599,3 @@ function NVGitCommit.keymaps()
   K.map { NVKeymaps.amend, 'Git: Amend', NVGitCommit.amend, mode = { 'n', 'v' } }
   K.map { NVKeymaps.rename_msg, 'Git: Rename commit message', NVGitCommit.rename, mode = { 'n', 'v' } }
 end
-

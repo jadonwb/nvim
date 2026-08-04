@@ -138,8 +138,7 @@ return {
       -- ── hooks: tab renaming + diff2 highlighting ──────────────
       hooks = {
         view_opened = function(view)
-          local tabs = require 'editor.tabs'
-          tabs.set_label { icon = '', name = 'diff' }
+          NVTabs.set_label { icon = '', name = 'diff' }
         end,
         view_closed = function() end,
         diff_buf_win_enter = function(_bufnr, _winid, ctx)

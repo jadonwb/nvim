@@ -187,11 +187,10 @@ end
 
 ---@param direction "up"|"down"
 function fn.change_window_width(direction)
-  local layout = require 'editor.features.layout-manager'
   if direction == 'up' then
-    layout.increase_width()
+    NVLayoutManager.increase_width()
   elseif direction == 'down' then
-    layout.decrease_width()
+    NVLayoutManager.decrease_width()
   else
     log.error('Window Width Change: Unexpected direction: ' .. direction)
   end
@@ -209,8 +208,7 @@ function fn.change_window_height(direction)
 end
 
 function fn.equalize_layout()
-  local layout = require 'editor.features.layout-manager'
-  layout.reset_width()
+  NVLayoutManager.reset_width()
   vim.cmd 'wincmd ='
 end
 
@@ -240,11 +238,10 @@ function fn.get_normal_tab_windows()
   end
 
   local result = {}
-  local layout = require 'editor.features.layout-manager'
 
   for _, winid in ipairs(windows) do
     if not NVWindows.is_window_floating(winid) then
-      if not layout.is_sidepad_win(winid) then
+      if not NVLayoutManager.is_sidepad_win(winid) then
         table.insert(result, winid)
       end
     end

@@ -61,8 +61,7 @@ function fn.close_tab()
   end
 
   -- Lazy-require worktrees module to avoid circular dependency
-  local worktrees = require 'editor.features.git-worktrees'
-  worktrees.close_tab(info)
+  NVGitWorktrees.close_tab(info)
 end
 
 function NVTabs.render_label(label)

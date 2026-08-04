@@ -4,8 +4,6 @@
 ---   <C-S-n>      — Create a new tab with a git worktree
 ---   <leader>gw   — Show worktree picker (switch/create/delete)
 
-local git = require 'editor.git'
-
 NVGitWorktrees = {}
 
 local fn = {}
@@ -24,13 +22,13 @@ function fn.create_tab_with_worktree()
 end
 
 function fn.create_worktree_from_name(name)
-  local normalized = git.normalize_worktree_name(name)
+  local normalized = NVGit.normalize_worktree_name(name)
   if not normalized or normalized == '' then
     vim.notify('Invalid worktree name', vim.log.levels.ERROR)
     return
   end
 
-  local repo = git.get_repo_info()
+  local repo = NVGit.get_repo_info()
   if not repo then
     vim.notify('Not in a git repository', vim.log.levels.ERROR)
     return
@@ -38,7 +36,7 @@ function fn.create_worktree_from_name(name)
 
   local worktree_path = repo.parent .. '/' .. repo.name .. '--' .. normalized
 
-  local path, status = git.create_worktree(normalized, worktree_path)
+  local path, status = NVGit.create_worktree(normalized, worktree_path)
   if not path then
     vim.notify('Failed to create worktree', vim.log.levels.ERROR)
     return
@@ -46,16 +44,16 @@ function fn.create_worktree_from_name(name)
 
   -- Store original label in worktree config
   if status == 'created' then
-    git.set_worktree_label(path, name)
+    NVGit.set_worktree_label(path, name)
   end
 
   -- Use stored label or fall back to input name
-  local label = git.get_worktree_label(path) or name
+  local label = NVGit.get_worktree_label(path) or name
   fn.open_worktree_tab(label, path)
 end
 
 function fn.pick_worktree()
-  local worktrees = git.get_all_worktrees()
+  local worktrees = NVGit.get_all_worktrees()
 
   if #worktrees == 0 then
     vim.notify('No worktrees found', vim.log.levels.WARN)
@@ -67,7 +65,7 @@ function fn.pick_worktree()
   local current_idx = 1
   for _, wt in ipairs(worktrees) do
     if not wt.bare then
-      local label = git.get_worktree_label(wt.path) or wt.branch
+      local label = NVGit.get_worktree_label(wt.path) or wt.branch
       table.insert(items, {
         text = label,
         path = wt.path,
@@ -115,7 +113,7 @@ end
 function fn.open_worktree_tab(label, path)
   -- Get current file relative to git root
   local current_file = vim.fn.expand '%:p'
-  local repo = git.get_repo_info()
+  local repo = NVGit.get_repo_info()
   local relative_path = nil
   if repo and current_file:find(repo.root, 1, true) == 1 then
     relative_path = current_file:sub(#repo.root + 2)
@@ -152,7 +150,7 @@ function fn.switch_to_worktree(worktree)
   if existing_tab then
     vim.api.nvim_set_current_tabpage(existing_tab)
   else
-    local label = git.get_worktree_label(worktree.path) or worktree.branch
+    local label = NVGit.get_worktree_label(worktree.path) or worktree.branch
     fn.open_worktree_tab(label, worktree.path)
   end
 end
@@ -182,7 +180,7 @@ function NVGitWorktrees.close_tab(info)
       end
 
       -- Confirm before removing worktree with uncommitted changes
-      local has_changes = git.worktree_has_changes(info.path)
+      local has_changes = NVGit.worktree_has_changes(info.path)
       if has_changes then
         if NVDialogs.confirm('Worktree has uncommitted changes. Force remove?', '&Yes\n&No', 2) ~= 1 then
           return
@@ -191,14 +189,14 @@ function NVGitWorktrees.close_tab(info)
 
       vim.cmd 'tabclose'
       vim.defer_fn(function()
-        if not git.remove_worktree(info.path, has_changes) then
+        if not NVGit.remove_worktree(info.path, has_changes) then
           log.error 'Failed to remove worktree'
           return
         end
         log.info('Removed worktree: ' .. info.path)
 
         if item.action == 'delete-all' then
-          if not git.delete_branch(info.branch) then
+          if not NVGit.delete_branch(info.branch) then
             log.error 'Failed to delete branch'
             return
           end
