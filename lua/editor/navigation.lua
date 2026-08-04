@@ -24,7 +24,7 @@ function NVNavigation.keymaps()
   K.map { NVKeymaps.scroll_ctx.down, 'Scroll down a bit', '<Cmd>normal 2<C-e><CR>', mode = { 'n', 'v', 'i' } }
 
   K.map {
-    '<S-Left>',
+    NVKeymaps.scroll_side.left,
     'Scroll left',
     function()
       fn.scroll_horizontal 'left'
@@ -32,7 +32,7 @@ function NVNavigation.keymaps()
     mode = { 'n', 'v', 'i' },
   }
   K.map {
-    '<S-Right>',
+    NVKeymaps.scroll_side.right,
     'Scroll right',
     function()
       fn.scroll_horizontal 'right'

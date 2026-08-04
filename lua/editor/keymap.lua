@@ -12,6 +12,10 @@ NVKeymaps = {
   rename_msg = '<leader>gr',
   commit_push = '<M-CR>',
 
+  -- TODO?: move things in here?
+  -- hunk_reset = '<>',
+  -- file_reset = '<>',
+
   focus = '<M-f>',
 
   inc_width = '<M-C-Up>',
@@ -20,6 +24,7 @@ NVKeymaps = {
   scroll = { up = '<C-u>', down = '<C-d>' },
   scroll_alt = { up = '<C-b>', down = '<C-f>' },
   scroll_ctx = { up = '<A-k>', down = '<A-j>' },
+  scroll_side = { left = '<S-Left>', right = '<S-Right>' },
 
   open_vsplit = '<C-CR>',
   open_hsplit = '<C-S-CR>',

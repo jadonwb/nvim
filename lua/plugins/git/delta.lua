@@ -99,8 +99,8 @@ return {
           jump_down = { NVKeymaps.scroll.down, picker.actions.move(5) },
           jump_top = { { 'gg', modes = 'n' }, picker.actions.move_to_top },
           jump_bottom = { { 'G', modes = 'n' }, picker.actions.move_to_bottom },
-          scroll_left = { '<D-S-Left>', picker.actions.scroll_horizontal(-8) },
-          scroll_right = { '<D-S-Right>', picker.actions.scroll_horizontal(8) },
+          scroll_left = { NVKeymaps.scroll_side.left, picker.actions.scroll_horizontal(-8) },
+          scroll_right = { NVKeymaps.scroll_side.right, picker.actions.scroll_horizontal(8) },
           scroll_preview_up = { NVKeymaps.scroll_ctx.up, picker.actions.scroll_preview(-5) },
           scroll_preview_down = { NVKeymaps.scroll_ctx.down, picker.actions.scroll_preview(5) },
           move_up = { { { 'k', modes = 'n' }, '<Up>' }, picker.actions.move(-1) },
@@ -119,8 +119,8 @@ return {
           prev_hunk = { '[h', spotlight.actions.prev_hunk, global = true },
           -- ── spotlight-only actions (auto-cleared when spotlight exits) ──
           toggle_stage_hunk = { '<CR>', spotlight.actions.toggle_stage_hunk },
-          reset_file = { '<C-S-x>', spotlight.actions.reset_file, global = true },
-          reset_hunk = { { '<M-S-x>', modes = { 'n', 'v' } }, spotlight.actions.reset_hunk, global = true },
+          reset_file = { 'gR', spotlight.actions.reset_file, global = true }, -- FIXME: make different?
+          reset_hunk = { { 'gr', modes = { 'n', 'v' } }, spotlight.actions.reset_hunk, global = true }, -- FIXME: make different?
         },
       },
 
