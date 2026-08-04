@@ -1,18 +1,15 @@
 NVEditing = {}
 
 function NVEditing.esc()
-  -- Hide floating UIs first
   if NVLspPopup.ensure_hidden and NVLspPopup.ensure_hidden() then
     return
   end
 
-  -- Hide notifier history
   pcall(function()
     require 'plugins.snacks'
     NVSNotifier.hide()
   end)
 
-  -- Clear search highlight
   vim.cmd 'silent noh'
 end
 
@@ -36,19 +33,23 @@ function NVEditing.keymaps()
     mode = { 'i', 'v' },
   }
 
-  K.map {
-    '<leader>yd',
-    'Duplicate line',
-    'yyp',
-    mode = 'n',
-  }
-  -- FIXME?: not working
-  K.map {
-    '<leader>yd',
-    'Duplicate selection',
-    [["yy']y"ypgv]],
-    mode = 'v',
-  }
+  K.map { 'J', 'Join lines and keep cursor position', 'mzJ`z', mode = 'n' }
+  K.map { 'x', "Don't yank on delete", '"_x', mode = { 'n', 'x', 's' } }
+  K.map { 'X', "Don't yank on delete", '"_X', mode = { 'n', 'x', 's' } }
+
+  K.map { '<left>', 'Insert space before cursor', 'i<Space><Esc>', mode = 'n' }
+  K.map { '<right>', 'Insert space after cursor', 'a<Space><Esc>', mode = 'n' }
+  K.map { '<M-o>', 'New line below', 'o<Esc>', mode = 'n' }
+  K.map { '<M-S-o>', 'New line above', 'O<Esc>', mode = 'n' }
+
+  -- TODO?: revisit?
+  -- K.map { '<leader>yd', 'Duplicate line', 'yyp', mode = 'n' }
+  -- K.map {
+  --   '<leader>yd',
+  --   'Duplicate selection',
+  --   [["yy']y"ypgv]],
+  --   mode = 'v',
+  -- }
 
   K.map {
     'C-S-v',
@@ -66,6 +67,39 @@ function NVEditing.keymaps()
     end,
     mode = 'i',
   }
+
+  K.map { '<leader>p', 'Paste without yanking', [["_dP]], mode = { 'x', 'v', 's' } }
+
+  K.map {
+    '<leader>qr',
+    'Save session and restart',
+    function()
+      require('persistence').save()
+      vim.schedule(function()
+        vim.cmd 'restart'
+      end)
+    end,
+    mode = 'n',
+  }
+
+  -- TODO: make a more general toggle for listchars? to display whitespace as well for diffing purposes?
+  -- TODO: make a general toggle message api/helper?
+  local function toggle_tabs()
+    local current = vim.opt.listchars:get()
+    if current.tab == '» ' then
+      vim.notify('Disabled **Tabs**', vim.log.levels.WARN, { title = 'Tabs' })
+      vim.opt.listchars:append {
+        tab = '  ',
+      }
+    else
+      vim.notify('Enabled **Tabs**', vim.log.levels.INFO, { title = 'Tabs' })
+      vim.opt.listchars:append {
+        tab = '» ',
+      }
+    end
+  end
+
+  K.map { '<leader>u<tab>', 'Toggle tab characters', toggle_tabs, mode = 'n' }
 end
 
 return NVEditing
