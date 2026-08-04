@@ -20,6 +20,7 @@ require 'editor.keymap'  -- K global, NVKeymaps
 require 'editor.log'     -- log global
 require 'editor.screen'  -- NVScreen global
 require 'editor.keys'    -- NVKeys global
+require 'editor.icons'   -- NVIcons global
 
 require('lazy').setup {
   spec = {

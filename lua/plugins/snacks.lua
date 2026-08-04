@@ -412,6 +412,14 @@ return {
       picker = {
         prompt = '❯ ',
         ui_select = true,
+        icons = {
+          diagnostics = {
+            Error = NVIcons.lsp.full.error,
+            Warn = NVIcons.lsp.full.warn,
+            Hint = NVIcons.lsp.full.hint,
+            Info = NVIcons.lsp.full.info,
+          },
+        },
         layout = vim.tbl_extend('force', NVSPickerHorizontalLayout.build(), { cycle = false }),
         win = {
           input = { keys = NVSPickers.keys },

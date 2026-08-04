@@ -8,6 +8,14 @@ return {
     },
     opts = {
       inlay_hints = { enabled = false },
+      signs = {
+        text = {
+          [vim.diagnostic.severity.ERROR] = NVIcons.lsp.mini.error,
+          [vim.diagnostic.severity.WARN] = NVIcons.lsp.mini.warn,
+          [vim.diagnostic.severity.INFO] = NVIcons.lsp.mini.info,
+          [vim.diagnostic.severity.HINT] = NVIcons.lsp.mini.hint,
+        },
+      },
       underline = {
         severity = {
           min = vim.diagnostic.severity.WARN,
