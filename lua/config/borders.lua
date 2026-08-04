@@ -1,5 +1,8 @@
 local M = {}
 
+-- TODO!: move into editor, make global
+-- TODO?: consolidate with icons and make a general UI file or a UI subfolder?
+
 --- Invisible border (all spaces, padded.
 M.padded = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' }
 
