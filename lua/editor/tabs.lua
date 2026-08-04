@@ -10,7 +10,7 @@ local fn = {}
 
 function NVTabs.keymaps()
   K.map { '<C-n>', 'Create new tab', fn.create_tab, mode = { 'n', 'i', 'v', 't' } }
-  K.map { '<C-w>', 'Close tab', fn.close_tab, mode = { 'n', 'i', 'v', 't' }, nowait = true }
+  K.map { '<M-C-w>', 'Close tab', fn.close_tab, mode = { 'n', 'i', 'v', 't' }, nowait = true } -- FIXME: make C-w not conflict with lazygit whitespace? or just quit using lazygit?
   K.map { '<C-Right>', 'Next tab', '<Cmd>tabnext<CR>', mode = { 'n', 'i', 'v' } }
   K.map { '<C-Left>', 'Previous tab', '<Cmd>tabprev<CR>', mode = { 'n', 'i', 'v' } }
   K.map {
