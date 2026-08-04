@@ -60,7 +60,7 @@ function NVEditing.keymaps()
   }
 
   K.map {
-    '<leader>C-S-v',
+    'C-S-v',
     'Paste without auto-formatting (insert mode)',
     function()
       local saved_paste = vim.o.paste
