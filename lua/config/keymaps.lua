@@ -3,8 +3,8 @@ local map = vim.keymap.set
 -- ── Editing ──
 map('n', 'U', '<C-r>', { silent = true })
 map('n', 'J', 'mzJ`z', { desc = 'Join lines and keep cursor position' })
-map('n', '<C-d>', '<C-d>zz')
-map('n', '<C-u>', '<C-u>zz')
+-- map('n', '<C-d>', '<C-d>zz')
+-- map('n', '<C-u>', '<C-u>zz')
 
 -- ── Don't yank on delete ──
 map({ 'n', 'x', 's' }, 'x', '"_x', { noremap = true, silent = true })
