@@ -81,6 +81,8 @@ function fn.scroll_vertical(direction)
   end
 
   NVKeys.send(cmd, { mode = 'n' })
+  -- FIXME?: keep cursor centered? this breaks it though
+  -- NVKeys.send('zz', { mode = 'n' })
 
   if is_i_mode then
     NVKeys.send('a', { mode = 'n' })
