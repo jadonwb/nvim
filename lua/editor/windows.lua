@@ -1,6 +1,5 @@
 --- Window nav, move, resize. S-arrows: focus, M-S-arrows: move, M-s: swap, M-C-Up/Down: width, A-e: equalize.
 
-
 NVWindows = {
   maximized_width = 1, -- 100%
   window_picker_keys = 'UHKMETJWNSABCDFGILOPQRVXYZ1234567890',
@@ -249,4 +248,3 @@ function fn.get_normal_tab_windows()
 
   return result
 end
-

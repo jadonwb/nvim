@@ -293,4 +293,12 @@ function NVPi.is_visible()
   return false
 end
 
+function NVPi.ensure_hidden()
+  if NVPi.is_visible() then
+    vim.cmd 'PiToggleChat'
+    return true
+  end
+  return false
+end
+
 return { NVPi }

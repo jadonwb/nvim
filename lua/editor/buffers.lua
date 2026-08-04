@@ -99,6 +99,12 @@ local cooperative_ui = {
       return NVGitsigns.ensure_preview_hidden()
     end,
   },
+  {
+    name = 'pi',
+    fn = function()
+      return NVPi.ensure_hidden()
+    end,
+  },
   -- Mode-like states (deactivate the mode, don't delete buffer)
   {
     name = 'focus_mode',
