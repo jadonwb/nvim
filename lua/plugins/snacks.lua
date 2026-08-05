@@ -148,6 +148,7 @@ function NVSPickers.buffers()
     sort_lastused = true,
     layout = NVSPickerVerticalLayout.build(),
     filter = {
+      -- FIXME: filter out or don't show files in my picker from other neovim instances? keep seeing weird issues where my neovim config files are showing up in my buffer picker
       filter = function(item, _)
         local file = item.file or ''
         if file:find '^diffview://' then
@@ -386,6 +387,7 @@ return {
       lazygit = {
         config = {
           os = {
+            -- FIXME: revert to ${NVIM} getting stale server issues with vim.v.servername
             edit = vim.v.progpath
               .. ' --server '
               .. vim.v.servername
