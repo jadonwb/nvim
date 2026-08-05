@@ -328,10 +328,9 @@ These come from LazyVim and are NOT overridden by your config:
 | `[q` / `]q` | n | Prev/next trouble/quickfix |
 | `[t` / `]t` | n | Prev/next todo comment |
 | `<leader>xt` / `<leader>xT` | n | Todo (trouble) |
-| `<C-a>` / `<C-x>` | n,v | Increment/decrement (dial.nvim) |
 | `<leader>cr` | n | Rename (inc-rename.nvim) |
 
-### LazyVim gitsigns (still active)
+### LazyVim gitsigns disabled
 | Key | Mode | Action |
 |-----|------|--------|
 | `]h` / `[h` | n | Next/prev hunk |
