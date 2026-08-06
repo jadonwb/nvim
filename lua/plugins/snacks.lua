@@ -384,35 +384,20 @@ return {
       lazygit = {
         config = {
           os = {
-            -- FIXME: revert to ${NVIM} getting stale server issues with vim.v.servername
             edit = vim.v.progpath
-              .. ' --server '
-              .. vim.v.servername
-              .. [[ --remote-send '<Cmd>lua require("snacks").lazygit()<CR>' && ]]
+              .. [[ --server "$NVIM" --remote-send '<Cmd>lua require("snacks").lazygit()<CR>' && ]]
               .. vim.v.progpath
-              .. ' --server '
-              .. vim.v.servername
-              .. [[ --remote-silent {{filename}} ]],
+              .. [[ --server "$NVIM" --remote-silent {{filename}} ]],
             editAtLine = vim.v.progpath
-              .. ' --server '
-              .. vim.v.servername
-              .. [[ --remote-send '<Cmd>lua require("snacks").lazygit()<CR>' && ]]
+              .. [[ --server "$NVIM" --remote-send '<Cmd>lua require("snacks").lazygit()<CR>' && ]]
               .. vim.v.progpath
-              .. ' --server '
-              .. vim.v.servername
-              .. [[ --remote-silent {{filename}} && ]]
+              .. [[ --server "$NVIM" --remote-silent {{filename}} && ]]
               .. vim.v.progpath
-              .. ' --server '
-              .. vim.v.servername
-              .. [[ --remote-send ':{{line}}<CR>' ]],
+              .. [[ --server "$NVIM" --remote-send ':{{line}}<CR>' ]],
             openDirInEditor = vim.v.progpath
-              .. ' --server '
-              .. vim.v.servername
-              .. [[ --remote-send '<Cmd>lua require("snacks").lazygit()<CR>' && ]]
+              .. [[ --server "$NVIM" --remote-send '<Cmd>lua require("snacks").lazygit()<CR>' && ]]
               .. vim.v.progpath
-              .. ' --server '
-              .. vim.v.servername
-              .. [[ --remote-silent {{dir}} ]],
+              .. [[ --server "$NVIM" --remote-silent {{dir}} ]],
           },
         },
       },
