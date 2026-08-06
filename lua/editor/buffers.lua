@@ -168,6 +168,7 @@ function fn.delete_buf()
   -- Guard: don't delete buffers when on dashboard
 
   -- TODO?: make this syntax nicer?
+
   -- Give each registered floating UI/mode a chance to consume the close event
   for _, ui in ipairs(cooperative_ui) do
     local ok, consumed = pcall(ui.fn)
@@ -250,7 +251,7 @@ function fn.delete_buf()
   end
 
   if next_buf ~= nil then
-    if file_exists then
+    if file_exists and vim.bo.modified then -- TODO?:disable auto-format just for this
       vim.cmd 'silent! write'
     end
     vim.api.nvim_set_current_buf(next_buf)
@@ -259,7 +260,7 @@ function fn.delete_buf()
     end
   else
     if #tab_windows > 1 then
-      if file_exists then
+      if file_exists and vim.bo.modified then -- TODO?: disable auto-format just for this
         vim.cmd 'silent! write'
       end
       vim.cmd.close()
@@ -269,13 +270,14 @@ function fn.delete_buf()
     else
       local empty_buf = vim.api.nvim_create_buf(true, false)
 
+      -- TODO!: this might be where I can instead turn off the layout manager and go back to dashboard
       if empty_buf == 0 then
         log.error 'Failed to create empty buffer'
-        if file_exists then
+        if file_exists and vim.bo.modified then -- TODO?: disable auto-format just for this
           vim.cmd 'silent! write'
         end
       else
-        if file_exists then
+        if file_exists and vim.bo.modified then -- TODO?: disable auto-format just for this
           vim.cmd 'silent! write'
         end
         vim.api.nvim_set_current_buf(empty_buf)
@@ -285,6 +287,8 @@ function fn.delete_buf()
     end
   end
 end
+
+NVBuffers.delete_buf = fn.delete_buf
 
 function fn.delete_buf_and_close_win()
   local tab_windows = NVWindows.get_tab_windows_with_listed_buffers { incl_help = true }
