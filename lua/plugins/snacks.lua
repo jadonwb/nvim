@@ -102,16 +102,19 @@ NVSPickers.actions = {
   end,
 }
 
--- FIXME: reset / enforce current = false? list updates and current is shown again.
 function NVSPickers.bufdelete(picker)
   picker.preview:reset()
   for _, item in ipairs(picker:selected { fallback = true }) do
-    -- TODO?: ensure saved?
     if item.buf then
-      vim.cmd('bwipeout! ' .. item.buf)
+      local win = vim.fn.bufwinid(item.buf)
+      if win ~= -1 then
+        NVBuffers.delete_buf(item.buf, win)
+      else
+        vim.api.nvim_buf_delete(item.buf, { force = true })
+      end
     end
   end
-  picker:refresh()
+  pcall(picker.refresh, picker)
 end
 
 function NVSPickers.copy_path(item, fmt)

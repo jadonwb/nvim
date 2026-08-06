@@ -160,42 +160,24 @@ function NVBuffers.get_listed_bufs(opts)
   return bufs
 end
 
----@param bufid BufID
-function fn.get_buf_info(bufid)
-  return vim.fn.getbufinfo(bufid)[1]
-end
-
-function fn.delete_buf()
-  -- Guard: don't delete buffers when on dashboard
-
-  -- TODO?: make this syntax nicer?
-
-  -- Give each registered floating UI/mode a chance to consume the close event
-  for _, ui in ipairs(cooperative_ui) do
-    local ok, consumed = pcall(ui.fn)
-    if ok and consumed then
-      return -- UI handled it, don't delete the buffer
-    end
-  end
-
-  if vim.bo.readonly then
-    vim.cmd.close()
+function NVBuffers.delete_buf(buf, win)
+  if vim.bo[buf].readonly then
+    vim.api.nvim_win_close(win, true)
+    --vim.cmd.close()
     return
   end
 
-  local current_win = vim.api.nvim_get_current_win()
-  local current_buf = vim.api.nvim_get_current_buf()
-  local current_buf_info = fn.get_buf_info(current_buf)
+  local buf_info = fn.get_buf_info(buf)
 
-  if current_buf_info == nil then
-    log.error "Can't get current buffer info"
+  if buf_info == nil then
+    log.error "Can't get buffer info"
     return
   end
 
   -- Don't write if file was deleted from disk or if it's an unnamed modified buffer
-  local file_exists = current_buf_info.name ~= '' and vim.fn.filereadable(current_buf_info.name) == 1
+  local file_exists = buf_info.name ~= '' and vim.fn.filereadable(buf_info.name) == 1
 
-  if current_buf_info.name == '' and current_buf_info.changed == 1 then
+  if buf_info.name == '' and buf_info.changed == 1 then
     if NVDialogs.confirm('Buffer has unsaved changes. Discard?', '&Yes\n&No', 2) ~= 1 then
       return
     end
@@ -220,7 +202,7 @@ function fn.delete_buf()
   local current_tab = vim.api.nvim_get_current_tabpage()
 
   if #tab_windows > 1 or #tabs > 1 then
-    is_opened_elsewhere = fn.is_opened_elsewhere(tabs, current_tab, current_win, current_buf)
+    is_opened_elsewhere = fn.is_opened_elsewhere(tabs, current_tab, win, buf)
   end
 
   local bufs = NVBuffers.get_listed_bufs { sort_lastused = true }
@@ -228,16 +210,16 @@ function fn.delete_buf()
   -- Searching for the next buffer to show in the current window
   local next_buf = nil
 
-  for _, buf in ipairs(bufs) do
-    if buf.bufnr ~= current_buf then
+  for _, b in ipairs(bufs) do
+    if b.bufnr ~= buf then
       -- If there are multiple windows opened, we don't want to show the buffer
       -- that is already opened in another window. So if it's the case,
       -- we skip it and continue searching for the next buffer.
       local is_opened_elsewhere_in_current_tab = false
 
-      for _, win in ipairs(tab_windows) do
-        local win_buf = vim.api.nvim_win_get_buf(win)
-        if win_buf == buf.bufnr then
+      for _, w in ipairs(tab_windows) do
+        local win_buf = vim.api.nvim_win_get_buf(w)
+        if win_buf == b.bufnr then
           is_opened_elsewhere_in_current_tab = true
           break
         end
@@ -245,28 +227,28 @@ function fn.delete_buf()
 
       if not is_opened_elsewhere_in_current_tab then
         -- that's the one
-        next_buf = buf.bufnr
+        next_buf = b.bufnr
         break
       end
     end
   end
 
   if next_buf ~= nil then
-    if file_exists and vim.bo.modified then -- TODO?:disable auto-format just for this
+    if file_exists and vim.bo[buf].modified then -- TODO!: consider disabling autoformat here somehow, same for below modified checks
       vim.cmd 'silent! write'
     end
-    vim.api.nvim_set_current_buf(next_buf)
+    vim.api.nvim_win_set_buf(win, next_buf)
     if not is_opened_elsewhere then
-      vim.api.nvim_buf_delete(current_buf, { force = not file_exists })
+      vim.api.nvim_buf_delete(buf, { force = not file_exists })
     end
   else
     if #tab_windows > 1 then
-      if file_exists and vim.bo.modified then -- TODO?: disable auto-format just for this
+      if file_exists and vim.bo[buf].modified then
         vim.cmd 'silent! write'
       end
-      vim.cmd.close()
+      vim.api.nvim_win_close(win, true)
       if not is_opened_elsewhere then
-        vim.api.nvim_buf_delete(current_buf, { force = not file_exists })
+        vim.api.nvim_buf_delete(buf, { force = not file_exists })
       end
     else
       local empty_buf = vim.api.nvim_create_buf(true, false)
@@ -274,22 +256,39 @@ function fn.delete_buf()
       -- TODO!: this might be where I can instead turn off the layout manager and go back to dashboard
       if empty_buf == 0 then
         log.error 'Failed to create empty buffer'
-        if file_exists and vim.bo.modified then -- TODO?: disable auto-format just for this
+        if file_exists and vim.bo[buf].modified then
           vim.cmd 'silent! write'
         end
       else
-        if file_exists and vim.bo.modified then -- TODO?: disable auto-format just for this
+        if file_exists and vim.bo[buf].modified then
           vim.cmd 'silent! write'
         end
-        vim.api.nvim_set_current_buf(empty_buf)
+        vim.api.nvim_win_set_buf(win, empty_buf)
       end
 
-      vim.api.nvim_buf_delete(current_buf, { force = not file_exists })
+      vim.api.nvim_buf_delete(buf, { force = not file_exists })
     end
   end
 end
 
-NVBuffers.delete_buf = fn.delete_buf
+---@param bufid BufID
+function fn.get_buf_info(bufid)
+  return vim.fn.getbufinfo(bufid)[1]
+end
+
+function fn.delete_buf()
+  -- Give each registered floating UI/mode a chance to consume the close event
+  for _, ui in ipairs(cooperative_ui) do
+    local ok, consumed = pcall(ui.fn)
+    if ok and consumed then
+      return
+    end
+  end
+
+  local current_buf = vim.api.nvim_get_current_buf()
+  local current_win = vim.api.nvim_get_current_win()
+  NVBuffers.delete_buf(current_buf, current_win)
+end
 
 function fn.delete_buf_and_close_win()
   local tab_windows = NVWindows.get_tab_windows_with_listed_buffers { incl_help = true }
@@ -312,6 +311,7 @@ function fn.delete_buf_and_close_win()
       local current_buf = vim.api.nvim_get_current_buf()
       local empty_buf = vim.api.nvim_create_buf(true, false)
 
+      -- TODO: this could instead be dashboard reopen and layout manager disable?
       if empty_buf ~= 0 then
         vim.api.nvim_set_current_buf(empty_buf)
         vim.api.nvim_buf_delete(current_buf, { force = true })
