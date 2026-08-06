@@ -99,6 +99,7 @@ local cooperative_ui = {
     end,
   },
   -- Mode-like states (deactivate the mode, don't delete buffer)
+  -- FIXME!: doesn't work
   {
     name = 'focus_mode',
     fn = function()
