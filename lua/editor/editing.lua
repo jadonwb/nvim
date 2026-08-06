@@ -36,6 +36,7 @@ function NVEditing.keymaps()
   }
 
   K.map { 'J', 'Join lines and keep cursor position', 'mzJ`z', mode = 'n' }
+  K.map { 'U', 'Redo', '<C-r>', mode = 'n' }
   K.map { 'x', "Don't yank on delete", '"_x', mode = { 'n', 'x', 's' } }
   K.map { 'X', "Don't yank on delete", '"_X', mode = { 'n', 'x', 's' } }
 
