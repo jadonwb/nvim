@@ -148,7 +148,7 @@ function NVSPickers.buffers()
     sort_lastused = true,
     layout = NVSPickerVerticalLayout.build(),
     filter = {
-      -- FIXME: filter out or don't show files in my picker from other neovim instances? keep seeing weird issues where my neovim config files are showing up in my buffer picker
+      -- FIXME: filter out or don't show files in my picker from other neovim instances? keep seeing weird issues where other neovim files are showing up in my buffer picker, from different neovim sessions altogether
       filter = function(item, _)
         local file = item.file or ''
         if file:find '^diffview://' then
