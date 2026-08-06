@@ -1,10 +1,4 @@
---- Focus mode: toggle a distraction-free tab with a single keybinding.
---- Creates a dedicated "focus" tab containing the current buffer,
---- remembers the original tab/window, and restores on exit.
----
---- Keybindings:
----   <leader>uz — Toggle focus mode
-
+-- FIXME!: fix emmylua diagnostic/lsp setup issues (Undefined type or alias TabID)
 
 ---@class FocusTab
 ---@field id TabID
@@ -13,6 +7,10 @@
 ---@field created_at number
 
 NVFocusMode = { tab = nil }
+
+-- TODO!: don't open focus mode if it doesn't provide any benefit? e.g. main tab doesn't have any extra splits or anything anyway?
+
+-- FIXME: logging not working? or just wrong log level at the time of test?
 
 function NVFocusMode.keymaps()
   K.map { NVKeymaps.focus, 'Toggle focus mode', NVFocusMode.toggle, mode = { 'n', 'i', 'v', 't' } }
@@ -163,4 +161,3 @@ function NVFocusMode.deactivate_active()
   vim.api.nvim_win_set_buf(current_win, current_buf)
   vim.api.nvim_win_set_cursor(current_win, current_cursor)
 end
-

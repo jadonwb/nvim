@@ -56,7 +56,6 @@ function NVSPickerHorizontalLayout.build(opts)
   }
 end
 
--- Shared picker keymaps applied to ALL picker windows
 NVSPickers.keys = {
   ['<M-S-f>'] = { 'toggle_maximize', mode = { 'n', 'i', 'v' } },
   [NVKeymaps.open_vsplit] = { 'edit_vsplit', mode = { 'n', 'i', 'v' } },
@@ -79,7 +78,6 @@ NVSPickers.keys = {
   [NVKeymaps.close] = { 'close', mode = { 'n', 'i', 'v' } },
 }
 
--- Custom picker actions
 NVSPickers.actions = {
   x_list_scroll_up_bit = function(picker)
     picker.list:scroll(-2)
@@ -108,7 +106,7 @@ NVSPickers.actions = {
 function NVSPickers.bufdelete(picker)
   picker.preview:reset()
   for _, item in ipairs(picker:selected { fallback = true }) do
-    -- TODO?: ensure saved
+    -- TODO?: ensure saved?
     if item.buf then
       vim.cmd('bwipeout! ' .. item.buf)
     end
@@ -128,7 +126,6 @@ function NVSPickers.copy_path(item, fmt)
   end
 end
 
--- Picker helper functions (called by other modules)
 function NVSPickers.files()
   Snacks.picker.files {
     show_empty = true,
@@ -309,7 +306,6 @@ function NVSLazygit.ensure_hidden()
   return false
 end
 
--- Input
 function NVSInput.is_input(bufid)
   bufid = bufid or vim.api.nvim_get_current_buf()
   return vim.bo[bufid].filetype == 'snacks_input'
@@ -323,12 +319,10 @@ function NVSInput.ensure_hidden()
   return false
 end
 
--- Dashboard
 function NVSnacksDashboard.is_active()
   return vim.bo.filetype == 'snacks_dashboard'
 end
 
--- === Plugin spec ===
 local borders = require 'config.borders'
 
 return {

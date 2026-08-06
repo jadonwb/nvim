@@ -1,13 +1,8 @@
---- Git worktree management from within Neovim.
----
---- Keybindings:
----   <C-S-n>      — Create a new tab with a git worktree
----   <leader>gw   — Show worktree picker (switch/create/delete)
-
 NVGitWorktrees = {}
 
 local fn = {}
 
+-- TODO!: keymaps
 function NVGitWorktrees.keymaps()
   K.map { '<C-S-n>', 'Create new tab with git worktree', fn.create_tab_with_worktree, mode = { 'n', 'i', 'v', 't' } }
   K.map { '<leader>gw', 'Show worktree picker', fn.pick_worktree, mode = { 'n', 'v', 't' } }

@@ -1,7 +1,3 @@
---- Buffer close with cooperative UI: floating UIs are hidden before buffer deletion.
---- <M-w>: delete buffer, <M-S-w>: delete buffer and close window.
-
-
 NVBuffers = {}
 
 local fn = {}
@@ -11,7 +7,7 @@ local fn = {}
 --- true if it handled the event (consumed it).
 --- Ordered: specific floating UIs first, mode-like states last.
 local cooperative_ui = {
-  -- Starter screen — don't delete buffers on the dashboard
+  -- Don't delete buffers on the dashboard
   {
     name = 'dashboard',
     fn = function()
@@ -24,6 +20,7 @@ local cooperative_ui = {
       return NVLazy.ensure_hidden()
     end,
   },
+  -- Diffview tab
   {
     name = 'diffview',
     fn = function()
@@ -40,6 +37,7 @@ local cooperative_ui = {
   {
     name = 'lsp_popup',
     fn = function()
+      -- FIXME!: make like all the other features
       local ok, m = pcall(require, 'editor.features.lsp-popup')
       return ok and m.ensure_hidden and m.ensure_hidden() or false
     end,
@@ -47,6 +45,7 @@ local cooperative_ui = {
   {
     name = 'git_commit',
     fn = function()
+      -- FIXME!: make like all the other features
       local ok, m = pcall(require, 'editor.features.git-commit')
       return ok and m.ensure_hidden and m.ensure_hidden() or false
     end,
@@ -103,6 +102,7 @@ local cooperative_ui = {
   {
     name = 'focus_mode',
     fn = function()
+      -- FIXME!: make like all the other features
       local ok, m = pcall(require, 'editor.features.focus-mode')
       return ok and m.ensure_deactivated_if_active and m.ensure_deactivated_if_active() or false
     end,
@@ -167,7 +167,7 @@ end
 function fn.delete_buf()
   -- Guard: don't delete buffers when on dashboard
 
-  -- ── Cooperative UI protocol ────────────────────
+  -- TODO?: make this syntax nicer?
   -- Give each registered floating UI/mode a chance to consume the close event
   for _, ui in ipairs(cooperative_ui) do
     local ok, consumed = pcall(ui.fn)
@@ -348,4 +348,3 @@ function fn.is_opened_elsewhere(tabs, current_tab, current_win, current_buf)
 
   return nil
 end
-

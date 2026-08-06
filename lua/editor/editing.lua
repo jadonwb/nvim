@@ -14,8 +14,10 @@ function NVEditing.esc()
 end
 
 function NVEditing.keymaps()
+  -- TODO!: this might be fine actually
   K.map { '<Esc>', 'Drop all the noise and Esc', '<Cmd>lua NVEditing.esc()<CR><Esc>', mode = 'n', silent = false }
 
+  -- TODO: new keymap for these two items
   K.map {
     '<M-k>',
     'Save all files',
@@ -37,8 +39,10 @@ function NVEditing.keymaps()
   K.map { 'x', "Don't yank on delete", '"_x', mode = { 'n', 'x', 's' } }
   K.map { 'X', "Don't yank on delete", '"_X', mode = { 'n', 'x', 's' } }
 
+  -- FIXME: remove?
   K.map { '<left>', 'Insert space before cursor', 'i<Space><Esc>', mode = 'n' }
   K.map { '<right>', 'Insert space after cursor', 'a<Space><Esc>', mode = 'n' }
+
   K.map { '<M-o>', 'New line below', 'o<Esc>', mode = 'n' }
   K.map { '<M-S-o>', 'New line above', 'O<Esc>', mode = 'n' }
 
@@ -51,6 +55,7 @@ function NVEditing.keymaps()
   --   mode = 'v',
   -- }
 
+  -- TODO!: revisit
   K.map {
     'C-S-v',
     'Paste without auto-formatting (insert mode)',
@@ -81,6 +86,7 @@ function NVEditing.keymaps()
     end,
     mode = 'n',
   }
+  -- TODO!: make <leader>qq save session if not doing that?
 
   -- TODO: make a more general toggle for listchars? to display whitespace as well for diffing purposes?
   -- TODO: make a general toggle message api/helper?

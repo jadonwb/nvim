@@ -40,6 +40,7 @@ function NVNavigation.keymaps()
     mode = { 'n', 'v', 'i' },
   }
 
+  -- TODO?: I am generally fine with using C-o/i
   -- K.map { '<D-[>', 'History: back', '<C-o>', mode = 'n' }
   -- K.map { '<D-]>', 'History: forward', '<C-i>', mode = 'n' }
 end

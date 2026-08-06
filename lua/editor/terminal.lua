@@ -1,5 +1,6 @@
-
 NVTerminal = {}
+
+-- TODO!: make sure I am happy with these?
 
 function NVTerminal.keymaps()
   K.map {
@@ -24,4 +25,3 @@ function NVTerminal.keymaps()
     end,
   })
 end
-

@@ -1,3 +1,4 @@
+-- FIXME: make sure now that I match reference config with layout manager, these options don't break anything / revisit these
 vim.opt.termguicolors = true
 
 vim.opt.number = true

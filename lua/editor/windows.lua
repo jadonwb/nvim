@@ -1,13 +1,15 @@
---- Window nav, move, resize. S-arrows: focus, M-S-arrows: move, M-s: swap, M-C-Up/Down: width, A-e: equalize.
-
 NVWindows = {
   maximized_width = 1, -- 100%
   window_picker_keys = 'UHKMETJWNSABCDFGILOPQRVXYZ1234567890',
 }
 
+-- TODO!: this needs attention (keymap wise)?
+-- also potential improvements about layout manager?
+
 local fn = {}
 
 function NVWindows.keymaps()
+  -- TODO?: move to buffers file?
   -- New buffers in splits
   K.map { '<leader>bs', 'Create new buffer in a horizontal split', '<Cmd>new<CR>', mode = 'n' }
   K.map { '<leader>bv', 'Create new buffer in a vertical split', '<Cmd>vnew<CR>', mode = 'n' }

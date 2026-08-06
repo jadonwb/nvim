@@ -1,5 +1,7 @@
 NVIcons = {}
 
+-- TODO!: expand to cover more icons that I want to set in certain places
+
 NVIcons.lsp = {
   mini = {
     error = '󰫲',

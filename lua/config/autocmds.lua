@@ -18,6 +18,7 @@ vim.api.nvim_create_autocmd('BufReadPre', {
   end,
 })
 
+-- FIXME: want to have spell, but lsp-popup is technically markdown?
 vim.api.nvim_create_autocmd('FileType', {
   pattern = { 'markdown' },
   callback = function()

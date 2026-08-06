@@ -1,7 +1,3 @@
---- Dialog utilities — wraps vim.fn.confirm.
---- Includes the Neovim 0.12 extui workaround (appends \n to separate
---- the message from the (Y)es/(N)o prompt in floating dialogs).
-
 NVDialogs = {}
 
 --- Show a confirmation dialog and return the user's choice.
@@ -21,4 +17,3 @@ function NVDialogs.confirm(msg, choices, default, type)
   msg = msg .. '\n'
   return vim.fn.confirm(msg, choices, default or 1, type or 'Question')
 end
-

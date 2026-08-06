@@ -1,3 +1,10 @@
+-- TODO!: make sure not missing functionality from reference, cleanup any issues
+
+-- FIXME!: when multiple diagnostics in same popup, don't separate with a real empty line, use virtual, so copy copies better
+
+-- FIXME!: disable spell, and make custom markdown render just for popup? (e.g. make virtual ## header smaller?)
+-- make a custom filetype? idk what to do
+
 NVLspPopup = {}
 
 local has_nui, NuiPopup = pcall(require, 'nui.popup')

@@ -1,5 +1,6 @@
 K = {}
 
+-- TODO!: expand this table to cover more keymappings, consolidate items of related domains, resolve conflicts (with tmux too)
 NVKeymaps = {
   close = '<M-w>',
   close_esc = '<Esc>',

@@ -1,21 +1,22 @@
-
 NVDebug = {}
 
 local fn = {}
 
+-- FIXME!: one brings up float, one brings up float and does a notification
+-- also keymaps
 function NVDebug.keymaps()
-  K.map({
+  K.map {
     '<M-d>w',
     'DEBUG: Print current window and buffer info',
     fn.print_current_window_and_buffer_info,
     mode = 'n',
-  })
-  K.map({
+  }
+  K.map {
     '<M-d>b',
     'DEBUG: Print all buffers info',
     fn.print_all_buffers_info,
     mode = 'n',
-  })
+  }
 end
 
 function fn.print_window_info(winnr)
@@ -43,4 +44,3 @@ function fn.print_all_buffers_info()
   local bufs = vim.fn.getbufinfo()
   log.debug('bufs: ' .. vim.inspect(bufs))
 end
-

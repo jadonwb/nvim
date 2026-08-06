@@ -10,6 +10,7 @@ local default = 'debug' ---@type LogLevel
 
 local LEVEL = default ---@type LogLevel
 
+-- FIXME!: these keymaps conflict with tmux
 function log.keymaps()
   K.map {
     '<M-l>t',
@@ -58,19 +59,19 @@ local level_map = {
 ---@param payload payload
 ---@return string
 local function message(payload)
-  local message
+  local msg
 
   local type = type(payload)
 
   if type == 'string' then
-    message = payload
+    msg = payload
   elseif type == 'number' then
-    message = tostring(payload)
+    msg = tostring(payload)
   else
-    message = vim.inspect(payload)
+    msg = vim.inspect(payload)
   end
 
-  return message
+  return msg
 end
 
 local function dispatch(payload, level, opts)

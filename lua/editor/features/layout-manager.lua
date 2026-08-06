@@ -1,6 +1,3 @@
--- Content centering via invisible sidepad windows.
--- Centered mode: symmetric sidepads when single column. Companion mode: left sidepad when fixed-width panel on right.
-
 NVLayoutManager = {}
 
 ---@class TabState
@@ -536,4 +533,3 @@ function NVLayoutManager.reset_width()
   tab.content_width = nil
   vim.schedule(update_layout)
 end
-

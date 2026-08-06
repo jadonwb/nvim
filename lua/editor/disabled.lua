@@ -1,14 +1,14 @@
 NVDisabled = {}
 
 --- Disable LazyVim default keymaps that conflict with our own.
---- NOTE: only delete mappings that will be guarenteed defined after,
+--- NOTE: only delete mappings that will be guaranteed defined after,
 --- other plugin keymaps might be defined earlier and get deleted
 function NVDisabled.disable_keymaps()
   local function del(mode, lhs)
     pcall(vim.keymap.del, mode, lhs)
   end
 
-  -- ── Git ──────────────────────────────────────────────
+  -- Snacks+Git
   del('n', '<leader>gh') -- Git Hunk stuff
   del('n', '<leader>gl') -- Git Log
   del('n', '<leader>gL') -- Git Log
@@ -18,47 +18,47 @@ function NVDisabled.disable_keymaps()
   del({ 'n', 'x' }, '<leader>gY') -- Git Browse (copy)
   del({ 'n', 'x' }, '<leader>gB') -- Git Browse (open)
 
-  -- ── Which-key / Changelog / New File ────────────────
-  del('n', '<leader>?') -- Buffer Keymaps (which-key)
+  -- Which-key / Changelog / New File
+  -- del('n', '<leader>?') -- Buffer Keymaps (which-key) TODO: keep?
   del('n', '<leader>L') -- LazyVim Changelog
   del('n', '<leader>fn') -- New File
 
-  -- ── Profiler ────────────────────────────────────────
+  -- Profiler
   del('n', '<leader>dpp') -- Profiler toggle
   del('n', '<leader>dph') -- Profiler highlights toggle
   del('n', '<leader>dps') -- Profiler scratch buffer
 
-  -- ── Window / Buffer ─────────────────────────────────
+  -- Window / Buffer
   del('n', '<leader>-') -- Split Below
   del('n', '<leader>|') -- Split Right
   del('n', '<leader>`') -- Switch to Other Buffer
-  del('n', '<leader>wd') -- Delete Window (remapped to <c-w>d)
+  del('n', '<leader>wd') -- Delete Window
   del('n', '<leader>wm') -- Toggle Zoom
 
-  -- ── Move lines (conflict with tmux) ──
+  -- Move lines
+  -- TODO!: maybe keep after redoing my scroll?
   del({ 'n', 'i', 'v' }, '<A-j>') -- Move line down
   del({ 'n', 'i', 'v' }, '<A-k>') -- Move line up
 
-  -- ── Buffer navigation ───────────────────────────────
+  -- Buffer navigation
   del('n', '<S-h>') -- Prev Buffer
   del('n', '<S-l>') -- Next Buffer
 
-  -- ── Terminal ────────────────────────────────────────
+  -- Terminal
   del('n', '<leader>ft') -- Terminal (Root Dir)
   del('n', '<leader>fT') -- Terminal (cwd)
 
-  -- ── Window resize (conflicts with C-Left/Right tab nav) ──
+  -- Window resize
   del('n', '<C-Left>')
   del('n', '<C-Right>')
   del('n', '<C-Up>')
   del('n', '<C-Down>')
 
-  -- ── LSP ─────────────────────────────────────────────
+  -- LSP
   del('n', 'gra') -- Code Action (now <leader>ca)
   del('n', 'grn') -- Rename (now <leader>cr)
 
-  -- ── Zen / Zoom (we use <leader>uz for focus mode) ──
+  -- Zen / Zoom
   del('n', '<leader>uz') -- zen mode
   del('n', '<leader>uZ') -- zoom
 end
-
