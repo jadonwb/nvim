@@ -383,6 +383,7 @@ return {
       },
       lazygit = {
         config = {
+          -- TODO?: is this even any different from default snacks lazygit config anymore?
           os = {
             edit = vim.v.progpath
               .. [[ --server "$NVIM" --remote-send '<Cmd>lua require("snacks").lazygit()<CR>' && ]]
