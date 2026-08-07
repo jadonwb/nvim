@@ -35,7 +35,7 @@ NVKeymaps = {
   window_swap = { up = '<M-S-Left>', down = '<M-S-Right>', left = '<M-S-Up>', right = '<M-S-Down>', swap = '<M-s>' },
   layout_resize = { up = '<M-C-Up>', down = '<M-C-Down>' },
   window_resize = { up = '<M-C-S-Up>', down = '<M-C-S-Down>' },
-  layout_equalize = '<A-e>', -- FIXME: i don't like this one
+  layout_equalize = '<A-e>', -- TODO: not a fan of e for recenter/reset
 
   --pickers and stuff
   open_vsplit = '<C-CR>',
