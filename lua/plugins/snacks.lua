@@ -57,7 +57,7 @@ function NVSPickerHorizontalLayout.build(opts)
 end
 
 NVSPickers.keys = {
-  ['<M-S-f>'] = { 'toggle_maximize', mode = { 'n', 'i', 'v' } },
+  ['<M-f>'] = { 'toggle_maximize', mode = { 'n', 'i', 'v' } },
   [NVKeymaps.open_vsplit] = { 'edit_vsplit', mode = { 'n', 'i', 'v' } },
   [NVKeymaps.open_hsplit] = { 'edit_split', mode = { 'n', 'i', 'v' } },
   ['<Tab>'] = { 'cycle_win', mode = { 'n', 'i', 'v' } },
@@ -67,9 +67,9 @@ NVSPickers.keys = {
   [NVKeymaps.scroll_alt.down] = { 'x_list_scroll_down_bit', mode = { 'n', 'i', 'v' } },
   [NVKeymaps.scroll_ctx.up] = { 'preview_scroll_up', mode = { 'n', 'i', 'v' } },
   [NVKeymaps.scroll_ctx.down] = { 'preview_scroll_down', mode = { 'n', 'i', 'v' } },
-  ['<C-l>'] = { 'focus_list', mode = { 'n', 'i', 'v' } },
-  ['<C-i>'] = { 'focus_input', mode = { 'n', 'i', 'v' } },
-  ['<C-k>'] = { 'focus_preview', mode = { 'n', 'i', 'v' } },
+  -- ['<C-l>'] = { 'focus_list', mode = { 'n', 'i', 'v' } },
+  -- ['<C-i>'] = { 'focus_input', mode = { 'n', 'i', 'v' } },
+  -- ['<C-k>'] = { 'focus_preview', mode = { 'n', 'i', 'v' } },
   ['<C-S-p>'] = { 'toggle_preview', mode = { 'n', 'i', 'v' } },
   ['<C-S-c>'] = { 'x_copy_absolute_path', mode = { 'n', 'i', 'v' } },
   ['<C-S-r>'] = { 'x_copy_relative_path', mode = { 'n', 'i', 'v' } },

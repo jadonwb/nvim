@@ -25,12 +25,11 @@ NVPi = {
         }
       end,
       float = function()
-        local size = NVScreen.is_large() and { width = 0.6, height = 0.85 } or { width = 0.8, height = 0.85 }
+        local size = NVScreen.is_large() and { width = 0.65, height = 0.85 } or { width = 0.8, height = 0.85 }
         return {
           width = size.width,
           height = size.height,
-          border = 'rounded',
-          -- border = borders.bottom_hr,
+          border = borders.rounded,
         }
       end,
     },
@@ -85,7 +84,7 @@ NVPi = {
     zen = {
       keys = {
         toggle = { '<M-f>', modes = { 'n', 'i', 'v' } },
-        exit = { { NVKeymaps.close, modes = { 'n', 'i', 'i' } }, { NVKeymaps.close_esc, modes = { 'h' } } },
+        exit = { { NVKeymaps.close, modes = { 'n', 'i', 'v' } }, { NVKeymaps.close_esc, modes = { 'n' } } },
       },
     },
     on_widget = function(key, lines)
@@ -243,9 +242,9 @@ function NVPi.autocmds()
       -- TODO: make thinking still show up, but collapsed by default, would need to modify and then push upstream
       -- BUG: on session restore thinking blocks are lost
       -- BUG: thinking blocks are appearing above my message, even though I sent the message before it started thinking
-      -- keymap('<Tab>', event, function()
-      --   pi.toggle_thinking()
-      -- end, 'n')
+      keymap('<Tab>', event, function()
+        pi.toggle_thinking()
+      end, 'n')
       keymap('<S-Tab>', event, function()
         pi.invoke '/permission-toggle-auto-accept'
       end)
