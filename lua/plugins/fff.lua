@@ -60,7 +60,7 @@ return {
       select = NVKeymaps.confirm,
       select_split = NVKeymaps.open_hsplit,
       select_vsplit = NVKeymaps.open_vsplit,
-      insert_newline_escape = NVKeymaps.alt_confirm,
+      insert_newline_escape = NVKeymaps.newline,
       select_tab = NVKeymaps.tab_create,
       move_up = { '<C-p>' },
       move_down = { '<C-n>' },

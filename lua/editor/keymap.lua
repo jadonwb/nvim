@@ -3,20 +3,20 @@ K = {}
 -- TODO!: expand this table to cover more keymappings, consolidate items of related domains, resolve conflicts (with tmux too)
 NVKeymaps = {
   confirm = '<CR>',
-  alt_confirm = '<S-CR>',
+  confirm_alt = '<M-CR>',
   open_vsplit = '<C-CR>',
   open_hsplit = '<C-S-CR>',
+  newline = '<S-CR>',
 
   close = '<M-w>',
   close_esc = '<Esc>',
   close_q = 'q',
 
-  -- FIXME: move into git-commit?
-  -- or move all keymaps into here?
+  -- TODO!: move diff related mappings here too
   commit = '<leader>gc',
   amend = '<leader>ga',
   rename_msg = '<leader>gr',
-  commit_push = '<M-CR>',
+  commit_push = '<M-S-CR>',
 
   -- TODO?: move things in here?
   -- hunk_reset = '<>',

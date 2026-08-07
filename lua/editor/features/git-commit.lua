@@ -5,8 +5,8 @@ NVGitCommit = {}
 -- If changing those, don't forget to update footer labels
 -- TODO!: make it dynamic, or easier?
 local keymaps = {
-  commit_from_subject = '<CR>',
-  commit_from_body = '<C-CR>',
+  commit_from_subject = NVKeymaps.confirm,
+  commit_from_body = NVKeymaps.confirm_alt,
   commit_and_push = NVKeymaps.commit_push,
   cancel = { NVKeymaps.close, NVKeymaps.close_esc },
   next_field = { '<Tab>', '<S-CR>' },
