@@ -57,11 +57,27 @@ return {
     hl = {
       title = 'FloatTitle',
     },
-    mappings = {
-      ['<C-Tab>'] = 'toggle_preview_tab',
-      ['<C-l>'] = 'focus_list',
-      ['<C-p>'] = 'focus_preview',
-      [NVKeymaps.close] = 'close',
+    keymaps = {
+      close = NVKeymaps.close,
+      select = '<CR>',
+      select_split = NVKeymaps.open_hsplit,
+      select_vsplit = NVKeymaps.open_vsplit,
+      select_tab = NVKeymaps.tab_create,
+      move_up = { '<C-p>' },
+      move_down = { '<C-n>' },
+      preview_scroll_up = NVKeymaps.scroll_ctx.up,
+      preview_scroll_down = NVKeymaps.scroll_ctx.down,
+      toggle_debug = '<F2>',
+      cycle_grep_modes = '<Tab>',
+      insert_newline_escape = '<S-CR>',
+      -- grep mode only: jump cursor to first match of next/prev file group
+      grep_jump_to_next_file = { '<C-Right>' },
+      grep_jump_to_prev_file = { '<C-Left>' },
+      cycle_previous_query = '<C-Up>',
+      toggle_select = '<Space>',
+      send_to_quickfix = '<C-q>',
+      focus_list = '<C-l>',
+      focus_preview = '<C-k>',
     },
   },
   keys = {
