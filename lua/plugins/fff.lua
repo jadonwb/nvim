@@ -8,8 +8,6 @@ function NVFff.ensure_hidden()
     return false
   end
 
-  -- Use fff's own close which properly closes all windows, deletes all buffers,
-  -- saves snapshot for resume, clears namespaces, and deletes the augroup.
   local ok, picker = pcall(require, 'fff.picker_ui.picker_ui')
   if ok and picker.state and picker.state.active then
     picker.close()
@@ -58,7 +56,7 @@ return {
       title = 'FloatTitle',
     },
     keymaps = {
-      close = NVKeymaps.close,
+      close = { NVKeymaps.close, NVKeymaps.close_esc },
       select = '<CR>',
       select_split = NVKeymaps.open_hsplit,
       select_vsplit = NVKeymaps.open_vsplit,
