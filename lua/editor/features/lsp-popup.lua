@@ -5,6 +5,8 @@
 -- FIXME!: disable spell, and make custom markdown render just for popup? (e.g. make virtual ## header smaller?)
 -- make a custom filetype? idk what to do
 
+-- FIXME!: broken again? close keymap M-w not working inside?
+
 NVLspPopup = {}
 
 local has_nui, NuiPopup = pcall(require, 'nui.popup')
