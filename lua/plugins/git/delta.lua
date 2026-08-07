@@ -127,7 +127,6 @@ return {
       diff = {
         actions = {
           open_hunk_diff = { { 'gd', modes = 'n' }, delta.diff.actions.open_hunk_diff },
-          open_file_diff = { { '<leader>dd', modes = 'n' }, delta.diff.actions.open_file_diff },
         },
         file = {
           keys = {
@@ -140,9 +139,9 @@ return {
             border = hunk_border,
           },
           keys = {
-            focus_left = { '<Tab>', '<Left>' },
-            focus_right = { '<Tab>', '<Right>' },
-            close = { NVKeymaps.close_q, NVKeymaps.close_esc },
+            focus_left = { '<Tab>', '<C-h>' },
+            focus_right = { '<Tab>', '<C-l>' },
+            close = { NVKeymaps.close, NVKeymaps.close_q, NVKeymaps.close_esc },
           },
         },
       },
