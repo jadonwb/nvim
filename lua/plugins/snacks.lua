@@ -60,7 +60,7 @@ NVSPickers.keys = {
   ['<M-S-f>'] = { 'toggle_maximize', mode = { 'n', 'i', 'v' } },
   [NVKeymaps.open_vsplit] = { 'edit_vsplit', mode = { 'n', 'i', 'v' } },
   [NVKeymaps.open_hsplit] = { 'edit_split', mode = { 'n', 'i', 'v' } },
-  ['<C-Tab>'] = { 'cycle_win', mode = { 'n', 'i', 'v' } },
+  ['<Tab>'] = { 'cycle_win', mode = { 'n', 'i', 'v' } },
   [NVKeymaps.scroll.up] = { 'list_scroll_up', mode = { 'n', 'i', 'v' } },
   [NVKeymaps.scroll.down] = { 'list_scroll_down', mode = { 'n', 'i', 'v' } },
   [NVKeymaps.scroll_alt.up] = { 'x_list_scroll_up_bit', mode = { 'n', 'i', 'v' } },
