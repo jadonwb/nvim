@@ -21,8 +21,8 @@ NVKeymaps = {
 
   scroll = { up = '<C-u>', down = '<C-d>' },
   scroll_alt = { up = '<C-b>', down = '<C-f>' },
-  scroll_ctx = { up = 'Up', down = 'Down' },
-  scroll_side = { left = 'Left', right = 'Right' },
+  scroll_ctx = { up = '<Up>', down = '<Down>' },
+  scroll_side = { left = '<Left>', right = '<Right>' },
 
   worktree_create = '<C-S-t>',
   worktree_pick = '<leader>gw',
