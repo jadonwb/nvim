@@ -7,6 +7,7 @@ NVPi = {
   opts = {
     -- debug = true,
     expand_startup_details = false,
+    show_thinking = true,
     -- models = {},
     cli = {
       bin = 'pi',
@@ -76,9 +77,8 @@ NVPi = {
       },
     },
     dialog = {
-      border = borders.padded,
+      border = borders.rounded,
       keys = {
-        confirm = { { '<C-CR>', modes = { 'n', 'i' } } },
         cancel = { { NVKeymaps.close, modes = { 'n', 'i' } }, { NVKeymaps.close_esc, modes = { 'n', 'i' } } },
       },
     },
@@ -203,7 +203,7 @@ function NVPi.autocmds()
         pi.focus_chat_prompt()
         pi.scroll_chat_history_to_bottom()
       end)
-      keymap('<C-j>', event, function()
+      keymap(NVKeymaps.window_move.down, event, function()
         pi.focus_chat_prompt()
       end)
     end,
@@ -213,10 +213,10 @@ function NVPi.autocmds()
     group = group,
     pattern = { 'pi-chat-prompt' },
     callback = function(event)
-      keymap('<C-k>', event, function()
+      keymap(NVKeymaps.window_move.up, event, function()
         pi.focus_chat_history()
       end)
-      keymap('<C-j>', event, function()
+      keymap(NVKeymaps.window_move.down, event, function()
         pi.focus_chat_attachments()
       end)
       keymap(NVKeymaps.scroll_ctx.up, event, function()
@@ -240,6 +240,11 @@ function NVPi.autocmds()
       keymap('<C-(>', event, function()
         pi.scroll_chat_history_to_bottom()
       end)
+      -- TODO: make thinking still show up, but collapsed by default, would need to modify and then push upstream
+      -- BUG: on session restore thinking blocks are lost
+      -- keymap('<Tab>', event, function()
+      --   pi.toggle_thinking()
+      -- end, 'n')
       keymap('<S-Tab>', event, function()
         pi.invoke '/permission-toggle-auto-accept'
       end)
@@ -271,7 +276,7 @@ function NVPi.autocmds()
     group = group,
     pattern = { 'pi-chat-attachments' },
     callback = function(event)
-      keymap('<C-k>', event, function()
+      keymap(NVKeymaps.window_move.up, event, function()
         pi.focus_chat_prompt()
       end)
       keymap('<C-v>', event, function()
