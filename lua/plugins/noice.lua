@@ -186,7 +186,6 @@ return {
         },
       },
 
-      -- Routes
       routes = {
         { filter = { event = 'lsp', kind = 'progress' }, opts = { skip = true } },
       },
@@ -195,9 +194,7 @@ return {
     require('noice').setup(opts)
   end,
 
-  -- Keymaps
   keys = {
-    -- Notification history (like Alex's <D-S-l>, adapted for Linux)
     { '<M-S-l>', '<Cmd>NoiceAll<CR>', mode = { 'n', 'i', 'v' }, desc = 'Notification History' },
   },
 }
