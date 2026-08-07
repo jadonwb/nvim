@@ -242,6 +242,7 @@ function NVPi.autocmds()
       end)
       -- TODO: make thinking still show up, but collapsed by default, would need to modify and then push upstream
       -- BUG: on session restore thinking blocks are lost
+      -- BUG: thinking blocks are appearing above my message, even though I sent the message before it started thinking
       -- keymap('<Tab>', event, function()
       --   pi.toggle_thinking()
       -- end, 'n')
