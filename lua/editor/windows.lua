@@ -13,10 +13,11 @@ function NVWindows.keymaps()
   K.map { '<leader>bs', 'Create new buffer in a horizontal split', '<Cmd>new<CR>', mode = 'n' }
   K.map { '<leader>bv', 'Create new buffer in a vertical split', '<Cmd>vnew<CR>', mode = 'n' }
 
-  K.map { NVKeymaps.window_move.left, 'Move to window on the left', '<Cmd>wincmd h<CR>', mode = { 'n', 'v', 'i', 't' } }
-  K.map { NVKeymaps.window_move.down, 'Move to window below', '<Cmd>wincmd j<CR>', mode = { 'n', 'v', 'i', 't' } }
-  K.map { NVKeymaps.window_move.up, 'Move to window above', '<Cmd>wincmd k<CR>', mode = { 'n', 'v', 'i', 't' } }
-  K.map { NVKeymaps.window_move.down, 'Move to window on the right', '<Cmd>wincmd l<CR>', mode = { 'n', 'v', 'i', 't' } }
+  -- TODO/FIXME!: this interferes with vim-tmux nav and sidebars like trouble? or is the layout managers fault due to empty sidepad windows?
+  -- K.map { NVKeymaps.window_move.left, 'Move to window on the left', '<Cmd>wincmd h<CR>', mode = { 'n', 'v', 'i', 't' } }
+  -- K.map { NVKeymaps.window_move.down, 'Move to window below', '<Cmd>wincmd j<CR>', mode = { 'n', 'v', 'i', 't' } }
+  -- K.map { NVKeymaps.window_move.up, 'Move to window above', '<Cmd>wincmd k<CR>', mode = { 'n', 'v', 'i', 't' } }
+  -- K.map { NVKeymaps.window_move.down, 'Move to window on the right', '<Cmd>wincmd l<CR>', mode = { 'n', 'v', 'i', 't' } }
 
   -- Window move/swap (requires winshift.nvim)
   K.map {
