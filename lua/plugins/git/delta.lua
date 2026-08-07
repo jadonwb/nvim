@@ -87,10 +87,10 @@ return {
           -- chezmoi = { label = 'Chezmoi', files = "" }, -- TODO: implement, call chezmoi status and parse lines?
         },
         actions = {
-          open = { '<CR>', open_with_pi_side(picker.actions.open) },
+          open = { NVKeymaps.confirm, open_with_pi_side(picker.actions.open) },
           open_vsplit = { NVKeymaps.open_vsplit, open_with_pi_side(picker.actions.open_vsplit) },
           open_hsplit = { NVKeymaps.open_hsplit, open_with_pi_side(picker.actions.open_hsplit) },
-          spotlight = { '<S-CR>', open_with_pi_side(picker.actions.spotlight) },
+          spotlight = { NVKeymaps.confirm_alt, open_with_pi_side(picker.actions.spotlight) },
           collapse = { { 'h', modes = 'n' }, picker.actions.collapse },
           expand = { { 'l', modes = 'n' }, picker.actions.expand },
           send_to_pi = { '<C-a>', send_to_pi(false) },

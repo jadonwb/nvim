@@ -2,6 +2,11 @@ K = {}
 
 -- TODO!: expand this table to cover more keymappings, consolidate items of related domains, resolve conflicts (with tmux too)
 NVKeymaps = {
+  confirm = '<CR>',
+  alt_confirm = '<S-CR>',
+  open_vsplit = '<C-CR>',
+  open_hsplit = '<C-S-CR>',
+
   close = '<M-w>',
   close_esc = '<Esc>',
   close_q = 'q',
@@ -36,10 +41,6 @@ NVKeymaps = {
   layout_resize = { up = '<M-C-Up>', down = '<M-C-Down>' },
   window_resize = { up = '<M-C-S-Up>', down = '<M-C-S-Down>' },
   layout_equalize = '<A-e>', -- TODO: not a fan of e for recenter/reset
-
-  --pickers and stuff
-  open_vsplit = '<C-CR>',
-  open_hsplit = '<C-S-CR>',
 }
 
 local default_keymap_options = { noremap = true, silent = true }

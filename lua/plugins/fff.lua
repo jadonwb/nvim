@@ -57,9 +57,10 @@ return {
     },
     keymaps = {
       close = { NVKeymaps.close, NVKeymaps.close_esc },
-      select = '<CR>',
+      select = NVKeymaps.confirm,
       select_split = NVKeymaps.open_hsplit,
       select_vsplit = NVKeymaps.open_vsplit,
+      insert_newline_escape = NVKeymaps.alt_confirm,
       select_tab = NVKeymaps.tab_create,
       move_up = { '<C-p>' },
       move_down = { '<C-n>' },
@@ -67,7 +68,6 @@ return {
       preview_scroll_down = NVKeymaps.scroll_ctx.down,
       toggle_debug = '<F2>',
       cycle_grep_modes = '<Tab>',
-      insert_newline_escape = '<S-CR>',
       -- grep mode only: jump cursor to first match of next/prev file group
       grep_jump_to_next_file = { '<C-Right>' },
       grep_jump_to_prev_file = { '<C-Left>' },
