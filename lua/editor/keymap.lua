@@ -31,7 +31,7 @@ NVKeymaps = {
   tab_close = '<M-C-w>',
   tab_move = { left = '<C-Left>', right = '<C-Right>' },
   tab_swap = { left = '<C-S-Left>', right = '<C-S-Right>' },
-  window_move = { up = '<S-Up>', down = '<S-Down>', left = '<S-Left>', right = '<S-Right>' },
+  window_move = { up = '<C-k>', down = '<C-j>', left = '<C-h>', right = '<C-l>' },
   window_swap = { up = '<M-S-Left>', down = '<M-S-Right>', left = '<M-S-Up>', right = '<M-S-Down>', swap = '<M-s>' },
   layout_resize = { up = '<M-C-Up>', down = '<M-C-Down>' },
   window_resize = { up = '<M-C-S-Up>', down = '<M-C-S-Down>' },
