@@ -39,10 +39,6 @@ function NVNavigation.keymaps()
     end,
     mode = { 'n', 'v', 'i' },
   }
-
-  -- TODO?: I am generally fine with using C-o/i
-  -- K.map { '<D-[>', 'History: back', '<C-o>', mode = 'n' }
-  -- K.map { '<D-]>', 'History: forward', '<C-i>', mode = 'n' }
 end
 
 ---@param direction "left" | "right"
@@ -82,8 +78,6 @@ function fn.scroll_vertical(direction)
   end
 
   NVKeys.send(cmd, { mode = 'n' })
-  -- FIXME?: keep cursor centered? this breaks it though
-  -- NVKeys.send('zz', { mode = 'n' })
 
   if is_i_mode then
     NVKeys.send('a', { mode = 'n' })

@@ -6,39 +6,17 @@ NVTabs = {
   editor_icon = '',
 }
 
--- TODO!: move keymaps in keymap table, but keep functions and actually mappings here
 -- TODO?: should the help page tab idea live here?
 
 local fn = {}
 
 function NVTabs.keymaps()
-  K.map { '<C-n>', 'Create new tab', fn.create_tab, mode = { 'n', 'i', 'v', 't' } }
-  K.map { '<M-C-w>', 'Close tab', fn.close_tab, mode = { 'n', 'i', 'v', 't' }, nowait = true } -- FIXME: make C-w not conflict with lazygit whitespace? or just quit using lazygit?
-  K.map { '<C-Right>', 'Next tab', '<Cmd>tabnext<CR>', mode = { 'n', 'i', 'v' } }
-  K.map { '<C-Left>', 'Previous tab', '<Cmd>tabprev<CR>', mode = { 'n', 'i', 'v' } }
-  K.map {
-    '<C-S-Right>',
-    'Move tab to the right',
-    function()
-      local total = vim.fn.tabpagenr '$'
-      local current = vim.fn.tabpagenr()
-      if current < total then
-        vim.cmd 'tabmove +1'
-      end
-    end,
-    mode = { 'n', 'i', 'v' },
-  }
-  K.map {
-    '<C-S-Left>',
-    'Move tab to the left',
-    function()
-      local current = vim.fn.tabpagenr()
-      if current > 1 then
-        vim.cmd 'tabmove -1'
-      end
-    end,
-    mode = { 'n', 'i', 'v' },
-  }
+  K.map { NVKeymaps.tab_create, 'Create new tab', fn.create_tab, mode = { 'n', 'i', 'v', 't' } }
+  K.map { NVKeymaps.tab_close, 'Close tab', fn.close_tab, mode = { 'n', 'i', 'v', 't' }, nowait = true }
+  K.map { NVKeymaps.tab_move.right, 'Next tab', '<Cmd>tabnext<CR>', mode = { 'n', 'i', 'v' } }
+  K.map { NVKeymaps.tab_move.left, 'Previous tab', '<Cmd>tabprev<CR>', mode = { 'n', 'i', 'v' } }
+  K.map { NVKeymaps.tab_swap.right, 'Move tab to the right', '<Cmd>tabmove +1<CR>', mode = { 'n', 'i', 'v' } }
+  K.map { NVKeymaps.tab_swap.left, 'Move tab to the left', '<Cmd>tabmove -1<CR>', mode = { 'n', 'i', 'v' } }
 end
 
 function fn.create_tab()
@@ -58,6 +36,7 @@ function fn.close_tab()
 
   if not info then
     -- FIXME: why does only work once?
+    -- it reverts to the input thing with borders
     if NVDialogs.confirm('Close tab?', '&Yes\n&No', 2) == 1 then
       vim.cmd 'tabclose'
     end

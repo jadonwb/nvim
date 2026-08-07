@@ -1,10 +1,9 @@
 NVWindows = {
   maximized_width = 1, -- 100%
-  window_picker_keys = 'UHKMETJWNSABCDFGILOPQRVXYZ1234567890',
+  window_picker_keys = 'UHKMETJWNSABCDFGILOPQRVXYZ1234567890', -- FIXME: this is not my keyboard format
 }
 
 -- TODO!: this needs attention (keymap wise)?
--- also potential improvements about layout manager?
 
 local fn = {}
 
@@ -14,15 +13,14 @@ function NVWindows.keymaps()
   K.map { '<leader>bs', 'Create new buffer in a horizontal split', '<Cmd>new<CR>', mode = 'n' }
   K.map { '<leader>bv', 'Create new buffer in a vertical split', '<Cmd>vnew<CR>', mode = 'n' }
 
-  -- Window navigation (vim-style shift-arrows)
-  K.map { '<S-Left>', 'Move to window on the left', '<Cmd>wincmd h<CR>', mode = { 'n', 'v', 'i', 't' } }
-  K.map { '<S-Down>', 'Move to window below', '<Cmd>wincmd j<CR>', mode = { 'n', 'v', 'i', 't' } }
-  K.map { '<S-Up>', 'Move to window above', '<Cmd>wincmd k<CR>', mode = { 'n', 'v', 'i', 't' } }
-  K.map { '<S-Right>', 'Move to window on the right', '<Cmd>wincmd l<CR>', mode = { 'n', 'v', 'i', 't' } }
+  K.map { NVKeymaps.window_move.left, 'Move to window on the left', '<Cmd>wincmd h<CR>', mode = { 'n', 'v', 'i', 't' } }
+  K.map { NVKeymaps.window_move.down, 'Move to window below', '<Cmd>wincmd j<CR>', mode = { 'n', 'v', 'i', 't' } }
+  K.map { NVKeymaps.window_move.up, 'Move to window above', '<Cmd>wincmd k<CR>', mode = { 'n', 'v', 'i', 't' } }
+  K.map { NVKeymaps.window_move.down, 'Move to window on the right', '<Cmd>wincmd l<CR>', mode = { 'n', 'v', 'i', 't' } }
 
   -- Window move/swap (requires winshift.nvim)
   K.map {
-    '<M-S-Left>',
+    NVKeymaps.window_swap.left,
     'Move window to the left',
     function()
       fn.reposition_windows { action = 'move_left' }
@@ -30,7 +28,7 @@ function NVWindows.keymaps()
     mode = { 'n', 'i', 'v' },
   }
   K.map {
-    '<M-S-Right>',
+    NVKeymaps.window_swap.left,
     'Move window to the right',
     function()
       fn.reposition_windows { action = 'move_right' }
@@ -38,7 +36,7 @@ function NVWindows.keymaps()
     mode = { 'n', 'i', 'v' },
   }
   K.map {
-    '<M-S-Up>',
+    NVKeymaps.window_swap.up,
     'Move window up',
     function()
       fn.reposition_windows { action = 'move_up' }
@@ -46,7 +44,7 @@ function NVWindows.keymaps()
     mode = { 'n', 'i', 'v' },
   }
   K.map {
-    '<M-S-Down>',
+    NVKeymaps.window_swap.down,
     'Move window down',
     function()
       fn.reposition_windows { action = 'move_down' }
@@ -54,7 +52,7 @@ function NVWindows.keymaps()
     mode = { 'n', 'i', 'v' },
   }
   K.map {
-    '<M-s>',
+    NVKeymaps.window_swap.swap,
     'Swap windows',
     function()
       fn.reposition_windows { action = 'swap' }
@@ -62,9 +60,8 @@ function NVWindows.keymaps()
     mode = { 'n', 'i', 'v' },
   }
 
-  -- Layout width adjustment (delegates to layout-manager)
   K.map {
-    NVKeymaps.inc_width,
+    NVKeymaps.layout_resize.up,
     'Increase window width',
     function()
       fn.change_window_width 'up'
@@ -72,7 +69,7 @@ function NVWindows.keymaps()
     mode = { 'n', 'i', 'v', 't' },
   }
   K.map {
-    NVKeymaps.dec_width,
+    NVKeymaps.layout_resize.down,
     'Decrease window width',
     function()
       fn.change_window_width 'down'
@@ -80,9 +77,8 @@ function NVWindows.keymaps()
     mode = { 'n', 'i', 'v', 't' },
   }
 
-  -- Window height adjustment (raw resize, not managed by layout-manager)
   K.map {
-    '<M-C-S-Up>',
+    NVKeymaps.window_resize.up,
     'Increase window height',
     function()
       fn.change_window_height 'up'
@@ -90,7 +86,7 @@ function NVWindows.keymaps()
     mode = { 'n', 'i', 'v' },
   }
   K.map {
-    '<M-C-S-Down>',
+    NVKeymaps.window_resize.down,
     'Decrease window height',
     function()
       fn.change_window_height 'down'
@@ -99,7 +95,7 @@ function NVWindows.keymaps()
   }
 
   -- Equalize layout
-  K.map { '<A-e>', 'Equalize layout', fn.equalize_layout, mode = { 'n', 'i', 'v' } }
+  K.map { NVKeymaps.layout_equalize, 'Equalize layout', fn.equalize_layout, mode = { 'n', 'i', 'v' } }
 end
 
 ---@param winid WinID

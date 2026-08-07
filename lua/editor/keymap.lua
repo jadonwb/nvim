@@ -19,17 +19,27 @@ NVKeymaps = {
 
   focus = '<M-f>',
 
-  inc_width = '<M-C-Up>',
-  dec_width = '<M-C-Down>',
-
   scroll = { up = '<C-u>', down = '<C-d>' },
   scroll_alt = { up = '<C-b>', down = '<C-f>' },
-  scroll_ctx = { up = '<A-k>', down = '<A-j>' },
-  scroll_side = { left = '<S-Left>', right = '<S-Right>' },
+  scroll_ctx = { up = 'Up', down = 'Down' },
+  scroll_side = { left = 'Left', right = 'Right' },
 
+  worktree_create = '<C-S-t>',
+  worktree_pick = '<leader>gw',
+
+  tab_create = '<C-t>',
+  tab_close = '<M-C-w>',
+  tab_move = { left = '<C-Left>', right = '<C-Right>' },
+  tab_swap = { left = '<C-S-Left>', right = '<C-S-Right>' },
+  window_move = { up = '<S-Up>', down = '<S-Down>', left = '<S-Left>', right = '<S-Right>' },
+  window_swap = { up = '<M-S-Left>', down = '<M-S-Right>', left = '<M-S-Up>', right = '<M-S-Down>', swap = '<M-s>' },
+  layout_resize = { up = '<M-C-Up>', down = '<M-C-Down>' },
+  window_resize = { up = '<M-C-S-Up>', down = '<M-C-S-Down>' },
+  layout_equalize = '<A-e>', -- FIXME: i don't like this one
+
+  --pickers and stuff
   open_vsplit = '<C-CR>',
   open_hsplit = '<C-S-CR>',
-  open_tab = '<M-S-CR>', -- FIXME!: need to work on / find consistency between when to use ctrl vs alt and buffer vs tab,
 }
 
 local default_keymap_options = { noremap = true, silent = true }

@@ -1,7 +1,4 @@
---- Spec 1 (lazy=false): early autocmds. Spec 2 (VeryLazy): keymaps after LazyVim cleanup.
-
 return {
-  -- ── Spec 1: Early autocommands ──────────────────────
   {
     'editor-autocmds',
     virtual = true,
@@ -23,7 +20,6 @@ return {
     end,
   },
 
-  -- ── Spec 2: Late keymaps ───────────────────────────
   {
     'editor-keymaps',
     virtual = true,

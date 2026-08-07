@@ -1,5 +1,3 @@
--- === Wrapper functions (set globals on load) ===
-
 NVDiffview = {}
 
 local dv_fn = {}

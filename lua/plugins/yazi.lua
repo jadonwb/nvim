@@ -24,7 +24,7 @@ return {
       yazi_floating_window_border = 'rounded',
       floating_window_scaling_factor = 1,
       keymaps = {
-        show_help = '<f1>',
+        show_help = '?',
         open_file_in_vertical_split = '<c-v>',
         open_file_in_horizontal_split = '<c-x>',
         open_file_in_tab = '<c-t>',

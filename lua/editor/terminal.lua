@@ -1,6 +1,9 @@
 NVTerminal = {}
 
 -- TODO!: make sure I am happy with these?
+-- TODO!: make this open a new tab specifically for terminal, it can be split as well, but only terminal.
+-- detect cwd for git-worktree, to make terminal for it?
+-- TODO!: also make an option to open it as a vsplit term
 
 function NVTerminal.keymaps()
   K.map {
