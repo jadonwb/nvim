@@ -40,10 +40,6 @@ function NVEditing.keymaps()
   K.map { 'x', "Don't yank on delete", '"_x', mode = { 'n', 'x', 's' } }
   K.map { 'X', "Don't yank on delete", '"_X', mode = { 'n', 'x', 's' } }
 
-  -- FIXME: remove?
-  K.map { '<left>', 'Insert space before cursor', 'i<Space><Esc>', mode = 'n' }
-  K.map { '<right>', 'Insert space after cursor', 'a<Space><Esc>', mode = 'n' }
-
   K.map { '<M-o>', 'New line below', 'o<Esc>', mode = 'n' }
   K.map { '<M-S-o>', 'New line above', 'O<Esc>', mode = 'n' }
 
