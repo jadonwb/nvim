@@ -29,7 +29,7 @@ function NVNavigation.keymaps()
     function()
       fn.scroll_horizontal 'left'
     end,
-    mode = { 'n', 'v', 'i' },
+    mode = { 'n', 'v' }, -- 'i' maybe reenable?
   }
   K.map {
     NVKeymaps.scroll_side.right,
@@ -37,7 +37,7 @@ function NVNavigation.keymaps()
     function()
       fn.scroll_horizontal 'right'
     end,
-    mode = { 'n', 'v', 'i' },
+    mode = { 'n', 'v' }, -- 'i' maybe reenable?
   }
 end
 
