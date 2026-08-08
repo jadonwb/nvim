@@ -598,7 +598,6 @@ function NVGitCommit.ensure_hidden()
 end
 
 function NVGitCommit.keymaps()
-  -- FIXME: if intended to be used in insert mode, cannot be a <leader> keymap, causes major latency and bad behavior since we have space as leader
   K.map { NVKeymaps.commit, 'Git: Commit', NVGitCommit.new, mode = { 'n', 'v' } }
   K.map { NVKeymaps.amend, 'Git: Amend', NVGitCommit.amend, mode = { 'n', 'v' } }
   K.map { NVKeymaps.rename_msg, 'Git: Rename commit message', NVGitCommit.rename, mode = { 'n', 'v' } }
