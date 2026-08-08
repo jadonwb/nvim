@@ -126,7 +126,7 @@ return {
           win_options = common_win_opts,
           close = {
             events = { 'BufLeave' },
-            keys = { 'q', '<Esc>', '<C-c>' },
+            keys = { NVKeymaps.close, NVKeymaps.close_esc, NVKeymaps.close_q },
           },
         },
         hint = {
@@ -141,7 +141,7 @@ return {
           position = { row = common_border.padding.top + 1, col = 0 },
           border = common_border,
           win_options = { wrap = true, linebreak = true },
-          close = { keys = { 'q', '<Esc>', '<C-c>' } },
+          close = { keys = { NVKeymaps.close, NVKeymaps.close_esc, NVKeymaps.close_q } },
         },
         cmdline = {
           position = { row = vim.o.lines, col = '50%' },
@@ -160,7 +160,7 @@ return {
           size = { width = 60, height = 'auto' },
           border = common_border,
           win_options = common_win_opts,
-          close = { keys = { 'q', '<Esc>', '<C-c>' } },
+          close = { keys = { NVKeymaps.close, NVKeymaps.close_esc, NVKeymaps.close_q } },
         },
         cmdline_output = {
           enter = true,
