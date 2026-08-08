@@ -2,7 +2,7 @@ NVTerminal = {}
 
 local fn = {}
 
-NVTerminal.state = {} -- keyed by tabpage
+NVTerminal.state = {}
 
 local function get_terminal_state()
   local tab = vim.api.nvim_get_current_tabpage()
@@ -22,8 +22,8 @@ function NVTerminal.keymaps()
   K.map { NVKeymaps.scroll_ctx.up, 'Lazygit: Scroll up main panel', '<C-\\><C-u>', mode = 't' }
   K.map { NVKeymaps.scroll_ctx.down, 'Lazygit: Scroll down main panel', '<C-\\><C-d>', mode = 't' }
 
-  K.map { '<M-/>', 'Toggle vsplit terminal', NVTerminal.open_vsplit, mode = { 'n', 'v', 'i', 't' } }
-  K.map { '<M-C-t>', 'Open terminal tab', NVTerminal.open_tab, mode = { 'n', 'v', 'i', 't' } }
+  K.map { '<C-/>', 'Toggle vsplit terminal', NVTerminal.open_vsplit, mode = { 'n', 'v', 'i', 't' } }
+  K.map { '<M-/>', 'Open terminal tab', NVTerminal.open_tab, mode = { 'n', 'v', 'i', 't' } }
 
   vim.api.nvim_create_autocmd('FileType', {
     pattern = 'snacks_terminal',
@@ -67,6 +67,7 @@ function NVTerminal.open_vsplit()
 
   -- Open terminal vsplit on the right
   local term = Snacks.terminal.open(nil, {
+    auto_close = false,
     win = {
       position = 'right',
       relative = 'editor',
@@ -87,6 +88,7 @@ function NVTerminal.open_tab()
   NVTabs.set_label { icon = '', name = 'terminal' }
 
   Snacks.terminal.open(nil, {
+    auto_close = false,
     win = { position = 'current' },
   })
 end
@@ -100,6 +102,44 @@ NVCompanionPanels.register('terminal_vsplit', function()
   end
   return false
 end)
+
+--- Close the current tab if it's a terminal tab.
+--- Used by the cooperative UI chain (<M-w>).
+function NVTerminal.ensure_tab_hidden()
+  local label = vim.t.tab_label
+  if label and label.icon == '' and label.name == 'terminal' then
+    local only_terminal = true
+    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+      -- Skip layout-manager sidepad windows (nofile buffers)
+      if not NVLayoutManager.is_sidepad_win(win) then
+        local buf = vim.api.nvim_win_get_buf(win)
+        if vim.bo[buf].filetype ~= 'snacks_terminal' then
+          only_terminal = false
+          break
+        end
+      end
+    end
+    if only_terminal then
+      vim.cmd 'tabclose'
+      return true
+    end
+  end
+  return false
+end
+
+--- Kill the vsplit terminal's shell and reset state.
+--- Next <M-/> will create a fresh terminal.
+--- Used by the cooperative UI chain (<M-w>).
+function NVTerminal.ensure_vsplit_hidden()
+  local state = get_terminal_state()
+  if state.vsplit_term and state.vsplit_visible then
+    pcall(state.vsplit_term.close, state.vsplit_term)
+    state.vsplit_term = nil
+    state.vsplit_visible = false
+    return true
+  end
+  return false
+end
 
 function fn.paste()
   local content = vim.fn.getreg '*'
