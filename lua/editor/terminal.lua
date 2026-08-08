@@ -2,7 +2,12 @@ NVTerminal = {}
 
 local fn = {}
 
-NVTerminal.state = {}
+-- FIXME!: using <leader>qq to quit all and exit vim inide terminal tab does not exit vim, it just kills the window
+
+NVTerminal.state = {} -- keyed by tabpage
+
+NVTerminal.terminal_tab = nil
+---@type { buf: BufID, tab: TabID?, original_tab: TabID, original_win: WinID }
 
 local function get_terminal_state()
   local tab = vim.api.nvim_get_current_tabpage()
@@ -23,7 +28,7 @@ function NVTerminal.keymaps()
   K.map { NVKeymaps.scroll_ctx.down, 'Lazygit: Scroll down main panel', '<C-\\><C-d>', mode = 't' }
 
   K.map { '<C-/>', 'Toggle vsplit terminal', NVTerminal.open_vsplit, mode = { 'n', 'v', 'i', 't' } }
-  K.map { '<M-/>', 'Open terminal tab', NVTerminal.open_tab, mode = { 'n', 'v', 'i', 't' } }
+  K.map { '<M-/>', 'Toggle terminal tab', NVTerminal.toggle_tab, mode = { 'n', 'v', 'i', 't' } }
 
   vim.api.nvim_create_autocmd('FileType', {
     pattern = 'snacks_terminal',
@@ -39,6 +44,13 @@ end
 --- Each tab tracks its own vsplit terminal independently.
 --- Ensures mutual exclusion with other companion panels via NVCompanionPanels.
 function NVTerminal.open_vsplit()
+  -- Don't open vsplit inside the terminal tab
+  if NVTerminal.terminal_tab and NVTerminal.terminal_tab.tab then
+    if NVTerminal.terminal_tab.tab == vim.api.nvim_get_current_tabpage() then
+      return
+    end
+  end
+
   local state = get_terminal_state()
 
   -- Toggle: hide existing visible terminal (preserves shell state)
@@ -81,16 +93,99 @@ function NVTerminal.open_vsplit()
   end
 end
 
---- Opens a fullscreen terminal in a new tab.
-function NVTerminal.open_tab()
-  vim.cmd 'tabnew'
+--- Toggle a fullscreen terminal tab.
+--- If terminal tab exists → jump to it or close it.
+--- If tab was closed (buffer alive) → recreate with same buffer.
+--- If none exists → create fresh.
+function NVTerminal.toggle_tab()
+  if NVTerminal.terminal_tab then
+    local t = NVTerminal.terminal_tab
 
+    -- Buffer dead — start fresh
+    if not vim.api.nvim_buf_is_valid(t.buf) then
+      NVTerminal.terminal_tab = nil
+    else
+      -- Tab still alive? Jump or close
+      if t.tab and vim.api.nvim_tabpage_is_valid(t.tab) then
+        local current_tab = vim.api.nvim_get_current_tabpage()
+        if t.tab == current_tab then
+          NVTerminal.deactivate_terminal_tab()
+        else
+          vim.api.nvim_set_current_tabpage(t.tab)
+          local win = vim.fn.bufwinid(t.buf)
+          if win ~= -1 then
+            vim.api.nvim_set_current_win(win)
+          end
+        end
+        return
+      end
+
+      -- Tab was closed, buffer alive — recreate with tab sbuffer
+      local current_tab = vim.api.nvim_get_current_tabpage()
+      local current_win = vim.api.nvim_get_current_win()
+      vim.cmd('tab sbuffer ' .. t.buf)
+      NVTabs.set_label { icon = '', name = 'terminal' }
+      t.tab = vim.api.nvim_get_current_tabpage()
+      t.original_tab = current_tab
+      t.original_win = current_win
+      return
+    end
+  end
+
+  local current_tab = vim.api.nvim_get_current_tabpage()
+  local current_win = vim.api.nvim_get_current_win()
+
+  vim.cmd 'tabnew'
   NVTabs.set_label { icon = '', name = 'terminal' }
+  local new_tab = vim.api.nvim_get_current_tabpage()
 
   Snacks.terminal.open(nil, {
     auto_close = false,
     win = { position = 'current' },
   })
+
+  local buf = vim.api.nvim_get_current_buf()
+  vim.bo[buf].bufhidden = 'hide'
+
+  NVTerminal.terminal_tab = {
+    buf = buf,
+    tab = new_tab,
+    original_tab = current_tab,
+    original_win = current_win,
+  }
+end
+
+--- Close the terminal tab and return to original tab.
+--- The terminal buffer persists (hidden, not wiped).
+function NVTerminal.deactivate_terminal_tab()
+  local t = NVTerminal.terminal_tab
+  if not t then
+    return
+  end
+
+  -- Switch to original tab
+  local original_tab_valid = false
+  local tabs = vim.api.nvim_list_tabpages()
+  for _, tab in ipairs(tabs) do
+    if tab == t.original_tab then
+      original_tab_valid = true
+      break
+    end
+  end
+
+  if original_tab_valid then
+    vim.api.nvim_set_current_tabpage(t.original_tab)
+    if vim.api.nvim_win_is_valid(t.original_win) then
+      vim.api.nvim_set_current_win(t.original_win)
+    end
+  end
+
+  -- Close the terminal tab (buffer becomes hidden, survives)
+  if t.tab and vim.api.nvim_tabpage_is_valid(t.tab) then
+    local num = vim.api.nvim_tabpage_get_number(t.tab)
+    pcall(vim.cmd, 'tabclose ' .. num)
+    t.tab = nil
+  end
 end
 
 NVCompanionPanels.register('terminal_vsplit', function()
@@ -103,25 +198,42 @@ NVCompanionPanels.register('terminal_vsplit', function()
   return false
 end)
 
---- Close the current tab if it's a terminal tab.
---- Used by the cooperative UI chain (<M-w>).
-function NVTerminal.ensure_tab_hidden()
-  local label = vim.t.tab_label
-  if label and label.icon == '' and label.name == 'terminal' then
-    local only_terminal = true
-    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-      -- Skip layout-manager sidepad windows (nofile buffers)
-      if not NVLayoutManager.is_sidepad_win(win) then
-        local buf = vim.api.nvim_win_get_buf(win)
-        if vim.bo[buf].filetype ~= 'snacks_terminal' then
-          only_terminal = false
-          break
+-- Lock-down: track tab lifecycle, shell death closes tab + clears state
+do
+  local augroup = vim.api.nvim_create_augroup('NVTerminalLockdown', { clear = true })
+  vim.api.nvim_create_autocmd('TabClosed', {
+    group = augroup,
+    callback = function()
+      if NVTerminal.terminal_tab and NVTerminal.terminal_tab.tab then
+        if not vim.api.nvim_tabpage_is_valid(NVTerminal.terminal_tab.tab) then
+          NVTerminal.terminal_tab.tab = nil
         end
       end
-    end
-    if only_terminal then
-      vim.cmd 'tabclose'
-      return true
+    end,
+  })
+  vim.api.nvim_create_autocmd('TermClose', {
+    group = augroup,
+    callback = function(args)
+      if NVTerminal.terminal_tab and args.buf == NVTerminal.terminal_tab.buf then
+        local t = NVTerminal.terminal_tab
+        if t.tab and vim.api.nvim_tabpage_is_valid(t.tab) then
+          local num = vim.api.nvim_tabpage_get_number(t.tab)
+          pcall(vim.cmd, 'tabclose ' .. num)
+        end
+        NVTerminal.terminal_tab = nil
+      end
+    end,
+  })
+end
+
+function NVTerminal.ensure_tab_hidden()
+  if NVTerminal.terminal_tab then
+    local t = NVTerminal.terminal_tab
+    if t.tab and vim.api.nvim_tabpage_is_valid(t.tab) then
+      if t.tab == vim.api.nvim_get_current_tabpage() then
+        NVTerminal.deactivate_terminal_tab()
+        return true
+      end
     end
   end
   return false

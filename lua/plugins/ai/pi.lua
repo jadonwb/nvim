@@ -1,5 +1,3 @@
-local borders = require 'config.borders'
-
 NVPi = {
   -- 'jadonwb/pi.nvim',
   dir = '~/c/pi.nvim',
@@ -37,7 +35,7 @@ NVPi = {
           return {
             width = size.width,
             height = size.height,
-            border = borders.rounded,
+            border = NVBorders.rounded,
           }
         end,
       },
@@ -84,7 +82,7 @@ NVPi = {
         },
       },
       dialog = {
-        border = borders.rounded,
+        border = NVBorders.rounded,
         keys = {
           cancel = { { NVKeymaps.close, modes = { 'n', 'i' } }, { NVKeymaps.close_esc, modes = { 'n', 'i' } } },
         },

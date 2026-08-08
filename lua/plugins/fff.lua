@@ -1,5 +1,3 @@
-local borders = require 'config.borders'
-
 NVFff = {}
 
 function NVFff.ensure_hidden()
@@ -26,7 +24,7 @@ function NVFffPickerLayout.build(opts)
   return {
     height = config.height,
     width = config.width,
-    border = borders.fff_border,
+    border = NVBorders.fff_border,
     prompt_position = 'top',
     preview_position = 'right',
     preview_size = 0.6,

@@ -1,5 +1,9 @@
 NVPersistence = {}
 
+-- FIXME!: lualine is appearing (or at least its background is) before session is reloaded/dashboard is exited
+
+-- TODO: make option to delete last session / don't save session and start fresh?
+
 function NVPersistence.has_session()
   local ok, plugin = pcall(require, 'persistence')
   if not ok then
@@ -60,6 +64,8 @@ return {
         NVTrouble.ensure_hidden()
         NVDiffview.ensure_all_hidden()
         NVFocusMode.ensure_deactivated()
+        -- FIXME: this needs to also cleanup buffer if it doesn't already, also rename to match everyone else
+        NVTerminal.deactivate_terminal_tab()
 
         -- Save tab labels for restore after load
         NVTabs.save_labels()

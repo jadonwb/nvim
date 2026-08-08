@@ -1,5 +1,3 @@
-local borders = require 'config.borders'
-
 return {
   'folke/which-key.nvim',
   opts = {
@@ -7,7 +5,7 @@ return {
     show_help = false,
     show_keys = false,
     win = {
-      border = borders.padded,
+      border = NVBorders.padded,
       row = -3,
     },
     spec = {

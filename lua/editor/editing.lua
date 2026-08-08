@@ -72,6 +72,8 @@ function NVEditing.keymaps()
 
   K.map { '<leader>p', 'Paste without yanking', [["_dP]], mode = { 'x', 'v', 's' } }
 
+  -- TODO: make new Alt-q, Alt-Q, etc. keymaps for closing and restarting and stuff
+  -- make an option to exit and wipe session?
   K.map {
     '<leader>qr',
     'Save session and restart',

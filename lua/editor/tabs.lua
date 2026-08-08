@@ -13,10 +13,10 @@ local fn = {}
 function NVTabs.keymaps()
   K.map { NVKeymaps.tab_create, 'Create new tab', fn.create_tab, mode = { 'n', 'i', 'v', 't' } }
   K.map { NVKeymaps.tab_close, 'Close tab', fn.close_tab, mode = { 'n', 'i', 'v', 't' }, nowait = true }
-  K.map { NVKeymaps.tab_move.right, 'Next tab', '<Cmd>tabnext<CR>', mode = { 'n', 'i', 'v' } }
-  K.map { NVKeymaps.tab_move.left, 'Previous tab', '<Cmd>tabprev<CR>', mode = { 'n', 'i', 'v' } }
-  K.map { NVKeymaps.tab_swap.right, 'Move tab to the right', '<Cmd>tabmove +1<CR>', mode = { 'n', 'i', 'v' } }
-  K.map { NVKeymaps.tab_swap.left, 'Move tab to the left', '<Cmd>tabmove -1<CR>', mode = { 'n', 'i', 'v' } }
+  K.map { NVKeymaps.tab_move.right, 'Next tab', '<Cmd>tabnext<CR>', mode = { 'n', 'i', 'v', 't' } }
+  K.map { NVKeymaps.tab_move.left, 'Previous tab', '<Cmd>tabprev<CR>', mode = { 'n', 'i', 'v', 't' } }
+  K.map { NVKeymaps.tab_swap.right, 'Move tab to the right', '<Cmd>tabmove +1<CR>', mode = { 'n', 'i', 'v', 't' } }
+  K.map { NVKeymaps.tab_swap.left, 'Move tab to the left', '<Cmd>tabmove -1<CR>', mode = { 'n', 'i', 'v', 't' } }
 end
 
 function fn.create_tab()

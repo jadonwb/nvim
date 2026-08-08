@@ -11,8 +11,6 @@ NVSPickerVerticalLayout = {
   small_screen_width = 0.4,
 }
 
-local borders = require 'config.borders'
-
 NVSPickerHorizontalLayout = {
   large_screen_width = 0.75,
   small_screen_width = 0.95,
@@ -28,11 +26,11 @@ function NVSPickerVerticalLayout.build(opts)
       box = 'vertical',
       width = config.width,
       height = config.height,
-      border = 'none',
+      border = NVBorders.none,
       backdrop = false,
-      { win = 'input', height = 1, title = '{title} {live}', title_pos = 'center', border = borders.padded },
-      { win = 'list', border = borders.list },
-      { win = 'preview', title = '{preview}', border = borders.top_hr },
+      { win = 'input', height = 1, title = '{title} {live}', title_pos = 'center', border = NVBorders.padded },
+      { win = 'list', border = NVBorders.list },
+      { win = 'preview', title = '{preview}', border = NVBorders.top_hr },
     },
   }
 end
@@ -50,10 +48,10 @@ function NVSPickerHorizontalLayout.build(opts)
       backdrop = false,
       {
         box = 'vertical',
-        { win = 'input', height = 1, title = '{title} {live}', title_pos = 'center', border = borders.padded },
-        { win = 'list', border = borders.top_none },
+        { win = 'input', height = 1, title = '{title} {live}', title_pos = 'center', border = NVBorders.padded },
+        { win = 'list', border = NVBorders.top_none },
       },
-      { win = 'preview', title = '{preview}', border = borders.preview },
+      { win = 'preview', title = '{preview}', border = NVBorders.preview },
     },
   }
 end
@@ -438,9 +436,9 @@ return {
               backdrop = false,
               width = 0.5,
               height = 0.5,
-              border = 'none',
-              { win = 'input', height = 1, title = '{title}', title_pos = 'center', border = borders.bottom_hr },
-              { win = 'list', border = borders.top_none },
+              border = NVBorders.none,
+              { win = 'input', height = 1, title = '{title}', title_pos = 'center', border = NVBorders.bottom_hr },
+              { win = 'list', border = NVBorders.top_none },
             },
           },
           vscode = {
@@ -453,15 +451,15 @@ return {
               height = 0.4,
               border = 'none',
               box = 'vertical',
-              { win = 'input', height = 1, border = borders.bottom_hr, title = '{title} {live} {flags}', title_pos = 'center' },
-              { win = 'list', border = borders.top_none },
-              { win = 'preview', title = '{preview}', border = borders.padded },
+              { win = 'input', height = 1, border = NVBorders.bottom_hr, title = '{title} {live} {flags}', title_pos = 'center' },
+              { win = 'list', border = NVBorders.top_none },
+              { win = 'preview', title = '{preview}', border = NVBorders.padded },
             },
           },
         },
       },
       input = {
-        win = { border = borders.padded },
+        win = { border = NVBorders.padded },
       },
       styles = {
         terminal = {
@@ -471,10 +469,10 @@ return {
         },
         lazygit = { width = 0, height = 0, border = 'rounded' },
         float = { backdrop = false },
-        notification = { border = borders.padded },
+        notification = { border = NVBorders.padded },
         notification_history = {
           backdrop = false,
-          border = borders.padded,
+          border = NVBorders.padded,
           keys = { q = 'close', ['<Esc>'] = 'close' }, -- TODO: cleanup and use nvkeymaps, remove q?
         },
       },

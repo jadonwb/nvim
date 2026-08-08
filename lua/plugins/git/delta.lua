@@ -53,10 +53,6 @@ return {
       end
     end
 
-    local borders = require 'config.borders'
-    local hunk_border = borders.padded
-    local picker_border = 'rounded'
-
     return {
       picker = {
         initial_mode = 'n',
@@ -64,7 +60,7 @@ return {
           height = { 0.5, 0.9 },
           main = {
             width = 0.25,
-            border = picker_border,
+            border = NVBorders.rounded,
             title = function(source)
               local label
               if source == 'git' then
@@ -78,7 +74,7 @@ return {
           preview = {
             enabled = false,
             width = 0.5,
-            border = picker_border,
+            border = NVBorders.rounded,
           },
         },
         sources = {
@@ -136,7 +132,7 @@ return {
         hunk = {
           mode = 'auto',
           layout = {
-            border = hunk_border,
+            border = NVBorders.padded,
           },
           keys = {
             focus_left = { '<Tab>', '<C-h>' },
