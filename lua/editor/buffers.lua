@@ -10,6 +10,18 @@ local cooperative_ui = {
     end,
   },
   {
+    name = 'terminal_tab',
+    fn = function()
+      return NVTerminal.ensure_tab_hidden()
+    end,
+  },
+  {
+    name = 'terminal_vsplit',
+    fn = function()
+      return NVTerminal.ensure_vsplit_hidden()
+    end,
+  },
+  {
     name = 'nvlazy',
     fn = function()
       return NVLazy.ensure_hidden()
