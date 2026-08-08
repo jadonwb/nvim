@@ -15,9 +15,13 @@ M.top_hr = { ' ', '─', ' ', ' ', ' ', ' ', ' ', ' ' }
 --- No top-left / top-right / top edges
 M.top_none = { '', '', '', ' ', ' ', ' ', ' ', ' ' }
 
---- fff.nvim nested border (outer 8-element + junction 5-element array).
+M.list = { '', '', '', ' ', '', '', '', ' ' }
+
+M.preview = { '', ' ', ' ', ' ', ' ', ' ', '', '' }
+
+--- fff.nvim 8-element + junction 5-element array
 M.fff_border = {
-  { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' },
+  M.padded,
   { ' ', ' ', ' ', ' ', ' ' },
 }
 

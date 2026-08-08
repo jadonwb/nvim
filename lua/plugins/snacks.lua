@@ -7,9 +7,11 @@ NVSInput = {}
 NVSnacksDashboard = {}
 
 NVSPickerVerticalLayout = {
-  large_screen_width = 0.4,
-  small_screen_width = 0.5,
+  large_screen_width = 0.35,
+  small_screen_width = 0.4,
 }
+
+local borders = require 'config.borders'
 
 NVSPickerHorizontalLayout = {
   large_screen_width = 0.75,
@@ -28,9 +30,9 @@ function NVSPickerVerticalLayout.build(opts)
       height = config.height,
       border = 'none',
       backdrop = false,
-      { win = 'input', height = 1, title = '{title} {live}', title_pos = 'center', border = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' } },
-      { win = 'list', border = { '', '', '', ' ', '', '', '', ' ' } },
-      { win = 'preview', title = '{preview}', border = { ' ', '─', ' ', ' ', ' ', ' ', ' ', ' ' } },
+      { win = 'input', height = 1, title = '{title} {live}', title_pos = 'center', border = borders.padded },
+      { win = 'list', border = borders.list },
+      { win = 'preview', title = '{preview}', border = borders.top_hr },
     },
   }
 end
@@ -48,10 +50,10 @@ function NVSPickerHorizontalLayout.build(opts)
       backdrop = false,
       {
         box = 'vertical',
-        { win = 'input', height = 1, title = '{title} {live}', title_pos = 'center', border = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' } },
-        { win = 'list', border = { '', '', '', ' ', ' ', ' ', ' ', ' ' } },
+        { win = 'input', height = 1, title = '{title} {live}', title_pos = 'center', border = borders.padded },
+        { win = 'list', border = borders.top_none },
       },
-      { win = 'preview', title = '{preview}', border = { '', ' ', ' ', ' ', ' ', ' ', '', '' } },
+      { win = 'preview', title = '{preview}', border = borders.preview },
     },
   }
 end
@@ -60,16 +62,12 @@ NVSPickers.keys = {
   ['<M-f>'] = { 'toggle_maximize', mode = { 'n', 'i', 'v' } },
   [NVKeymaps.open_vsplit] = { 'edit_vsplit', mode = { 'n', 'i', 'v' } },
   [NVKeymaps.open_hsplit] = { 'edit_split', mode = { 'n', 'i', 'v' } },
-  ['<Tab>'] = { 'cycle_win', mode = { 'n', 'i', 'v' } },
   [NVKeymaps.scroll.up] = { 'list_scroll_up', mode = { 'n', 'i', 'v' } },
   [NVKeymaps.scroll.down] = { 'list_scroll_down', mode = { 'n', 'i', 'v' } },
   [NVKeymaps.scroll_alt.up] = { 'x_list_scroll_up_bit', mode = { 'n', 'i', 'v' } },
   [NVKeymaps.scroll_alt.down] = { 'x_list_scroll_down_bit', mode = { 'n', 'i', 'v' } },
   [NVKeymaps.scroll_ctx.up] = { 'preview_scroll_up', mode = { 'n', 'i', 'v' } },
   [NVKeymaps.scroll_ctx.down] = { 'preview_scroll_down', mode = { 'n', 'i', 'v' } },
-  -- ['<C-l>'] = { 'focus_list', mode = { 'n', 'i', 'v' } },
-  -- ['<C-i>'] = { 'focus_input', mode = { 'n', 'i', 'v' } },
-  -- ['<C-k>'] = { 'focus_preview', mode = { 'n', 'i', 'v' } },
   ['<C-S-p>'] = { 'toggle_preview', mode = { 'n', 'i', 'v' } },
   ['<C-S-c>'] = { 'x_copy_absolute_path', mode = { 'n', 'i', 'v' } },
   ['<C-S-r>'] = { 'x_copy_relative_path', mode = { 'n', 'i', 'v' } },
@@ -325,8 +323,6 @@ end
 function NVSnacksDashboard.is_active()
   return vim.bo.filetype == 'snacks_dashboard'
 end
-
-local borders = require 'config.borders'
 
 return {
   {

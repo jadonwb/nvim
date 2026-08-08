@@ -1,4 +1,4 @@
-local borders = require('config.borders')
+local borders = require 'config.borders'
 
 return {
   {
@@ -29,8 +29,7 @@ return {
         },
         -- ghost_text = { enabled = false },
         menu = {
-          -- FIXME: why does this break it?
-          -- border = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' },
+          border = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', '' },
           draw = {
             components = {
               label = {
