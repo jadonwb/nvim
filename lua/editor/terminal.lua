@@ -4,6 +4,10 @@ local fn = {}
 
 -- FIXME!: using <leader>qq to quit all and exit vim inide terminal tab does not exit vim, it just kills the window
 
+--FIXME!: still doing the duplicate line append issue!
+
+-- FIXME:! C-/ doesn't even work anymore
+
 NVTerminal.state = {} -- keyed by tabpage
 
 NVTerminal.terminal_tab = nil

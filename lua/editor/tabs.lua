@@ -6,7 +6,7 @@ NVTabs = {
   editor_icon = '',
 }
 
--- TODO?: should the help page tab idea live here?
+-- TODO: transform/expand into a more baseline general helper for tab operations, whether that tab be focus-mode, diffview, worktree, terminal?
 
 local fn = {}
 
@@ -19,6 +19,7 @@ function NVTabs.keymaps()
   K.map { NVKeymaps.tab_swap.left, 'Move tab to the left', '<Cmd>tabmove -1<CR>', mode = { 'n', 'i', 'v', 't' } }
 end
 
+-- make this a shared function between my other tab related files
 function fn.create_tab()
   vim.ui.input({ prompt = 'Tab name: ' }, function(name)
     if name and name ~= '' then
@@ -26,6 +27,7 @@ function fn.create_tab()
       NVTabs.set_label { icon = NVTabs.editor_icon, name = name }
 
       -- Open pi.nvim in the new tab
+      -- TODO: make this like an optional hook
       NVPi.open_float()
     end
   end)

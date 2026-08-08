@@ -18,5 +18,3 @@ NVIcons.lsp = {
     debug = '󰬋 ',
   },
 }
-
-return NVIcons

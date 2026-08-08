@@ -1,6 +1,6 @@
--- === Wrapper functions (set globals on load) ===
-
 NVGrugFar = {}
+
+-- TODO!: integrate grugfar with my other companion-panels: pi, and terminal
 
 function NVGrugFar.ensure_current_hidden()
   if NVGrugFar.is_active() then
