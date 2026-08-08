@@ -7,7 +7,7 @@ NVPi = {
   opts = {
     -- debug = true,
     expand_startup_details = false,
-    show_thinking = true,
+    show_thinking = false,
     -- models = {},
     cli = {
       bin = 'pi',
@@ -139,7 +139,7 @@ NVPi = {
         desc = 'Select past π session',
       },
       {
-        '<M-S-p>',
+        '<A-a>',
         function()
           vim.cmd 'PiToggleLayout'
         end,
@@ -239,23 +239,14 @@ function NVPi.autocmds()
       keymap('<C-(>', event, function()
         pi.scroll_chat_history_to_bottom()
       end)
-      -- TODO: make thinking still show up, but collapsed by default, would need to modify and then push upstream
-      -- BUG: on session restore thinking blocks are lost
-      -- BUG: thinking blocks are appearing above my message, even though I sent the message before it started thinking
-      keymap('<Tab>', event, function()
-        pi.toggle_thinking()
-      end, 'n')
       keymap('<S-Tab>', event, function()
         pi.invoke '/permission-toggle-auto-accept'
       end)
-      keymap('<C-S-m>', event, function()
+      keymap('<A-m>', event, function()
         pi.select_model()
       end)
-      keymap('<C-S-t>', event, function()
+      keymap('<A-t>', event, function()
         pi.select_thinking_level()
-      end)
-      keymap('<C-t>', event, function()
-        pi.cycle_thinking_level()
       end)
       keymap('<C-v>', event, function()
         pi.paste_image()
