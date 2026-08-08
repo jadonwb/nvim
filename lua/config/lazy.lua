@@ -14,23 +14,10 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
--- FIXME: move into init.lua? or consolidate into one 'require' that requires other things
-
--- Load foundational globals before lazy.nvim processes plugin specs.
--- Plugin specs at lua/plugins/ reference NVKeymaps, NVScreen, etc. at module load time.
-require 'editor.keymap' -- K global, NVKeymaps
-require 'editor.log' -- log global
-require 'editor.screen' -- NVScreen global
-require 'editor.keys' -- NVKeys global
-require 'editor.icons' -- NVIcons global
-
 require('lazy').setup {
   spec = {
-    -- add LazyVim and import its plugins
     { 'LazyVim/LazyVim', import = 'lazyvim.plugins' },
-    -- import/override with your plugins
     { import = 'plugins' },
-    -- TODO?: make everything flat again? or make init.lua files that require for me isntead of making it defined here?
     { import = 'plugins/ai' },
     { import = 'plugins/git' },
     { import = 'plugins/lsp' },

@@ -6,10 +6,10 @@ return {
     priority = 1000,
 
     config = function()
-      require 'editor.log'
-      require 'editor.features.layout-manager'
-      require 'editor.features.focus-mode'
       require 'editor.buffers'
+      require 'editor.features.layout-manager'
+      require 'editor.features.companion-panels'
+      require 'editor.features.focus-mode'
 
       log.keymaps()
 
