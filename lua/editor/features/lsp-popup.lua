@@ -130,7 +130,7 @@ local function create_popup(lines, height, parent_win)
   })
 
   -- Close bindings
-  for _, key in ipairs { 'q', '<Esc>', '<C-c>' } do
+  for _, key in ipairs { NVKeymaps.close_q, NVKeymaps.close_esc, NVKeymaps.close } do
     vim.keymap.set('n', key, function()
       close(parent)
     end, {

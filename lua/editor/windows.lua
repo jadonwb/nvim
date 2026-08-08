@@ -29,7 +29,7 @@ function NVWindows.keymaps()
     mode = { 'n', 'i', 'v' },
   }
   K.map {
-    NVKeymaps.window_swap.left,
+    NVKeymaps.window_swap.right,
     'Move window to the right',
     function()
       fn.reposition_windows { action = 'move_right' }

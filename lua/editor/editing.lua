@@ -54,7 +54,7 @@ function NVEditing.keymaps()
 
   -- TODO!: revisit
   K.map {
-    'C-S-v',
+    '<C-S-v>',
     'Paste without auto-formatting (insert mode)',
     function()
       local saved_paste = vim.o.paste
