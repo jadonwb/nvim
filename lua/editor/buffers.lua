@@ -2,12 +2,7 @@ NVBuffers = {}
 
 local fn = {}
 
---- Cooperative UI chain: modules that get a chance to consume the close
---- event before the buffer is deleted. Each entry's fn() should return
---- true if it handled the event (consumed it).
---- Ordered: specific floating UIs first, mode-like states last.
 local cooperative_ui = {
-  -- Don't delete buffers on the dashboard
   {
     name = 'dashboard',
     fn = function()
@@ -20,14 +15,12 @@ local cooperative_ui = {
       return NVLazy.ensure_hidden()
     end,
   },
-  -- Diffview tab
   {
     name = 'diffview',
     fn = function()
       return NVDiffview.ensure_current_hidden()
     end,
   },
-  -- Floating UIs (close window first, don't delete buffer)
   {
     name = 'noice',
     fn = function()
@@ -37,17 +30,13 @@ local cooperative_ui = {
   {
     name = 'lsp_popup',
     fn = function()
-      -- FIXME!: make like all the other features
-      local ok, m = pcall(require, 'editor.features.lsp-popup')
-      return ok and m.ensure_hidden and m.ensure_hidden() or false
+      return NVLspPopup.ensure_hidden()
     end,
   },
   {
     name = 'git_commit',
     fn = function()
-      -- FIXME!: make like all the other features
-      local ok, m = pcall(require, 'editor.features.git-commit')
-      return ok and m.ensure_hidden and m.ensure_hidden() or false
+      return NVGitCommit.ensure_hidden()
     end,
   },
   {
@@ -98,14 +87,10 @@ local cooperative_ui = {
       return NVGitsigns.ensure_preview_hidden()
     end,
   },
-  -- Mode-like states (deactivate the mode, don't delete buffer)
-  -- FIXME!: doesn't work
   {
     name = 'focus_mode',
     fn = function()
-      -- FIXME!: make like all the other features
-      local ok, m = pcall(require, 'editor.features.focus-mode')
-      return ok and m.ensure_deactivated_if_active and m.ensure_deactivated_if_active() or false
+      return NVFocusMode.ensure_deactivated_if_active()
     end,
   },
 }
