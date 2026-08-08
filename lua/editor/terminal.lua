@@ -37,7 +37,7 @@ end
 --- Opens/closes a terminal in a vsplit on the right side of the current tab.
 --- Toggle behavior: hides (preserves shell state) if visible, shows if hidden.
 --- Each tab tracks its own vsplit terminal independently.
---- Switches pi.nvim to float mode if it's in side mode.
+--- Ensures mutual exclusion with other companion panels via NVCompanionPanels.
 function NVTerminal.open_vsplit()
   local state = get_terminal_state()
 
@@ -51,6 +51,7 @@ function NVTerminal.open_vsplit()
       return
     else
       -- Terminal is hidden — show it again
+      NVCompanionPanels.ensure_exclusive 'terminal_vsplit'
       local ok = pcall(term.show, term)
       if ok then
         state.vsplit_visible = true
@@ -61,11 +62,8 @@ function NVTerminal.open_vsplit()
     end
   end
 
-  -- Switch pi.nvim from side to float to make room
-  local ok, pi = pcall(require, 'pi')
-  if ok and pi.is_visible() and pi.layout() == 'side' then
-    pi.toggle({ layout = 'float' })
-  end
+  -- Ensure no other companion panel is open
+  NVCompanionPanels.ensure_exclusive 'terminal_vsplit'
 
   -- Open terminal vsplit on the right
   local term = Snacks.terminal.open(nil, {
@@ -91,6 +89,18 @@ function NVTerminal.open_tab()
   Snacks.terminal.open(nil, {
     win = { position = 'current' },
   })
+end
+
+if NVCompanionPanels then
+  NVCompanionPanels.register('terminal_vsplit', function()
+    local state = get_terminal_state()
+    if state.vsplit_term and state.vsplit_visible then
+      pcall(state.vsplit_term.hide, state.vsplit_term)
+      state.vsplit_visible = false
+      return true
+    end
+    return false
+  end)
 end
 
 function fn.paste()

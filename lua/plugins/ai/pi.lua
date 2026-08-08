@@ -4,6 +4,17 @@ NVPi = {
   -- 'jadonwb/pi.nvim',
   dir = '~/c/pi.nvim',
   dependencies = { 'HakonHarnes/img-clip.nvim' },
+  init = function()
+    if NVCompanionPanels then
+      NVCompanionPanels.register('pi_side', function()
+        if NVPi.is_visible() and NVPi.is_side() then
+          vim.cmd 'PiToggleChat'
+          return true
+        end
+        return false
+      end)
+    end
+  end,
   opts = {
     -- debug = true,
     expand_startup_details = false,
@@ -117,6 +128,7 @@ NVPi = {
       {
         '<leader>ai',
         function()
+          NVCompanionPanels.ensure_exclusive 'pi_side'
           vim.cmd 'Pi layout=side'
         end,
         mode = { 'n', 'v' },
@@ -140,7 +152,14 @@ NVPi = {
       },
       {
         '<A-a>',
+        -- FIXME: if no pi open yet, open it instead of toggling it?
+        -- this isn't quite right still
         function()
+          -- Skip exclusivity only when toggling side→float (no conflict)
+          local skip = NVPi.is_visible() and NVPi.is_side()
+          if not skip then
+            NVCompanionPanels.ensure_exclusive 'pi_side'
+          end
           vim.cmd 'PiToggleLayout'
         end,
         mode = { 'n', 'i', 'v' },
@@ -285,6 +304,14 @@ function NVPi.is_visible()
   local ok, pi = pcall(require, 'pi')
   if ok and pi.is_visible then
     return pi.is_visible()
+  end
+  return false
+end
+
+function NVPi.is_side()
+  local ok, pi = pcall(require, 'pi')
+  if ok and pi.layout then
+    return pi.layout() == 'side'
   end
   return false
 end
