@@ -18,5 +18,3 @@ function NVCompanionPanels.ensure_exclusive(caller)
     end
   end
 end
-
-return NVCompanionPanels

@@ -466,7 +466,7 @@ return {
       styles = {
         terminal = {
           wo = {
-            winhighlight = 'Normal:Normal,NormalNC:SnacksNormalNC,WinBar:SnacksWinBar,WinBarNC:SnacksWinBarNC,FloatTitle:SnacksTitle,FloatFooter:SnacksFooter,WinSeparator:SnacksWinSeparator,FloatBorder:Border',
+            winhighlight = 'Normal:Normal,WinBar:SnacksWinBar,WinBarNC:SnacksWinBarNC,FloatTitle:SnacksTitle,FloatFooter:SnacksFooter,WinSeparator:SnacksWinSeparator,FloatBorder:Border',
           },
         },
         lazygit = { width = 0, height = 0, border = 'rounded' },

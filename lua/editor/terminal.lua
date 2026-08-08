@@ -91,17 +91,15 @@ function NVTerminal.open_tab()
   })
 end
 
-if NVCompanionPanels then
-  NVCompanionPanels.register('terminal_vsplit', function()
-    local state = get_terminal_state()
-    if state.vsplit_term and state.vsplit_visible then
-      pcall(state.vsplit_term.hide, state.vsplit_term)
-      state.vsplit_visible = false
-      return true
-    end
-    return false
-  end)
-end
+NVCompanionPanels.register('terminal_vsplit', function()
+  local state = get_terminal_state()
+  if state.vsplit_term and state.vsplit_visible then
+    pcall(state.vsplit_term.hide, state.vsplit_term)
+    state.vsplit_visible = false
+    return true
+  end
+  return false
+end)
 
 function fn.paste()
   local content = vim.fn.getreg '*'

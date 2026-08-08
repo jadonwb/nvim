@@ -4,117 +4,115 @@ NVPi = {
   -- 'jadonwb/pi.nvim',
   dir = '~/c/pi.nvim',
   dependencies = { 'HakonHarnes/img-clip.nvim' },
-  init = function()
-    if NVCompanionPanels then
-      NVCompanionPanels.register('pi_side', function()
-        if NVPi.is_visible() and NVPi.is_side() then
-          vim.cmd 'PiToggleChat'
-          return true
-        end
-        return false
-      end)
-    end
-  end,
-  opts = {
-    -- debug = true,
-    expand_startup_details = false,
-    show_thinking = false,
-    -- models = {},
-    cli = {
-      bin = 'pi',
-      args = {
-        '--approve',
-        '--fff-mode',
-        'tools-and-ui', -- adds fffind/ffgrep as extra tools + FFF @ autocomplete
-      },
-    },
-    layout = {
-      side = function()
-        return {
-          position = 'right',
-          width = NVScreen.is_large() and 0.40 or 0.50,
-        }
-      end,
-      float = function()
-        local size = NVScreen.is_large() and { width = 0.65, height = 0.85 } or { width = 0.8, height = 0.85 }
-        return {
-          width = size.width,
-          height = size.height,
-          border = borders.rounded,
-        }
-      end,
-    },
-    panels = {
-      history = {
-        name = function(tab_id)
-          return 'π  󰫰󰫵󰫮󰬁  ' .. tab_id
-        end,
-      },
-      prompt = {
-        name = function(tab_id)
-          return 'π  󰫽󰫿󰫼󰫺󰫽󰬁  ' .. tab_id
-        end,
-      },
-    },
-    diff = {
-      icons = {
-        note = '󰣒',
-      },
-      keys = {
-        accept = { '<C-CR>', modes = { 'n', 'i', 'v' } },
-        reject = { '<C-c>', modes = { 'n', 'i', 'v' } },
-        edit_note = '<C-S-n>',
-        delete_note = '<C-S-x>',
-        list_notes = '<M-S-l>',
-        expand_context = { '+', modes = { 'n' } },
-        shrink_context = { '-', modes = { 'n' } },
-      },
-    },
-    statusline = {
-      layout = {
-        left = {
-          'context',
-          '  ',
-          function(state)
-            if state.extensions['permission'] then
-              return '󰐌', 'PiStatusLineOn'
-            end
-          end,
-          '  ',
-          'attention',
+  opts = function()
+    NVCompanionPanels.register('pi_side', function()
+      if NVPi.is_visible() and NVPi.is_side() then
+        NVPi.toggle() -- 'float'
+        return not NVPi.is_side()
+      end
+      return false
+    end)
+    return {
+      -- debug = true,
+      expand_startup_details = false,
+      show_thinking = false,
+      -- models = {},
+      cli = {
+        bin = 'pi',
+        args = {
+          '--approve',
+          '--fff-mode',
+          'tools-and-ui', -- adds fffind/ffgrep as extra tools + FFF @ autocomplete
         },
-        right = { 'model', '   ', 'thinking' },
       },
-    },
-    dialog = {
-      border = borders.rounded,
-      keys = {
-        cancel = { { NVKeymaps.close, modes = { 'n', 'i' } }, { NVKeymaps.close_esc, modes = { 'n', 'i' } } },
+      layout = {
+        side = function()
+          return {
+            position = 'right',
+            width = NVScreen.is_large() and 0.40 or 0.50,
+          }
+        end,
+        float = function()
+          local size = NVScreen.is_large() and { width = 0.65, height = 0.85 } or { width = 0.8, height = 0.85 }
+          return {
+            width = size.width,
+            height = size.height,
+            border = borders.rounded,
+          }
+        end,
       },
-    },
-    zen = {
-      keys = {
-        toggle = { '<M-f>', modes = { 'n', 'i', 'v' } },
-        exit = { { NVKeymaps.close, modes = { 'n', 'i', 'v' } }, { NVKeymaps.close_esc, modes = { 'n' } } },
+      panels = {
+        history = {
+          name = function(tab_id)
+            return 'π  󰫰󰫵󰫮󰬁  ' .. tab_id
+          end,
+        },
+        prompt = {
+          name = function(tab_id)
+            return 'π  󰫽󰫿󰫼󰫺󰫽󰬁  ' .. tab_id
+          end,
+        },
       },
-    },
-    on_widget = function(key, lines)
-      if key == 'rules:load' then
-        local content = {}
-        for _, line in ipairs(lines) do
-          content[#content + 1] = {
-            { '   ╰  rule: ' .. line, 'Comment' },
+      diff = {
+        icons = {
+          note = '󰣒',
+        },
+        keys = {
+          accept = { '<C-CR>', modes = { 'n', 'i', 'v' } },
+          reject = { '<C-c>', modes = { 'n', 'i', 'v' } },
+          edit_note = '<C-S-n>',
+          delete_note = '<C-S-x>',
+          list_notes = '<M-S-l>',
+          expand_context = { '+', modes = { 'n' } },
+          shrink_context = { '-', modes = { 'n' } },
+        },
+      },
+      statusline = {
+        layout = {
+          left = {
+            'context',
+            '  ',
+            function(state)
+              if state.extensions['permission'] then
+                return '󰐌', 'PiStatusLineOn'
+              end
+            end,
+            '  ',
+            'attention',
+          },
+          right = { 'model', '   ', 'thinking' },
+        },
+      },
+      dialog = {
+        border = borders.rounded,
+        keys = {
+          cancel = { { NVKeymaps.close, modes = { 'n', 'i' } }, { NVKeymaps.close_esc, modes = { 'n', 'i' } } },
+        },
+      },
+      zen = {
+        keys = {
+          toggle = { '<M-f>', modes = { 'n', 'i', 'v' } },
+          exit = { { NVKeymaps.close, modes = { 'n', 'i', 'v' } }, { NVKeymaps.close_esc, modes = { 'n' } } },
+        },
+      },
+      on_widget = function(key, lines)
+        if key == 'rules:load' then
+          local content = {}
+          for _, line in ipairs(lines) do
+            content[#content + 1] = {
+              { '   ╰  rule: ' .. line, 'Comment' },
+            }
+          end
+          return {
+            target = 'history',
+            block = 'custom',
+            content = content,
           }
         end
-        return {
-          target = 'history',
-          block = 'custom',
-          content = content,
-        }
-      end
-      return nil
-    end,
-  },
+        return nil
+      end,
+    }
+  end,
   keys = function()
     return {
       {
@@ -298,6 +296,17 @@ end
 
 function NVPi.open_float()
   vim.cmd 'Pi layout=float'
+end
+
+function NVPi.toggle(layout)
+  local ok, pi = pcall(require, 'pi')
+  if ok and pi.toggle then
+    if layout and layout == 'chat' then
+      pi.toggle()
+    else
+      pi.toggle { layout = layout }
+    end
+  end
 end
 
 function NVPi.is_visible()
