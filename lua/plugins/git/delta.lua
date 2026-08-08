@@ -107,7 +107,7 @@ return {
           move_down = { { { 'j', modes = 'n' }, '<C-n>' }, picker.actions.move(1) },
           close = { { NVKeymaps.close, { '<Esc>', modes = 'n' } }, picker.actions.close },
           toggle_preview = { '<C-S-p>', picker.actions.toggle_preview },
-          toggle_stage = { '<C-CR>', picker.actions.toggle_stage },
+          toggle_stage = { NVKeymaps.confirm_alt, picker.actions.toggle_stage },
           reset = { { '<C-x>', modes = 'n' }, picker.actions.reset },
         },
       },
