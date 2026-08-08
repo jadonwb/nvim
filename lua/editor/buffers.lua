@@ -2,6 +2,9 @@ NVBuffers = {}
 
 local fn = {}
 
+-- TODO!: migrate to companion panel pattern
+-- and have each ui function register itself? how to maintain order or priority though?
+-- really only like dashboard has to go first?
 local cooperative_ui = {
   {
     name = 'dashboard',

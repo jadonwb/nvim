@@ -45,6 +45,8 @@ function NVDisabled.disable_keymaps()
   del('n', '<S-l>') -- Next Buffer
 
   -- Terminal
+  del({ 'n', 't' }, '<C-/>') -- Toggle terminal (now <M-/> and <M-C-t>)
+  del({ 'n', 't' }, '<C-_>') -- Toggle terminal (alternate key)
   del('n', '<leader>ft') -- Terminal (Root Dir)
   del('n', '<leader>fT') -- Terminal (cwd)
 
