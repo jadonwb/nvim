@@ -34,19 +34,6 @@ function NVTabs.get_tab_type(tabid)
   return nil
 end
 
---- Shared tab creation. Opens :tabnew, sets label, runs optional create hook.
----@param config { label: TabLabel, create_hook?: fun(tab: TabID) }
----@return TabID
-function NVTabs.create_tab(config)
-  vim.cmd 'tabnew'
-  local tab = vim.api.nvim_get_current_tabpage()
-  NVTabs.set_label(config.label)
-  if config.create_hook then
-    config.create_hook(tab)
-  end
-  return tab
-end
-
 local fn = {}
 
 function NVTabs.keymaps()
@@ -61,12 +48,9 @@ end
 function fn.create_tab()
   vim.ui.input({ prompt = 'Tab name: ' }, function(name)
     if name and name ~= '' then
-      NVTabs.create_tab {
-        label = { icon = NVTabs.editor_icon, name = name },
-        create_hook = function()
-          NVPi.open_float()
-        end,
-      }
+      vim.cmd 'tabnew'
+      NVTabs.set_label { icon = NVTabs.editor_icon, name = name }
+      NVPi.open_float()
     end
   end)
 end
