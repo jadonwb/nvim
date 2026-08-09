@@ -96,6 +96,7 @@ function NVGrugFar.autocmds()
     group = vim.api.nvim_create_augroup('grug-far-custom-keybinds', { clear = true }),
     pattern = { filetype },
     callback = function()
+      -- TODO!: what this do? focuses the replace bar specifically?
       keymap('<A-Up>', function()
         vim.api.nvim_win_set_cursor(vim.fn.bufwinid(0), { 2, 0 })
         vim.cmd 'normal! $'
