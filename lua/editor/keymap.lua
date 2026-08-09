@@ -1,26 +1,12 @@
 K = {}
 
--- TODO!: expand this table to cover more keymappings, consolidate items of related domains, resolve conflicts (with tmux too)
 NVKeymaps = {
-  confirm = '<CR>',
-  confirm_alt = '<M-CR>',
-  open_vsplit = '<C-CR>',
-  open_hsplit = '<C-S-CR>',
-  newline = '<S-CR>',
+  open_vsplit = '<A-C-CR>',
+  open_hsplit = '<A-C-S-CR>',
 
   close = '<M-w>',
   close_esc = '<Esc>',
   close_q = 'q',
-
-  -- TODO!: move diff related mappings here too
-  commit = '<leader>gc',
-  amend = '<leader>ga',
-  rename_msg = '<leader>gr',
-  commit_push = '<M-S-CR>',
-
-  -- TODO?: move things in here?
-  -- hunk_reset = '<>',
-  -- file_reset = '<>',
 
   focus = '<M-z>',
 
@@ -28,9 +14,6 @@ NVKeymaps = {
   scroll_alt = { up = '<C-b>', down = '<C-f>' },
   scroll_ctx = { up = '<A-k>', down = '<A-j>' },
   scroll_side = { left = '<A-h>', right = '<A-l>' },
-
-  worktree_create = '<C-S-t>',
-  worktree_pick = '<leader>gw',
 
   tab_create = '<C-t>',
   tab_close = '<M-C-w>',

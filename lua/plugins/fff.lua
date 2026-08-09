@@ -55,10 +55,10 @@ return {
     },
     keymaps = {
       close = { NVKeymaps.close, NVKeymaps.close_esc },
-      select = NVKeymaps.confirm,
+      select = '<CR>',
       select_split = NVKeymaps.open_hsplit,
       select_vsplit = NVKeymaps.open_vsplit,
-      insert_newline_escape = NVKeymaps.newline,
+      insert_newline_escape = '<S-CR>',
       select_tab = NVKeymaps.tab_create,
       preview_scroll_up = NVKeymaps.scroll_ctx.up,
       preview_scroll_down = NVKeymaps.scroll_ctx.down,

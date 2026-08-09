@@ -5,11 +5,11 @@ NVGitCommit = {}
 -- If changing those, don't forget to update footer labels
 -- TODO!: make it dynamic, or easier?
 local keymaps = {
-  commit_from_subject = NVKeymaps.confirm,
-  commit_from_body = NVKeymaps.confirm_alt,
-  commit_and_push = NVKeymaps.commit_push,
+  commit_from_subject = '<CR>',
+  commit_from_body = '<A-CR>',
+  commit_and_push = '<A-S-CR>',
   cancel = { NVKeymaps.close, NVKeymaps.close_esc },
-  next_field = { '<Tab>', '<S-CR>' },
+  next_field = { '<Tab>' },
   prev_field = '<S-Tab>',
 }
 
@@ -598,7 +598,7 @@ function NVGitCommit.ensure_hidden()
 end
 
 function NVGitCommit.keymaps()
-  K.map { NVKeymaps.commit, 'Git: Commit', NVGitCommit.new, mode = { 'n', 'v' } }
-  K.map { NVKeymaps.amend, 'Git: Amend', NVGitCommit.amend, mode = { 'n', 'v' } }
-  K.map { NVKeymaps.rename_msg, 'Git: Rename commit message', NVGitCommit.rename, mode = { 'n', 'v' } }
+  K.map { '<leader>gc', 'Git: Commit', NVGitCommit.new, mode = { 'n', 'v' } }
+  K.map { '<leader>ga', 'Git: Amend', NVGitCommit.amend, mode = { 'n', 'v' } }
+  K.map { '<leader>gr', 'Git: Rename commit message', NVGitCommit.rename, mode = { 'n', 'v' } }
 end

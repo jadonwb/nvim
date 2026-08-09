@@ -134,10 +134,10 @@ function NVEditing.keymaps()
   K.map { '<A-Up>', 'Move selected lines up', ":m '<-2<CR>gv=gv", mode = 'v' }
   K.map { '<A-Down>', 'Move selected lines down', ":m '>+1<CR>gv=gv", mode = 'v' }
 
-  K.map { '<Tab>', 'Indent', '>>', mode = 'n' }
-  K.map { '<S-Tab>', 'Unindent', '<<', mode = 'n' }
-  K.map { '<Tab>', 'Indent', '>gv', mode = 'v' }
-  K.map { '<S-Tab>', 'Unindent', '<gv', mode = 'v' }
+  -- K.map { '<Tab>', 'Indent', '>>', mode = 'n' }
+  -- K.map { '<S-Tab>', 'Unindent', '<<', mode = 'n' }
+  -- K.map { '<Tab>', 'Indent', '>gv', mode = 'v' }
+  -- K.map { '<S-Tab>', 'Unindent', '<gv', mode = 'v' }
 
   K.map { '<A-Left>', 'Jump one word to the left', "<C-o><Cmd>lua require('spider').motion('b')<CR>", mode = 'i' }
   K.map { '<A-Right>', 'Jump one word to the right', fn.jump_to_end_of_word, mode = 'i' }
