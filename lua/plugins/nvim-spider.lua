@@ -1,4 +1,4 @@
-return {
+NVSpider = {
   'chrisgrieser/nvim-spider',
   lazy = true,
   keys = {
@@ -8,3 +8,5 @@ return {
     { 'ge', "<Cmd>lua require('spider').motion('ge')<CR>", mode = { 'n', 'o', 'x' } },
   },
 }
+
+return { NVSpider }
