@@ -1,6 +1,6 @@
 NVWindows = {
   maximized_width = 1, -- 100%
-  window_picker_keys = 'UHKMETJWNSABCDFGILOPQRVXYZ1234567890', -- FIXME: this is not my keyboard format
+  window_picker_keys = 'HJKLASDFGQWERT',
 }
 
 -- TODO!: this needs attention (keymap wise)?
@@ -139,11 +139,9 @@ function NVWindows.get_tab_windows_with_listed_buffers(options)
 
   for _, win in ipairs(windows) do
     local buf = vim.api.nvim_win_get_buf(win)
-    local is_help = NVHelp.is_help(buf)
-    local incl_if_help = opts.incl_help and is_help
-    local is_listed = vim.bo[buf].buflisted
+    local incl_if_help = opts.incl_help and NVHelp.is_help(buf)
 
-    if is_listed or incl_if_help then
+    if NVBuffers.is_buf_listed(buf) or incl_if_help then
       table.insert(result, win)
     end
   end
@@ -154,28 +152,24 @@ end
 ---@param opts {action: "swap" | "move_left" | "move_right" | "move_up" | "move_down"}
 function fn.reposition_windows(opts)
   local action = opts.action
+
   local windows = fn.get_normal_tab_windows()
 
   if #windows == 2 and action == 'swap' then
     vim.cmd 'wincmd r'
   elseif #windows > 1 then
-    local ok, _ = pcall(require, 'winshift')
-    if not ok then
-      log.info 'winshift.nvim not available — install it for window repositioning'
-      return
-    end
     if action == 'swap' then
-      vim.cmd 'WinShift swap'
+      NVWinshift.swap()
     elseif action == 'move_left' then
-      vim.cmd 'WinShift left'
+      NVWinshift.move_left()
     elseif action == 'move_right' then
-      vim.cmd 'WinShift right'
+      NVWinshift.move_right()
     elseif action == 'move_up' then
-      vim.cmd 'WinShift up'
+      NVWinshift.move_up()
     elseif action == 'move_down' then
-      vim.cmd 'WinShift down'
+      NVWinshift.move_down()
     else
-      log.error('Unexpected windows action: ' .. action)
+      log.error 'Unexpected windows action'
     end
   else
     log.info 'No windows to rotate'

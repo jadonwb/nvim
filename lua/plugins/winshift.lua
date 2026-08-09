@@ -1,64 +1,76 @@
---- winshift.nvim — window moving, swapping, and rearranging.
---- Configures sindrets/winshift.nvim with custom keybindings and
---- a window picker that excludes sidepads and floating windows.
----
---- Keybindings are handled by lua/editor/windows.lua, not by this spec.
---- This spec handles plugin installation and configuration only.
-
-return {
-    "sindrets/winshift.nvim",
-    lazy = true,
-    opts = function()
-        -- Window picker keys — characters used to label target windows
-        local keys = "UHKMETJWNSABCDFGILOPQRVXYZ1234567890"
-
-        return {
-            highlight_moving_win = true,
-            focused_hl_group = "WinShiftMove",
-            moving_win_options = {
-                wrap = false,
-                cursorline = false,
-                cursorcolumn = false,
-                colorcolumn = "",
-            },
-            ---@diagnostic disable-next-line: missing-fields
-            keymaps = {
-                disable_defaults = true,
-                win_move_mode = {
-                    ["h"] = "left",
-                    ["j"] = "down",
-                    ["k"] = "up",
-                    ["l"] = "right",
-                    ["H"] = "far_left",
-                    ["J"] = "far_down",
-                    ["K"] = "far_up",
-                    ["L"] = "far_right",
-                    ["<Left>"]  = "left",
-                    ["<Down>"]  = "down",
-                    ["<Up>"]    = "up",
-                    ["<Right>"] = "right",
-                    ["<S-Left>"]  = "far_left",
-                    ["<S-Down>"]  = "far_down",
-                    ["<S-Up>"]    = "far_up",
-                    ["<S-Right>"] = "far_right",
-                },
-            },
-            window_picker = function()
-                local winshift_lib = require("winshift.lib")
-
-                return winshift_lib.pick_window({
-                    -- Characters used to label pickable windows
-                    picker_chars = keys,
-                    -- Exclude current window and floating windows from picks
-                    filter_rules = {
-                        cur_win = true,
-                        floats = true,
-                    },
-                })
-            end,
-        }
+NVWinshift = {
+  'sindrets/winshift.nvim',
+  event = 'VimEnter',
+  opts = {
+    highlight_moving_win = true,
+    focused_hl_group = 'WinShiftMove',
+    moving_win_options = {
+      -- These are local options applied to the moving window while it's being moved.
+      -- They are unset when you leave Win-Move mode.
+      wrap = false,
+      cursorline = false,
+      cursorcolumn = false,
+      colorcolumn = '',
+    },
+    keymaps = {
+      disable_defaults = true,
+      win_move_mode = {
+        ['h'] = 'left',
+        ['j'] = 'down',
+        ['k'] = 'up',
+        ['l'] = 'right',
+        ['H'] = 'far_left',
+        ['J'] = 'far_down',
+        ['K'] = 'far_up',
+        ['L'] = 'far_right',
+        ['<Left>'] = 'left',
+        ['<Down>'] = 'down',
+        ['<Up>'] = 'up',
+        ['<Right>'] = 'right',
+        ['<S-Left>'] = 'far_left',
+        ['<S-Down>'] = 'far_down',
+        ['<S-Up>'] = 'far_up',
+        ['<S-Right>'] = 'far_right',
+      },
+    },
+    window_picker = function()
+      return require('winshift.lib').pick_window {
+        picker_chars = NVWindows.window_picker_keys,
+        filter_rules = {
+          cur_win = true, -- Filter out the current window
+          floats = true, -- Filter out floating windows
+          filetype = {}, -- List of ignored file types
+          buftype = {}, -- List of ignored buftypes
+          bufname = {}, -- List of vim regex patterns matching ignored buffer names
+        },
+        filter_func = nil,
+      }
     end,
-    config = function(_, opts)
-        require("winshift").setup(opts)
-    end,
+  },
 }
+
+function NVWinshift.move()
+  vim.cmd 'WinShift'
+end
+
+function NVWinshift.move_right()
+  vim.cmd 'WinShift right'
+end
+
+function NVWinshift.move_left()
+  vim.cmd 'WinShift left'
+end
+
+function NVWinshift.move_up()
+  vim.cmd 'WinShift up'
+end
+
+function NVWinshift.move_down()
+  vim.cmd 'WinShift down'
+end
+
+function NVWinshift.swap()
+  vim.cmd 'WinShift swap'
+end
+
+return { NVWinshift }
