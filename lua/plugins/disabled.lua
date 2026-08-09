@@ -84,7 +84,8 @@ return {
         { '<leader>K', hidden = true },
         { '<leader><tab>', group = 'tabs', hidden = true },
         { '<leader>gh', hidden = true },
-        { '<Leader>dp' },
+        { '<Leader>dp', hidden = true },
+        { '<leader>w', hidden = true },
       })
     end,
   },
