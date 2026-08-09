@@ -5,4 +5,6 @@ require 'editor.keys'
 require 'editor.icons'
 require 'editor.borders'
 
+require 'utils.class'
+
 require 'config.lazy'

@@ -113,7 +113,7 @@ function NVTerminal.toggle_tab()
       if t.tab and vim.api.nvim_tabpage_is_valid(t.tab) then
         local current_tab = vim.api.nvim_get_current_tabpage()
         if t.tab == current_tab then
-          NVTerminal.deactivate_terminal_tab()
+          NVTerminal.ensure_hidden()
         else
           vim.api.nvim_set_current_tabpage(t.tab)
           local win = vim.fn.bufwinid(t.buf)
@@ -161,7 +161,7 @@ end
 
 --- Close the terminal tab and return to original tab.
 --- The terminal buffer persists (hidden, not wiped).
-function NVTerminal.deactivate_terminal_tab()
+function NVTerminal.ensure_hidden()
   local t = NVTerminal.terminal_tab
   if not t then
     return
@@ -235,7 +235,7 @@ function NVTerminal.ensure_tab_hidden()
     local t = NVTerminal.terminal_tab
     if t.tab and vim.api.nvim_tabpage_is_valid(t.tab) then
       if t.tab == vim.api.nvim_get_current_tabpage() then
-        NVTerminal.deactivate_terminal_tab()
+        NVTerminal.ensure_hidden()
         return true
       end
     end

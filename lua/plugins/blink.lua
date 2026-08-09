@@ -48,6 +48,7 @@ return {
       },
       keymap = {
         preset = 'enter',
+        [NVKeymaps.close_esc] = { 'hide', 'fallback' },
       },
     },
   },

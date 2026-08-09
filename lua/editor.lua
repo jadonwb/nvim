@@ -12,4 +12,3 @@ require 'editor.windows'
 
 require 'editor.features.git-commit'
 require 'editor.features.git-worktrees'
-require 'editor.features.lsp-popup'

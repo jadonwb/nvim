@@ -1,15 +1,11 @@
 NVEditing = {}
 
 function NVEditing.esc()
-  if NVLspPopup.ensure_hidden and NVLspPopup.ensure_hidden() then
+  if NVLspPopup.ensure_hidden() then
     return
   end
 
-  pcall(function()
-    require 'plugins.snacks'
-    NVSNotifier.hide()
-  end)
-
+  NVSNotifier.hide()
   vim.cmd 'silent noh'
 end
 

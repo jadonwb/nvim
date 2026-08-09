@@ -1,318 +1,865 @@
--- TODO!: make sure not missing functionality from reference, cleanup any issues
-
--- FIXME!: when multiple diagnostics in same popup, don't separate with a real empty line, use virtual, so copy copies better
-
--- FIXME!: disable spell, and make custom markdown render just for popup? (e.g. make virtual ## header smaller?)
--- make a custom filetype? idk what to do
-
--- FIXME!: broken again? close keymap M-w not working inside?
-
 NVLspPopup = {}
 
-local has_nui, NuiPopup = pcall(require, 'nui.popup')
-if not has_nui then
-  vim.notify('nui.nvim not available for LSP popups', vim.log.levels.WARN)
-  return NVLspPopup
+local fn = {}
+
+---@class Popup
+---@field type PopupType
+---@field popup NuiPopup
+---@field parent WinID
+---@field layout PopupLayout
+local Popup = Class()
+
+---@class HoverPopup: Popup
+---@field type "hover"
+---@field popup NuiPopup
+---@field message NoiceMessage
+---@field new fun(self, parent: WinID, bounding_box: BoundingBox, message: NoiceMessage): DiagnosticPopup
+local HoverPopup = Class(Popup)
+
+---@class DiagnosticPopup: Popup
+---@field type "diagnostic"
+---@field popup NuiPopup
+---@field diagnostics Diagnostic[]
+---@field new fun(self, parent: WinID, bounding_box: BoundingBox, diagnostics: Diagnostic[]): DiagnosticPopup
+local DiagnosticPopup = Class(Popup)
+
+local ERROR = vim.diagnostic.severity.ERROR
+local WARN = vim.diagnostic.severity.WARN
+local INFO = vim.diagnostic.severity.INFO
+local HINT = vim.diagnostic.severity.HINT
+
+function NVLspPopup.keymaps()
+  return {
+    {
+      'grd',
+      'LSP: Go to definition',
+      function()
+        NVSPickers.lsp_definitions()
+      end,
+      mode = 'n',
+    },
+    {
+      'grr',
+      'LSP: Find references',
+      function()
+        NVSPickers.lsp_references()
+      end,
+      mode = 'n',
+    },
+    {
+      'gri',
+      'LSP: Find implementations',
+      function()
+        NVSPickers.lsp_implementations()
+      end,
+      mode = 'n',
+    },
+    {
+      'grt',
+      'LSP: Go to type definition',
+      function()
+        NVSPickers.lsp_type_definitions()
+      end,
+      mode = 'n',
+    },
+    {
+      'grD',
+      'LSP: Go to declaration',
+      function()
+        NVSPickers.lsp_declarations()
+      end,
+      mode = 'n',
+    },
+    {
+      'K',
+      'LSP: Show hover doc',
+      function()
+        HoverPopup.show()
+      end,
+      mode = 'n',
+    },
+    {
+      '<leader>ca',
+      'LSP: Code actions',
+      function()
+        require('actions-preview').code_actions()
+      end,
+      mode = { 'n', 'v' },
+    },
+    {
+      '<leader>cd',
+      'LSP: Show diagnostics under cursor',
+      function()
+        DiagnosticPopup.show_current()
+      end,
+      mode = 'n',
+    },
+    {
+      ']d',
+      'LSP: Next diagnostic',
+      function()
+        vim.diagnostic.jump { count = 1, float = false }
+        vim.schedule(function()
+          DiagnosticPopup.show_current()
+        end)
+      end,
+      mode = 'n',
+    },
+    {
+      '[d',
+      'LSP: Previous diagnostic',
+      function()
+        vim.diagnostic.jump { count = -1, float = false }
+        vim.schedule(function()
+          DiagnosticPopup.show_current()
+        end)
+      end,
+      mode = 'n',
+    },
+  }
 end
 
--- Popup registry: one popup per parent window
-local popups = {}
+function NVLspPopup.autocmds()
+  vim.api.nvim_create_autocmd('LspProgress', {
+    pattern = '*',
+    callback = function()
+      vim.cmd 'redrawstatus'
+    end,
+  })
 
-local SEVERITY = {
-  [vim.diagnostic.severity.ERROR] = {
-    label = ' E ',
-    label_hl = 'DiagnosticFloatingErrorLabel',
-    msg_hl = 'DiagnosticError',
-  },
-  [vim.diagnostic.severity.WARN] = {
-    label = ' W ',
-    label_hl = 'DiagnosticFloatingWarnLabel',
-    msg_hl = 'DiagnosticWarn',
-  },
-  [vim.diagnostic.severity.INFO] = {
-    label = ' I ',
-    label_hl = 'DiagnosticFloatingInfoLabel',
-    msg_hl = 'DiagnosticInfo',
-  },
-  [vim.diagnostic.severity.HINT] = {
-    label = ' H ',
-    label_hl = 'DiagnosticFloatingHintLabel',
-    msg_hl = 'DiagnosticHint',
-  },
-}
-
--- Close popup and clean up registry entry
-local function close(winid)
-  local popup = popups[winid]
-  if not popup then
-    return
-  end
-  if popup.winid and vim.api.nvim_win_is_valid(popup.winid) then
-    pcall(popup.unmount, popup)
-  end
-  popups[winid] = nil
+  -- Apply lsp-popup keymaps buffer-locally on each LSP attach
+  vim.api.nvim_create_autocmd('LspAttach', {
+    group = vim.api.nvim_create_augroup('UserLspPopupKeymaps', { clear = true }),
+    callback = function(ev)
+      for _, km in ipairs(NVLspPopup.keymaps()) do
+        km.buffer = ev.buf
+        K.map(km)
+      end
+    end,
+  })
 end
 
--- Smart position: above cursor if more room, else below
-local function resolve_position(height)
-  local cursor_row = vim.fn.screenpos(vim.fn.win_getid(), vim.fn.line '.', 1).row
-  local ui_lines = vim.o.lines - vim.o.cmdheight - 1
-  local space_above = cursor_row - 2
-  local space_below = ui_lines - cursor_row - 1
+--- Config ---
 
-  if space_above > space_below and space_above >= height + 2 then
-    return { row = -height - 1, col = 0 }
-  end
-  return { row = 2, col = 0 }
-end
+---@class Config
+---@field win WinConfig
+---@field diagnostic DiagnosticConfig
 
--- Shared nui.popup factory. parent_win is passed explicitly so the
--- vim.schedule callback in hover_handler doesn't capture the wrong window.
-local function create_popup(lines, height, parent_win)
-  local parent = parent_win or vim.api.nvim_get_current_win()
-  close(parent)
+---@class WinConfig
+---@field max_width integer?
+---@field max_height integer?
+---@field border BorderConfig
 
-  local max_w = 20
-  for _, l in ipairs(lines) do
-    if #l > max_w then
-      max_w = #l
-    end
-  end
-  max_w = math.min(max_w + 2, math.floor(vim.o.columns * 0.6))
+---@class BorderConfig
+---@field style nui_popup_border_option_style?
+---@field text nui_popup_border_option_text?
+---@field padding nui_popup_border_option_padding
 
-  local pos = resolve_position(height)
+---@class DiagnosticConfig
+---@field severity table<vim.diagnostic.Severity, SeverityConfig>
 
-  local popup = NuiPopup {
-    enter = false,
-    focusable = true,
-    relative = 'cursor',
-    position = pos,
-    size = { width = max_w + 6, height = height },
+---@alias SeverityConfig {label: string, hl: {label: string, message: string}}
+
+---@type Config
+local config = {
+  win = {
+    max_width = nil,
+    max_height = nil,
     border = {
       style = 'none',
       padding = { top = 1, bottom = 1, left = 3, right = 3 },
     },
-    win_options = {
-      spell = false,
-      winhighlight = 'Normal:NormalFloat,FloatBorder:FloatBorder',
+  },
+  diagnostic = {
+    severity = {
+      [ERROR] = { label = 'E', hl = { label = 'DiagnosticFloatingErrorLabel', message = 'DiagnosticError' } },
+      [WARN] = { label = 'W', hl = { label = 'DiagnosticFloatingWarnLabel', message = 'DiagnosticWarn' } },
+      [INFO] = { label = 'I', hl = { label = 'DiagnosticFloatingInfoLabel', message = 'DiagnosticInfo' } },
+      [HINT] = { label = 'H', hl = { label = 'DiagnosticFloatingHintLabel', message = 'DiagnosticHint' } },
     },
+  },
+}
+
+--- Types ---
+
+---@enum PopupType
+local POPUP_TYPE = {
+  hover = 1,
+  diagnostic = 2,
+}
+
+---@class PopupLayout
+---@field size nui_layout_option_size
+---@field relative nui_layout_option_relative_type
+---@field position nui_layout_option_position
+
+---@class BoundingBox
+---@field w integer
+---@field h integer
+
+--- Popups Store ---
+
+---@class Popups
+---@field [WinID] HoverPopup | DiagnosticPopup
+local Popups = {}
+
+---@param winid WinID
+---@return (HoverPopup | DiagnosticPopup)?
+function Popups:get_popup(winid)
+  return self[winid]
+end
+
+---@param winid WinID
+---@return HoverPopup?
+function Popups:get_hover_popup(winid)
+  local popup = self[winid]
+
+  if popup and popup.type == POPUP_TYPE.hover then
+    ---@cast popup HoverPopup
+    return popup
+  end
+end
+
+---@param winid WinID
+---@return DiagnosticPopup?
+function Popups:get_diagnoscic_popup(winid)
+  local popup = self[winid]
+
+  if popup and popup.type == POPUP_TYPE.diagnostic then
+    ---@cast popup DiagnosticPopup
+    return popup
+  end
+end
+
+---@param winid WinID
+function Popups:ensure_unmounted(winid)
+  local popup = self[winid]
+
+  if popup then
+    popup:unmount()
+  end
+end
+
+--- Popup ---
+
+---@class PopupInitOpts
+---@field type PopupType
+---@field parent WinID
+---@field bounding_box BoundingBox
+
+---@param opts PopupInitOpts
+function Popup:init(opts)
+  local NuiPopup = require 'nui.popup'
+
+  local win = vim.api.nvim_get_current_win()
+  local cursor = vim.api.nvim_win_get_cursor(0)
+
+  local editor_height = vim.o.lines - vim.o.cmdheight
+  local cursor_screen_row = vim.fn.screenpos(win, cursor[1], 1).row
+  local space_above = cursor_screen_row - 1
+  local space_below = editor_height - cursor_screen_row
+  local v_space = math.max(space_above, space_below) - config.win.border.padding.top - config.win.border.padding.bottom
+
+  local total_width = vim.o.columns
+  local cursor_screen_pos = vim.fn.screenpos(0, cursor[1], cursor[2] + 1)
+  local h_space = total_width - config.win.border.padding.left - config.win.border.padding.right
+
+  local width = math.min(h_space - config.win.border.padding.left - config.win.border.padding.right, opts.bounding_box.w)
+  if config.win.max_width ~= nil then
+    width = math.min(width, config.win.max_width)
+  end
+
+  local height = math.min(v_space, opts.bounding_box.h)
+  if config.win.max_height ~= nil then
+    height = math.min(height, config.win.max_height)
+  end
+
+  local row
+  if space_above > space_below then
+    row = -height - 1
+  else
+    row = 2
+  end
+
+  local col = 0
+  local total_popup_width = width + config.win.border.padding.left + config.win.border.padding.right
+
+  if total_popup_width > total_width then
+    col = config.win.border.padding.left - cursor_screen_pos.col
+  else
+    local popup_right_edge = cursor_screen_pos.col + total_popup_width
+    if popup_right_edge > total_width then
+      col = total_width - popup_right_edge
+    end
+  end
+
+  local relative = 'cursor'
+  local position = { row = row, col = col }
+  local size = { width = width, height = height }
+  local border = {
+    style = config.win.border.style,
+    text = config.win.border.text,
+    padding = config.win.border.padding,
   }
+
+  local popup = NuiPopup {
+    enter = false,
+    focusable = true,
+    border = border,
+    relative = relative,
+    position = position,
+    size = size,
+  }
+
+  self.type = opts.type
+  self.popup = popup
+  self.parent = opts.parent
+  self.layout = {
+    size = size,
+    relative = relative,
+    position = position,
+  }
+end
+
+Popup.PARENT_WINID_KEY = '__LSP_POPUP_PARENT_WINID'
+
+function Popup:set_lsp_popup_parent_winid()
+  vim.api.nvim_win_set_var(self.popup.winid, Popup.PARENT_WINID_KEY, self.parent)
+end
+
+---@return WinID?
+function Popup.get_lsp_popup_parent_winid()
+  local success, parent_win = pcall(vim.api.nvim_win_get_var, 0, Popup.PARENT_WINID_KEY)
+  return success and parent_win or nil
+end
+
+function Popup:store_meta()
+  ---@cast self HoverPopup | DiagnosticPopup
+  Popups[self.parent] = self
+  self:set_lsp_popup_parent_winid()
+end
+
+function Popup:attach_listeners()
+  local popup = self.popup
+
+  -- Set up buffer-local scroll keymaps for the parent window
+  local parent_bufnr = vim.api.nvim_win_get_buf(self.parent)
+
+  K.map {
+    NVKeymaps.scroll_ctx.up,
+    'LSP: Scroll popup up',
+    function()
+      fn.scroll 'up'
+    end,
+    mode = { 'n', 'i' },
+    buffer = parent_bufnr,
+  }
+
+  K.map {
+    NVKeymaps.scroll_ctx.down,
+    'LSP: Scroll popup down',
+    function()
+      fn.scroll 'down'
+    end,
+    mode = { 'n', 'i' },
+    buffer = parent_bufnr,
+  }
+
+  -- Close and scroll keymaps directly on the popup buffer
+  local popup_bufnr = popup.bufnr
+  vim.keymap.set('n', NVKeymaps.close_q, function()
+    self:unmount()
+  end, { buffer = popup_bufnr, nowait = true })
+  vim.keymap.set('n', NVKeymaps.close_esc, function()
+    self:unmount()
+  end, { buffer = popup_bufnr, nowait = true })
+  vim.keymap.set('n', NVKeymaps.close, function()
+    self:unmount()
+  end, { buffer = popup_bufnr, nowait = true })
+  vim.keymap.set('n', '<C-d>', function()
+    require('noice.util.nui').scroll(popup.winid, 4)
+  end, { buffer = popup_bufnr, nowait = true })
+  vim.keymap.set('n', '<C-u>', function()
+    require('noice.util.nui').scroll(popup.winid, -4)
+  end, { buffer = popup_bufnr, nowait = true })
+
+  local augroup_id = vim.api.nvim_create_augroup('LSPPopupGroup', { clear = true })
+
+  local function unmount()
+    local current_bufid = vim.api.nvim_get_current_buf()
+
+    if current_bufid ~= popup.bufnr then
+      self:unmount()
+      vim.api.nvim_del_augroup_by_id(augroup_id)
+    end
+  end
+
+  vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI', 'InsertEnter' }, {
+    group = augroup_id,
+    callback = unmount,
+    once = true,
+  })
+
+  vim.api.nvim_create_autocmd({ 'WinScrolled' }, {
+    group = augroup_id,
+    buffer = vim.api.nvim_get_current_buf(),
+    callback = function()
+      local layout = self.layout
+
+      popup:update_layout {
+        relative = layout.relative,
+        position = layout.position,
+      }
+    end,
+  })
+
+  vim.api.nvim_create_autocmd('WinClosed', {
+    group = augroup_id,
+    pattern = tostring(popup.winid),
+    callback = unmount,
+    once = true,
+  })
+end
+
+---@return WinID
+function Popup:winid()
+  return self.popup.winid
+end
+
+function Popup:focus()
+  vim.api.nvim_set_current_win(self.popup.winid)
+end
+
+function Popup:unmount()
+  -- Clean up buffer-local scroll keymaps
+  local parent_bufnr = vim.api.nvim_win_get_buf(self.parent)
+  pcall(vim.keymap.del, { 'n', 'i' }, NVKeymaps.scroll_ctx.up, { buffer = parent_bufnr })
+  pcall(vim.keymap.del, { 'n', 'i' }, NVKeymaps.scroll_ctx.down, { buffer = parent_bufnr })
+
+  self.popup:unmount()
+  Popups[self.parent] = nil
+end
+
+--- DiagnosticPopup ---
+
+---@param parent WinID
+---@param bounding_box BoundingBox
+---@param diagnostics Diagnostic[]
+function DiagnosticPopup:init(parent, bounding_box, diagnostics)
+  Popup.init(self, { type = POPUP_TYPE.diagnostic, parent = parent, bounding_box = bounding_box })
+  self.diagnostics = diagnostics
+end
+
+function DiagnosticPopup:render()
+  local popup = self.popup
 
   popup:mount()
 
-  -- Autocmds: close, reposition
-  local group = vim.api.nvim_create_augroup('LspPopup_' .. parent, { clear = true })
-  vim.api.nvim_create_autocmd({ 'CursorMoved', 'InsertEnter' }, {
-    group = group,
-    once = true,
-    callback = function()
-      close(parent)
-    end,
-  })
-  vim.api.nvim_create_autocmd('BufLeave', {
-    group = group,
-    buffer = popup.bufnr,
-    once = true,
-    callback = function()
-      close(parent)
-    end,
-  })
-  vim.api.nvim_create_autocmd('WinScrolled', {
-    group = group,
-    callback = function()
-      if popup.winid and vim.api.nvim_win_is_valid(popup.winid) then
-        pcall(popup.update_layout, popup, {
-          relative = 'cursor',
-          position = resolve_position(height),
-        })
-      end
-    end,
-  })
+  local current_line = 0
 
-  -- Close bindings
-  for _, key in ipairs { NVKeymaps.close_q, NVKeymaps.close_esc, NVKeymaps.close } do
-    vim.keymap.set('n', key, function()
-      close(parent)
-    end, {
-      buffer = popup.bufnr,
-      nowait = true,
+  for _, diagnostic in ipairs(self.diagnostics) do
+    local label = diagnostic.label
+    local message = diagnostic.message or {}
+
+    -- Insert the text into the buffer
+    vim.api.nvim_buf_set_lines(popup.bufnr, current_line, current_line + #message.lines, false, message.lines)
+
+    -- Apply main highlight to the entire text block
+    vim.api.nvim_buf_set_extmark(popup.bufnr, popup.ns_id, current_line, 0, {
+      end_line = current_line + #message.lines,
+      end_col = 0,
+      hl_group = message.hl,
     })
-  end
 
-  -- Scroll: nui first, noice fallback
-  vim.keymap.set('n', '<C-d>', function()
-    if not pcall(require('noice.util.nui').scroll, popup.winid, 4) then
-      pcall(function()
-        require('noice.lsp').scroll(4)
-      end)
-    end
-  end, { buffer = popup.bufnr, nowait = true })
-  vim.keymap.set('n', '<C-u>', function()
-    if not pcall(require('noice.util.nui').scroll, popup.winid, -4) then
-      pcall(function()
-        require('noice.lsp').scroll(-4)
-      end)
-    end
-  end, { buffer = popup.bufnr, nowait = true })
+    -- Add label as a virtual text
+    local label_block = ' ' .. label.text .. ' '
 
-  popups[parent] = popup
-  return popup
-end
-
--- Focus existing popup (second press behavior). Clears close autocmds so
--- entering the popup doesn't trigger CursorMoved.
-local function focus_existing(winid)
-  local popup = popups[winid]
-  if not popup or not popup.winid or not vim.api.nvim_win_is_valid(popup.winid) then
-    return false
-  end
-  pcall(vim.api.nvim_clear_autocmds, { group = 'LspPopup_' .. winid })
-  vim.api.nvim_set_current_win(popup.winid)
-  return true
-end
-
-function NVLspPopup.show_hover()
-  local parent = vim.api.nvim_get_current_win()
-  if focus_existing(parent) then
-    return
-  end
-
-  close(parent)
-
-  local params = vim.lsp.util.make_position_params(parent, 'utf-16')
-  vim.lsp.buf_request(0, 'textDocument/hover', params, function(_, result, ctx, _)
-    if not result or not result.contents then
-      vim.notify('No hover information', vim.log.levels.INFO)
-      return
-    end
-
-    local has_noice, Message = pcall(require, 'noice.message')
-    if not has_noice then
-      return
-    end
-
-    local message = Message('lsp', 'hover')
-    local ok = pcall(function()
-      require('noice.lsp.format').format(message, result.contents, { ft = vim.bo[ctx.bufnr].filetype })
-    end)
-    if not ok then
-      vim.notify('Failed to format hover', vim.log.levels.ERROR)
-      return
-    end
-
-    local content = message:content()
-    local lines = vim.split(content, '\n')
-    if #lines == 0 then
-      lines = { '(empty)' }
-    end
-    local height = math.min(#lines, 30)
-
-    vim.schedule(function()
-      local popup = create_popup(lines, height, parent)
-      if not popup then
-        return
-      end
-      -- FIXME: deprecated
-      vim.api.nvim_buf_set_option(popup.bufnr, 'filetype', 'markdown')
-      local ns = vim.api.nvim_create_namespace 'lsp_hover'
-      message:render(popup.bufnr, ns)
-      vim.api.nvim_buf_set_option(popup.bufnr, 'modifiable', false)
-    end)
-  end)
-end
-
-function NVLspPopup.show()
-  local parent = vim.api.nvim_get_current_win()
-  if focus_existing(parent) then
-    return
-  end
-
-  local cursor_line = vim.fn.line '.' - 1
-  local diagnostics = vim.diagnostic.get(0, { lnum = cursor_line })
-  if vim.tbl_isempty(diagnostics) then
-    diagnostics = vim.diagnostic.get(0, { lnum = cursor_line - 1 })
-  end
-  if vim.tbl_isempty(diagnostics) then
-    vim.notify('No diagnostics here', vim.log.levels.INFO)
-    return
-  end
-
-  local lines = {}
-  for di, d in ipairs(diagnostics) do
-    local msgs = vim.split(d.message, '\n')
-    for mi, msg in ipairs(msgs) do
-      table.insert(lines, mi == 1 and ' ' .. msg or msg)
-    end
-    if di < #diagnostics then
-      table.insert(lines, ' ')
-    end
-  end
-
-  local height = math.min(#lines, 30)
-  local popup = create_popup(lines, height)
-  if not popup then
-    return
-  end
-  vim.api.nvim_buf_set_lines(popup.bufnr, 0, -1, false, lines)
-
-  -- Apply severity highlights and pill badges
-  local lnum = 0
-
-  for _, d in ipairs(diagnostics) do
-    local sev = SEVERITY[d.severity] or SEVERITY[vim.diagnostic.severity.ERROR]
-    local msgs = vim.split(d.message, '\n')
-
-    -- Pill badge as inline virtual text at line start
-    vim.api.nvim_buf_set_extmark(popup.bufnr, popup.ns_id, lnum, 0, {
-      virt_text = { { sev.label, sev.label_hl }, { ' ', nil } },
+    vim.api.nvim_buf_set_extmark(popup.bufnr, popup.ns_id, current_line, 0, {
+      virt_text = { { label_block, label.hl }, { ' ', nil } },
       virt_text_pos = 'inline',
       hl_mode = 'replace',
     })
 
-    -- Pad subsequent lines for alignment (multi-line diagnostics)
-    if #msgs > 1 then
-      local pad_width = vim.fn.strdisplaywidth(sev.label) + 1
-      for i = 1, #msgs - 1 do
-        vim.api.nvim_buf_set_extmark(popup.bufnr, popup.ns_id, lnum + i, 0, {
-          virt_text = { { string.rep(' ', pad_width), nil } },
+    -- Pad subsequent lines for alignment
+    if #message.lines > 1 then
+      for i = 1, #message.lines - 1 do
+        vim.api.nvim_buf_set_extmark(popup.bufnr, popup.ns_id, current_line + i, 0, {
+          virt_text = { { string.rep(' ', vim.fn.strdisplaywidth(label_block) + 1), nil } },
           virt_text_pos = 'inline',
           hl_mode = 'replace',
         })
       end
     end
 
-    -- Message highlight for each line
-    for i = 0, #msgs - 1 do
-      local line = lines[lnum + i + 1]
-      vim.api.nvim_buf_set_extmark(popup.bufnr, popup.ns_id, lnum + i, 0, {
-        end_col = #line,
-        hl_group = sev.msg_hl,
-      })
-    end
-
-    lnum = lnum + #msgs + 1
+    current_line = current_line + #message.lines
   end
-  -- FIXME: deprecated
-  vim.api.nvim_buf_set_option(popup.bufnr, 'modifiable', false)
+
+  self:store_meta()
+  self:attach_listeners()
 end
 
---- Hide the LSP popup if one is active. Used by the cooperative UI chain.
---- Returns true if a popup was hidden.
+---@alias DiagnosticJumpTarget "next"| "previous"
+---@alias DiagnosticPopupTarget "current" | DiagnosticJumpTarget
+
+function DiagnosticPopup.show_current()
+  DiagnosticPopup.show { target = 'current' }
+end
+
+---@param severity vim.diagnostic.Severity?
+function DiagnosticPopup.show_next(severity)
+  DiagnosticPopup.show { target = 'next', severity = severity }
+end
+
+---@param severity vim.diagnostic.Severity?
+function DiagnosticPopup.show_previous(severity)
+  DiagnosticPopup.show { target = 'previous', severity = severity }
+end
+
+---@param opts {target: DiagnosticPopupTarget, severity: vim.diagnostic.Severity?}
+function DiagnosticPopup.show(opts)
+  local current_winid = vim.api.nvim_get_current_win()
+
+  local shown_popup = Popups:get_diagnoscic_popup(current_winid)
+
+  -- If there's already opened popup of this type - just focus it
+  if opts.target == 'current' and shown_popup then
+    shown_popup:focus()
+    return
+  end
+
+  -- Unmounting whatever mounted
+  Popups:ensure_unmounted(current_winid)
+
+  -- If the cursor is off-target, jump to the target first
+  if opts.target == 'next' or opts.target == 'previous' then
+    local jump_target = opts.target
+
+    ---@cast jump_target DiagnosticJumpTarget
+    if not DiagnosticPopup.jump { target = jump_target, severity = opts.severity } then
+      return
+    end
+  end
+
+  local lsp_diagnostics = DiagnosticPopup.get_diagnoscics_under_cursor()
+
+  if #lsp_diagnostics == 0 then
+    return
+  end
+
+  local diagnostics = DiagnosticPopup.format_diagnostics(lsp_diagnostics)
+  local bounding_box = DiagnosticPopup.get_bounding_box(diagnostics)
+
+  local popup = DiagnosticPopup:new(current_winid, bounding_box, diagnostics)
+
+  vim.schedule(function()
+    popup:render()
+  end)
+end
+
+---@param opts {target: DiagnosticJumpTarget, severity: vim.diagnostic.Severity?}
+---@return boolean
+function DiagnosticPopup.jump(opts)
+  local pos
+
+  local get_pos_opts = {
+    severity = opts.severity,
+  }
+
+  if opts.target == 'next' then
+    pos = vim.diagnostic.get_next(get_pos_opts)
+  elseif opts.target == 'previous' then
+    pos = vim.diagnostic.get_prev(get_pos_opts)
+  else
+    log.error('Unexpected diagnostics target: ' .. vim.inspect(opts.target))
+    return false
+  end
+
+  if not pos then
+    if opts.severity then
+      log.info('No ' .. vim.diagnostic.severity[opts.severity] .. ' diagnostics found')
+    else
+      log.info 'No diagnostics found'
+    end
+
+    return false
+  end
+
+  vim.api.nvim_win_set_cursor(0, { pos.lnum + 1, pos.col })
+
+  return true
+end
+
+---@param cursor {line: integer, col: integer}
+---@param diagnostic vim.Diagnostic
+---@return boolean
+function DiagnosticPopup.is_cursor_within_diagnostic(cursor, diagnostic)
+  -- Check if the cursor line is within the range of lines
+  if cursor.line > diagnostic.lnum and cursor.line < diagnostic.end_lnum then
+    return true
+  end
+
+  -- Check if the cursor is on the starting line and within the start column
+  if cursor.line == diagnostic.lnum and cursor.col >= diagnostic.col then
+    -- If the start and end lines are the same, also check the end column
+    if cursor.line == diagnostic.end_lnum then
+      return cursor.col <= diagnostic.end_col
+    end
+    return true
+  end
+
+  -- Check if the cursor is on the ending line and within the end column
+  if cursor.line == diagnostic.end_lnum and cursor.col <= diagnostic.end_col then
+    return true
+  end
+
+  -- If none of the conditions are met, return false
+  return false
+end
+
+---@return vim.Diagnostic[]
+function DiagnosticPopup.get_diagnoscics_under_cursor()
+  local cursor = vim.api.nvim_win_get_cursor(0)
+
+  local cursor_line = cursor[1] - 1 -- Convert to 0-indexed
+  local cursor_col = cursor[2]
+
+  local line_diagnostics = vim.diagnostic.get(0, { lnum = cursor_line })
+
+  local diagnostics = {}
+
+  for _, diagnostic in ipairs(line_diagnostics) do
+    if DiagnosticPopup.is_cursor_within_diagnostic({ line = cursor_line, col = cursor_col }, diagnostic) then
+      table.insert(diagnostics, diagnostic)
+    end
+  end
+
+  return diagnostics
+end
+
+---@class Diagnostic
+---@field label {text: string, hl: string}
+---@field message {lines: string[], hl: string}}
+
+---@param diagnostics vim.Diagnostic[]
+---@return Diagnostic[]
+function DiagnosticPopup.format_diagnostics(diagnostics)
+  local result = {}
+
+  for i, diagnostic in ipairs(diagnostics) do
+    local severity = config.diagnostic.severity[diagnostic.severity]
+
+    local content
+
+    if
+      vim.bo.filetype == 'rust'
+      and diagnostic.user_data
+      and diagnostic.user_data.lsp
+      and diagnostic.user_data.lsp.data
+      and diagnostic.user_data.lsp.data.rendered
+    then
+      content = diagnostic.user_data.lsp.data.rendered:gsub('[\27\155][][()#;?%d]*[A-PRZcf-ntqry=><~]', '')
+    else
+      content = diagnostic.message
+    end
+
+    local lines = vim.split(content, '\n', { trimempty = true })
+
+    if i < #diagnostics then
+      lines[#lines + 1] = ''
+    end
+
+    result[i] = {
+      label = {
+        text = severity.label,
+        hl = severity.hl.label,
+      },
+      message = {
+        lines = lines,
+        hl = severity.hl.message,
+      },
+    }
+  end
+
+  return result
+end
+
+---@param diagnostics Diagnostic[]
+---@return BoundingBox
+function DiagnosticPopup.get_bounding_box(diagnostics)
+  local max_line_length = 0
+  local max_prefix_len = 0
+  local total_lines = 0
+
+  for _, diagnostic in ipairs(diagnostics) do
+    local lines = diagnostic.message.lines
+    for _, line in ipairs(lines) do
+      max_line_length = math.max(max_line_length, vim.fn.strdisplaywidth(line))
+    end
+    max_prefix_len = math.max(max_prefix_len, vim.fn.strdisplaywidth(diagnostic.label.text) + 3) -- 2 spaces around the label and one after
+    total_lines = total_lines + #lines
+  end
+
+  return {
+    w = max_line_length + max_prefix_len,
+    h = total_lines,
+  }
+end
+
+--- HoverPopup ---
+
+---@param parent WinID
+---@param bounding_box BoundingBox
+---@param message NoiceMessage
+function HoverPopup:init(parent, bounding_box, message)
+  Popup.init(self, { type = POPUP_TYPE.hover, parent = parent, bounding_box = bounding_box }) -- Initialize NuiPopup as needed
+  self.message = message
+end
+
+function HoverPopup.show()
+  local current_winid = vim.api.nvim_get_current_win()
+
+  local shown_popup = Popups:get_hover_popup(current_winid)
+
+  -- If there's already opened popup of this type - just focus it
+  if shown_popup then
+    shown_popup:focus()
+    return
+  end
+
+  -- Unmounting whatever is mounted
+  Popups:ensure_unmounted(current_winid)
+
+  local params = vim.lsp.util.make_position_params(current_winid, 'utf-16')
+
+  vim.lsp.buf_request(0, 'textDocument/hover', params, function(_, result, ctx, _)
+    if not result or not result.contents then
+      log.info 'No infromation available'
+      return
+    end
+
+    local message = HoverPopup.format_message(result, ctx)
+    local bounding_box = HoverPopup.get_bounding_box(message)
+
+    local popup = HoverPopup:new(current_winid, bounding_box, message)
+
+    vim.schedule(function()
+      popup:render()
+    end)
+  end)
+end
+
+---@param result any
+---@param ctx lsp.HandlerContext
+---@return NoiceMessage
+function HoverPopup.format_message(result, ctx)
+  local Message = require 'noice.message'
+  local Format = require 'noice.lsp.format'
+
+  local message = Message('lsp', 'hover')
+
+  Format.format(message, result.contents, { ft = vim.bo[ctx.bufnr].filetype })
+
+  return message
+end
+
+---@param message NoiceMessage
+---@return BoundingBox
+function HoverPopup.get_bounding_box(message)
+  return {
+    w = message:width(),
+    h = message:height(),
+  }
+end
+
+function HoverPopup:render()
+  local popup = self.popup
+
+  popup:mount()
+
+  self.message:render(popup.bufnr, popup.ns_id)
+
+  self:store_meta()
+  self:attach_listeners()
+end
+
+---@param direction "up"|"down"
+function fn.scroll(direction)
+  if fn.scroll_popup(direction) then
+    return
+  else
+    local ok, noice_lsp = pcall(require, 'noice.lsp')
+    if ok and noice_lsp.scroll then
+      noice_lsp.scroll(direction == 'up' and -4 or 4)
+    end
+  end
+end
+
+---@param direction "up"|"down"
+function fn.scroll_popup(direction)
+  local popup = Popups:get_popup(vim.api.nvim_get_current_win())
+
+  if not popup then
+    return false
+  end
+
+  local nuice = require 'noice.util.nui'
+
+  local winid = popup:winid()
+
+  if direction == 'up' then
+    nuice.scroll(winid, -4)
+    return true
+  elseif direction == 'down' then
+    nuice.scroll(winid, 4)
+    return true
+  else
+    log.error('Unexpected direction: ' .. direction)
+    return false
+  end
+end
+
+--- Exports ---
+
+--- Hide ALL LSP popups. Used by the cooperative UI chain (esc, buffer close, etc.).
+--- Returns true if any popup was hidden.
 function NVLspPopup.ensure_hidden()
-  if not popups or not next(popups) then
+  if not next(Popups) then
     return false
   end
 
   -- Collect keys to avoid mutating the table during iteration
   local keys = {}
-  for k in pairs(popups) do
+  for k in pairs(Popups) do
     keys[#keys + 1] = k
   end
 
-  -- Close each popup via the proper close() helper (which calls unmount and cleans registry)
   for _, parent_winid in ipairs(keys) do
-    close(parent_winid)
+    local popup = Popups:get_popup(parent_winid)
+    if popup then
+      popup:unmount()
+    end
   end
 
   return true
+end
+
+function NVLspPopup.hide_unless_active()
+  -- Checking if we're inside a diagnostic popup
+  local parent_winid = Popup.get_lsp_popup_parent_winid()
+
+  if parent_winid then
+    return false
+  else
+    local current_winid = vim.api.nvim_get_current_win()
+
+    local popup = Popups:get_popup(current_winid)
+
+    if not popup then
+      return false
+    end
+
+    popup:unmount()
+
+    return true
+  end
 end

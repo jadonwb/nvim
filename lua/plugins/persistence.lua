@@ -64,8 +64,7 @@ return {
         NVTrouble.ensure_hidden()
         NVDiffview.ensure_all_hidden()
         NVFocusMode.ensure_deactivated()
-        -- FIXME: this needs to also cleanup buffer if it doesn't already, also rename to match everyone else
-        NVTerminal.deactivate_terminal_tab()
+        NVTerminal.ensure_hidden()
 
         -- Save tab labels for restore after load
         NVTabs.save_labels()
@@ -84,13 +83,6 @@ return {
           NVTabs.restore_labels()
         end)
 
-        -- Restore lualine (hidden by dashboard)
-        NVLualine.show_everything()
-
-        -- Enable layout manager
-        pcall(function()
-          NVLayoutManager.enable()
-        end)
       end,
     })
   end,

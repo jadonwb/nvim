@@ -9,6 +9,7 @@ return {
       require 'editor.buffers'
       require 'editor.features.layout-manager'
       require 'editor.features.companion-panels'
+      require 'editor.features.lsp-popup'
       require 'editor.features.focus-mode'
 
       log.keymaps()
@@ -16,6 +17,7 @@ return {
       NVLayoutManager.autocmds()
       NVFocusMode.autocmds()
       NVBuffers.autocmds()
+      NVLspPopup.autocmds()
       NVPi.autocmds()
     end,
   },

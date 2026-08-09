@@ -2,12 +2,12 @@ return {
   {
     'jadonwb/arrowlake.nvim',
     opts = {
-      transparent = true,
+      transparent = false,
       styles = {
         functions = { bold = true },
+        statusline = 'normal',
       },
       lualine_bold = true,
-      -- popup = 'normal', -- FIXME!: not working
     },
     keys = {
       {
