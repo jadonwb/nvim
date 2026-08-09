@@ -28,6 +28,8 @@ local WARN = vim.diagnostic.severity.WARN
 local INFO = vim.diagnostic.severity.INFO
 local HINT = vim.diagnostic.severity.HINT
 
+local hover_seq = 0
+
 function NVLspPopup.show_hover()
   HoverPopup.show()
 end
@@ -630,7 +632,14 @@ function HoverPopup.show()
 
   local params = vim.lsp.util.make_position_params(current_winid, 'utf-16')
 
+  -- prevents very fast function call from creating a ghost hover popup
+  hover_seq = hover_seq + 1
+  local this_seq = hover_seq
+
   vim.lsp.buf_request(0, 'textDocument/hover', params, function(_, result, ctx, _)
+    if this_seq ~= hover_seq then
+      return
+    end
     if not result or not result.contents then
       log.info 'No infromation available'
       return
