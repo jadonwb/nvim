@@ -96,6 +96,12 @@ end
 --- If terminal tab exists → jump to it or close it.
 --- If none exists → create a fresh terminal.
 function NVTerminal.toggle_tab()
+  -- Guard: don't create/switch to terminal tab from another temporary tab
+  local current_tab = vim.api.nvim_get_current_tabpage()
+  if NVTabs.is_temporary(current_tab) and not NVTerminal.is_terminal_tab(current_tab) then
+    return
+  end
+
   if NVTerminal.terminal_tab then
     local t = NVTerminal.terminal_tab
 

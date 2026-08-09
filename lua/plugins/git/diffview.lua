@@ -163,22 +163,34 @@ return {
   keys = {
     {
       '<Leader>dl',
-      '<Cmd>DiffviewFileHistory<CR>',
+      function()
+        if NVTabs.is_temporary(vim.api.nvim_get_current_tabpage()) then return end
+        vim.cmd 'DiffviewFileHistory'
+      end,
       desc = 'Diffview Log',
     },
     {
       '<Leader>dv',
-      '<Cmd>DiffviewOpen<CR>',
+      function()
+        if NVTabs.is_temporary(vim.api.nvim_get_current_tabpage()) then return end
+        vim.cmd 'DiffviewOpen'
+      end,
       desc = 'Diffview',
     },
     {
       '<Leader>dL',
-      '<Cmd>DiffviewFileHistory %<CR>',
+      function()
+        if NVTabs.is_temporary(vim.api.nvim_get_current_tabpage()) then return end
+        vim.cmd 'DiffviewFileHistory %'
+      end,
       desc = 'Diffview Log (This File)',
     },
     {
       '<Leader>dh',
-      '<Cmd>DiffviewFileHistory % --pin-local<CR>',
+      function()
+        if NVTabs.is_temporary(vim.api.nvim_get_current_tabpage()) then return end
+        vim.cmd 'DiffviewFileHistory % --pin-local'
+      end,
       desc = 'File History (Pinned to Working Tree)',
     },
   },
