@@ -742,7 +742,6 @@ function NVLspPopup.ensure_hidden()
       return false
     end
 
-    -- vim.notify('test', vim.log.levels.ERROR)
     popup:unmount()
 
     return true
