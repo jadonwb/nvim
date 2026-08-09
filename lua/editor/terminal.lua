@@ -42,6 +42,9 @@ end
 --- Toggle behavior: hides (preserves shell state) if visible, shows if hidden.
 --- Each tab tracks its own vsplit terminal independently.
 --- Ensures mutual exclusion with other companion panels via NVCompanionPanels.
+-- FIXME: why is it making me do C-/ twice when it exists to reopen it? logic issue?
+-- e.g. if it doesn't exists, C-/ works first press, and to toggle it off, C-/ works first press
+-- but if it already exists I am having to press it twice?
 function NVTerminal.open_vsplit()
   local state = get_terminal_state()
 
