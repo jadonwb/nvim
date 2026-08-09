@@ -16,7 +16,6 @@ function NVDisabled.disable_keymaps()
   del({ 'n', 'x' }, '<leader>gB') -- Git Browse (open)
 
   -- Which-key / Changelog / New File
-  -- del('n', '<leader>?') -- Buffer Keymaps (which-key) TODO: keep?
   del('n', '<leader>L') -- LazyVim Changelog
   del('n', '<leader>fn') -- New File
 
