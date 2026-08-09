@@ -1,5 +1,3 @@
--- FIXME!: fix emmylua diagnostic/lsp setup issues (Undefined type or alias TabID)
-
 ---@class FocusTab
 ---@field id TabID
 ---@field original_tab TabID
@@ -168,3 +166,10 @@ function NVFocusMode.deactivate_active()
   vim.api.nvim_win_set_buf(current_win, current_buf)
   vim.api.nvim_win_set_cursor(current_win, current_cursor)
 end
+
+NVTabs.register_type {
+  name = 'focus',
+  is_temporary = true,
+  is_match = NVFocusMode.is_focus_tab,
+  ensure_hidden = NVFocusMode.ensure_deactivated,
+}

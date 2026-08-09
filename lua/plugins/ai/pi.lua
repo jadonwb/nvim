@@ -124,7 +124,9 @@ NVPi = {
       {
         '<leader>ai',
         function()
-          NVCompanionPanels.ensure_exclusive 'pi_side'
+          if not NVCompanionPanels.ensure_exclusive 'pi_side' then
+            return
+          end
           vim.cmd 'Pi layout=side'
         end,
         mode = { 'n', 'v' },
@@ -151,7 +153,9 @@ NVPi = {
         function()
           local skip = NVPi.is_visible() and NVPi.is_side()
           if not skip then
-            NVCompanionPanels.ensure_exclusive 'pi_side'
+            if not NVCompanionPanels.ensure_exclusive 'pi_side' then
+              return
+            end
           end
           vim.cmd 'PiToggleChat'
         end,
@@ -163,7 +167,9 @@ NVPi = {
         function()
           local skip = NVPi.is_visible() and NVPi.is_side()
           if not skip then
-            NVCompanionPanels.ensure_exclusive 'pi_side'
+            if not NVCompanionPanels.ensure_exclusive 'pi_side' then
+              return
+            end
           end
           vim.cmd 'PiToggleLayout'
         end,

@@ -6,7 +6,46 @@ NVTabs = {
   editor_icon = '',
 }
 
--- TODO: transform/expand into a more baseline general helper for tab operations, whether that tab be focus-mode, diffview, worktree, terminal?
+---@class TabType
+---@field name string Unique type identifier
+---@field is_temporary boolean
+---@field is_match fun(tabid: TabID): boolean
+---@field ensure_hidden? fun(): boolean Close this tab type if active
+---@field create_hook? fun(tab: TabID) Called after tab creation
+---@field close_hook? fun(tabid: TabID) Custom close behavior
+
+---@type TabType[]
+NVTabs._types = {}
+
+--- Register a tab type with the system.
+---@param config TabType
+function NVTabs.register_type(config)
+  table.insert(NVTabs._types, config)
+end
+
+---@param tabid TabID
+---@return TabType | nil
+function NVTabs.get_tab_type(tabid)
+  for _, t in ipairs(NVTabs._types) do
+    if t.is_match(tabid) then
+      return t
+    end
+  end
+  return nil
+end
+
+--- Shared tab creation. Opens :tabnew, sets label, runs optional create hook.
+---@param config { label: TabLabel, create_hook?: fun(tab: TabID) }
+---@return TabID
+function NVTabs.create_tab(config)
+  vim.cmd 'tabnew'
+  local tab = vim.api.nvim_get_current_tabpage()
+  NVTabs.set_label(config.label)
+  if config.create_hook then
+    config.create_hook(tab)
+  end
+  return tab
+end
 
 local fn = {}
 
@@ -19,34 +58,40 @@ function NVTabs.keymaps()
   K.map { NVKeymaps.tab_swap.left, 'Move tab to the left', '<Cmd>tabmove -1<CR>', mode = { 'n', 'i', 'v', 't' } }
 end
 
--- make this a shared function between my other tab related files
 function fn.create_tab()
   vim.ui.input({ prompt = 'Tab name: ' }, function(name)
     if name and name ~= '' then
-      vim.cmd 'tabnew'
-      NVTabs.set_label { icon = NVTabs.editor_icon, name = name }
-
-      -- Open pi.nvim in the new tab
-      -- TODO: make this like an optional hook
-      NVPi.open_float()
+      NVTabs.create_tab {
+        label = { icon = NVTabs.editor_icon, name = name },
+        create_hook = function()
+          NVPi.open_float()
+        end,
+      }
     end
   end)
 end
 
+-- guard against / noop on last tab
 function fn.close_tab()
-  local info = NVGit.get_worktree_info()
+  local tabid = vim.api.nvim_get_current_tabpage()
+  local tab_type = NVTabs.get_tab_type(tabid)
 
-  if not info then
-    -- FIXME: why does only work once?
-    -- it reverts to the input thing with borders
-    if NVDialogs.confirm('Close tab?', '&Yes\n&No', 2) == 1 then
-      vim.cmd 'tabclose'
-    end
+  -- Tab-type-specific close hook
+  if tab_type and tab_type.close_hook then
+    tab_type.close_hook(tabid)
     return
   end
 
-  -- Lazy-require worktrees module to avoid circular dependency
-  NVGitWorktrees.close_tab(info)
+  -- Temporary tabs: close without confirmation
+  if tab_type and tab_type.is_temporary and tab_type.ensure_hidden then
+    tab_type.ensure_hidden()
+    return
+  end
+
+  -- Regular editor tab: confirm then close
+  if NVDialogs.confirm('Close tab?', '&Yes\n&No', 2) == 1 then
+    vim.cmd 'tabclose'
+  end
 end
 
 function NVTabs.render_label(label)
@@ -110,9 +155,12 @@ end
 ---@param tabid TabID
 ---@return boolean
 function NVTabs.is_temporary(tabid)
-  -- TODO: make a tab register itself as tab and then is_temporary can loop through all of them?
-  -- also allows cleanup to be if tab is temporary: ensure_hidden
-  return NVFocusMode.is_focus_tab(tabid) or NVDiffview.is_diffview_tab(tabid) or NVTerminal.is_terminal_tab(tabid)
+  for _, t in ipairs(NVTabs._types) do
+    if t.is_temporary and t.is_match(tabid) then
+      return true
+    end
+  end
+  return false
 end
 
 ---@return TabID[]

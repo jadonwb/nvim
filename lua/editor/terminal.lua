@@ -43,13 +43,6 @@ end
 --- Each tab tracks its own vsplit terminal independently.
 --- Ensures mutual exclusion with other companion panels via NVCompanionPanels.
 function NVTerminal.open_vsplit()
-  -- Don't open vsplit inside the terminal tab
-  if NVTerminal.terminal_tab and NVTerminal.terminal_tab.tab then
-    if NVTerminal.terminal_tab.tab == vim.api.nvim_get_current_tabpage() then
-      return
-    end
-  end
-
   local state = get_terminal_state()
 
   -- Toggle: hide existing visible terminal (preserves shell state)
@@ -62,7 +55,9 @@ function NVTerminal.open_vsplit()
       return
     else
       -- Terminal is hidden — show it again
-      NVCompanionPanels.ensure_exclusive 'terminal_vsplit'
+      if not NVCompanionPanels.ensure_exclusive 'terminal_vsplit' then
+        return
+      end
       local ok = pcall(term.show, term)
       if ok then
         state.vsplit_visible = true
@@ -74,7 +69,9 @@ function NVTerminal.open_vsplit()
   end
 
   -- Ensure no other companion panel is open
-  NVCompanionPanels.ensure_exclusive 'terminal_vsplit'
+  if not NVCompanionPanels.ensure_exclusive 'terminal_vsplit' then
+    return
+  end
 
   -- Open terminal vsplit on the right
   local term = Snacks.terminal.open(nil, {
@@ -242,3 +239,10 @@ function fn.paste()
   content = vim.api.nvim_replace_termcodes(content, true, true, true)
   vim.api.nvim_feedkeys(content, 't', true)
 end
+
+NVTabs.register_type {
+  name = 'terminal',
+  is_temporary = true,
+  is_match = NVTerminal.is_terminal_tab,
+  ensure_hidden = NVTerminal.ensure_hidden,
+}

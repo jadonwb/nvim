@@ -36,6 +36,13 @@ function NVDiffview.ensure_all_hidden()
   end
 end
 
+NVTabs.register_type {
+  name = 'diffview',
+  is_temporary = true,
+  is_match = NVDiffview.is_diffview_tab,
+  ensure_hidden = NVDiffview.ensure_all_hidden,
+}
+
 function dv_fn.current_diff()
   local ok, dv = pcall(require, 'diffview.lib')
   if not ok then
