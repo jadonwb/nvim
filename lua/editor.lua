@@ -1,7 +1,10 @@
+-- TODO!: make it obvious what needs to be required first vs later for ordering purposes
+-- separate early editor utility globals from rest of editor?
 require 'editor.keymap'
 require 'editor.log'
 require 'editor.screen'
 require 'editor.class'
+require 'editor.tabs'
 require 'editor.companion-panels'
 require 'editor.close'
 
@@ -15,13 +18,11 @@ require 'editor.fs'
 require 'editor.git'
 require 'editor.help'
 require 'editor.navigation'
-require 'editor.tabs'
 require 'editor.terminal'
 require 'editor.windows'
 require 'editor.keys'
 require 'editor.icons'
 require 'editor.borders'
-require 'editor.tabs'
 
 require 'editor.features.git-commit'
 require 'editor.features.git-worktrees'
