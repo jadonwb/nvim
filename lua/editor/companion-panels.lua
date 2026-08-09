@@ -15,7 +15,7 @@ end
 ---@return boolean false if blocked (temporary tab), true otherwise
 function NVCompanionPanels.ensure_exclusive(caller)
   -- Don't open companion panels in temporary tabs
-  if NVTabs and NVTabs.is_temporary and NVTabs.is_temporary(vim.api.nvim_get_current_tabpage()) then
+  if NVTabs.is_temporary(vim.api.nvim_get_current_tabpage()) then
     return false
   end
 
