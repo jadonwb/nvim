@@ -213,9 +213,14 @@ function NVTerminal.ensure_tab_hidden()
   return false
 end
 
---- Kill the vsplit terminal's shell and reset state.
---- Next <M-/> will create a fresh terminal.
---- Used by the cooperative UI chain (<M-w>).
+---@param tabid TabID
+---@return boolean
+function NVTerminal.is_terminal_tab(tabid)
+  return NVTerminal.terminal_tab ~= nil
+    and NVTerminal.terminal_tab.tab ~= nil
+    and NVTerminal.terminal_tab.tab == tabid
+end
+
 function NVTerminal.ensure_vsplit_hidden()
   local state = get_terminal_state()
   if state.vsplit_term and state.vsplit_visible then
