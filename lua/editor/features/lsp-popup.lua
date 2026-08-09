@@ -28,95 +28,12 @@ local WARN = vim.diagnostic.severity.WARN
 local INFO = vim.diagnostic.severity.INFO
 local HINT = vim.diagnostic.severity.HINT
 
-function NVLspPopup.keymaps()
-  return {
-    {
-      'grd',
-      'LSP: Go to definition',
-      function()
-        NVSPickers.lsp_definitions()
-      end,
-      mode = 'n',
-    },
-    {
-      'grr',
-      'LSP: Find references',
-      function()
-        NVSPickers.lsp_references()
-      end,
-      mode = 'n',
-    },
-    {
-      'gri',
-      'LSP: Find implementations',
-      function()
-        NVSPickers.lsp_implementations()
-      end,
-      mode = 'n',
-    },
-    {
-      'grt',
-      'LSP: Go to type definition',
-      function()
-        NVSPickers.lsp_type_definitions()
-      end,
-      mode = 'n',
-    },
-    {
-      'grD',
-      'LSP: Go to declaration',
-      function()
-        NVSPickers.lsp_declarations()
-      end,
-      mode = 'n',
-    },
-    {
-      'K',
-      'LSP: Show hover doc',
-      function()
-        HoverPopup.show()
-      end,
-      mode = 'n',
-    },
-    {
-      '<leader>ca',
-      'LSP: Code actions',
-      function()
-        require('actions-preview').code_actions()
-      end,
-      mode = { 'n', 'v' },
-    },
-    {
-      '<leader>cd',
-      'LSP: Show diagnostics under cursor',
-      function()
-        DiagnosticPopup.show_current()
-      end,
-      mode = 'n',
-    },
-    {
-      ']d',
-      'LSP: Next diagnostic',
-      function()
-        vim.diagnostic.jump { count = 1, float = false }
-        vim.schedule(function()
-          DiagnosticPopup.show_current()
-        end)
-      end,
-      mode = 'n',
-    },
-    {
-      '[d',
-      'LSP: Previous diagnostic',
-      function()
-        vim.diagnostic.jump { count = -1, float = false }
-        vim.schedule(function()
-          DiagnosticPopup.show_current()
-        end)
-      end,
-      mode = 'n',
-    },
-  }
+function NVLspPopup.show_hover()
+  HoverPopup.show()
+end
+
+function NVLspPopup.show_diagnostics()
+  DiagnosticPopup.show_current()
 end
 
 function NVLspPopup.autocmds()
@@ -124,17 +41,6 @@ function NVLspPopup.autocmds()
     pattern = '*',
     callback = function()
       vim.cmd 'redrawstatus'
-    end,
-  })
-
-  -- Apply lsp-popup keymaps buffer-locally on each LSP attach
-  vim.api.nvim_create_autocmd('LspAttach', {
-    group = vim.api.nvim_create_augroup('UserLspPopupKeymaps', { clear = true }),
-    callback = function(ev)
-      for _, km in ipairs(NVLspPopup.keymaps()) do
-        km.buffer = ev.buf
-        K.map(km)
-      end
     end,
   })
 end
@@ -346,7 +252,7 @@ function Popup:attach_listeners()
   local parent_bufnr = vim.api.nvim_win_get_buf(self.parent)
 
   K.map {
-    NVKeymaps.scroll_ctx.up,
+    NVKeymaps.scroll_alt.up,
     'LSP: Scroll popup up',
     function()
       fn.scroll 'up'
@@ -356,7 +262,7 @@ function Popup:attach_listeners()
   }
 
   K.map {
-    NVKeymaps.scroll_ctx.down,
+    NVKeymaps.scroll_alt.down,
     'LSP: Scroll popup down',
     function()
       fn.scroll 'down'
@@ -366,22 +272,15 @@ function Popup:attach_listeners()
   }
 
   -- Close and scroll keymaps directly on the popup buffer
-  local popup_bufnr = popup.bufnr
-  vim.keymap.set('n', NVKeymaps.close_q, function()
-    self:unmount()
-  end, { buffer = popup_bufnr, nowait = true })
-  vim.keymap.set('n', NVKeymaps.close_esc, function()
-    self:unmount()
-  end, { buffer = popup_bufnr, nowait = true })
-  vim.keymap.set('n', NVKeymaps.close, function()
-    self:unmount()
-  end, { buffer = popup_bufnr, nowait = true })
-  vim.keymap.set('n', '<C-d>', function()
-    require('noice.util.nui').scroll(popup.winid, 4)
-  end, { buffer = popup_bufnr, nowait = true })
-  vim.keymap.set('n', '<C-u>', function()
-    require('noice.util.nui').scroll(popup.winid, -4)
-  end, { buffer = popup_bufnr, nowait = true })
+  K.map {
+    NVKeymaps.close_q,
+    'LSP: Close with q',
+    function()
+      self:unmount()
+    end,
+    mode = { 'n' },
+    buffer = popup.bufnr,
+  }
 
   local augroup_id = vim.api.nvim_create_augroup('LSPPopupGroup', { clear = true })
 
@@ -820,27 +719,34 @@ end
 
 --- Exports ---
 
---- Hide ALL LSP popups. Used by the cooperative UI chain (esc, buffer close, etc.).
---- Returns true if any popup was hidden.
 function NVLspPopup.ensure_hidden()
-  if not next(Popups) then
-    return false
-  end
+  -- Let's check first if we're inside a diagnostic popup
+  local parent_winid = Popup.get_lsp_popup_parent_winid()
 
-  -- Collect keys to avoid mutating the table during iteration
-  local keys = {}
-  for k in pairs(Popups) do
-    keys[#keys + 1] = k
-  end
-
-  for _, parent_winid in ipairs(keys) do
+  if parent_winid then
     local popup = Popups:get_popup(parent_winid)
+
     if popup then
       popup:unmount()
+    else
+      log.warn "Popup parent ID is set, but it's not found in the state"
     end
-  end
 
-  return true
+    return true
+  else
+    local current_winid = vim.api.nvim_get_current_win()
+
+    local popup = Popups:get_popup(current_winid)
+
+    if not popup then
+      return false
+    end
+
+    -- vim.notify('test', vim.log.levels.ERROR)
+    popup:unmount()
+
+    return true
+  end
 end
 
 function NVLspPopup.hide_unless_active()
