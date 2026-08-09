@@ -110,7 +110,8 @@ end
 ---@param tabid TabID
 ---@return boolean
 function NVTabs.is_temporary(tabid)
-  return NVFocusMode.is_focus_tab(tabid) or NVDiffview.is_diffview_tab(tabid)
+  -- TODO: make a tab register itself as tab and then is_temporary can loop through all of them?
+  return NVFocusMode.is_focus_tab(tabid) or NVDiffview.is_diffview_tab(tabid) or NVTerminal.is_terminal_tab(tabid)
 end
 
 ---@return TabID[]
