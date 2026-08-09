@@ -10,11 +10,20 @@ function NVCompanionPanels.register(name, ensure_hidden)
 end
 
 --- Hide all companion panels except the one about to open.
+--- Refuses to open in temporary tabs (diffview, terminal, focus).
 ---@param caller string Name of the panel that's opening
+---@return boolean false if blocked (temporary tab), true otherwise
 function NVCompanionPanels.ensure_exclusive(caller)
+  -- Don't open companion panels in temporary tabs
+  if NVTabs and NVTabs.is_temporary and NVTabs.is_temporary(vim.api.nvim_get_current_tabpage()) then
+    return false
+  end
+
   for _, panel in ipairs(NVCompanionPanels.registry) do
     if panel.name ~= caller then
       pcall(panel.ensure_hidden)
     end
   end
+
+  return true
 end

@@ -16,19 +16,8 @@ function NVPersistence.autocmds()
         NVKeys.send('<Esc>', { mode = 'x' })
       end
 
-      -- Close floating UIs and modes before saving session
-      NVLazy.ensure_hidden()
-      NVMason.ensure_hidden()
-      NVNoice.ensure_hidden()
-      NVGitCommit.ensure_hidden()
-      NVSZoom.ensure_deactivated()
-      NVSLazygit.ensure_hidden()
-      NVSInput.ensure_hidden()
-      NVGrugFar.ensure_current_hidden()
-      NVTrouble.ensure_hidden()
-      NVDiffview.ensure_all_hidden()
-      NVFocusMode.ensure_deactivated()
-      NVTerminal.ensure_hidden()
+      -- Close floating UIs and temporary tabs before saving session
+      NVClose.consume_all()
 
       -- Save tab labels for restore after load
       NVTabs.save_labels()

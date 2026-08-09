@@ -98,7 +98,7 @@ return {
       desc = 'Grep Word',
     },
     {
-      '<leader>fR',
+      '<leader>fl',
       function()
         require('fff').resume()
       end,

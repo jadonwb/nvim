@@ -1,3 +1,12 @@
+require 'editor.keymap'
+require 'editor.log'
+require 'editor.screen'
+require 'editor.class'
+require 'editor.companion-panels'
+require 'editor.close'
+
+-- TODO!: make this require list be in priority order for UI registration
+require 'editor.buffers'
 require 'editor.clipboard'
 require 'editor.debug'
 require 'editor.dialogs'
@@ -9,6 +18,15 @@ require 'editor.navigation'
 require 'editor.tabs'
 require 'editor.terminal'
 require 'editor.windows'
+require 'editor.keys'
+require 'editor.icons'
+require 'editor.borders'
+require 'editor.tabs'
 
 require 'editor.features.git-commit'
 require 'editor.features.git-worktrees'
+require 'editor.features.layout-manager'
+require 'editor.features.lsp-popup'
+require 'editor.features.focus-mode'
+
+require 'editor.disabled'

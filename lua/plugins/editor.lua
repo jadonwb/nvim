@@ -1,16 +1,11 @@
 return {
   {
-    'editor-autocmds',
+    'editor-init',
     virtual = true,
     lazy = false,
     priority = 1000,
 
     config = function()
-      require 'editor.buffers'
-      require 'editor.features.layout-manager'
-      require 'editor.features.companion-panels'
-      require 'editor.features.lsp-popup'
-      require 'editor.features.focus-mode'
 
       log.keymaps()
 
@@ -23,17 +18,16 @@ return {
   },
 
   {
-    'editor-keymaps',
+    'editor-lazy',
     virtual = true,
     event = 'VeryLazy',
     priority = 1000,
 
     config = function()
       vim.schedule(function()
-        require 'editor.disabled'
         NVDisabled.disable_keymaps()
 
-        require 'editor'
+        -- TODO!: fill out with rest of keymaps and autocmds
 
         NVEditing.keymaps()
         NVFocusMode.keymaps()
