@@ -6,10 +6,4 @@ return {
       silent = true,
     },
   },
-  {
-    'nvim-mini/mini.surround',
-    opts = {
-      silent = true,
-    },
-  },
 }
