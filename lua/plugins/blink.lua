@@ -24,7 +24,7 @@ NVBlink = {
           border = NVBorders.padded,
         },
       },
-      -- ghost_text = { enabled = false },
+      ghost_text = { enabled = false },
       menu = {
         border = NVBorders.completion,
         draw = {
