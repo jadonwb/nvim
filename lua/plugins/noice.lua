@@ -1,96 +1,51 @@
-NVNoice = {}
-
 local fn = {}
 
-function NVNoice.ensure_hidden()
-  if fn.ensure_command_line_hidden() then
-    return true
-  end
-
-  if fn.ensure_signature_hidden() then
-    return true
-  end
-
-  if fn.is_noice_window() then
-    fn.close_split()
-    return true
-  end
-
-  return false
-end
-
-function fn.ensure_command_line_hidden()
-  if vim.fn.mode() == 'c' then
-    NVKeys.send('<Esc>', { mode = 'n' })
-    return true
-  end
-  return false
-end
-
-function fn.ensure_signature_hidden()
-  local ok, noice = pcall(require, 'noice')
-  if not ok then
-    return false
-  end
-  local ok2, lsp = pcall(require, 'noice.lsp')
-  if not ok2 then
-    return false
-  end
-  local ok3, docs = pcall(require, 'noice.lsp.docs')
-  if not ok3 then
-    return false
-  end
-  local signature = docs.get(lsp.kinds.signature)
-  if #signature:wins() == 0 then
-    return false
-  end
-  docs.hide(signature)
-  return true
-end
-
-function fn.is_noice_window()
-  return vim.bo.filetype == 'noice'
-end
-
-function fn.close_split()
-  vim.cmd.close()
-end
-
---- noice.nvim custom configuration.
-
-return {
+NVNoice = {
   'folke/noice.nvim',
+  dependencies = {
+    'MunifTanjim/nui.nvim',
+  },
   event = 'VeryLazy',
-
-  config = function(_, opts)
-    local is_large = NVScreen.is_large()
-
-    local common_border = {
-      style = 'none',
-      padding = { top = 1, bottom = 1, left = 2, right = 2 },
+  keys = function()
+    return {
+      { '<A-S-l>', '<Cmd>NoiceAll<CR>', mode = { 'n', 'i', 'v' }, desc = 'Open messages log' },
+    }
+  end,
+  opts = function()
+    local Layout = {
+      common = {
+        position = {
+          visually_centered = {
+            row = '40%',
+            col = '50%',
+          },
+        },
+        border = {
+          style = 'none',
+          padding = { top = 1, bottom = 1, left = 2, right = 2 },
+        },
+        win_options = {
+          winhighlight = {
+            Normal = 'NormalFloat',
+            FloatBorder = 'FloatBorder',
+          },
+          winbar = '',
+          foldenable = false,
+        },
+      },
+      cmdline_popup = {
+        position = {
+          row = 10,
+          col = '50%',
+        },
+        size = {
+          width = 60,
+          height = 'auto',
+        },
+      },
     }
 
-    local common_win_opts = {
-      winhighlight = {
-        Normal = 'NormalFloat',
-        FloatBorder = 'FloatBorder',
-      },
-      winbar = '',
-      foldenable = false,
-    }
-
-    opts = vim.tbl_deep_extend('force', {
-      -- LSP: hover disabled (uses custom lsp-popup), signature via hint
-      lsp = {
-        hover = { enabled = false },
-        signature = { enabled = true, view = 'hint' },
-        progress = { enabled = false },
-      },
-
-      -- Notify: snacks handles notifications
-      notify = { enabled = false },
-
-      -- Cmdline format
+    return {
       cmdline = {
         format = {
           cmdline = { pattern = '^:', icon = '❯', lang = 'vim' },
@@ -99,10 +54,27 @@ return {
         },
       },
 
-      -- Status: LSP progress via lualine, not noice
-      status = {},
+      notify = {
+        enabled = false,
+      },
 
-      -- Commands
+      lsp = {
+        hover = {
+          enabled = false,
+        },
+        signature = {
+          enabled = true,
+          view = 'hint',
+        },
+      },
+
+      status = {
+        lsp_progress = {
+          event = 'lsp',
+          kind = 'progress',
+        },
+      },
+
       commands = {
         all = {
           view = 'popup',
@@ -112,18 +84,17 @@ return {
         },
       },
 
-      -- Views
       views = {
         popup = {
           backend = 'popup',
           relative = 'editor',
-          position = { row = '40%', col = '50%' },
-          border = common_border,
+          position = Layout.common.position.visually_centered,
+          border = Layout.common.border,
           size = {
             width = NVLayoutManager.default_width(),
             height = NVScreen.is_large() and 30 or 15,
           },
-          win_options = common_win_opts,
+          win_options = Layout.common.win_options,
           close = {
             events = { 'BufLeave' },
             keys = { NVKeymaps.close, NVKeymaps.close_esc, NVKeymaps.close_q },
@@ -138,28 +109,42 @@ return {
             max_height = 20,
             max_width = 120,
           },
-          position = { row = common_border.padding.top + 1, col = 0 },
-          border = common_border,
-          win_options = { wrap = true, linebreak = true },
-          close = { keys = { NVKeymaps.close, NVKeymaps.close_esc, NVKeymaps.close_q } },
+          position = { row = Layout.common.border.padding.top + 1, col = 0 },
+          border = Layout.common.border,
+          win_options = {
+            wrap = true,
+            linebreak = true,
+          },
+          close = {
+            keys = { NVKeymaps.close, NVKeymaps.close_esc, NVKeymaps.close_q },
+          },
         },
         cmdline = {
-          position = { row = vim.o.lines, col = '50%' },
-          size = { width = 60, height = 1 },
+          position = {
+            row = vim.o.lines,
+            col = '50%',
+          },
+          size = {
+            width = 60,
+            height = 1,
+          },
         },
         cmdline_popup = {
-          position = { row = 10, col = '50%' },
-          size = { width = 60, height = 'auto' },
-          border = common_border,
-          win_options = common_win_opts,
+          position = Layout.cmdline_popup.position,
+          size = Layout.cmdline_popup.size,
+          border = Layout.common.border,
+          win_options = Layout.common.win_options,
           filter_options = {},
-          close = { keys = { 'q', '<Esc>', '<C-c>' } },
+          close = { keys = { NVKeymaps.close, NVKeymaps.close_esc, NVKeymaps.close_q } },
         },
         cmdline_popupmenu = {
-          position = { row = 14, col = '50%' },
-          size = { width = 60, height = 'auto' },
-          border = common_border,
-          win_options = common_win_opts,
+          position = {
+            row = Layout.cmdline_popup.position.row + 4,
+            col = Layout.cmdline_popup.position.col,
+          },
+          size = Layout.cmdline_popup.size,
+          border = Layout.common.border,
+          win_options = Layout.common.win_options,
           close = { keys = { NVKeymaps.close, NVKeymaps.close_esc, NVKeymaps.close_q } },
         },
         cmdline_output = {
@@ -175,26 +160,107 @@ return {
           enter = false,
           zindex = 210,
           format = { '{confirm}' },
-          position = { row = 3, col = '50%' },
+          position = {
+            row = 3,
+            col = '50%',
+          },
           size = 'auto',
           border = {
-            style = common_border.style,
-            padding = common_border.padding,
-            text = { top = ' Confirm ' },
+            style = Layout.common.border.style,
+            padding = Layout.common.border.padding,
+            text = {
+              top = ' Confirm ',
+            },
           },
-          win_options = common_win_opts,
+          win_options = Layout.common.win_options,
         },
       },
 
       routes = {
-        { filter = { event = 'lsp', kind = 'progress' }, opts = { skip = true } },
+        {
+          filter = { event = 'lsp', kind = 'progress' },
+          opts = { skip = true },
+        },
       },
-    }, opts or {})
-
+    }
+  end,
+  config = function(_, opts)
     require('noice').setup(opts)
   end,
-
-  keys = {
-    { '<M-S-l>', '<Cmd>NoiceAll<CR>', mode = { 'n', 'i', 'v' }, desc = 'Notification History' },
-  },
 }
+
+---@param direction "up"|"down"
+function NVNoice.scroll_lsp_doc(direction)
+  local plugin = require 'noice.lsp'
+
+  if direction == 'up' then
+    return plugin.scroll(-4)
+  elseif direction == 'down' then
+    return plugin.scroll(4)
+  else
+    return false
+  end
+end
+
+function NVNoice.ensure_hidden()
+  if fn.ensure_command_line_hidden() then
+    return true
+  end
+
+  if fn.ensure_signature_hidden() then
+    return true
+  end
+
+  local current_win = vim.api.nvim_get_current_win()
+
+  if fn.is_win_active() then
+    if NVWindows.is_window_floating(current_win) then
+      fn.close_split()
+      return true
+    else
+      -- Probably, needs specal handling of general window depending on the layout
+      fn.close_split()
+      return true
+    end
+  else
+    return false
+  end
+end
+
+function fn.is_win_active()
+  return vim.bo.filetype == 'noice'
+end
+
+function fn.close_split()
+  vim.cmd.close()
+end
+
+---@return boolean
+function fn.ensure_command_line_hidden()
+  local mode = vim.fn.mode()
+
+  if mode == 'c' then
+    NVKeys.send('<Esc>', { mode = 'n' })
+    return true
+  end
+
+  return false
+end
+
+---@return boolean
+function fn.ensure_signature_hidden()
+  local lsp = require 'noice.lsp'
+  local docs = require 'noice.lsp.docs'
+
+  local signature = docs.get(lsp.kinds.signature)
+
+  if #signature:wins() == 0 then
+    return false
+  end
+
+  docs.hide(signature)
+
+  return true
+end
+
+return { NVNoice }
