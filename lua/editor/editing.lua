@@ -15,7 +15,7 @@ function NVEditing.keymaps()
 
   -- TODO: new keymap for these two items
   K.map {
-    '<M-k>',
+    '<M-S-s>',
     'Save all files',
     function()
       NVEditing.esc()
@@ -25,7 +25,7 @@ function NVEditing.keymaps()
     mode = 'n',
   }
   K.map {
-    '<M-k>',
+    '<M-S-s>',
     'Save all files',
     '<Esc><Cmd>silent w<CR><Cmd>silent! wa<CR>',
     mode = { 'i', 'v' },
