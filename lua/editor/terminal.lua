@@ -132,6 +132,7 @@ function NVTerminal.toggle_tab()
   local buf = vim.api.nvim_get_current_buf()
   vim.bo[buf].bufhidden = 'wipe'
 
+  -- TODO!: temporary
   -- Block C-/ from opening a vsplit inside the terminal tab. Buffer-local
   -- Nop mappings take priority over the global toggle mapping. Both C-_
   -- and C-/ are mapped since terminals send either keycode for C-/.
@@ -222,9 +223,7 @@ end
 ---@param tabid TabID
 ---@return boolean
 function NVTerminal.is_terminal_tab(tabid)
-  return NVTerminal.terminal_tab ~= nil
-    and NVTerminal.terminal_tab.tab ~= nil
-    and NVTerminal.terminal_tab.tab == tabid
+  return NVTerminal.terminal_tab ~= nil and NVTerminal.terminal_tab.tab ~= nil and NVTerminal.terminal_tab.tab == tabid
 end
 
 function NVTerminal.ensure_vsplit_hidden()
