@@ -97,12 +97,6 @@ local cooperative_ui = {
     end,
   },
   {
-    name = 'gitsigns',
-    fn = function()
-      return NVGitsigns.ensure_preview_hidden()
-    end,
-  },
-  {
     name = 'focus_mode',
     fn = function()
       return NVFocusMode.ensure_deactivated_if_active()

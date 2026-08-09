@@ -1,20 +1,4 @@
--- === Wrapper functions (set globals on load) ===
-
-NVGitsigns = {}
-
-function NVGitsigns.ensure_preview_hidden()
-  local ok, gs = pcall(require, 'gitsigns')
-  if not ok then
-    return false
-  end
-  if gs.popup and gs.popup.handler and gs.popup.handler.close then
-    gs.popup.handler.close()
-    return true
-  end
-  return false
-end
-
-return {
+NVGitsigns = {
   'lewis6991/gitsigns.nvim',
   opts = {
     signs = {
@@ -33,9 +17,8 @@ return {
       changedelete = { text = '▎' },
       untracked = { text = '▎' },
     },
-    on_attach = function()
-      -- Delta replaces all interactive gitsigns operations.
-      -- Gitsigns only serves passive gutter indicators.
-    end,
+    on_attach = function() end,
   },
 }
+
+return { NVGitsigns }
