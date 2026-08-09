@@ -29,6 +29,62 @@ return {
             { 'gI', false },
             { 'gy', false },
             { 'gD', false },
+            {
+              'K',
+              function() NVLspPopup.show_hover() end,
+              desc = 'Hover',
+            },
+            {
+              'grd',
+              function() NVSPickers.lsp_definitions() end,
+              desc = 'Goto Definition',
+            },
+            {
+              'grr',
+              function() NVSPickers.lsp_references() end,
+              desc = 'References',
+            },
+            {
+              'gri',
+              function() NVSPickers.lsp_implementations() end,
+              desc = 'Implementation',
+            },
+            {
+              'grt',
+              function() NVSPickers.lsp_type_definitions() end,
+              desc = 'Type Definition',
+            },
+            {
+              'grD',
+              function() NVSPickers.lsp_declarations() end,
+              desc = 'Declaration',
+            },
+            {
+              '<leader>ca',
+              function() require('actions-preview').code_actions() end,
+              desc = 'Code Action',
+            },
+            {
+              '<leader>cd',
+              function() NVLspPopup.show_diagnostics() end,
+              desc = 'Diagnostics',
+            },
+            {
+              ']d',
+              function()
+                vim.diagnostic.jump({ count = 1, float = false })
+                vim.schedule(function() NVLspPopup.show_diagnostics() end)
+              end,
+              desc = 'Next Diagnostic',
+            },
+            {
+              '[d',
+              function()
+                vim.diagnostic.jump({ count = -1, float = false })
+                vim.schedule(function() NVLspPopup.show_diagnostics() end)
+              end,
+              desc = 'Previous Diagnostic',
+            },
           },
         },
       },
