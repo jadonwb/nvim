@@ -28,7 +28,7 @@ NVTabs.register_type {
   name = 'diffview',
   is_temporary = true,
   is_match = NVDiffview.is_diffview_tab,
-  ensure_hidden = NVDiffview.ensure_hidden,
+  close_hook = NVDiffview.ensure_hidden,
 }
 
 function dv_fn.current_diff()

@@ -245,5 +245,5 @@ NVTabs.register_type {
   name = 'terminal',
   is_temporary = true,
   is_match = NVTerminal.is_terminal_tab,
-  ensure_hidden = NVTerminal.ensure_hidden,
+  close_hook = NVTerminal.ensure_hidden, -- TODO: use ensure_hidden or ensure_tab_hidden?
 }

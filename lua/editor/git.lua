@@ -18,15 +18,26 @@ function NVGit.normalize_worktree_name(name)
 end
 
 ---@param path? string
----@return GitWorktreeInfo?
-function NVGit.get_worktree_info(path)
+---@return boolean
+function NVGit.is_worktree(path)
   path = path or vim.fn.getcwd(-1, 0)
 
   -- Check if this is actually a secondary worktree (not the main repo)
   -- In a worktree, .git is a file; in main repo, .git is a directory
   local git_path = path .. '/.git'
   if vim.fn.isdirectory(git_path) == 1 then
-    return nil -- Main repo, not a worktree
+    return false -- Main repo, not a worktree
+  end
+  return true
+end
+
+---@param path? string
+---@return GitWorktreeInfo?
+function NVGit.get_worktree_info(path)
+  path = path or vim.fn.getcwd(-1, 0)
+
+  if not NVGit.is_worktree(path) then
+    return nil
   end
 
   local output = vim.fn.systemlist 'git worktree list --porcelain'

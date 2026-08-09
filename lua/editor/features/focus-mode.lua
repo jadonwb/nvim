@@ -171,5 +171,5 @@ NVTabs.register_type {
   name = 'focus',
   is_temporary = true,
   is_match = NVFocusMode.is_focus_tab,
-  ensure_hidden = NVFocusMode.ensure_deactivated,
+  close_hook = NVFocusMode.ensure_deactivated,
 }

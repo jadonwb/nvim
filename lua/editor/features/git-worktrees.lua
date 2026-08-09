@@ -157,9 +157,7 @@ function NVGitWorktrees.close_tab(info)
   local current_tab = vim.api.nvim_get_current_tabpage()
   local other_tabs_in_worktree = false
   for _, tab in ipairs(vim.api.nvim_list_tabpages()) do
-    if tab ~= current_tab
-      and vim.fn.getcwd(-1, vim.api.nvim_tabpage_get_number(tab)) == info.path
-    then
+    if tab ~= current_tab and vim.fn.getcwd(-1, vim.api.nvim_tabpage_get_number(tab)) == info.path then
       other_tabs_in_worktree = true
       break
     end
@@ -212,6 +210,17 @@ function NVGitWorktrees.close_tab(info)
         end
         log.info('Removed worktree: ' .. info.path)
 
+        -- Close buffers from the removed worktree path
+        -- TODO: share logic with eventual close and delete all buffers type stuff
+        for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+          if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].buftype == '' then
+            local name = vim.api.nvim_buf_get_name(buf)
+            if vim.startswith(name, info.path) then
+              pcall(vim.api.nvim_buf_delete, buf, { force = true })
+            end
+          end
+        end
+
         if item.action == 'delete-all' then
           if not NVGit.delete_branch(info.branch) then
             log.error 'Failed to delete branch'
@@ -228,10 +237,7 @@ end
 NVTabs.register_type {
   name = 'worktree',
   is_temporary = false,
-  is_match = function(tabid)
-    local ok, label = pcall(vim.api.nvim_tabpage_get_var, tabid, 'tab_label')
-    return ok and label and type(label) == 'table' and label.icon == '󰙅'
-  end,
+  is_match = NVGit.is_worktree,
   close_hook = function()
     local info = NVGit.get_worktree_info()
     if info then

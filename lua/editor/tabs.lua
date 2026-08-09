@@ -10,7 +10,6 @@ NVTabs = {
 ---@field name string Unique type identifier
 ---@field is_temporary boolean
 ---@field is_match fun(tabid: TabID): boolean
----@field ensure_hidden? fun(): boolean Close this tab type if active
 ---@field create_hook? fun(tab: TabID) Called after tab creation
 ---@field close_hook? fun(tabid: TabID): boolean Custom close behavior
 
@@ -59,13 +58,6 @@ end
 function fn.close_tab()
   local tabid = vim.api.nvim_get_current_tabpage()
   local tab_type = NVTabs.get_tab_type(tabid)
-
-  -- FIX: why can't this just be the same as a close_hook? e.g. temp tabs have ensure_hidden as their close_hook?
-  -- Temporary tabs: close without confirmation
-  if tab_type and tab_type.is_temporary and tab_type.ensure_hidden then
-    tab_type.ensure_hidden()
-    return
-  end
 
   -- Tab-type-specific close hook
   if tab_type and tab_type.close_hook and tab_type.close_hook(tabid) then
@@ -168,9 +160,9 @@ function NVTabs.close_all_temporary()
       goto continue
     end
     local tab_type = NVTabs.get_tab_type(tabid)
-    if tab_type and tab_type.is_temporary and tab_type.ensure_hidden then
+    if tab_type and tab_type.is_temporary and tab_type.close_hook then
       vim.api.nvim_set_current_tabpage(tabid)
-      tab_type.ensure_hidden()
+      tab_type.close_hook(tabid)
     end
     ::continue::
   end
