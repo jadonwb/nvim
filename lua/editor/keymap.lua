@@ -16,7 +16,7 @@ NVKeymaps = {
   scroll_side = { left = '<A-h>', right = '<A-l>' },
 
   tab_create = '<C-t>',
-  tab_close = '<M-C-w>',
+  tab_close = '<M-C-w>', -- TODO?: make M-S-w fully cover close tab?
   tab_move = { left = '<C-Left>', right = '<C-Right>' },
   tab_swap = { left = '<C-S-Left>', right = '<C-S-Right>' },
   window_move = { up = '<C-k>', down = '<C-j>', left = '<C-h>', right = '<C-l>' },
