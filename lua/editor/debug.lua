@@ -2,8 +2,7 @@ NVDebug = {}
 
 local fn = {}
 
--- FIXME!: one brings up float, one brings up float and does a notification
--- also keymaps
+-- FIXME!: keymaps
 function NVDebug.keymaps()
   K.map {
     '<M-d>w',
