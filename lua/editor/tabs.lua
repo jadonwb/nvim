@@ -25,8 +25,15 @@ end
 ---@param tabid TabID
 ---@return TabType | nil
 function NVTabs.get_tab_type(tabid)
+  -- Temporary types first
   for _, t in ipairs(NVTabs._types) do
-    if t.is_match(tabid) then
+    if t.is_temporary and t.is_match(tabid) then
+      return t
+    end
+  end
+  -- Then non-temporary types
+  for _, t in ipairs(NVTabs._types) do
+    if not t.is_temporary and t.is_match(tabid) then
       return t
     end
   end
