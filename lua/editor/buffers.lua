@@ -11,7 +11,7 @@ NVClose.register('dashboard',       function() return NVSnacksDashboard.is_activ
 NVClose.register('terminal_tab',    function() return NVTerminal.ensure_tab_hidden() end, 20)
 NVClose.register('terminal_vsplit', function() return NVTerminal.ensure_vsplit_hidden() end, 30)
 NVClose.register('nvlazy',          function() return NVLazy.ensure_hidden() end, 40)
-NVClose.register('diffview',        function() return NVDiffview.ensure_current_hidden() end, 50)
+NVClose.register('diffview',        function() return NVDiffview.ensure_hidden() end, 50)
 NVClose.register('noice',           function() return NVNoice.ensure_hidden() end, 60)
 NVClose.register('lsp_popup',       function() return NVLspPopup.ensure_hidden() end, 70)
 NVClose.register('git_commit',      function() return NVGitCommit.ensure_hidden() end, 80)
