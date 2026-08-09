@@ -1,4 +1,4 @@
-return {
+NVWhichKey = {
   'folke/which-key.nvim',
   opts = {
     delay = 333,
@@ -24,3 +24,5 @@ return {
     },
   },
 }
+
+return { NVWhichKey }
