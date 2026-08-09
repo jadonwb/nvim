@@ -3,13 +3,10 @@ NVWindows = {
   window_picker_keys = 'HJKLASDFGQWERT',
 }
 
--- TODO!: this needs attention (keymap wise)?
-
 local fn = {}
 
 function NVWindows.keymaps()
-  -- TODO?: move to buffers file?
-  -- New buffers in splits
+  -- TODO!: move and rename/remap
   K.map { '<leader>bs', 'Create new buffer in a horizontal split', '<Cmd>new<CR>', mode = 'n' }
   K.map { '<leader>bv', 'Create new buffer in a vertical split', '<Cmd>vnew<CR>', mode = 'n' }
 
