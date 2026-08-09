@@ -132,6 +132,12 @@ function NVTerminal.toggle_tab()
   local buf = vim.api.nvim_get_current_buf()
   vim.bo[buf].bufhidden = 'wipe'
 
+  -- Block C-/ from opening a vsplit inside the terminal tab. Buffer-local
+  -- Nop mappings take priority over the global toggle mapping. Both C-_
+  -- and C-/ are mapped since terminals send either keycode for C-/.
+  vim.keymap.set('t', '<C-_>', '<Nop>', { buffer = buf, nowait = true })
+  vim.keymap.set('t', '<C-/>', '<Nop>', { buffer = buf, nowait = true })
+
   NVTerminal.terminal_tab = {
     tab = vim.api.nvim_get_current_tabpage(),
     original_tab = current_tab,
