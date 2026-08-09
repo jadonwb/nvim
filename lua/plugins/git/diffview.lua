@@ -15,7 +15,7 @@ function NVDiffview.is_diffview_tab(tabid)
   return false
 end
 
-function NVDiffview.ensure_current_hidden()
+function NVDiffview.ensure_hidden()
   local current_diff = dv_fn.current_diff()
   if current_diff then
     dv_fn.hide_current_diff()
@@ -24,23 +24,11 @@ function NVDiffview.ensure_current_hidden()
   return false
 end
 
-function NVDiffview.ensure_all_hidden()
-  local current_diff = dv_fn.current_diff()
-  if current_diff then
-    dv_fn.hide_current_diff()
-  end
-  local inactive_diff_tab = dv_fn.inactive_diff()
-  if inactive_diff_tab then
-    local tab_nr = vim.api.nvim_tabpage_get_number(inactive_diff_tab)
-    vim.cmd.tabclose(tab_nr)
-  end
-end
-
 NVTabs.register_type {
   name = 'diffview',
   is_temporary = true,
   is_match = NVDiffview.is_diffview_tab,
-  ensure_hidden = NVDiffview.ensure_all_hidden,
+  ensure_hidden = NVDiffview.ensure_hidden,
 }
 
 function dv_fn.current_diff()
