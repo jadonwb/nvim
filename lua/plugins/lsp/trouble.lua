@@ -1,5 +1,3 @@
--- === Wrapper functions (set globals on load) ===
-
 NVTrouble = {}
 
 function NVTrouble.ensure_hidden()
@@ -21,6 +19,8 @@ return {
     { '<leader>xX', '<cmd>Trouble diagnostics toggle<cr>', desc = 'Workspace Diagnostics' },
     { '<leader>xl', '<cmd>Trouble loclist toggle<cr>', desc = 'Location List' },
     { '<leader>xq', '<cmd>Trouble qflist toggle<cr>', desc = 'Quickfix List' },
+    { '<leader>xt', false },
+    { '<leader>xT', false },
   },
   opts = {
     auto_close = true,
