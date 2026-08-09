@@ -12,6 +12,7 @@ return {
       NVFocusMode.autocmds()
       NVBuffers.autocmds()
       NVLspPopup.autocmds()
+      NVPersistence.autocmds()
     end,
   },
 
