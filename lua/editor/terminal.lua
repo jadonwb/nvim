@@ -119,8 +119,6 @@ function NVTerminal.toggle_tab()
 
   Snacks.terminal.open(nil, {
     auto_close = false,
-    -- NOTE: auto_close=false keeps the tab open when the shell exits so you
-    -- can read command output. Close the tab with M-/ or M-w when done.
     win = { position = 'current' },
   })
 
