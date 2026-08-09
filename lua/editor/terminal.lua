@@ -148,7 +148,7 @@ end
 function NVTerminal.ensure_hidden()
   local t = NVTerminal.terminal_tab
   if not t then
-    return
+    return false
   end
 
   -- Switch to original tab
@@ -174,6 +174,7 @@ function NVTerminal.ensure_hidden()
     pcall(vim.cmd, 'tabclose ' .. num)
   end
   NVTerminal.terminal_tab = nil
+  return true
 end
 
 NVCompanionPanels.register('terminal_vsplit', function()
@@ -245,5 +246,5 @@ NVTabs.register_type {
   name = 'terminal',
   is_temporary = true,
   is_match = NVTerminal.is_terminal_tab,
-  close_hook = NVTerminal.ensure_hidden, -- TODO: use ensure_hidden or ensure_tab_hidden?
+  close_hook = NVTerminal.ensure_hidden,
 }

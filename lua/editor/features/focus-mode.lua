@@ -93,18 +93,22 @@ function NVFocusMode.toggle()
 end
 
 function NVFocusMode.ensure_deactivated()
-  if NVFocusMode.tab then
-    local current_tab = vim.api.nvim_get_current_tabpage()
-
-    if NVFocusMode.tab.id ~= current_tab then
-      log.trace 'Focus tab exists but is not active. Closing it.'
-      local tab_number = vim.api.nvim_tabpage_get_number(NVFocusMode.tab.id)
-      vim.cmd('tabclose ' .. tab_number)
-    else
-      log.trace 'Focus tab is active. Deactivating it.'
-      NVFocusMode.deactivate_active()
-    end
+  if not NVFocusMode.tab then
+    return false
   end
+
+  local current_tab = vim.api.nvim_get_current_tabpage()
+
+  if NVFocusMode.tab.id ~= current_tab then
+    log.trace 'Focus tab exists but is not active. Closing it.'
+    local tab_number = vim.api.nvim_tabpage_get_number(NVFocusMode.tab.id)
+    vim.cmd('tabclose ' .. tab_number)
+  else
+    log.trace 'Focus tab is active. Deactivating it.'
+    NVFocusMode.deactivate_active()
+  end
+
+  return true
 end
 
 function NVFocusMode.ensure_deactivated_if_active()

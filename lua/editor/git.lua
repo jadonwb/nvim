@@ -22,13 +22,9 @@ end
 function NVGit.is_worktree(path)
   path = path or vim.fn.getcwd(-1, 0)
 
-  -- Check if this is actually a secondary worktree (not the main repo)
   -- In a worktree, .git is a file; in main repo, .git is a directory
   local git_path = path .. '/.git'
-  if vim.fn.isdirectory(git_path) == 1 then
-    return false -- Main repo, not a worktree
-  end
-  return true
+  return vim.fn.isdirectory(git_path) == 0
 end
 
 ---@param path? string
