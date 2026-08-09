@@ -201,3 +201,19 @@ function NVGitWorktrees.close_tab(info)
     layout = { preset = 'select' },
   }
 end
+
+NVTabs.register_type {
+  name = 'worktree',
+  is_temporary = false,
+  is_match = function(tabid)
+    local ok, label = pcall(vim.api.nvim_tabpage_get_var, tabid, 'tab_label')
+    return ok and label and type(label) == 'table' and label.icon == '󰙅'
+  end,
+  close_hook = function()
+    local info = NVGit.get_worktree_info()
+    if info then
+      NVGitWorktrees.close_tab(info)
+      return
+    end
+  end,
+}
