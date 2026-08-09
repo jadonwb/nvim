@@ -68,7 +68,7 @@ function NVTerminal.open_vsplit()
         state.vsplit_visible = true
         return
       end
-      -- Show failed (buffer was wiped, etc.) — clear and recreate
+      -- Buffer was wiped, clear and recreate
       state.vsplit_term = nil
     end
   end
