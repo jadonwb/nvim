@@ -152,6 +152,19 @@ end
 ---@param info GitWorktreeInfo
 function NVGitWorktrees.close_tab(info)
   local Snacks = require 'snacks'
+
+  -- Check if other tabs are inside this worktree
+  local current_tab = vim.api.nvim_get_current_tabpage()
+  local other_tabs_in_worktree = false
+  for _, tab in ipairs(vim.api.nvim_list_tabpages()) do
+    if tab ~= current_tab
+      and vim.fn.getcwd(-1, vim.api.nvim_tabpage_get_number(tab)) == info.path
+    then
+      other_tabs_in_worktree = true
+      break
+    end
+  end
+
   Snacks.picker {
     title = 'Close: ' .. info.branch,
     items = {
@@ -160,11 +173,21 @@ function NVGitWorktrees.close_tab(info)
       { text = 'Close tab', action = 'close-tab' },
     },
     format = function(item)
+      local destructive = item.action == 'delete-all' or item.action == 'delete-worktree'
+      if destructive and other_tabs_in_worktree then
+        return { { ' ', 'Comment' }, { item.text, 'Comment' } }
+      end
       return { { ' ', 'SnacksPickerIcon' }, { item.text } }
     end,
     confirm = function(picker, item)
       picker:close()
       if not item then
+        return
+      end
+
+      -- Block destructive actions when other tabs are in this worktree
+      if (item.action == 'delete-all' or item.action == 'delete-worktree') and other_tabs_in_worktree then
+        vim.notify('Cannot remove: another tab is open in this worktree', vim.log.levels.WARN)
         return
       end
 
