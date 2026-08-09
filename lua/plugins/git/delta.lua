@@ -1,57 +1,13 @@
--- TODO!: modularize and stuff!
-return {
+local fn = {}
+
+NVDelta = {
   'alex35mil/delta.nvim',
   lazy = false,
-
-  config = function(_, opts)
-    require('delta').setup(opts)
-    -- Label delta file diff tabs via buffer name pattern (delta://diff/*)
-    vim.api.nvim_create_autocmd('BufEnter', {
-      group = vim.api.nvim_create_augroup('delta-tab-label', { clear = true }),
-      callback = function()
-        local name = vim.api.nvim_buf_get_name(0)
-        if name:match '^delta://diff/' then
-          vim.api.nvim_tabpage_set_var(vim.api.nvim_get_current_tabpage(), 'tab_label', '  diff')
-        end
-      end,
-    })
-  end,
-
   opts = function()
-    local pi_ok, pi = pcall(require, 'pi')
+    local pi = require 'pi'
     local delta = require 'delta'
     local picker = delta.picker
     local spotlight = delta.spotlight
-
-    -- ── custom action: send file to pi as @mention ──────
-    local function send_to_pi(close_after)
-      return function(ctx)
-        local node = ctx.node
-        if not node or not node.path or node.path == '' then
-          return
-        end
-        if pi_ok then
-          pi.send_mention({ path = node.path }, { focus = false })
-          if close_after then
-            ctx.close()
-            pi.focus_chat_prompt()
-          end
-        end
-      end
-    end
-
-    -- ── custom action: open file, switching pi to side if float ──
-    local function open_with_pi_side(action)
-      return function(ctx)
-        if pi_ok and pi.is_visible and pi.is_visible() and pi.layout and pi.layout() == 'float' then
-          pi.toggle_layout(function()
-            action(ctx)
-          end)
-        else
-          action(ctx)
-        end
-      end
-    end
 
     return {
       picker = {
@@ -72,25 +28,23 @@ return {
             end,
           },
           preview = {
-            enabled = false,
+            enabled = true,
+            title = ' 󰫽󰫿󰫲󰬃󰫶󰫲󰬄 ',
             width = 0.5,
             border = NVBorders.rounded,
           },
         },
         sources = {
           git = { label = 'git' },
-          agent = pi_ok and { label = 'agent', files = pi.changed_files } or nil,
-          -- chezmoi = { label = 'Chezmoi', files = "" }, -- TODO: implement, call chezmoi status and parse lines?
+          agent = { label = 'agent', files = pi.changed_files },
         },
         actions = {
-          open = { NVKeymaps.confirm, open_with_pi_side(picker.actions.open) },
-          open_vsplit = { NVKeymaps.open_vsplit, open_with_pi_side(picker.actions.open_vsplit) },
-          open_hsplit = { NVKeymaps.open_hsplit, open_with_pi_side(picker.actions.open_hsplit) },
-          spotlight = { NVKeymaps.confirm_alt, open_with_pi_side(picker.actions.spotlight) },
+          open = { '<CR>', fn.open(picker.actions.open) },
+          open_vsplit = { NVKeymaps.open_vsplit, fn.open(picker.actions.open_vsplit) },
+          open_hsplit = { NVKeymaps.open_hsplit, fn.open(picker.actions.open_hsplit) },
+          spotlight = { '<M-CR>', fn.open(picker.actions.spotlight) },
           collapse = { { 'h', modes = 'n' }, picker.actions.collapse },
           expand = { { 'l', modes = 'n' }, picker.actions.expand },
-          send_to_pi = { '<C-a>', send_to_pi(false) },
-          send_to_pi_and_close = { '<C-S-a>', send_to_pi(true) },
           jump_up = { NVKeymaps.scroll.up, picker.actions.move(-5) },
           jump_down = { NVKeymaps.scroll.down, picker.actions.move(5) },
           jump_top = { { 'gg', modes = 'n' }, picker.actions.move_to_top },
@@ -103,31 +57,45 @@ return {
           move_down = { { { 'j', modes = 'n' }, '<C-n>' }, picker.actions.move(1) },
           close = { { NVKeymaps.close, { '<Esc>', modes = 'n' } }, picker.actions.close },
           toggle_preview = { '<C-S-p>', picker.actions.toggle_preview },
-          toggle_stage = { NVKeymaps.confirm_alt, picker.actions.toggle_stage },
-          reset = { { '<C-x>', modes = 'n' }, picker.actions.reset },
+          toggle_stage = { '<C-CR>', picker.actions.toggle_stage },
+          reset = { { '<BS>', modes = 'n' }, picker.actions.reset },
+          send_to_pi = { '<C-a>', fn.send_to_pi { close = false } },
+          send_to_pi_and_close = { '<C-S-a>', fn.send_to_pi { close = true } },
         },
       },
-
       spotlight = {
+        title = '󱦇 󰬀󰫽󰫼󰬁󰫹󰫶󰫴󰫵󰬁',
+        status = {
+          staged = { icon = '󰕥', label = '󰬀󰬁󰫮󰫴󰫲󰫱' },
+          unstaged = { icon = '󰒙', label = '󰬂󰫻󰬀󰬁󰫮󰫴󰫲󰫱' },
+          mixed = { icon = '', label = '󰫺󰫶󰬅󰫲󰫱' },
+          untracked = { icon = '󰫛', label = '󰬂󰫻󰬁󰫿󰫮󰫰󰫸󰫲󰫱' },
+          clean = { icon = '', label = '󰫰󰫹󰫲󰫮󰫻' },
+          conflict = { icon = '󰻌', label = '󰫰󰫼󰫻󰫳󰫹󰫶󰫰󰬁' },
+          error = { icon = '', label = '󰫲󰫿󰫿󰫼󰫿' },
+          outsider = { icon = '', label = '󰫼󰬂󰬁󰬀󰫶󰫱󰫲󰫿' },
+          no_repo = { icon = '', label = '󰫻󰫼 󰫿󰫲󰫽󰫼' },
+          non_editable = { icon = '󱀰', label = '' },
+        },
+        autosave_before_stage = true,
+        reopen_picker_after_stage = true,
+
         actions = {
-          -- ── hunk navigation (global so they work even when spotlight isn't focused) ──
+          close = { '<Esc>', spotlight.actions.exit },
           next_hunk = { ']h', spotlight.actions.next_hunk, global = true },
           prev_hunk = { '[h', spotlight.actions.prev_hunk, global = true },
-          -- ── spotlight-only actions (auto-cleared when spotlight exits) ──
-          toggle_stage_hunk = { NVKeymaps.confirm, spotlight.actions.toggle_stage_hunk },
-          reset_file = { '<C-S-x>', spotlight.actions.reset_file, global = true },
-          reset_hunk = { { '<C-x>', modes = { 'n', 'v' } }, spotlight.actions.reset_hunk, global = true },
+          alt_next_hunk = { '<C-n>', spotlight.actions.next_hunk },
+          alt_prev_hunk = { '<C-p>', spotlight.actions.prev_hunk },
+          toggle_stage_file = { '<C-CR>', spotlight.actions.toggle_stage_file },
+          toggle_stage_hunk = { '<C-Space>', spotlight.actions.toggle_stage_hunk },
+          reset_file = { '<C-S-x>', spotlight.actions.reset_file },
+          reset_hunk = { { '<A-BS>', modes = { 'n', 'v' } }, spotlight.actions.reset_hunk, global = true },
         },
       },
 
       diff = {
         actions = {
-          open_hunk_diff = { { 'gd', modes = 'n' }, delta.diff.actions.open_hunk_diff },
-        },
-        file = {
-          keys = {
-            close = 'q',
-          },
+          open_hunk_diff = { { '<A-Space>', modes = 'n' }, delta.diff.actions.open_hunk_diff },
         },
         hunk = {
           mode = 'auto',
@@ -141,27 +109,73 @@ return {
           },
         },
       },
-
-      reset = {
-        confirm = true,
+    }
+  end,
+  keys = function()
+    return {
+      {
+        '<Leader>dp',
+        function()
+          require('delta.picker').toggle()
+        end,
+        desc = 'Delta Picker',
+      },
+      {
+        '<Leader>ds',
+        function()
+          require('delta.spotlight').toggle()
+        end,
+        desc = 'Delta Spotlight',
       },
     }
   end,
-
-  keys = {
-    {
-      '<Leader>dp',
-      function()
-        require('delta.picker').toggle()
-      end,
-      desc = 'Delta Picker',
-    },
-    {
-      '<Leader>ds',
-      function()
-        require('delta.spotlight').toggle()
-      end,
-      desc = 'Delta Spotlight',
-    },
-  },
 }
+
+function NVDelta.cleanup()
+  local delta = require 'delta'
+  delta.spotlight.disable_all()
+  delta.diff.close_all()
+end
+
+--- Opening a file from a Delta picker starts a review flow. If Pi is in the
+--- floating layout, switch to the side layout first so the reviewed
+--- code is on the left in a spotlight window and the agent chat is on the right.
+---@param action delta.picker.ActionHandler
+---@return delta.picker.ActionHandler
+function fn.open(action)
+  local pi = require 'pi'
+
+  ---@param ctx delta.picker.ActionContext
+  return function(ctx)
+    if pi.is_visible() and pi.layout() == 'float' then
+      pi.toggle_layout(function(_)
+        action(ctx)
+      end)
+    else
+      action(ctx)
+    end
+  end
+end
+
+---@param opts { close: boolean }
+---@return delta.picker.ActionHandler
+function fn.send_to_pi(opts)
+  local pi = require 'pi'
+
+  ---@param ctx delta.picker.ActionContext
+  return function(ctx)
+    local node = ctx.node
+    if not node or not node.path or node.path == '' then
+      return
+    end
+
+    pi.send_mention({ path = node.path }, { focus = false })
+
+    if opts.close then
+      ctx.close()
+      pi.focus_chat_prompt()
+    end
+  end
+end
+
+return { NVDelta }
