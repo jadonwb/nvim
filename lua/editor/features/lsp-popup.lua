@@ -332,8 +332,8 @@ end
 function Popup:unmount()
   -- Clean up buffer-local scroll keymaps
   local parent_bufnr = vim.api.nvim_win_get_buf(self.parent)
-  pcall(vim.keymap.del, { 'n', 'i' }, NVKeymaps.scroll_ctx.up, { buffer = parent_bufnr })
-  pcall(vim.keymap.del, { 'n', 'i' }, NVKeymaps.scroll_ctx.down, { buffer = parent_bufnr })
+  pcall(vim.keymap.del, { 'n', 'i' }, NVKeymaps.scroll_alt.up, { buffer = parent_bufnr })
+  pcall(vim.keymap.del, { 'n', 'i' }, NVKeymaps.scroll_alt.down, { buffer = parent_bufnr })
 
   self.popup:unmount()
   Popups[self.parent] = nil
