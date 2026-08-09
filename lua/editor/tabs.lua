@@ -111,6 +111,7 @@ end
 ---@return boolean
 function NVTabs.is_temporary(tabid)
   -- TODO: make a tab register itself as tab and then is_temporary can loop through all of them?
+  -- also allows cleanup to be if tab is temporary: ensure_hidden
   return NVFocusMode.is_focus_tab(tabid) or NVDiffview.is_diffview_tab(tabid) or NVTerminal.is_terminal_tab(tabid)
 end
 
