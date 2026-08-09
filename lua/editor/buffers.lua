@@ -2,109 +2,30 @@ NVBuffers = {}
 
 local fn = {}
 
--- TODO!: migrate to companion panel pattern
--- and have each ui function register itself? how to maintain order or priority though?
--- really only like dashboard has to go first?
-local cooperative_ui = {
-  {
-    name = 'dashboard',
-    fn = function()
-      return NVSnacksDashboard.is_active()
-    end,
-  },
-  {
-    name = 'terminal_tab',
-    fn = function()
-      return NVTerminal.ensure_tab_hidden()
-    end,
-  },
-  {
-    name = 'terminal_vsplit',
-    fn = function()
-      return NVTerminal.ensure_vsplit_hidden()
-    end,
-  },
-  {
-    name = 'nvlazy',
-    fn = function()
-      return NVLazy.ensure_hidden()
-    end,
-  },
-  {
-    name = 'diffview',
-    fn = function()
-      return NVDiffview.ensure_current_hidden()
-    end,
-  },
-  {
-    name = 'noice',
-    fn = function()
-      return NVNoice.ensure_hidden()
-    end,
-  },
-  {
-    name = 'lsp_popup',
-    fn = function()
-      return NVLspPopup.ensure_hidden()
-    end,
-  },
-  {
-    name = 'git_commit',
-    fn = function()
-      return NVGitCommit.ensure_hidden()
-    end,
-  },
-  {
-    name = 'snacks_zoom',
-    fn = function()
-      return NVSZoom.ensure_deactivated()
-    end,
-  },
-  {
-    name = 'snacks_lazygit',
-    fn = function()
-      return NVSLazygit.ensure_hidden()
-    end,
-  },
-  {
-    name = 'snacks_input',
-    fn = function()
-      return NVSInput.ensure_hidden()
-    end,
-  },
-  {
-    name = 'mason',
-    fn = function()
-      return NVMason.ensure_hidden()
-    end,
-  },
-  {
-    name = 'trouble',
-    fn = function()
-      return NVTrouble.ensure_hidden()
-    end,
-  },
-  {
-    name = 'grug_far',
-    fn = function()
-      return NVGrugFar.ensure_current_hidden()
-    end,
-  },
-  {
-    name = 'fff',
-    fn = function()
-      return NVFff.ensure_hidden()
-    end,
-  },
-  {
-    name = 'focus_mode',
-    fn = function()
-      return NVFocusMode.ensure_deactivated_if_active()
-    end,
-  },
-}
+-- Cooperative close handlers registered in priority order (lower = checked first).
+-- Each handler is consumed on <M-w> (first-match-wins) and all are called on PersistenceSavePre.
+require 'editor.close'
+
+-- this is the order I should require things too?
+NVClose.register('dashboard',       function() return NVSnacksDashboard.is_active() end, 10)
+NVClose.register('terminal_tab',    function() return NVTerminal.ensure_tab_hidden() end, 20)
+NVClose.register('terminal_vsplit', function() return NVTerminal.ensure_vsplit_hidden() end, 30)
+NVClose.register('nvlazy',          function() return NVLazy.ensure_hidden() end, 40)
+NVClose.register('diffview',        function() return NVDiffview.ensure_current_hidden() end, 50)
+NVClose.register('noice',           function() return NVNoice.ensure_hidden() end, 60)
+NVClose.register('lsp_popup',       function() return NVLspPopup.ensure_hidden() end, 70)
+NVClose.register('git_commit',      function() return NVGitCommit.ensure_hidden() end, 80)
+NVClose.register('snacks_zoom',     function() return NVSZoom.ensure_deactivated() end, 90)
+NVClose.register('snacks_lazygit',  function() return NVSLazygit.ensure_hidden() end, 100)
+NVClose.register('snacks_input',    function() return NVSInput.ensure_hidden() end, 110)
+NVClose.register('mason',           function() return NVMason.ensure_hidden() end, 120)
+NVClose.register('trouble',         function() return NVTrouble.ensure_hidden() end, 130)
+NVClose.register('grug_far',        function() return NVGrugFar.ensure_current_hidden() end, 140)
+NVClose.register('fff',             function() return NVFff.ensure_hidden() end, 150)
+NVClose.register('focus_mode',      function() return NVFocusMode.ensure_deactivated_if_active() end, 160)
 
 function NVBuffers.keymaps()
+  -- TODO: make it put me in normal mode after all is said and done?
   K.map {
     NVKeymaps.close,
     'Delete current buffer, but do not close current window if there are multiple',
@@ -277,11 +198,8 @@ end
 
 function fn.delete_buf()
   -- Give each registered floating UI/mode a chance to consume the close event
-  for _, ui in ipairs(cooperative_ui) do
-    local ok, consumed = pcall(ui.fn)
-    if ok and consumed then
-      return
-    end
+  if NVClose.consume() then
+    return
   end
 
   local current_buf = vim.api.nvim_get_current_buf()
