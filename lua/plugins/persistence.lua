@@ -18,6 +18,7 @@ function NVPersistence.autocmds()
 
       -- Close floating UIs and temporary tabs before saving session
       NVClose.consume_all()
+      NVTabs.close_all_temporary()
 
       -- Save tab labels for restore after load
       NVTabs.save_labels()

@@ -12,7 +12,7 @@ NVTabs = {
 ---@field is_match fun(tabid: TabID): boolean
 ---@field ensure_hidden? fun(): boolean Close this tab type if active
 ---@field create_hook? fun(tab: TabID) Called after tab creation
----@field close_hook? fun(tabid: TabID) Custom close behavior
+---@field close_hook? fun(tabid: TabID): boolean Custom close behavior
 
 ---@type TabType[]
 NVTabs._types = {}
@@ -77,8 +77,7 @@ function fn.close_tab()
   local tab_type = NVTabs.get_tab_type(tabid)
 
   -- Tab-type-specific close hook
-  if tab_type and tab_type.close_hook then
-    tab_type.close_hook(tabid)
+  if tab_type and tab_type.close_hook and tab_type.close_hook(tabid) then
     return
   end
 
@@ -88,7 +87,7 @@ function fn.close_tab()
     return
   end
 
-  -- Regular editor tab: confirm then close
+  -- Default fallback: confirm then close
   if NVDialogs.confirm('Close tab?', '&Yes\n&No', 2) == 1 then
     vim.cmd 'tabclose'
   end
@@ -175,4 +174,19 @@ function NVTabs.get_non_temporary()
   end
 
   return result
+end
+
+function NVTabs.close_all_temporary()
+  local tabs = vim.api.nvim_list_tabpages()
+  for _, tabid in ipairs(tabs) do
+    if not vim.api.nvim_tabpage_is_valid(tabid) then
+      goto continue
+    end
+    local tab_type = NVTabs.get_tab_type(tabid)
+    if tab_type and tab_type.is_temporary and tab_type.ensure_hidden then
+      vim.api.nvim_set_current_tabpage(tabid)
+      tab_type.ensure_hidden()
+    end
+    ::continue::
+  end
 end

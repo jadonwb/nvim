@@ -213,7 +213,8 @@ NVTabs.register_type {
     local info = NVGit.get_worktree_info()
     if info then
       NVGitWorktrees.close_tab(info)
-      return
+      return true
     end
+    return false
   end,
 }
