@@ -37,7 +37,7 @@ NVKeymaps = {
   tab_move = { left = '<C-Left>', right = '<C-Right>' },
   tab_swap = { left = '<C-S-Left>', right = '<C-S-Right>' },
   window_move = { up = '<C-k>', down = '<C-j>', left = '<C-h>', right = '<C-l>' },
-  window_swap = { up = '<M-S-Left>', down = '<M-S-Right>', left = '<M-S-Up>', right = '<M-S-Down>', swap = '<M-s>' },
+  window_swap = { up = '<M-S-Left>', down = '<M-S-Right>', left = '<M-S-Up>', right = '<M-S-Down>', swap = '<M-Tab>' },
   layout_resize = { up = '<S-Left>', down = '<S-Right>' },
   window_resize = { up = '<S-Up>', down = '<S-Down>' },
   layout_equalize = '<A-e>', -- TODO: not a fan of e for recenter/reset
