@@ -8,10 +8,6 @@
 
 NVFocusMode = { tab = nil }
 
--- TODO!: don't open focus mode if it doesn't provide any benefit? e.g. main tab doesn't have any extra splits or anything anyway?
-
--- FIXME: logging not working? or just wrong log level at the time of test?
-
 function NVFocusMode.keymaps()
   K.map { NVKeymaps.focus, 'Toggle focus mode', NVFocusMode.toggle, mode = { 'n', 'i', 'v', 't' } }
 end
@@ -40,8 +36,19 @@ function NVFocusMode.autocmds()
 end
 
 function NVFocusMode.toggle()
-  local current_buf = vim.api.nvim_get_current_buf()
-  local current_cursor = vim.api.nvim_win_get_cursor(0)
+  -- Guard: don't activate focus mode in temporary tabs (diffview, terminal, etc.)
+  local current_tab = vim.api.nvim_get_current_tabpage()
+  if NVTabs.is_temporary(current_tab) and not NVFocusMode.is_focus_tab(current_tab) then
+    return
+  end
+
+  -- Resolve the main content window (skip companion panels and sidepads)
+  local target_win = NVLayoutManager.get_main_content_win()
+  if not target_win then
+    return
+  end
+  local current_buf = vim.api.nvim_win_get_buf(target_win)
+  local current_cursor = vim.api.nvim_win_get_cursor(target_win)
 
   log.trace('Toggling focus — state: ' .. (NVFocusMode.tab and 'active' or 'inactive'))
 
@@ -64,7 +71,7 @@ function NVFocusMode.toggle()
   log.trace 'No focus tab found. Creating one.'
 
   local current_tab = vim.api.nvim_get_current_tabpage()
-  local current_win = vim.api.nvim_get_current_win()
+  local current_win = target_win
 
   vim.cmd 'tabnew'
 

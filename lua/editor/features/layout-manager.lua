@@ -504,6 +504,48 @@ function NVLayoutManager.is_sidepad_win(win)
   return is_sidepad_win(win)
 end
 
+--- Returns the "main" content window in the current tabpage.
+--- If currently in a companion panel or on a sidepad in a companion layout,
+--- returns the first main content window. If on a sidepad with no companion
+--- layout, returns any non-sidepad window. Otherwise returns the current
+--- window. Returns nil if no valid content window exists.
+---@return WinID | nil
+function NVLayoutManager.get_main_content_win()
+  local current_win = vim.api.nvim_get_current_win()
+
+  -- If on a sidepad, find the main content window
+  if is_sidepad_win(current_win) then
+    -- Prefer companion layout main content window
+    local companion = get_companion_layout_info()
+    if companion and companion.has_companion_window and companion.content_wins and #companion.content_wins > 0 then
+      return companion.content_wins[1]
+    end
+    -- Fall back to any non-sidepad window
+    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+      if not is_sidepad_win(win) then
+        return win
+      end
+    end
+    -- No non-sidepad window found
+    return nil
+  end
+
+  -- If in a companion panel, return the first main content window
+  local companion = get_companion_layout_info()
+  if companion and companion.has_companion_window then
+    for _, win in ipairs(companion.companion_wins) do
+      if win == current_win then
+        if companion.content_wins and #companion.content_wins > 0 then
+          return companion.content_wins[1]
+        end
+        break
+      end
+    end
+  end
+
+  return current_win
+end
+
 ---@param amount number | nil
 function NVLayoutManager.increase_width(amount)
   amount = amount or WIDTH_CHANGE_STEP
