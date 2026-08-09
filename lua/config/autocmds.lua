@@ -18,13 +18,12 @@ vim.api.nvim_create_autocmd('BufReadPre', {
   end,
 })
 
--- FIXME: want to have spell, but lsp-popup is technically markdown?
 vim.api.nvim_create_autocmd('FileType', {
   pattern = { 'markdown' },
   callback = function()
     vim.opt_local.wrap = true
     vim.opt_local.linebreak = true -- wrap at word boundaries
-    vim.opt_local.spell = false
+    vim.opt_local.spell = true
   end,
 })
 
