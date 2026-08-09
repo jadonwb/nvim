@@ -2,7 +2,6 @@ NVGitWorktrees = {}
 
 local fn = {}
 
--- TODO!: keymaps
 function NVGitWorktrees.keymaps()
   K.map { NVKeymaps.worktree_create, 'Create new tab with git worktree', fn.create_tab_with_worktree, mode = { 'n', 'i', 'v', 't' } }
   K.map { NVKeymaps.worktree_pick, 'Show worktree picker', fn.pick_worktree, mode = { 'n', 'v', 't' } }
