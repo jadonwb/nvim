@@ -6,14 +6,12 @@ return {
     priority = 1000,
 
     config = function()
-
       log.keymaps()
 
       NVLayoutManager.autocmds()
       NVFocusMode.autocmds()
       NVBuffers.autocmds()
       NVLspPopup.autocmds()
-      NVPi.autocmds()
     end,
   },
 
@@ -39,6 +37,8 @@ return {
         NVNavigation.keymaps()
         NVTerminal.keymaps()
         NVDebug.keymaps()
+        NVGrugFar.autocmds()
+        NVPi.autocmds()
       end)
     end,
   },
