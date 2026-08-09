@@ -55,6 +55,7 @@ function NVDisabled.disable_keymaps()
   -- LSP
   del('n', 'gra') -- Code Action (now <leader>ca)
   del('n', 'grn') -- Rename (now <leader>cr)
+  del('n', 'grx') -- Code lens (now <leader>cc)
 
   -- Zen / Zoom
   del('n', '<leader>uz') -- zen mode
