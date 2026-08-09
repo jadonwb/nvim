@@ -148,10 +148,19 @@ NVPi = {
       },
       {
         '<A-a>',
-        -- FIXME: if no pi open yet, open it instead of toggling it?
-        -- this isn't quite right still
         function()
-          -- Skip exclusivity only when toggling side→float (no conflict)
+          local skip = NVPi.is_visible() and NVPi.is_side()
+          if not skip then
+            NVCompanionPanels.ensure_exclusive 'pi_side'
+          end
+          vim.cmd 'PiToggleChat'
+        end,
+        mode = { 'n', 'i', 'v' },
+        desc = 'Toggle π layout (side/float)',
+      },
+      {
+        '<A-S-a>',
+        function()
           local skip = NVPi.is_visible() and NVPi.is_side()
           if not skip then
             NVCompanionPanels.ensure_exclusive 'pi_side'
