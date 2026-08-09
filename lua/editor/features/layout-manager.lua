@@ -1,3 +1,12 @@
+-- Layout manager that positions content using invisible sidepad windows.
+-- Sidepads are empty, non-focusable buffers that push content to the desired width.
+--
+-- Two layout modes:
+--   1. Centered: symmetric sidepads on both sides, content centered.
+--      Applies when: at most one window per row.
+--   2. Companion: left sidepad only, with one main buffer centered and a fixed-width panel (e.g., AI chat) on the right.
+--      Applies when: exactly one main content column + one fixed-width companion column.
+
 NVLayoutManager = {}
 
 ---@class TabState
