@@ -33,6 +33,8 @@ end
 --- Process unsaved buffers with a per-file dialog, then call done_fn.
 --- If no buffers are modified, calls done_fn immediately.
 ---@param done_fn fun() Called after all buffers are processed (or immediately if none modified)
+--- Collect decisions during review, apply all at the end so a later Cancel
+--- undoes earlier Discard/Write choices.
 local function process_unsaved_then(done_fn)
   local modified = fn.get_modified_buffers()
 
@@ -41,13 +43,31 @@ local function process_unsaved_then(done_fn)
     return
   end
 
-  local function process(index)
+  local function process(index, decisions)
     if index > #modified then
+      -- Phase 2: apply all collected decisions (only reached if no Cancel)
+      for _, d in ipairs(decisions) do
+        if d.action == 'write' then
+          local ok, err = pcall(vim.api.nvim_buf_call, d.buf, function()
+            vim.cmd 'write'
+          end)
+          if not ok then
+            vim.notify('Failed to write: ' .. tostring(err), vim.log.levels.ERROR)
+          end
+        elseif d.action == 'discard' then
+          pcall(vim.api.nvim_buf_set_option, d.buf, 'modified', false)
+        end
+      end
       done_fn()
       return
     end
 
     local item = modified[index]
+
+    -- Focus the buffer being discussed so the user can see its content
+    local current_win = vim.api.nvim_get_current_win()
+    pcall(vim.api.nvim_win_set_buf, current_win, item.buf)
+
     NVDialogs.select({
       title = 'Unsaved Changes (' .. index .. '/' .. #modified .. ')',
       message = 'Buffer has unsaved changes:\n' .. item.name,
@@ -56,23 +76,17 @@ local function process_unsaved_then(done_fn)
       initial_index = 1,
     }, function(choice)
       if choice == 'Write' then
-        local ok, err = pcall(vim.api.nvim_buf_call, item.buf, function()
-          vim.cmd 'write'
-        end)
-        if not ok then
-          vim.notify('Failed to write ' .. item.name .. ': ' .. tostring(err), vim.log.levels.ERROR)
-          return -- Abort on write failure
-        end
-        process(index + 1)
+        table.insert(decisions, { buf = item.buf, action = 'write' })
+        process(index + 1, decisions)
       elseif choice == 'Discard' then
-        pcall(vim.api.nvim_buf_set_option, item.buf, 'modified', false)
-        process(index + 1)
+        table.insert(decisions, { buf = item.buf, action = 'discard' })
+        process(index + 1, decisions)
       end
-      -- Cancel: do nothing, abort
+      -- Cancel: don't recurse, abort everything, no decisions applied
     end)
   end
 
-  process(1)
+  process(1, {})
 end
 
 --- Save all unsaved buffers and quit.

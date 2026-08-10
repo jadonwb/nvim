@@ -151,8 +151,6 @@ end
 
 ---@param info GitWorktreeInfo
 function NVGitWorktrees.close_tab(info)
-  local Snacks = require 'snacks'
-
   -- Check if other tabs are inside this worktree
   local current_tab = vim.api.nvim_get_current_tabpage()
   local other_tabs_in_worktree = false
@@ -163,90 +161,79 @@ function NVGitWorktrees.close_tab(info)
     end
   end
 
-  -- FIX: fix layout, no preview smaller vertical list?
-  -- or wait for close-dialog enhancements
-  Snacks.picker {
+  -- Build options; omit destructive actions when other tabs are in the worktree
+  local options = { 'Close tab' }
+  local shortcuts = { c = 'Close tab' }
+  if not other_tabs_in_worktree then
+    table.insert(options, 'Remove worktree')
+    table.insert(options, 'Delete branch and worktree')
+    shortcuts.r = 'Remove worktree'
+    shortcuts.d = 'Delete branch and worktree'
+  end
+
+  NVDialogs.select({
     title = 'Close: ' .. info.branch,
-    items = {
-      { text = 'Delete branch and worktree', action = 'delete-all' },
-      { text = 'Remove worktree', action = 'delete-worktree' },
-      { text = 'Close tab', action = 'close-tab' },
-    },
-    format = function(item)
-      local destructive = item.action == 'delete-all' or item.action == 'delete-worktree'
-      if destructive and other_tabs_in_worktree then
-        return { { ' ', 'Comment' }, { item.text, 'Comment' } }
-      end
-      return { { ' ', 'SnacksPickerIcon' }, { item.text } }
-    end,
-    confirm = function(picker, item)
-      picker:close()
-      if not item then
-        return
-      end
+    options = options,
+    shortcuts = shortcuts,
+  }, function(choice)
+    if not choice then
+      return
+    end
 
-      -- Block destructive actions when other tabs are in this worktree
-      if (item.action == 'delete-all' or item.action == 'delete-worktree') and other_tabs_in_worktree then
-        vim.notify('Cannot remove: another tab is open in this worktree', vim.log.levels.WARN)
-        return
-      end
+    if choice == 'Close tab' then
+      vim.cmd 'tabclose'
+      return
+    end
 
-      if item.action == 'close-tab' then
-        vim.cmd 'tabclose'
-        return
-      end
+    -- Destructive actions: confirm if there are uncommitted changes
+    local has_changes = NVGit.worktree_has_changes(info.path)
 
-      -- Confirm before removing worktree with uncommitted changes
-      local has_changes = NVGit.worktree_has_changes(info.path)
+    local function do_remove()
+      vim.cmd 'tabclose'
+      vim.defer_fn(function()
+        if not NVGit.remove_worktree(info.path, has_changes) then
+          log.error 'Failed to remove worktree'
+          return
+        end
+        log.info('Removed worktree: ' .. info.path)
 
-      local function do_remove()
-        vim.cmd 'tabclose'
-        vim.defer_fn(function()
-          if not NVGit.remove_worktree(info.path, has_changes) then
-            log.error 'Failed to remove worktree'
+        -- Close buffers from the removed worktree path
+        -- TODO: share logic with eventual close and delete all buffers type stuff
+        for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+          if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].buftype == '' then
+            local name = vim.api.nvim_buf_get_name(buf)
+            if vim.startswith(name, info.path) then
+              pcall(vim.api.nvim_buf_delete, buf, { force = true })
+            end
+          end
+        end
+
+        if choice == 'Delete branch and worktree' then
+          if not NVGit.delete_branch(info.branch) then
+            log.error 'Failed to delete branch'
             return
           end
-          log.info('Removed worktree: ' .. info.path)
+          log.info('Deleted branch: ' .. info.branch)
+        end
+      end, 100)
+    end
 
-          -- Close buffers from the removed worktree path
-          -- TODO: share logic with eventual close and delete all buffers type stuff
-          for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-            if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].buftype == '' then
-              local name = vim.api.nvim_buf_get_name(buf)
-              if vim.startswith(name, info.path) then
-                pcall(vim.api.nvim_buf_delete, buf, { force = true })
-              end
-            end
-          end
-
-          if item.action == 'delete-all' then
-            if not NVGit.delete_branch(info.branch) then
-              log.error 'Failed to delete branch'
-              return
-            end
-            log.info('Deleted branch: ' .. info.branch)
-          end
-        end, 100)
-      end
-
-      if has_changes then
-        NVDialogs.select({
-          title = 'Force Remove',
-          message = 'Worktree has uncommitted changes. Force remove?',
-          options = { 'Yes', 'No' },
-          shortcuts = { y = 'Yes', n = 'No' },
-          initial_index = 2,
-        }, function(choice)
-          if choice == 'Yes' then
-            do_remove()
-          end
-        end)
-      else
-        do_remove()
-      end
-    end,
-    layout = { preset = 'select' },
-  }
+    if has_changes then
+      NVDialogs.select({
+        title = 'Force Remove',
+        message = 'Worktree has uncommitted changes. Force remove?',
+        options = { 'Yes', 'No' },
+        shortcuts = { y = 'Yes', n = 'No' },
+        initial_index = 2,
+      }, function(confirm_choice)
+        if confirm_choice == 'Yes' then
+          do_remove()
+        end
+      end)
+    else
+      do_remove()
+    end
+  end)
 end
 
 NVTabs.register_type {
