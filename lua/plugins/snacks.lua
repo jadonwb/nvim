@@ -362,10 +362,14 @@ return {
             end
 
             if NVPersistence.has_session() then
-              table.insert(items, { icon = ' ', key = 's', desc = 'Restore Session', section = 'session' })
+              table.insert(items, { icon = ' ', key = 'l', desc = 'Restore Session', section = 'session' })
             end
 
-            table.insert(items, { icon = ' ', key = 'e', desc = 'Browse Files', action = ':Yazi' })
+            table.insert(items, { icon = ' ', key = 'g', desc = 'LazyGit', action = NVSLazygit.show })
+            table.insert(items, { icon = ' ', key = 'f', desc = 'Find file', action = NVFff.find_files })
+            table.insert(items, { icon = ' ', key = 's', desc = 'Find text', action = NVFff.live_grep })
+            table.insert(items, { icon = ' ', key = 'e', desc = 'Browse Files', action = ':Yazi' })
+            -- ' ' TODO: make a new file option?
             table.insert(items, { icon = ' ', key = 'q', desc = 'Quit', action = ':qa' })
 
             return items
@@ -527,7 +531,8 @@ return {
             return true
           end
           local ft = vim.bo.filetype
-          if ft == 'snacks_dashboard' or ft == '' or ft == 'nofile' then
+          -- NOTE!: this is where I can specify other filetypes that don't trigger the layout mananger
+          if ft == 'snacks_dashboard' or ft == '' or ft == 'nofile' or ft == 'snacks_terminal' or NVFff.is_active() then
             return
           end
           layout_enabled = true

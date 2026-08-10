@@ -4,9 +4,16 @@ NVClose.register('fff', function()
   return NVFff.ensure_hidden()
 end, 20)
 
-function NVFff.ensure_hidden()
+function NVFff.is_active()
   local ft = vim.bo.filetype
-  if ft ~= 'fff_input' and ft ~= 'fff_list' and ft ~= 'fff_preview' and ft ~= 'fff_file_info' then
+  if ft == 'fff_input' or ft == 'fff_list' or ft == 'fff_preview' or ft == 'fff_file_info' then
+    return true
+  end
+  return false
+end
+
+function NVFff.ensure_hidden()
+  if not NVFff.is_active() then
     return false
   end
 
@@ -33,6 +40,18 @@ function NVFffPickerLayout.build(opts)
     preview_position = 'right',
     preview_size = 0.6,
   }
+end
+
+function NVFff.find_files()
+  require('fff').find_files { layout = NVFffPickerLayout.build() }
+end
+
+function NVFff.live_grep()
+  require('fff').live_grep { layout = NVFffPickerLayout.build() }
+end
+
+function NVFff.live_grep_under_cursor()
+  require('fff').live_grep_under_cursor { layout = NVFffPickerLayout.build() }
 end
 
 return {
@@ -81,23 +100,17 @@ return {
   keys = {
     {
       '<leader>ff',
-      function()
-        require('fff').find_files { layout = NVFffPickerLayout.build() }
-      end,
+      NVFff.find_files,
       desc = 'Find Files',
     },
     {
       '<leader>fs',
-      function()
-        require('fff').live_grep { layout = NVFffPickerLayout.build() }
-      end,
+      NVFff.live_grep,
       desc = 'Live Grep',
     },
     {
       '<leader>fw',
-      function()
-        require('fff').live_grep_under_cursor { layout = NVFffPickerLayout.build() }
-      end,
+      NVFff.live_grep_under_cursor,
       mode = { 'n', 'x' },
       desc = 'Grep Word',
     },
