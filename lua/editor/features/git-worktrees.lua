@@ -163,6 +163,8 @@ function NVGitWorktrees.close_tab(info)
     end
   end
 
+  -- FIX: fix layout, no preview smaller vertical list?
+  -- or wait for close-dialog enhancements
   Snacks.picker {
     title = 'Close: ' .. info.branch,
     items = {
