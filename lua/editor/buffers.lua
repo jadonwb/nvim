@@ -177,7 +177,8 @@ function NVBuffers.delete_buf(buf, win)
             vim.api.nvim_buf_call(buf, function()
               vim.cmd 'write'
             end)
-            vim.api.nvim_win_close(win, true)
+            -- After saving, run the normal delete flow to replace the buffer
+            continue_delete()
           end
         end)
       end
