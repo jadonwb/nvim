@@ -182,7 +182,7 @@ end
 function NVTerminal.ensure_vsplit_hidden()
   local term = Snacks.terminal.get(nil, { create = false })
   if term then
-    pcall(term.close, term)
+    term:hide()
     return true
   end
   return false
