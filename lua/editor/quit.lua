@@ -48,6 +48,9 @@ local function process_unsaved_then(done_fn)
       -- Phase 2: apply all collected decisions (only reached if no Cancel)
       for _, d in ipairs(decisions) do
         if d.action == 'write' then
+          if d.filename then
+            pcall(vim.api.nvim_buf_set_name, d.buf, d.filename)
+          end
           local ok, err = pcall(vim.api.nvim_buf_call, d.buf, function()
             vim.cmd 'write'
           end)
@@ -77,8 +80,22 @@ local function process_unsaved_then(done_fn)
       initial_index = 1,
     }, function(choice)
       if choice == 'Write' then
-        table.insert(decisions, { buf = item.buf, action = 'write' })
-        process(index + 1, decisions)
+        if item.name == '[No Name]' then
+          NVDialogs.input({
+            title = 'Save As',
+          }, function(filename)
+            if filename and filename ~= '' then
+              table.insert(decisions, { buf = item.buf, action = 'write', filename = filename })
+              process(index + 1, decisions)
+            else
+              -- User cancelled filename prompt; re-show the dialog
+              process(index, decisions)
+            end
+          end)
+        else
+          table.insert(decisions, { buf = item.buf, action = 'write' })
+          process(index + 1, decisions)
+        end
       elseif choice == 'Discard' then
         table.insert(decisions, { buf = item.buf, action = 'discard' })
         process(index + 1, decisions)
