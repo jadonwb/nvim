@@ -70,101 +70,113 @@ function NVBuffers.delete_buf(buf, win)
   -- Don't write if file was deleted from disk or if it's an unnamed modified buffer
   local file_exists = buf_info.name ~= '' and vim.fn.filereadable(buf_info.name) == 1
 
-  if buf_info.name == '' and buf_info.changed == 1 then
-    if NVDialogs.confirm('Buffer has unsaved changes. Discard?', '&Yes\n&No', 2) ~= 1 then
+  local function continue_delete()
+    local mode = vim.fn.mode()
+
+    if mode ~= 'n' then
+      NVKeys.send('<Esc>', { mode = 'x' })
+    end
+
+    local tab_windows = NVWindows.get_tab_windows_with_listed_buffers { incl_help = true }
+
+    if tab_windows == nil then
+      log.error 'No windows in the current tab'
       return
     end
-  end
 
-  local mode = vim.fn.mode()
+    local is_opened_elsewhere = nil
 
-  if mode ~= 'n' then
-    NVKeys.send('<Esc>', { mode = 'x' })
-  end
+    local tabs = vim.api.nvim_list_tabpages()
+    local current_tab = vim.api.nvim_get_current_tabpage()
 
-  local tab_windows = NVWindows.get_tab_windows_with_listed_buffers { incl_help = true }
+    if #tab_windows > 1 or #tabs > 1 then
+      is_opened_elsewhere = fn.is_opened_elsewhere(tabs, current_tab, win, buf)
+    end
 
-  if tab_windows == nil then
-    log.error 'No windows in the current tab'
-    return
-  end
+    local bufs = NVBuffers.get_listed_bufs { sort_lastused = true }
 
-  local is_opened_elsewhere = nil
+    -- Searching for the next buffer to show in the current window
+    local next_buf = nil
 
-  local tabs = vim.api.nvim_list_tabpages()
-  local current_tab = vim.api.nvim_get_current_tabpage()
+    for _, b in ipairs(bufs) do
+      if b.bufnr ~= buf then
+        -- If there are multiple windows opened, we don't want to show the buffer
+        -- that is already opened in another window. So if it's the case,
+        -- we skip it and continue searching for the next buffer.
+        local is_opened_elsewhere_in_current_tab = false
 
-  if #tab_windows > 1 or #tabs > 1 then
-    is_opened_elsewhere = fn.is_opened_elsewhere(tabs, current_tab, win, buf)
-  end
+        for _, w in ipairs(tab_windows) do
+          local win_buf = vim.api.nvim_win_get_buf(w)
+          if win_buf == b.bufnr then
+            is_opened_elsewhere_in_current_tab = true
+            break
+          end
+        end
 
-  local bufs = NVBuffers.get_listed_bufs { sort_lastused = true }
-
-  -- Searching for the next buffer to show in the current window
-  local next_buf = nil
-
-  for _, b in ipairs(bufs) do
-    if b.bufnr ~= buf then
-      -- If there are multiple windows opened, we don't want to show the buffer
-      -- that is already opened in another window. So if it's the case,
-      -- we skip it and continue searching for the next buffer.
-      local is_opened_elsewhere_in_current_tab = false
-
-      for _, w in ipairs(tab_windows) do
-        local win_buf = vim.api.nvim_win_get_buf(w)
-        if win_buf == b.bufnr then
-          is_opened_elsewhere_in_current_tab = true
+        if not is_opened_elsewhere_in_current_tab then
+          -- that's the one
+          next_buf = b.bufnr
           break
         end
       end
+    end
 
-      if not is_opened_elsewhere_in_current_tab then
-        -- that's the one
-        next_buf = b.bufnr
-        break
-      end
-    end
-  end
-
-  if next_buf ~= nil then
-    if file_exists and vim.bo[buf].modified then -- TODO!: consider disabling autoformat here somehow, same for below modified checks
-      vim.cmd 'silent! write'
-    end
-    vim.api.nvim_win_set_buf(win, next_buf)
-    if not is_opened_elsewhere then
-      vim.api.nvim_buf_delete(buf, { force = not file_exists })
-    end
-  else
-    if #tab_windows > 1 then
-      if file_exists and vim.bo[buf].modified then
+    if next_buf ~= nil then
+      if file_exists and vim.bo[buf].modified then -- TODO!: consider disabling autoformat here somehow, same for below modified checks
         vim.cmd 'silent! write'
       end
-      vim.api.nvim_win_close(win, true)
+      vim.api.nvim_win_set_buf(win, next_buf)
       if not is_opened_elsewhere then
         vim.api.nvim_buf_delete(buf, { force = not file_exists })
       end
     else
-      local empty_buf = vim.api.nvim_create_buf(true, false)
-
-      if empty_buf == 0 then
-        log.error 'Failed to create empty buffer'
+      if #tab_windows > 1 then
         if file_exists and vim.bo[buf].modified then
           vim.cmd 'silent! write'
+        end
+        vim.api.nvim_win_close(win, true)
+        if not is_opened_elsewhere then
+          vim.api.nvim_buf_delete(buf, { force = not file_exists })
         end
       else
-        if file_exists and vim.bo[buf].modified then
-          vim.cmd 'silent! write'
-        end
-        vim.api.nvim_win_set_buf(win, empty_buf)
-      end
+        local empty_buf = vim.api.nvim_create_buf(true, false)
 
-      -- NOTE: this delete runs unconditionally unlike the other two branches.
-      -- In multi-tab setups a buffer still displayed elsewhere could be deleted.
-      -- Also runs on empty_buf == 0 (creation failed), which errors on force=false
-      -- if the buffer is still displayed in win.
-      -- Fix: wrap in if not is_opened_elsewhere guard; skip when empty_buf == 0.
-      vim.api.nvim_buf_delete(buf, { force = not file_exists })
+        if empty_buf == 0 then
+          log.error 'Failed to create empty buffer'
+          if file_exists and vim.bo[buf].modified then
+            vim.cmd 'silent! write'
+          end
+        else
+          if file_exists and vim.bo[buf].modified then
+            vim.cmd 'silent! write'
+          end
+          vim.api.nvim_win_set_buf(win, empty_buf)
+        end
+
+        -- NOTE: this delete runs unconditionally unlike the other two branches.
+        -- In multi-tab setups a buffer still displayed elsewhere could be deleted.
+        -- Also runs on empty_buf == 0 (creation failed), which errors on force=false
+        -- if the buffer is still displayed in win.
+        -- Fix: wrap in if not is_opened_elsewhere guard; skip when empty_buf == 0.
+        vim.api.nvim_buf_delete(buf, { force = not file_exists })
+      end
     end
+  end
+
+  if buf_info.name == '' and buf_info.changed == 1 then
+    NVDialogs.select({
+      title = 'Unsaved Changes',
+      message = 'Buffer has unsaved changes. Discard?',
+      options = { 'Yes', 'No' },
+      shortcuts = { y = 'Yes', n = 'No' },
+      initial_index = 2,
+    }, function(choice)
+      if choice == 'Yes' then
+        continue_delete()
+      end
+    end)
+  else
+    continue_delete()
   end
 end
 
@@ -197,9 +209,17 @@ function fn.delete_buf_and_close_win()
 
   if is_last_window_in_tab then
     if #non_temporary_tabs > 1 then
-      if NVDialogs.confirm('Close tab?', '&Yes\n&No', 2) == 1 then
-        vim.cmd 'tabclose'
-      end
+      NVDialogs.select({
+        title = 'Close Tab',
+        message = 'Close tab?',
+        options = { 'Yes', 'No' },
+        shortcuts = { y = 'Yes', n = 'No' },
+        initial_index = 2,
+      }, function(choice)
+        if choice == 'Yes' then
+          vim.cmd 'tabclose'
+        end
+      end)
     else
       -- Last non-temporary tab: create empty buffer instead of closing
       local current_buf = vim.api.nvim_get_current_buf()

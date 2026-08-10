@@ -198,39 +198,52 @@ function NVGitWorktrees.close_tab(info)
 
       -- Confirm before removing worktree with uncommitted changes
       local has_changes = NVGit.worktree_has_changes(info.path)
-      if has_changes then
-        if NVDialogs.confirm('Worktree has uncommitted changes. Force remove?', '&Yes\n&No', 2) ~= 1 then
-          return
-        end
-      end
 
-      vim.cmd 'tabclose'
-      vim.defer_fn(function()
-        if not NVGit.remove_worktree(info.path, has_changes) then
-          log.error 'Failed to remove worktree'
-          return
-        end
-        log.info('Removed worktree: ' .. info.path)
-
-        -- Close buffers from the removed worktree path
-        -- TODO: share logic with eventual close and delete all buffers type stuff
-        for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-          if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].buftype == '' then
-            local name = vim.api.nvim_buf_get_name(buf)
-            if vim.startswith(name, info.path) then
-              pcall(vim.api.nvim_buf_delete, buf, { force = true })
-            end
-          end
-        end
-
-        if item.action == 'delete-all' then
-          if not NVGit.delete_branch(info.branch) then
-            log.error 'Failed to delete branch'
+      local function do_remove()
+        vim.cmd 'tabclose'
+        vim.defer_fn(function()
+          if not NVGit.remove_worktree(info.path, has_changes) then
+            log.error 'Failed to remove worktree'
             return
           end
-          log.info('Deleted branch: ' .. info.branch)
-        end
-      end, 100)
+          log.info('Removed worktree: ' .. info.path)
+
+          -- Close buffers from the removed worktree path
+          -- TODO: share logic with eventual close and delete all buffers type stuff
+          for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+            if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].buftype == '' then
+              local name = vim.api.nvim_buf_get_name(buf)
+              if vim.startswith(name, info.path) then
+                pcall(vim.api.nvim_buf_delete, buf, { force = true })
+              end
+            end
+          end
+
+          if item.action == 'delete-all' then
+            if not NVGit.delete_branch(info.branch) then
+              log.error 'Failed to delete branch'
+              return
+            end
+            log.info('Deleted branch: ' .. info.branch)
+          end
+        end, 100)
+      end
+
+      if has_changes then
+        NVDialogs.select({
+          title = 'Force Remove',
+          message = 'Worktree has uncommitted changes. Force remove?',
+          options = { 'Yes', 'No' },
+          shortcuts = { y = 'Yes', n = 'No' },
+          initial_index = 2,
+        }, function(choice)
+          if choice == 'Yes' then
+            do_remove()
+          end
+        end)
+      else
+        do_remove()
+      end
     end,
     layout = { preset = 'select' },
   }
