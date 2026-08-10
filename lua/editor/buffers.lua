@@ -146,7 +146,6 @@ function NVBuffers.delete_buf(buf, win)
     else
       local empty_buf = vim.api.nvim_create_buf(true, false)
 
-      -- TODO!: this might be where I can instead turn off the layout manager and go back to dashboard
       if empty_buf == 0 then
         log.error 'Failed to create empty buffer'
         if file_exists and vim.bo[buf].modified then
