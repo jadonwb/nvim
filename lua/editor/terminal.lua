@@ -2,21 +2,8 @@ NVTerminal = {}
 
 local fn = {}
 
-NVTerminal.state = {} -- keyed by tabpage
-
 ---@type { tab: TabID?, original_tab: TabID, original_win: WinID }
 NVTerminal.terminal_tab = nil
-
-local function get_terminal_state()
-  local tab = vim.api.nvim_get_current_tabpage()
-  if not NVTerminal.state[tab] then
-    NVTerminal.state[tab] = {
-      vsplit_term = nil, ---@type snacks.win?
-      vsplit_visible = false,
-    }
-  end
-  return NVTerminal.state[tab]
-end
 
 function NVTerminal.keymaps()
   K.map { '<C-v>', 'Paste text', fn.paste, mode = 't', expr = true }
@@ -38,59 +25,20 @@ function NVTerminal.keymaps()
   })
 end
 
---- Opens/closes a terminal in a vsplit on the right side of the current tab.
---- Toggle behavior: hides (preserves shell state) if visible, shows if hidden.
---- Each tab tracks its own vsplit terminal independently.
---- Ensures mutual exclusion with other companion panels via NVCompanionPanels.
--- FIXME: why is it making me do C-/ twice when it exists to reopen it? logic issue?
--- e.g. if it doesn't exists, C-/ works first press, and to toggle it off, C-/ works first press
--- but if it already exists I am having to press it twice?
+--- Toggle a vsplit terminal on the right side of the current tab.
+--- Delegates to Snacks.terminal.toggle for all state management.
+--- Integrates with companion panels for mutual exclusion.
 function NVTerminal.open_vsplit()
-  local state = get_terminal_state()
-
-  -- Toggle: hide existing visible terminal (preserves shell state)
-  if state.vsplit_term then
-    local term = state.vsplit_term
-
-    if state.vsplit_visible then
-      pcall(term.hide, term)
-      state.vsplit_visible = false
-      return
-    else
-      -- Terminal is hidden — show it again
-      if not NVCompanionPanels.ensure_exclusive 'terminal_vsplit' then
-        return
-      end
-      local ok = pcall(term.show, term)
-      if ok then
-        state.vsplit_visible = true
-        return
-      end
-      -- Buffer was wiped, clear and recreate
-      state.vsplit_term = nil
-    end
-  end
-
-  -- Ensure no other companion panel is open
   if not NVCompanionPanels.ensure_exclusive 'terminal_vsplit' then
     return
   end
-
-  -- Open terminal vsplit on the right
-  local term = Snacks.terminal.open(nil, {
-    auto_close = false,
+  Snacks.terminal.toggle(nil, {
     win = {
       position = 'right',
       relative = 'editor',
       width = NVCompanionPanels.width(),
-      stack = false,
     },
   })
-
-  if term and term.win then
-    state.vsplit_term = term
-    state.vsplit_visible = true
-  end
 end
 
 --- Toggle a fullscreen terminal tab.
@@ -185,10 +133,9 @@ function NVTerminal.ensure_hidden()
 end
 
 NVCompanionPanels.register('terminal_vsplit', function()
-  local state = get_terminal_state()
-  if state.vsplit_term and state.vsplit_visible then
-    pcall(state.vsplit_term.hide, state.vsplit_term)
-    state.vsplit_visible = false
+  local term = Snacks.terminal.get(nil, { create = false })
+  if term and term:valid() then
+    term:hide()
     return true
   end
   return false
@@ -233,11 +180,9 @@ function NVTerminal.is_terminal_tab(tabid)
 end
 
 function NVTerminal.ensure_vsplit_hidden()
-  local state = get_terminal_state()
-  if state.vsplit_term and state.vsplit_visible then
-    pcall(state.vsplit_term.close, state.vsplit_term)
-    state.vsplit_term = nil
-    state.vsplit_visible = false
+  local term = Snacks.terminal.get(nil, { create = false })
+  if term then
+    pcall(term.close, term)
     return true
   end
   return false
