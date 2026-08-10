@@ -76,6 +76,7 @@ function fn.pick_worktree()
     title = 'Worktrees',
     items = items,
     matcher = { fuzzy = false, regex = true },
+    layout = NVSPickerVerticalLayout.build(),
     on_show = function(picker)
       if current_idx > 1 then
         picker.list:move(current_idx, true)
