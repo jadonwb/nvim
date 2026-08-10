@@ -1,6 +1,6 @@
 NVGitCommit = {}
 
--- TODO!: show staged files preview? toggleable preview? expand commits with what files they touched? or is this too much and just use lazygit for those more advanced things?
+-- TODO!: add git stash support
 
 -- If changing those, don't forget to update footer labels
 -- TODO!: make it dynamic, or easier?
@@ -14,7 +14,7 @@ local keymaps = {
 }
 
 -- Should have its own highlights, but I'm lazy
--- TODO!: color borders, focus active border color
+-- TODO?: color borders, focus active border color
 local highlights = {
   backdrop = 'Normal',
   normal = 'Normal',
