@@ -24,6 +24,10 @@ NVKeymaps = {
   layout_resize = { up = '<S-Left>', down = '<S-Right>' },
   window_resize = { up = '<S-Up>', down = '<S-Down>' },
   layout_equalize = '<A-e>', -- TODO: not a fan of e for recenter/reset
+
+  quit_save = '<A-q>',
+  quit_force = '<A-Q>',
+  restart = '<A-r>',
 }
 
 local default_keymap_options = { noremap = true, silent = true }

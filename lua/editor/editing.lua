@@ -144,19 +144,9 @@ function NVEditing.keymaps()
   -- K.map { '<A-Left>', 'Jump to the beginning of the line', '<C-o>I', mode = 'i' }
   -- K.map { '<A-Right>', 'Jump to the end of the line', '<C-o>A', mode = 'i' }
 
-  -- TODO: make new Alt-q, Alt-Q, etc. keymaps for closing and restarting and stuff
-  -- make an option to exit and wipe session?
-  K.map {
-    '<leader>qr',
-    'Save session and restart',
-    function()
-      require('persistence').save()
-      vim.schedule(function()
-        vim.cmd 'restart'
-      end)
-    end,
-    mode = 'n',
-  }
+  K.map { NVKeymaps.quit_save, 'Save all and quit', NVQuit.save_and_quit, mode = 'n' }
+  K.map { NVKeymaps.quit_force, 'Force quit all', NVQuit.force_quit, mode = 'n' }
+  K.map { NVKeymaps.restart, 'Save session and restart', NVQuit.restart, mode = 'n' }
 
   K.map { '<leader>u<tab>', 'Toggle tab characters', fn.toggle_tabs, mode = 'n' }
 

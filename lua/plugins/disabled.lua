@@ -15,6 +15,15 @@ return {
     },
   },
   {
+    'folke/persistence.nvim',
+    keys = {
+      { '<leader>qs', false },
+      { '<leader>qS', false },
+      { '<leader>ql', false },
+      { '<leader>qd', false },
+    },
+  },
+  {
     'folke/snacks.nvim',
     keys = {
       { '<leader>gi', false },
@@ -77,6 +86,7 @@ return {
         { '<leader>gh', hidden = true },
         { '<Leader>dp', hidden = true },
         { '<leader>w', hidden = true },
+        { '<leader>q', hidden = true },
       })
     end,
   },
