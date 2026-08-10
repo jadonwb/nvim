@@ -13,7 +13,7 @@ local LEVEL = default ---@type LogLevel
 -- FIXME!: these keymaps conflict with tmux
 function log.keymaps()
   K.map {
-    '<M-l>t',
+    '<M-C-l>t',
     'LOG: Set log level to `trace`',
     function()
       LEVEL = 'trace'
@@ -22,7 +22,7 @@ function log.keymaps()
   }
 
   K.map {
-    '<M-l>i',
+    '<M-C-l>i',
     'LOG: Set log level to `info`',
     function()
       LEVEL = 'info'
@@ -31,7 +31,7 @@ function log.keymaps()
   }
 
   K.map {
-    '<M-l>r',
+    '<M-C-l>r',
     'LOG: Reset log level',
     function()
       LEVEL = default
