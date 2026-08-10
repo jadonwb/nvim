@@ -161,14 +161,27 @@ function NVBuffers.delete_buf(buf, win)
   if buf_info.name == '' and buf_info.changed == 1 then
     NVDialogs.select({
       title = 'Unsaved Changes',
-      message = 'Buffer has unsaved changes. Discard?',
-      options = { 'Yes', 'No' },
-      shortcuts = { y = 'Yes', n = 'No' },
-      initial_index = 2,
+      message = 'Buffer has unsaved changes.',
+      options = { 'Discard', 'Save As...', 'Cancel' },
+      shortcuts = { d = 'Discard', s = 'Save As...', c = 'Cancel' },
+      initial_index = 3,
     }, function(choice)
-      if choice == 'Yes' then
+      if choice == 'Discard' then
         continue_delete()
+      elseif choice == 'Save As...' then
+        NVDialogs.input({
+          title = 'Save As',
+        }, function(filename)
+          if filename and filename ~= '' then
+            pcall(vim.api.nvim_buf_set_name, buf, filename)
+            vim.api.nvim_buf_call(buf, function()
+              vim.cmd 'write'
+            end)
+            vim.api.nvim_win_close(win, true)
+          end
+        end)
       end
+      -- Cancel: keep buffer open
     end)
   else
     continue_delete()

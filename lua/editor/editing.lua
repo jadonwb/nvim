@@ -13,7 +13,19 @@ end
 
 function fn.save()
   NVEditing.esc()
-  vim.cmd 'silent w'
+  local name = vim.api.nvim_buf_get_name(0)
+  if name == '' then
+    NVDialogs.input({
+      title = 'Save As',
+    }, function(filename)
+      if filename and filename ~= '' then
+        pcall(vim.api.nvim_buf_set_name, 0, filename)
+        vim.cmd 'silent w'
+      end
+    end)
+  else
+    vim.cmd 'silent w'
+  end
 end
 
 function fn.save_all()

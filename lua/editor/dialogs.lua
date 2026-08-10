@@ -256,6 +256,86 @@ function NVDialogs.select(opts, callback)
   })
 end
 
+--- Text input dialog with a modifiable field.
+---@param opts { title: string, default?: string }
+---@param callback fun(value: string?)
+function NVDialogs.input(opts, callback)
+  local default = opts.default or ''
+  local lines = #default > 0 and vim.split(default, '\n', { plain = true }) or { '' }
+  if #lines == 0 then
+    lines = { '' }
+  end
+
+  local was_insert = is_insert()
+
+  local float = create_float(lines, opts.title or 'Input', { modifiable = true, min_width = 40 })
+  local buf, win = float.buf, float.win
+
+  -- Place cursor at end and enter insert mode
+  local last_line = lines[#lines]
+  vim.api.nvim_win_set_cursor(win, { #lines, #last_line })
+  vim.cmd 'startinsert!'
+
+  local responded = false
+
+  local function close()
+    vim.cmd 'stopinsert'
+    if vim.api.nvim_win_is_valid(win) then
+      vim.api.nvim_win_close(win, true)
+    end
+    if vim.api.nvim_buf_is_valid(buf) then
+      vim.api.nvim_buf_delete(buf, { force = true })
+    end
+  end
+
+  local function restore_insert(fn)
+    vim.schedule(function()
+      if was_insert then
+        vim.cmd 'startinsert'
+      end
+      if fn then
+        fn()
+      end
+    end)
+  end
+
+  local function resolve(value)
+    if responded then
+      return
+    end
+    responded = true
+    close()
+    restore_insert(function()
+      callback(value)
+    end)
+  end
+
+  local function submit()
+    local buf_lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    resolve(table.concat(buf_lines, '\n'))
+  end
+
+  vim.keymap.set('n', '<CR>', submit, { buffer = buf, nowait = true })
+  vim.keymap.set('i', '<CR>', submit, { buffer = buf, nowait = true })
+  vim.keymap.set('n', '<Esc>', function()
+    resolve(nil)
+  end, { buffer = buf, nowait = true })
+  vim.keymap.set({ 'i', 'n' }, NVKeymaps.close, function()
+    resolve(nil)
+  end, { buffer = buf, nowait = true })
+  vim.keymap.set('n', 'q', function()
+    resolve(nil)
+  end, { buffer = buf, nowait = true })
+
+  vim.api.nvim_create_autocmd('BufLeave', {
+    buffer = buf,
+    once = true,
+    callback = function()
+      resolve(nil)
+    end,
+  })
+end
+
 --- Informational dialog with static content.
 ---@param opts { title: string, lines: string[] }
 function NVDialogs.info(opts)
