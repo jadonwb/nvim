@@ -27,3 +27,9 @@ function NVCompanionPanels.ensure_exclusive(caller)
 
   return true
 end
+
+--- Shared companion panel width (ratio of editor columns).
+---@return number
+function NVCompanionPanels.width()
+  return NVScreen.is_large() and 0.4 or 0.5
+end
