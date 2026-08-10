@@ -114,7 +114,7 @@ function NVBuffers.delete_buf(buf, win)
         end
 
         if not is_opened_elsewhere_in_current_tab then
-          -- that's the one
+          -- that's the one 🖤
           next_buf = b.bufnr
           break
         end
@@ -153,11 +153,6 @@ function NVBuffers.delete_buf(buf, win)
           vim.api.nvim_win_set_buf(win, empty_buf)
         end
 
-        -- NOTE: this delete runs unconditionally unlike the other two branches.
-        -- In multi-tab setups a buffer still displayed elsewhere could be deleted.
-        -- Also runs on empty_buf == 0 (creation failed), which errors on force=false
-        -- if the buffer is still displayed in win.
-        -- Fix: wrap in if not is_opened_elsewhere guard; skip when empty_buf == 0.
         vim.api.nvim_buf_delete(buf, { force = not file_exists })
       end
     end
