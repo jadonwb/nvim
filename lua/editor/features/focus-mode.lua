@@ -177,3 +177,5 @@ NVTabs.register_type {
   is_match = NVFocusMode.is_focus_tab,
   close_hook = NVFocusMode.ensure_deactivated,
 }
+
+NVClose.register('focus_mode', function() return NVFocusMode.ensure_deactivated_if_active() end, 160)

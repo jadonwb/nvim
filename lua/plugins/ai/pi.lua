@@ -5,8 +5,8 @@ NVPi = {
   opts = function()
     NVCompanionPanels.register('pi_side', function()
       if NVPi.is_visible() and NVPi.is_side() then
-        NVPi.toggle() -- 'float'
-        return not NVPi.is_side()
+        NVPi.toggle()
+        return true
       end
       return false
     end)
@@ -27,7 +27,7 @@ NVPi = {
         side = function()
           return {
             position = 'right',
-            width = NVScreen.is_large() and 0.40 or 0.50,
+            width = NVCompanionPanels.width(),
           }
         end,
         float = function()
@@ -115,9 +115,7 @@ NVPi = {
     return {
       {
         '<leader>af',
-        function()
-          vim.cmd 'Pi layout=float'
-        end,
+        NVPi.toggle 'float',
         mode = { 'n', 'v' },
         desc = 'Toggle π in a float layout',
       },
@@ -127,7 +125,7 @@ NVPi = {
           if not NVCompanionPanels.ensure_exclusive 'pi_side' then
             return
           end
-          vim.cmd 'Pi layout=side'
+          NVPi.toggle 'side'
         end,
         mode = { 'n', 'v' },
         desc = 'Toggle π in a side layout',
@@ -314,7 +312,7 @@ end
 function NVPi.toggle(layout)
   local ok, pi = pcall(require, 'pi')
   if ok and pi.toggle then
-    if layout and layout == 'chat' then
+    if not layout then
       pi.toggle()
     else
       pi.toggle { layout = layout }

@@ -82,7 +82,8 @@ function NVTerminal.open_vsplit()
     win = {
       position = 'right',
       relative = 'editor',
-      width = NVScreen.is_large() and 0.4 or 0.5,
+      width = NVCompanionPanels.width(),
+      stack = false,
     },
   })
 
@@ -254,3 +255,10 @@ NVTabs.register_type {
   is_match = NVTerminal.is_terminal_tab,
   close_hook = NVTerminal.ensure_hidden,
 }
+
+NVClose.register('terminal_tab', function()
+  return NVTerminal.ensure_tab_hidden()
+end, 20)
+NVClose.register('terminal_vsplit', function()
+  return NVTerminal.ensure_vsplit_hidden()
+end, 30)

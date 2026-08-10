@@ -31,6 +31,8 @@ NVTabs.register_type {
   close_hook = NVDiffview.ensure_hidden,
 }
 
+NVClose.register('diffview', function() return NVDiffview.ensure_hidden() end, 50)
+
 function dv_fn.current_diff()
   local ok, dv = pcall(require, 'diffview.lib')
   if not ok then

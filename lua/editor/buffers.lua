@@ -8,10 +8,7 @@ require 'editor.close'
 
 -- this is the order I should require things too?
 NVClose.register('dashboard',       function() return NVSnacksDashboard.is_active() end, 10)
-NVClose.register('terminal_tab',    function() return NVTerminal.ensure_tab_hidden() end, 20)
-NVClose.register('terminal_vsplit', function() return NVTerminal.ensure_vsplit_hidden() end, 30)
 NVClose.register('nvlazy',          function() return NVLazy.ensure_hidden() end, 40)
-NVClose.register('diffview',        function() return NVDiffview.ensure_hidden() end, 50)
 NVClose.register('noice',           function() return NVNoice.ensure_hidden() end, 60)
 NVClose.register('lsp_popup',       function() return NVLspPopup.ensure_hidden() end, 70)
 NVClose.register('git_commit',      function() return NVGitCommit.ensure_hidden() end, 80)
@@ -20,9 +17,7 @@ NVClose.register('snacks_lazygit',  function() return NVSLazygit.ensure_hidden()
 NVClose.register('snacks_input',    function() return NVSInput.ensure_hidden() end, 110)
 NVClose.register('mason',           function() return NVMason.ensure_hidden() end, 120)
 NVClose.register('trouble',         function() return NVTrouble.ensure_hidden() end, 130)
-NVClose.register('grug_far',        function() return NVGrugFar.ensure_current_hidden() end, 140)
 NVClose.register('fff',             function() return NVFff.ensure_hidden() end, 150)
-NVClose.register('focus_mode',      function() return NVFocusMode.ensure_deactivated_if_active() end, 160)
 
 function NVBuffers.keymaps()
   -- TODO: make it put me in normal mode after all is said and done?
