@@ -13,12 +13,12 @@ local keymaps = {
   prev_field = '<S-Tab>',
 }
 
--- Should have its own highlights, but I'm lazy
--- TODO?: color borders, focus active border color
+-- Should have its own highlights
+-- TODO!:
 local highlights = {
   backdrop = 'Normal',
   normal = 'Normal',
-  border = 'Comment',
+  border = 'Border',
   title = 'GitCommitTitle',
   commit_message = 'Comment',
   commit_date = 'GitCommitDate',
@@ -277,12 +277,12 @@ local function setup_char_counter(winid, bufnr)
 
     local conf = vim.api.nvim_win_get_config(winid)
     local action_labels = { commit = 'commit', rename = 'rename', amend = 'amend' }
-    -- TODO: make this dynamic with keyamps? or keep hardcoded here?
+    -- NOTE: make sure this stays updated with keyamps
     conf.footer = {
       { ' ↵  ', highlights.footer_key },
       { action_labels[state.mode], highlights.footer_action },
       { ' · ', highlights.footer_separator },
-      { 'Alt ↵  ', highlights.footer_key },
+      { 'Alt+Shift ↵ ', highlights.footer_key },
       { '+push', highlights.footer_action },
       { ' · ', highlights.footer_separator },
       { 'Alt W ', highlights.footer_key },
