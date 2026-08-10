@@ -4,6 +4,7 @@
 NVDialogs = {}
 
 local ns = vim.api.nvim_create_namespace 'nv-dialog'
+local ns_disabled = vim.api.nvim_create_namespace 'nv-dialog-disabled'
 
 local config = {
   border = NVBorders.rounded,
@@ -16,6 +17,7 @@ vim.api.nvim_set_hl(0, 'NVDialogFloat', { link = 'Normal' })
 vim.api.nvim_set_hl(0, 'NVDialogFloatBorder', { link = 'Border' })
 vim.api.nvim_set_hl(0, 'NVDialogTitle', { link = 'Title' })
 vim.api.nvim_set_hl(0, 'NVDialogSelected', { link = 'Normal' })
+vim.api.nvim_set_hl(0, 'NVDialogDisabled', { link = 'Comment' })
 
 local WINHIGHLIGHT = 'NormalFloat:NVDialogFloat,FloatBorder:NVDialogFloatBorder,FloatTitle:NVDialogTitle'
 
@@ -85,17 +87,36 @@ local function highlight_selection(buf, row)
 end
 
 --- Picker-style select dialog.
----@param opts { title: string, message?: string, options: string[], shortcuts?: table<string,string>, initial_index?: integer }
+---
+--- Options can be plain strings or tables: { text = "label", disabled?: boolean, reason?: string }.
+--- Disabled options are shown grayed out, skipped during navigation, and show a
+--- notification if selected via <CR> or shortcut.
+---
+---@param opts { title: string, message?: string, options: (string|{text:string,disabled?:boolean,reason?:string})[], shortcuts?: table<string,string>, initial_index?: integer }
 ---@param callback fun(choice: string?)
 function NVDialogs.select(opts, callback)
-  local options = opts.options or {}
-  if #options == 0 then
+  -- Normalize options to { text, disabled, reason } tables
+  local norm_options = {}
+  for _, raw in ipairs(opts.options or {}) do
+    if type(raw) == 'string' then
+      table.insert(norm_options, { text = raw, disabled = false })
+    else
+      table.insert(norm_options, {
+        text = raw.text,
+        disabled = raw.disabled or false,
+        reason = raw.reason,
+      })
+    end
+  end
+
+  if #norm_options == 0 then
     callback(nil)
     return
   end
 
   local lines = {}
   local option_offset = 0
+  local option_rows = {} -- maps 0-indexed option index → line index
 
   if opts.message and opts.message ~= '' then
     for _, line in ipairs(vim.split(opts.message, '\n', { plain = true })) do
@@ -105,8 +126,9 @@ function NVDialogs.select(opts, callback)
     option_offset = #lines
   end
 
-  for _, opt in ipairs(options) do
-    table.insert(lines, '  ' .. opt)
+  for i, opt in ipairs(norm_options) do
+    table.insert(lines, '  ' .. opt.text)
+    option_rows[i - 1] = #lines - 1
   end
 
   local was_insert = is_insert()
@@ -114,7 +136,25 @@ function NVDialogs.select(opts, callback)
 
   local float = create_float(lines, opts.title or 'Select')
   local buf, win = float.buf, float.win
-  local selected = math.max(0, math.min(#options - 1, (opts.initial_index or 1) - 1))
+
+  -- Gray out disabled options
+  for i, opt in ipairs(norm_options) do
+    if opt.disabled then
+      vim.api.nvim_buf_set_extmark(buf, ns_disabled, option_rows[i - 1], 0, {
+        end_col = #lines[option_rows[i - 1] + 1],
+        hl_group = 'NVDialogDisabled',
+      })
+    end
+  end
+
+  -- Start on the first non-disabled option
+  local selected = math.max(0, math.min(#norm_options - 1, (opts.initial_index or 1) - 1))
+  while selected < #norm_options - 1 and norm_options[selected + 1].disabled do
+    selected = selected + 1
+  end
+  while selected > 0 and norm_options[selected + 1].disabled do
+    selected = selected - 1
+  end
 
   vim.api.nvim_win_set_cursor(win, { option_offset + selected + 1, 0 })
   highlight_selection(buf, option_offset + selected)
@@ -153,9 +193,18 @@ function NVDialogs.select(opts, callback)
   end
 
   local function move(delta)
-    selected = math.max(0, math.min(#options - 1, selected + delta))
+    selected = math.max(0, math.min(#norm_options - 1, selected + delta))
     vim.api.nvim_win_set_cursor(win, { option_offset + selected + 1, 0 })
     highlight_selection(buf, option_offset + selected)
+  end
+
+  local function confirm_selection()
+    local opt = norm_options[selected + 1]
+    if opt.disabled then
+      vim.notify(opt.reason or 'This option is not available', vim.log.levels.WARN, { title = opts.title })
+      return
+    end
+    resolve(opt.text)
   end
 
   for _, lhs in ipairs { 'j', '<Down>' } do
@@ -169,12 +218,8 @@ function NVDialogs.select(opts, callback)
     end, { buffer = buf, nowait = true })
   end
 
-  vim.keymap.set('n', '<CR>', function()
-    resolve(options[selected + 1])
-  end, { buffer = buf, nowait = true })
-  vim.keymap.set('i', '<CR>', function()
-    resolve(options[selected + 1])
-  end, { buffer = buf, nowait = true })
+  vim.keymap.set('n', '<CR>', confirm_selection, { buffer = buf, nowait = true })
+  vim.keymap.set('i', '<CR>', confirm_selection, { buffer = buf, nowait = true })
 
   for _, lhs in ipairs { '<Esc>', 'q' } do
     vim.keymap.set('n', lhs, function()
@@ -187,9 +232,18 @@ function NVDialogs.select(opts, callback)
 
   if opts.shortcuts then
     for key, value in pairs(opts.shortcuts) do
-      vim.keymap.set('n', key, function()
-        resolve(value)
-      end, { buffer = buf, nowait = true })
+      for _, opt in ipairs(norm_options) do
+        if opt.text == value then
+          vim.keymap.set('n', key, function()
+            if opt.disabled then
+              vim.notify(opt.reason or 'This option is not available', vim.log.levels.WARN, { title = opts.title })
+            else
+              resolve(value)
+            end
+          end, { buffer = buf, nowait = true })
+          break
+        end
+      end
     end
   end
 

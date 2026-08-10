@@ -161,15 +161,13 @@ function NVGitWorktrees.close_tab(info)
     end
   end
 
-  -- Build options; omit destructive actions when other tabs are in the worktree
-  local options = { 'Close tab' }
-  local shortcuts = { c = 'Close tab' }
-  if not other_tabs_in_worktree then
-    table.insert(options, 'Remove worktree')
-    table.insert(options, 'Delete branch and worktree')
-    shortcuts.r = 'Remove worktree'
-    shortcuts.d = 'Delete branch and worktree'
-  end
+  -- Show all options; destructive ones are disabled when other tabs are in the worktree
+  local options = {
+    { text = 'Close tab' },
+    { text = 'Remove worktree', disabled = other_tabs_in_worktree, reason = 'Another tab is open in this worktree' },
+    { text = 'Delete branch and worktree', disabled = other_tabs_in_worktree, reason = 'Another tab is open in this worktree' },
+  }
+  local shortcuts = { c = 'Close tab', r = 'Remove worktree', d = 'Delete branch and worktree' }
 
   NVDialogs.select({
     title = 'Close: ' .. info.branch,
