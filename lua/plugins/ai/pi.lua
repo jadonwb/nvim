@@ -115,7 +115,9 @@ NVPi = {
     return {
       {
         '<leader>af',
-        NVPi.toggle 'float',
+        function()
+          return NVPi.toggle 'float'
+        end,
         mode = { 'n', 'v' },
         desc = 'Toggle π in a float layout',
       },
@@ -125,7 +127,7 @@ NVPi = {
           if not NVCompanionPanels.ensure_exclusive 'pi_side' then
             return
           end
-          NVPi.toggle 'side'
+          return NVPi.toggle 'side'
         end,
         mode = { 'n', 'v' },
         desc = 'Toggle π in a side layout',
