@@ -16,7 +16,7 @@ NVGrugFar = {
       filesFilter = '!.git/',
     },
     keymaps = {
-      close = false,
+      close = NVKeymaps.close,
       swapEngine = false, -- don't think I will ever use it
       swapReplacementInterpreter = false, -- same
     },
@@ -26,7 +26,7 @@ NVGrugFar = {
     {
       '<leader>fr',
       function()
-        if not NVCompanionPanels.ensure_exclusive 'grug_far' then
+        if not NVCompanionPanels.ensure_exclusive 'grug-far' then
           return
         end
         fn.open_current()
@@ -37,7 +37,7 @@ NVGrugFar = {
     {
       '<leader>fR',
       function()
-        if not NVCompanionPanels.ensure_exclusive 'grug_far' then
+        if not NVCompanionPanels.ensure_exclusive 'grug-far' then
           return
         end
         fn.open()
