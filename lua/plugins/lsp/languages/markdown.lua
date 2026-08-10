@@ -17,7 +17,7 @@ return {
       heading = {
         sign = true,
         width = 'block',
-        min_width = 90,
+        min_width = NVLayoutManager.default_width() - 5,
         border = true,
         border_virtual = true,
         icons = {
