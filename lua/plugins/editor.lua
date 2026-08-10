@@ -26,8 +26,6 @@ return {
       vim.schedule(function()
         NVDisabled.disable_keymaps()
 
-        -- TODO!: fill out with rest of keymaps and autocmds
-
         NVEditing.keymaps()
         NVFocusMode.keymaps()
         NVGitCommit.keymaps()

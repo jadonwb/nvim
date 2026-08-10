@@ -3,7 +3,6 @@ return {
   { 'folke/tokyonight.nvim', enabled = false },
   { 'akinsho/bufferline.nvim', enabled = false },
   { 'nvim-mini/mini.pairs', enabled = false },
-  -- ── flash.nvim — disable all default jump/skip keys ──────────────────
   {
     'folke/flash.nvim',
     -- stylua: ignore
@@ -15,11 +14,9 @@ return {
       { '<c-s>', mode = { 'c' },        false },
     },
   },
-  -- ── snacks.nvim — disable default picker/file/terminal keymaps ──────
   {
     'folke/snacks.nvim',
     keys = {
-      -- Git pickers
       { '<leader>gi', false },
       { '<leader>gI', false },
       { '<leader>gp', false },
@@ -28,7 +25,6 @@ return {
       { '<leader>gD', false },
       { '<leader>gs', false },
       { '<leader>gS', false },
-      -- Search
       { '<leader>/', false },
       { '<leader>sb', false },
       { '<leader>sB', false },
@@ -36,7 +32,6 @@ return {
       { '<leader>sG', false },
       { '<leader>sw', false },
       { '<leader>sW', false },
-      -- File operations
       { '<leader>fe', false },
       { '<leader>fE', false },
       { '<leader>fc', false },
@@ -49,24 +44,20 @@ return {
       { '<leader>fR', false },
       { '<leader>fF', false },
       { '<leader>fp', false },
-      -- Misc
       { '<leader>S', false },
       { '<leader>.', false },
       { '<leader>:', false },
       { '<leader>,', false },
       { '<leader>n', false },
-      -- Buffer
       { '<leader>bd', false },
     },
   },
-  -- ── grug-far.nvim — disable default search-replace keymap ───────────
   {
     'MagicDuck/grug-far.nvim',
     keys = {
       { '<leader>sr', false },
     },
   },
-
   {
     'LazyVim/LazyVim',
     opts = {
