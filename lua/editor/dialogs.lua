@@ -263,7 +263,7 @@ end
 function NVDialogs.confirm(msg, choices, default, type)
   local options = {}
   for choice in (choices or ''):gmatch '[^\n]+' do
-    table.insert(options, choice:gsub('&', ''))
+    table.insert(options, (choice:gsub('&', '')))
   end
 
   local result = default or 1

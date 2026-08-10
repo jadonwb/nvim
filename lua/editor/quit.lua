@@ -20,19 +20,30 @@ function fn.get_modified_buffers()
   return modified
 end
 
---- Save all unsaved buffers and quit. If any buffers have unsaved changes,
---- a custom floating dialog lets you review each one: Write, Discard, or Cancel.
-function NVQuit.save_and_quit()
+--- Save the session via persistence.
+local function save_session()
+  local ok = pcall(require, 'persistence')
+  if ok then
+    pcall(function()
+      require('persistence').save()
+    end)
+  end
+end
+
+--- Process unsaved buffers with a per-file dialog, then call done_fn.
+--- If no buffers are modified, calls done_fn immediately.
+---@param done_fn fun() Called after all buffers are processed (or immediately if none modified)
+local function process_unsaved_then(done_fn)
   local modified = fn.get_modified_buffers()
 
   if #modified == 0 then
-    vim.cmd 'qall'
+    done_fn()
     return
   end
 
   local function process(index)
     if index > #modified then
-      vim.cmd 'qall'
+      done_fn()
       return
     end
 
@@ -50,19 +61,27 @@ function NVQuit.save_and_quit()
         end)
         if not ok then
           vim.notify('Failed to write ' .. item.name .. ': ' .. tostring(err), vim.log.levels.ERROR)
-          return -- Abort the quit on write failure
+          return -- Abort on write failure
         end
         process(index + 1)
       elseif choice == 'Discard' then
-        -- Force-delete the buffer to discard unsaved changes before quitting
-        pcall(vim.api.nvim_buf_delete, item.buf, { force = true })
+        pcall(vim.api.nvim_buf_set_option, item.buf, 'modified', false)
         process(index + 1)
       end
-      -- Cancel: do nothing, abort the quit
+      -- Cancel: do nothing, abort
     end)
   end
 
   process(1)
+end
+
+--- Save all unsaved buffers and quit.
+--- Reviews each modified buffer with Write/Discard/Cancel dialog.
+function NVQuit.save_and_quit()
+  process_unsaved_then(function()
+    save_session()
+    vim.cmd 'qall'
+  end)
 end
 
 --- Force quit all tabs and windows without saving.
@@ -70,10 +89,13 @@ function NVQuit.force_quit()
   vim.cmd 'qall!'
 end
 
---- Save the current session and restart Neovim.
+--- Save session and restart Neovim.
+--- Reviews unsaved buffers with the same dialog as save_and_quit.
 function NVQuit.restart()
-  require('persistence').save()
-  vim.schedule(function()
-    vim.cmd 'restart'
+  process_unsaved_then(function()
+    save_session()
+    vim.schedule(function()
+      vim.cmd 'restart'
+    end)
   end)
 end
