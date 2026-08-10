@@ -55,6 +55,7 @@ local function process_unsaved_then(done_fn)
             vim.notify('Failed to write: ' .. tostring(err), vim.log.levels.ERROR)
           end
         elseif d.action == 'discard' then
+          -- FIXME: deprecated
           pcall(vim.api.nvim_buf_set_option, d.buf, 'modified', false)
         end
       end
@@ -108,6 +109,7 @@ end
 function NVQuit.restart()
   process_unsaved_then(function()
     save_session()
+    -- BUG: this isn't firing until my next keypress triggers the next event
     vim.schedule(function()
       vim.cmd 'restart'
     end)
