@@ -120,6 +120,21 @@ function NVGrugFar.autocmds()
 end
 
 ---@return boolean
+function NVGrugFar.ensure_hidden()
+  local plugin = require 'grug-far'
+
+  local success, instance = pcall(plugin.get_instance)
+
+  if not success or not instance then
+    return false
+  end
+
+  instance:close()
+
+  return true
+end
+
+---@return boolean
 function NVGrugFar.ensure_current_hidden()
   local plugin = require 'grug-far'
 
@@ -139,6 +154,7 @@ function fn.is_active()
   return vim.bo.filetype == filetype
 end
 
-NVCompanionPanels.register(filetype, NVGrugFar.ensure_current_hidden)
+NVCompanionPanels.register(filetype, NVGrugFar.ensure_hidden)
+NVClose.register(filetype, NVGrugFar.ensure_current_hidden, 48)
 
 return { NVGrugFar }

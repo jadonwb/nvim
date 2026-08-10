@@ -1,5 +1,3 @@
--- === Wrapper functions (set globals on load) ===
-
 NVMason = {}
 
 function NVMason.ensure_hidden()
@@ -15,13 +13,17 @@ function NVMason.ensure_hidden()
   return false
 end
 
+NVClose.register('mason', function()
+  return NVMason.ensure_hidden()
+end, 15)
+
 return {
   'mason-org/mason.nvim',
   opts = {
     ui = {
       backdrop = 100,
       width = 0.8,
-      height = 0.79, -- why tf are mason and lazy not centered the same, its a 1 row 1 col difference and its not configurable
+      height = 0.79,
     },
     ensure_installed = {
       'clang-format',

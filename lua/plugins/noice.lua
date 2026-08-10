@@ -263,4 +263,8 @@ function fn.ensure_signature_hidden()
   return true
 end
 
+NVClose.register('noice', function()
+  return NVNoice.ensure_hidden()
+end, 13)
+
 return { NVNoice }

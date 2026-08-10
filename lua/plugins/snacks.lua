@@ -271,6 +271,10 @@ function NVSZoom.ensure_deactivated()
   return false
 end
 
+NVClose.register('snacks_zoom', function()
+  return NVSZoom.ensure_deactivated()
+end, 30)
+
 -- Terminal
 function NVSTerminal.is_app(app, bufid)
   bufid = bufid or vim.api.nvim_get_current_buf()
@@ -308,6 +312,10 @@ function NVSLazygit.ensure_hidden()
   return false
 end
 
+NVClose.register('snacks_lazygit', function()
+  return NVSLazygit.ensure_hidden()
+end, 5)
+
 function NVSInput.is_input(bufid)
   bufid = bufid or vim.api.nvim_get_current_buf()
   return vim.bo[bufid].filetype == 'snacks_input'
@@ -321,9 +329,17 @@ function NVSInput.ensure_hidden()
   return false
 end
 
+NVClose.register('snacks_input', function()
+  return NVSInput.ensure_hidden()
+end, 20)
+
 function NVSnacksDashboard.is_active()
   return vim.bo.filetype == 'snacks_dashboard'
 end
+
+NVClose.register('dashboard', function()
+  return NVSnacksDashboard.is_active()
+end, 10)
 
 return {
   {
@@ -521,6 +537,7 @@ return {
       })
     end,
     keys = {
+      { '<M-f>', NVSZoom.activate, mode = { 'n', 'i', 'v' }, desc = 'Maximize' },
       {
         '<leader><space>',
         function()

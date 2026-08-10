@@ -777,3 +777,7 @@ function NVLspPopup.hide_unless_active()
     return true
   end
 end
+
+NVClose.register('lsp_popup', function()
+  return NVLspPopup.ensure_hidden()
+end, 12)

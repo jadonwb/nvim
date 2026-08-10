@@ -1,5 +1,9 @@
 NVFff = {}
 
+NVClose.register('fff', function()
+  return NVFff.ensure_hidden()
+end, 20)
+
 function NVFff.ensure_hidden()
   local ft = vim.bo.filetype
   if ft ~= 'fff_input' and ft ~= 'fff_list' and ft ~= 'fff_preview' and ft ~= 'fff_file_info' then

@@ -31,7 +31,9 @@ NVTabs.register_type {
   close_hook = NVDiffview.ensure_hidden,
 }
 
-NVClose.register('diffview', function() return NVDiffview.ensure_hidden() end, 50)
+NVClose.register('diffview', function()
+  return NVDiffview.ensure_hidden()
+end)
 
 function dv_fn.current_diff()
   local ok, dv = pcall(require, 'diffview.lib')
@@ -166,7 +168,9 @@ return {
     {
       '<Leader>dl',
       function()
-        if NVTabs.is_temporary(vim.api.nvim_get_current_tabpage()) then return end
+        if NVTabs.is_temporary(vim.api.nvim_get_current_tabpage()) then
+          return
+        end
         vim.cmd 'DiffviewFileHistory'
       end,
       desc = 'Diffview Log',
@@ -174,7 +178,9 @@ return {
     {
       '<Leader>dv',
       function()
-        if NVTabs.is_temporary(vim.api.nvim_get_current_tabpage()) then return end
+        if NVTabs.is_temporary(vim.api.nvim_get_current_tabpage()) then
+          return
+        end
         vim.cmd 'DiffviewOpen'
       end,
       desc = 'Diffview',
@@ -182,7 +188,9 @@ return {
     {
       '<Leader>dL',
       function()
-        if NVTabs.is_temporary(vim.api.nvim_get_current_tabpage()) then return end
+        if NVTabs.is_temporary(vim.api.nvim_get_current_tabpage()) then
+          return
+        end
         vim.cmd 'DiffviewFileHistory %'
       end,
       desc = 'Diffview Log (This File)',
@@ -190,7 +198,9 @@ return {
     {
       '<Leader>dh',
       function()
-        if NVTabs.is_temporary(vim.api.nvim_get_current_tabpage()) then return end
+        if NVTabs.is_temporary(vim.api.nvim_get_current_tabpage()) then
+          return
+        end
         vim.cmd 'DiffviewFileHistory % --pin-local'
       end,
       desc = 'File History (Pinned to Working Tree)',
