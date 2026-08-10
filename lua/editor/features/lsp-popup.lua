@@ -641,7 +641,7 @@ function HoverPopup.show()
       return
     end
     if not result or not result.contents then
-      log.info 'No infromation available'
+      log.info 'No information available'
       return
     end
 
