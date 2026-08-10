@@ -32,7 +32,6 @@ function NVDisabled.disable_keymaps()
   del('n', '<leader>wm') -- Toggle Zoom
 
   -- Move lines
-  -- TODO!: maybe keep after redoing my scroll?
   del({ 'n', 'i', 'v' }, '<A-j>') -- Move line down
   del({ 'n', 'i', 'v' }, '<A-k>') -- Move line up
 
