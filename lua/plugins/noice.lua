@@ -107,7 +107,7 @@ NVNoice = {
             width = 'auto',
             height = 'auto',
             max_height = 20,
-            max_width = 120,
+            max_width = NVLayoutManager.default_width(),
           },
           position = { row = Layout.common.border.padding.top + 1, col = 0 },
           border = Layout.common.border,
