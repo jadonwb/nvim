@@ -151,6 +151,7 @@ NVPi = {
       {
         '<A-a>',
         function()
+          -- FIXME: if no pi session is open yet, needs to open it
           local skip = NVPi.is_visible() and NVPi.is_side()
           if not skip then
             if not NVCompanionPanels.ensure_exclusive 'pi_side' then
