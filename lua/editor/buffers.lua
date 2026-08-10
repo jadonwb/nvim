@@ -2,23 +2,6 @@ NVBuffers = {}
 
 local fn = {}
 
--- Cooperative close handlers registered in priority order (lower = checked first).
--- Each handler is consumed on <M-w> (first-match-wins) and all are called on PersistenceSavePre.
-require 'editor.close'
-
--- this is the order I should require things too?
-NVClose.register('dashboard',       function() return NVSnacksDashboard.is_active() end, 10)
-NVClose.register('nvlazy',          function() return NVLazy.ensure_hidden() end, 40)
-NVClose.register('noice',           function() return NVNoice.ensure_hidden() end, 60)
-NVClose.register('lsp_popup',       function() return NVLspPopup.ensure_hidden() end, 70)
-NVClose.register('git_commit',      function() return NVGitCommit.ensure_hidden() end, 80)
-NVClose.register('snacks_zoom',     function() return NVSZoom.ensure_deactivated() end, 90)
-NVClose.register('snacks_lazygit',  function() return NVSLazygit.ensure_hidden() end, 100)
-NVClose.register('snacks_input',    function() return NVSInput.ensure_hidden() end, 110)
-NVClose.register('mason',           function() return NVMason.ensure_hidden() end, 120)
-NVClose.register('trouble',         function() return NVTrouble.ensure_hidden() end, 130)
-NVClose.register('fff',             function() return NVFff.ensure_hidden() end, 150)
-
 function NVBuffers.keymaps()
   -- TODO: make it put me in normal mode after all is said and done?
   K.map {
@@ -223,7 +206,6 @@ function fn.delete_buf_and_close_win()
       local current_buf = vim.api.nvim_get_current_buf()
       local empty_buf = vim.api.nvim_create_buf(true, false)
 
-      -- TODO: this could instead be dashboard reopen and layout manager disable?
       if empty_buf ~= 0 then
         vim.api.nvim_set_current_buf(empty_buf)
         vim.api.nvim_buf_delete(current_buf, { force = true })
