@@ -1,6 +1,5 @@
 return {
   'TheNoeTrevino/haunt.nvim',
-  -- default config: change to your liking, or remove it to use defaults
   ---@class HauntConfig
   opts = {
     sign = '󱙝',
@@ -16,7 +15,6 @@ return {
       edit_annotation = { key = 'a', mode = { 'n' } }, -- TODO: try e ?
     },
   },
-  -- recommended keymaps, with a helpful prefix alias
   init = function()
     local wk = require 'which-key'
     local haunt = require 'haunt.api'
