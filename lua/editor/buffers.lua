@@ -3,7 +3,6 @@ NVBuffers = {}
 local fn = {}
 
 function NVBuffers.keymaps()
-  -- TODO: make it put me in normal mode after all is said and done?
   K.map {
     NVKeymaps.close,
     'Delete current buffer, but do not close current window if there are multiple',
@@ -11,6 +10,7 @@ function NVBuffers.keymaps()
     mode = { 'n', 'v', 'i', 't', 'c' },
   }
 
+  -- repurpose into close tab?
   K.map {
     '<M-S-w>',
     'Delete current buffer and close current window if there are multiple',

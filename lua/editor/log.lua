@@ -10,7 +10,6 @@ local default = 'debug' ---@type LogLevel
 
 local LEVEL = default ---@type LogLevel
 
--- FIXME!: these keymaps conflict with tmux
 function log.keymaps()
   K.map {
     '<M-C-l>t',
