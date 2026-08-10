@@ -1,6 +1,3 @@
---- Cooperative close registry.
---- Modules register themselves so that <M-w> and persistence teardown
---- can close floating UIs, overlays, and tab-based features in the right order.
 NVClose = {}
 
 ---@class CooperativeEntry
