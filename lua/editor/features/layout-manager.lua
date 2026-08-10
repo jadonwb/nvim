@@ -21,7 +21,7 @@ local State = {
 }
 
 function NVLayoutManager.default_width()
-  return NVScreen.is_large() and 120 or 100
+  return NVScreen.is_large() and 130 or 110
 end
 
 local WIDTH_CHANGE_STEP = 5
