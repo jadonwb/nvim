@@ -16,7 +16,7 @@ NVGrugFar = {
       filesFilter = '!.git/',
     },
     keymaps = {
-      close = NVKeymaps.close,
+      close = false,
       swapEngine = false, -- don't think I will ever use it
       swapReplacementInterpreter = false, -- same
     },
@@ -138,11 +138,14 @@ end
 function NVGrugFar.ensure_current_hidden()
   local plugin = require 'grug-far'
 
-  local success, instance = pcall(plugin.get_instance, 0)
+  local success, instance = pcall(plugin.get_instance)
 
   if not success or not instance then
     return false
   end
+
+  -- Exit insert mode before closing so focus returns to normal mode
+  pcall(vim.api.nvim_feedkeys, vim.api.nvim_replace_termcodes('<Esc>', true, false, true), 'n', true)
 
   instance:close()
 
