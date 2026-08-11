@@ -40,7 +40,8 @@ vim.opt.wildmode = 'longest:full,full'
 
 vim.opt.list = true
 vim.opt.listchars = {
-  tab = '» ',
+  -- tab = '» ', -- off by default now
+  tab = '  ',
   trail = '·',
   precedes = '←',
   extends = '→',
