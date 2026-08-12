@@ -403,6 +403,7 @@ function NVFffPicker.live_grep_word()
 end
 
 function NVFffPicker.resume()
+  -- TODO: improve
   Snacks.picker.resume()
 end
 
