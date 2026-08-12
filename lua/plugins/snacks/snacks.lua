@@ -572,50 +572,6 @@ return {
         },
       },
     },
-    init = function()
-      local dashboard_setup = {}
-      vim.api.nvim_create_autocmd('FileType', {
-        pattern = 'snacks_dashboard',
-        callback = function()
-          local buf = vim.api.nvim_get_current_buf()
-          if dashboard_setup[buf] then
-            return
-          end
-          dashboard_setup[buf] = true
-          NVLualine.hide_everything()
-          vim.api.nvim_create_autocmd('BufWipeout', {
-            callback = function(args)
-              if args.buf ~= buf then
-                return
-              end
-              dashboard_setup[buf] = nil
-              NVTabs.set_label_if_empty { icon = NVTabs.editor_icon, name = 'main' }
-              NVLualine.show_everything()
-              NVLayoutManager.enable()
-            end,
-          })
-        end,
-      })
-      if vim.bo.filetype == 'snacks_dashboard' then
-        vim.api.nvim_exec_autocmds('FileType', { pattern = 'snacks_dashboard' })
-      end
-      local layout_enabled = false
-      vim.api.nvim_create_autocmd('BufEnter', {
-        callback = function()
-          if layout_enabled then
-            return true
-          end
-          local ft = vim.bo.filetype
-          -- NOTE!: this is where I can specify other filetypes that don't trigger the layout mananger
-          if ft == 'snacks_dashboard' or ft == '' or ft == 'nofile' or ft == 'snacks_terminal' then
-            return
-          end
-          layout_enabled = true
-          NVLualine.show_everything()
-          NVLayoutManager.enable()
-        end,
-      })
-    end,
     keys = {
       { '<M-f>', NVSZoom.activate, mode = { 'n', 'i', 'v' }, desc = 'Maximize' },
       {
