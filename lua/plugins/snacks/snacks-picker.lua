@@ -268,13 +268,10 @@ local function fff_defaults(overrides)
   })
 end
 
--- Map fff file_search results to snacks picker items.
--- Tradeoff: passing "" yields all files ranked by frecency, matching fff's
--- native "open picker shows recent files" behavior. Results capped at 100.
 local function files_to_items(query)
   local results = require('fff').file_search(query, {
     mode = 'files',
-    max_results = 100,
+    max_results = 100, -- TODO: don't limit, handle pagination, eventually
   })
   local items = {}
   for i, item in ipairs(results.items) do
@@ -311,8 +308,6 @@ local function files_to_items(query)
   return items
 end
 
--- Map fff content_search results to snacks picker items.
--- Empty query returns nothing (unlike file search).
 local function grep_to_items(query)
   if query == '' then
     return {}
@@ -352,7 +347,6 @@ local function grep_to_items(query)
 end
 
 --- Finder for fff-backed file search.
---- Called by snacks on every keystroke when live=true.
 ---@param opts table
 ---@param ctx snacks.picker.finder.ctx
 function NVFffPicker.files_finder(opts, ctx)
@@ -367,7 +361,6 @@ function NVFffPicker.grep_finder(opts, ctx)
 end
 
 --- Open the fff-backed file finder via snacks picker.
---- Replaces the old NVFff.find_files() that used fff's native UI.
 function NVFffPicker.find_files()
   Snacks.picker(fff_defaults { title = 'Find Files (fff)', finder = NVFffPicker.files_finder })
 end
@@ -406,7 +399,7 @@ function NVFffPicker.live_grep_word()
 end
 
 function NVFffPicker.resume()
-  -- TODO: improve
+  -- TODO: improve?
   Snacks.picker.resume()
 end
 
@@ -439,6 +432,7 @@ return {
           default = {
             layout = NVSPickerHorizontalLayout.build(),
           },
+          -- TODO: make buildable layouts and new keymaps, e.g. for search history, icons, etc.
           select = {
             layout = {
               box = 'vertical',
