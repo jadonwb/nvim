@@ -11,6 +11,7 @@ function NVDisabled.disable_keymaps()
   del('n', '<leader>gL') -- Git Log
   del('n', '<leader>gf') -- Git File History
   del('n', '<leader>gb') -- Git Blame Line
+  del('n', '<leader>gg') -- Lazygit
   del('n', '<leader>gG') -- Lazygit (cwd)
   del({ 'n', 'x' }, '<leader>gY') -- Git Browse (copy)
   del({ 'n', 'x' }, '<leader>gB') -- Git Browse (open)
