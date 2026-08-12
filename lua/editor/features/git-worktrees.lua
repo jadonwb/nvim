@@ -8,6 +8,7 @@ function NVGitWorktrees.keymaps()
 end
 
 function fn.create_tab_with_worktree()
+  -- TODO: replace with my input box
   vim.ui.input({ prompt = 'Worktree name: ' }, function(name)
     if name and name ~= '' then
       fn.create_worktree_from_name(name)
