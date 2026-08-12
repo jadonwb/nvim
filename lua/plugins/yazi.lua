@@ -17,6 +17,17 @@ return {
         '<cmd>Yazi toggle<cr>',
         desc = 'which_key_ignore',
       },
+      {
+        '<A-e>',
+        mode = { 'n', 'v' },
+        '<cmd>Yazi<cr>',
+        desc = 'which_key_ignore',
+      },
+      {
+        '<A-E>',
+        '<cmd>Yazi toggle<cr>',
+        desc = 'which_key_ignore',
+      },
     },
     ---@type YaziConfig | {}
     opts = {
