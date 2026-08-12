@@ -283,6 +283,7 @@ local function files_to_items(query)
     -- Porcelain "xy": x = index (staged), y = worktree. 'clean'/'unknown' -> nil.
     local status = nil
     if item.git_status and item.git_status ~= '' and item.git_status ~= 'clean' and item.git_status ~= 'unknown' then
+      -- TODO: staged vs added?
       local map = {
         untracked = '??',
         modified = ' M',
