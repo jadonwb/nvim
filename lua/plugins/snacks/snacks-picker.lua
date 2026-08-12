@@ -321,26 +321,28 @@ local function grep_to_items(query)
   local items = {}
   for _, match in ipairs(results.items) do
     local abs = vim.fn.fnamemodify(match.relative_path, ':p')
-    -- Compute pos and end_pos from match_ranges for preview highlighting.
+    -- Compute pos and positions from match_ranges for preview highlighting.
     -- fff match_ranges are {start_byte, end_byte} pairs (0-based, end exclusive).
-    -- snacks preview loc() uses 0-based byte columns for BOTH pos and end_pos:
-    --   pos = { 1-based_line, 0-based_start_col }
-    --   end_pos = { 1-based_line, 0-based_exclusive_end_col }
-    -- No +/-1 adjustment (rg columns are byte-based, and snacks never converts).
+    -- snacks preview loc() prefers item.positions (one extmark per char) over
+    -- item.end_pos (single contiguous span) — positions correctly highlights
+    -- only matched chars when there are multiple matches on one line.
     local pos = { match.line_number, match.col or 0 }
-    local end_pos = nil
+    local positions = nil
     if #match.match_ranges > 0 then
-      local first = match.match_ranges[1]
-      local last = match.match_ranges[#match.match_ranges]
-      pos = { match.line_number, first[1] }
-      end_pos = { match.line_number, last[2] }
+      pos = { match.line_number, match.match_ranges[1][1] }
+      positions = {}
+      for _, range in ipairs(match.match_ranges) do
+        for byte = range[1], range[2] - 1 do
+          positions[#positions + 1] = byte + 1 -- 0-based byte → 1-based col
+        end
+      end
     end
     local col1 = pos[2] + 1 -- 1-based for human-friendly display in the list text
     items[#items + 1] = {
       text = string.format('%s:%d:%d: %s', match.relative_path, match.line_number, col1, vim.trim(match.line_content or '')),
       file = abs,
       pos = pos,
-      end_pos = end_pos,
+      positions = positions,
       _fff = { match = match },
     }
   end
@@ -377,16 +379,14 @@ function NVFffPicker.live_grep_word()
   local word
   local mode = vim.api.nvim_get_mode().mode
   if mode == 'v' or mode == 'V' or mode == '\22' then
-    local _, ls, cs = unpack(vim.fn.getpos "'<")
-    local _, le, ce = unpack(vim.fn.getpos "'>")
-    local lines = vim.fn.getline(ls, le)
-    if #lines == 0 then
-      return
+    -- getregion() handles charwise/linewise/blockwise selections, multibyte,
+    -- and the end-column off-by-one correctly (vs manual getpos+getline+sub).
+    local ok, region = pcall(vim.fn.getregion, vim.fn.getpos 'v', vim.fn.getpos '.', { type = mode })
+    if ok and #region > 0 then
+      word = table.concat(region, ' ') -- replace newlines with spaces for grep
     end
-    lines[1] = string.sub(lines[1], cs)
-    lines[#lines] = string.sub(lines[#lines], 1, ce)
-    word = table.concat(lines, ' ') -- replace newlines with spaces for grep
-  else
+  end
+  if not word or word == '' then
     word = vim.fn.expand '<cword>'
   end
   if not word or word == '' then
