@@ -114,11 +114,11 @@ NVDelta = {
   keys = function()
     return {
       {
-        '<Leader>dp',
+        '<Leader>gs',
         function()
           require('delta.picker').toggle()
         end,
-        desc = 'Delta Picker',
+        desc = 'Git: Status',
       },
       {
         '<Leader>ds',

@@ -255,8 +255,8 @@ end
 
 local function fff_defaults(overrides)
   return vim.tbl_extend('keep', overrides or {}, {
-    live = true, -- fff re-searches on every keystroke (sub-10ms)
-    supports_live = true, -- tell snacks the finder supports live refresh
+    live = true,
+    supports_live = true,
     confirm = 'jump',
     preview = 'file',
     layout = NVSPickerHorizontalLayout.build(),
@@ -324,7 +324,7 @@ local function grep_to_items(query)
     -- Compute pos and positions from match_ranges for preview highlighting.
     -- fff match_ranges are {start_byte, end_byte} pairs (0-based, end exclusive).
     -- snacks preview loc() prefers item.positions (one extmark per char) over
-    -- item.end_pos (single contiguous span) — positions correctly highlights
+    -- item.end_pos (single contiguous span), positions correctly highlights
     -- only matched chars when there are multiple matches on one line.
     local pos = { match.line_number, match.col or 0 }
     local positions = nil
@@ -337,7 +337,7 @@ local function grep_to_items(query)
         end
       end
     end
-    local col1 = pos[2] + 1 -- 1-based for human-friendly display in the list text
+    local col1 = pos[2] + 1 -- 1-based
     items[#items + 1] = {
       text = string.format('%s:%d:%d: %s', match.relative_path, match.line_number, col1, vim.trim(match.line_content or '')),
       file = abs,
@@ -349,40 +349,33 @@ local function grep_to_items(query)
   return items
 end
 
---- Finder for fff-backed file search.
 ---@param opts table
 ---@param ctx snacks.picker.finder.ctx
 function NVFffPicker.files_finder(opts, ctx)
   return files_to_items(ctx.filter.search or '')
 end
 
---- Finder for fff-backed content grep.
 ---@param opts table
 ---@param ctx snacks.picker.finder.ctx
 function NVFffPicker.grep_finder(opts, ctx)
   return grep_to_items(ctx.filter.search or '')
 end
 
---- Open the fff-backed file finder via snacks picker.
 function NVFffPicker.find_files()
   Snacks.picker(fff_defaults { title = 'Find Files (fff)', finder = NVFffPicker.files_finder })
 end
 
---- Open the fff-backed live grep via snacks picker.
 function NVFffPicker.live_grep()
   Snacks.picker(fff_defaults { title = 'Live Grep (fff)', finder = NVFffPicker.grep_finder })
 end
 
---- Open fff-backed grep pre-filled with the word under cursor or visual selection.
---- Matches the old NVFff.live_grep_under_cursor() behavior.
 function NVFffPicker.live_grep_word()
   local word
   local mode = vim.api.nvim_get_mode().mode
   if mode == 'v' or mode == 'V' or mode == '\22' then
-    -- getregion() handles charwise/linewise/blockwise selections, multibyte,
-    -- and the end-column off-by-one correctly (vs manual getpos+getline+sub).
     local ok, region = pcall(vim.fn.getregion, vim.fn.getpos 'v', vim.fn.getpos '.', { type = mode })
     if ok and #region > 0 then
+      -- FIXME: I think grep might be able to take newlines?
       word = table.concat(region, ' ') -- replace newlines with spaces for grep
     end
   end
@@ -428,6 +421,7 @@ return {
         },
         actions = NVSPickers.actions,
         formatters = {
+          -- TODO: configure git status highlight for list entry here
           file = { filename_first = true, truncate = 80 },
         },
         layouts = {
