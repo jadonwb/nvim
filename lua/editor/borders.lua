@@ -18,11 +18,5 @@ NVBorders.preview = { '', ' ', ' ', ' ', ' ', ' ', '', '' }
 
 NVBorders.completion = { ' ', '', ' ', ' ', ' ', ' ', ' ', '' }
 
---- fff.nvim 8-element + junction 5-element array
-NVBorders.fff_border = {
-  NVBorders.padded,
-  { ' ', ' ', ' ', ' ', ' ' },
-}
-
 NVBorders.rounded = 'rounded'
 NVBorders.none = 'none'
