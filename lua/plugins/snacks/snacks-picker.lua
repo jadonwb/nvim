@@ -4,10 +4,14 @@ NVFffPicker = {}
 NVSPickerVerticalLayout = {
   width = NVScreen.is_large() and 0.35 or 0.4,
   height = 0.7,
+  border = NVBorders.none,
+  backdrop = true,
 }
 NVSPickerHorizontalLayout = {
   width = NVScreen.is_large() and 0.75 or 0.95,
   height = 0.9,
+  border = NVBorders.none,
+  backdrop = true,
 }
 
 function NVSPickerVerticalLayout.build(opts)
@@ -17,8 +21,8 @@ function NVSPickerVerticalLayout.build(opts)
       box = 'vertical',
       width = config.width,
       height = config.height,
-      border = NVBorders.none,
-      backdrop = false,
+      border = config.border,
+      backdrop = config.backdrop,
       { win = 'input', height = 1, title = '{title} {live}', title_pos = 'center', border = NVBorders.padded },
       { win = 'list', border = NVBorders.list },
       { win = 'preview', title = '{preview}', border = NVBorders.top_hr },
@@ -33,7 +37,8 @@ function NVSPickerHorizontalLayout.build(opts)
       box = 'horizontal',
       width = config.width,
       height = config.height,
-      backdrop = false,
+      border = config.border,
+      backdrop = config.backdrop,
       {
         box = 'vertical',
         { win = 'input', height = 1, title = '{title} {live}', title_pos = 'center', border = NVBorders.padded },
