@@ -73,11 +73,11 @@ function fn.close_tab()
 
   -- Default fallback: confirm then close
   NVDialogs.select({
-    title = 'Close Tab',
-    message = 'Close tab?',
+    title = 'Close Tab?',
+    -- message = 'Close tab?',
     options = { 'Yes', 'No' },
     shortcuts = { y = 'Yes', n = 'No' },
-    initial_index = 2,
+    initial_index = 1,
   }, function(choice)
     if choice == 'Yes' then
       vim.cmd 'tabclose'
