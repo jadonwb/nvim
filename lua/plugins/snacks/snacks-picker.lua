@@ -249,7 +249,7 @@ end
 
 function NVSPickers.highlights()
   Snacks.picker.highlights {
-    layout = NVSPickerHorizontalLayout.build(),
+    layout = NVSPickerVerticalLayout.build(),
   }
 end
 
@@ -471,16 +471,12 @@ return {
     keys = {
       {
         '<leader><space>',
-        function()
-          NVSPickers.buffers()
-        end,
+        NVSPickers.buffers,
         desc = 'Buffers',
       },
       {
         '<leader>sH',
-        function()
-          NVSPickers.highlights()
-        end,
+        NVSPickers.highlights,
         desc = 'Search Highlights',
       },
       {
