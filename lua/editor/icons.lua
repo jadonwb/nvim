@@ -18,3 +18,19 @@ NVIcons.lsp = {
     debug = '󰬋 ',
   },
 }
+
+-- Git status icons used by snacks pickers (lua/plugins/snacks/snacks-picker.lua).
+-- Glyphs follow snacks.nvim defaults; tweak to taste.
+-- `enabled` is a snacks config flag: set false to disable git icons entirely.
+NVIcons.git = {
+  enabled = true,
+  commit = '󰜘 ', -- git log picker
+  staged = ' ', -- overrides the type icon when a change is staged
+  added = ' ',
+  deleted = ' ',
+  ignored = ' ',
+  modified = ' ',
+  renamed = ' ',
+  unmerged = ' ',
+  untracked = ' ',
+}

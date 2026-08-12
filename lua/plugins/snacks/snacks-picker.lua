@@ -417,6 +417,7 @@ return {
             Hint = NVIcons.lsp.full.hint,
             Info = NVIcons.lsp.full.info,
           },
+          git = NVIcons.git,
         },
         layout = vim.tbl_extend('force', NVSPickerHorizontalLayout.build(), { cycle = false }),
         win = {
