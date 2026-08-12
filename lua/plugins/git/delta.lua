@@ -28,7 +28,7 @@ NVDelta = {
             end,
           },
           preview = {
-            enabled = true,
+            enabled = false,
             title = ' 󰫽󰫿󰫲󰬃󰫶󰫲󰬄 ',
             width = 0.5,
             border = NVBorders.rounded,
