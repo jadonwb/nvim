@@ -2,20 +2,16 @@ NVSPickers = {}
 NVFffPicker = {}
 
 NVSPickerVerticalLayout = {
-  large_screen_width = 0.35,
-  small_screen_width = 0.4,
+  width = NVScreen.is_large() and 0.35 or 0.4,
+  height = 0.7,
 }
-
 NVSPickerHorizontalLayout = {
-  large_screen_width = 0.75,
-  small_screen_width = 0.95,
+  width = NVScreen.is_large() and 0.75 or 0.95,
+  height = 0.9,
 }
 
 function NVSPickerVerticalLayout.build(opts)
-  local config = vim.tbl_extend('keep', opts or {}, {
-    width = NVScreen.is_large() and NVSPickerVerticalLayout.large_screen_width or NVSPickerVerticalLayout.small_screen_width,
-    height = 0.7,
-  })
+  local config = vim.tbl_extend('keep', opts or {}, NVSPickerVerticalLayout)
   return {
     layout = {
       box = 'vertical',
@@ -31,10 +27,7 @@ function NVSPickerVerticalLayout.build(opts)
 end
 
 function NVSPickerHorizontalLayout.build(opts)
-  local config = vim.tbl_extend('keep', opts or {}, {
-    width = NVScreen.is_large() and NVSPickerHorizontalLayout.large_screen_width or NVSPickerHorizontalLayout.small_screen_width,
-    height = 0.9,
-  })
+  local config = vim.tbl_extend('keep', opts or {}, NVSPickerHorizontalLayout)
   return {
     layout = {
       box = 'horizontal',
