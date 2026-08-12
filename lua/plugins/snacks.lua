@@ -1,10 +1,7 @@
 NVSPickers = {}
 NVSZoom = {}
-NVSLazygit = {}
-NVSTerminal = {}
 NVSNotifier = {}
 NVSInput = {}
-NVSnacksDashboard = {}
 
 NVSPickerVerticalLayout = {
   large_screen_width = 0.35,
@@ -257,6 +254,176 @@ function NVSPickers.highlights()
   }
 end
 
+-- =============================================================================
+-- FFF-backed Snacks Pickers
+-- Uses fff's headless file_search() / content_search() API for frecency-ranked
+-- search, rendered through snacks' unified picker UI.
+-- =============================================================================
+NVFffPicker = {}
+
+-- Helper: merge per-call options with shared defaults.
+-- Uses vim.tbl_extend('keep', ...) so call-site overrides take priority.
+local function fff_defaults(overrides)
+  return vim.tbl_extend('keep', overrides or {}, {
+    live = true, -- fff re-searches on every keystroke (sub-10ms)
+    supports_live = true, -- tell snacks the finder supports live refresh
+    -- matcher is a passthrough when live=true (filter.pattern stays "", all items
+    -- get score 1000, topk heap is bypassed). fff results are displayed as-is.
+    confirm = 'jump',
+    preview = 'file',
+    layout = NVSPickerHorizontalLayout.build(),
+    win = {
+      input = { keys = NVSPickers.keys },
+      list = { keys = NVSPickers.keys },
+      preview = { keys = NVSPickers.keys },
+    },
+  })
+end
+
+-- Map fff file_search results to snacks picker items.
+-- Tradeoff: passing "" yields all files ranked by frecency, matching fff's
+-- native "open picker shows recent files" behavior. Results capped at 100.
+local function files_to_items(query)
+  local results = require('fff').file_search(query, {
+    mode = 'files',
+    max_results = 100,
+  })
+  local items = {}
+  for i, item in ipairs(results.items) do
+    local abs = vim.fn.fnamemodify(item.relative_path, ':p')
+    -- Map fff git_status to snacks' 2-char porcelain format for the built-in
+    -- file formatter (format.lua:156 reads item.status and renders git icons).
+    -- fff returns: clean, untracked, modified, deleted, renamed, staged_new,
+    -- staged_modified, staged_deleted, ignored, unknown (fff-core/src/git.rs).
+    -- Porcelain "xy": x = index (staged), y = worktree. 'clean'/'unknown' -> nil.
+    local status = nil
+    if item.git_status and item.git_status ~= '' and item.git_status ~= 'clean' and item.git_status ~= 'unknown' then
+      local map = {
+        untracked = '??',
+        modified = ' M',
+        deleted = ' D',
+        renamed = ' R',
+        staged_new = 'A ',
+        staged_modified = 'M ',
+        staged_deleted = 'D ',
+        ignored = '!!',
+      }
+      status = map[item.git_status]
+    end
+    items[#items + 1] = {
+      text = item.relative_path,
+      file = abs,
+      pos = { 1, 0 },
+      status = status,
+      idx = i,
+      score = results.scores[i] and results.scores[i].total or 0,
+      _fff = { item = item, score = results.scores[i] },
+    }
+  end
+  return items
+end
+
+-- Map fff content_search results to snacks picker items.
+-- Empty query returns nothing (unlike file search).
+local function grep_to_items(query)
+  if query == '' then
+    return {}
+  end
+  local results = require('fff').content_search(query, {
+    mode = 'plain',
+    smart_case = true,
+    page_size = 100,
+  })
+  local items = {}
+  for _, match in ipairs(results.items) do
+    local abs = vim.fn.fnamemodify(match.relative_path, ':p')
+    -- Compute pos and end_pos from match_ranges for preview highlighting.
+    -- fff match_ranges are {start_byte, end_byte} pairs (0-based, end exclusive).
+    -- snacks preview loc() uses 0-based byte columns for BOTH pos and end_pos:
+    --   pos = { 1-based_line, 0-based_start_col }
+    --   end_pos = { 1-based_line, 0-based_exclusive_end_col }
+    -- No +/-1 adjustment (rg columns are byte-based, and snacks never converts).
+    local pos = { match.line_number, match.col or 0 }
+    local end_pos = nil
+    if #match.match_ranges > 0 then
+      local first = match.match_ranges[1]
+      local last = match.match_ranges[#match.match_ranges]
+      pos = { match.line_number, first[1] }
+      end_pos = { match.line_number, last[2] }
+    end
+    local col1 = pos[2] + 1 -- 1-based for human-friendly display in the list text
+    items[#items + 1] = {
+      text = string.format('%s:%d:%d: %s', match.relative_path, match.line_number, col1, vim.trim(match.line_content or '')),
+      file = abs,
+      pos = pos,
+      end_pos = end_pos,
+      _fff = { match = match },
+    }
+  end
+  return items
+end
+
+--- Finder for fff-backed file search.
+--- Called by snacks on every keystroke when live=true.
+---@param opts table
+---@param ctx snacks.picker.finder.ctx
+function NVFffPicker.files_finder(opts, ctx)
+  return files_to_items(ctx.filter.search or '')
+end
+
+--- Finder for fff-backed content grep.
+---@param opts table
+---@param ctx snacks.picker.finder.ctx
+function NVFffPicker.grep_finder(opts, ctx)
+  return grep_to_items(ctx.filter.search or '')
+end
+
+--- Open the fff-backed file finder via snacks picker.
+--- Replaces the old NVFff.find_files() that used fff's native UI.
+function NVFffPicker.find_files()
+  Snacks.picker(fff_defaults { title = 'Find Files (fff)', finder = NVFffPicker.files_finder })
+end
+
+--- Open the fff-backed live grep via snacks picker.
+function NVFffPicker.live_grep()
+  Snacks.picker(fff_defaults { title = 'Live Grep (fff)', finder = NVFffPicker.grep_finder })
+end
+
+--- Open fff-backed grep pre-filled with the word under cursor or visual selection.
+--- Matches the old NVFff.live_grep_under_cursor() behavior.
+function NVFffPicker.live_grep_word()
+  local word
+  local mode = vim.api.nvim_get_mode().mode
+  if mode == 'v' or mode == 'V' or mode == '\22' then
+    local _, ls, cs = unpack(vim.fn.getpos "'<")
+    local _, le, ce = unpack(vim.fn.getpos "'>")
+    local lines = vim.fn.getline(ls, le)
+    if #lines == 0 then
+      return
+    end
+    lines[1] = string.sub(lines[1], cs)
+    lines[#lines] = string.sub(lines[#lines], 1, ce)
+    word = table.concat(lines, ' ') -- replace newlines with spaces for grep
+  else
+    word = vim.fn.expand '<cword>'
+  end
+  if not word or word == '' then
+    return
+  end
+  Snacks.picker(fff_defaults {
+    title = 'Grep Word (fff)',
+    finder = NVFffPicker.grep_finder,
+    search = word, -- pre-fill the input with the word/selection
+  })
+end
+
+--- Resume the last snacks picker.
+--- Tradeoff: snacks.picker.resume() resumes ANY last picker, not just fff ones.
+--- This is arguably better UX — it restores whatever you were last doing.
+function NVFffPicker.resume()
+  Snacks.picker.resume()
+end
+
 -- Zoom
 function NVSZoom.activate()
   Snacks.zen.zoom()
@@ -275,21 +442,6 @@ NVClose.register('snacks_zoom', function()
   return NVSZoom.ensure_deactivated()
 end, 30)
 
--- Terminal
-function NVSTerminal.is_app(app, bufid)
-  bufid = bufid or vim.api.nvim_get_current_buf()
-  local buf_info = vim.fn.getbufinfo(bufid)[1]
-  if buf_info and buf_info.variables.snacks_terminal and buf_info.variables.snacks_terminal.cmd then
-    local cmd = buf_info.variables.snacks_terminal.cmd
-    if type(cmd) == 'string' then
-      return string.find(cmd, app) ~= nil
-    elseif type(cmd) == 'table' and cmd[1] then
-      return string.find(cmd[1], app) ~= nil
-    end
-  end
-  return false
-end
-
 -- Notifier
 function NVSNotifier.log()
   Snacks.notifier.show_history()
@@ -299,23 +451,7 @@ function NVSNotifier.hide()
   Snacks.notifier.hide()
 end
 
--- Lazygit
-function NVSLazygit.show()
-  Snacks.lazygit()
-end
-
-function NVSLazygit.ensure_hidden()
-  if NVSTerminal.is_app 'lazygit' then
-    Snacks.lazygit()
-    return true
-  end
-  return false
-end
-
-NVClose.register('snacks_lazygit', function()
-  return NVSLazygit.ensure_hidden()
-end, 5)
-
+-- Input
 function NVSInput.is_input(bufid)
   bufid = bufid or vim.api.nvim_get_current_buf()
   return vim.bo[bufid].filetype == 'snacks_input'
@@ -333,49 +469,10 @@ NVClose.register('snacks_input', function()
   return NVSInput.ensure_hidden()
 end, 20)
 
-function NVSnacksDashboard.is_active()
-  return vim.bo.filetype == 'snacks_dashboard'
-end
-
-NVClose.register('dashboard', function()
-  return NVSnacksDashboard.is_active()
-end, 10)
-
 return {
   {
     'folke/snacks.nvim',
     opts = {
-      dashboard = {
-        preset = {
-          keys = function()
-            local items = {}
-
-            if NVLazy.anything_missing() then
-              table.insert(items, {
-                icon = ' ',
-                key = 'i',
-                desc = 'Install Plugins',
-                action = function()
-                  NVLazy.install()
-                end,
-              })
-            end
-
-            if NVPersistence.has_session() then
-              table.insert(items, { icon = ' ', key = 'l', desc = 'Restore Session', section = 'session' })
-            end
-
-            table.insert(items, { icon = ' ', key = 'g', desc = 'LazyGit', action = NVSLazygit.show })
-            table.insert(items, { icon = ' ', key = 'f', desc = 'Find file', action = NVFff.find_files })
-            table.insert(items, { icon = ' ', key = 's', desc = 'Find text', action = NVFff.live_grep })
-            table.insert(items, { icon = ' ', key = 'e', desc = 'Browse Files', action = ':Yazi' })
-            -- ' ' TODO: make a new file option?
-            table.insert(items, { icon = ' ', key = 'q', desc = 'Quit', action = ':qa' })
-
-            return items
-          end,
-        },
-      },
       explorer = { enabled = false },
       scroll = { enabled = false },
       notifier = {
@@ -397,27 +494,6 @@ return {
         indent = { enabled = false },
         scope = { only_current = true },
         chunk = { enabled = true, only_current = true, char = { corner_top = '╭', corner_bottom = '╰' } },
-      },
-      lazygit = {
-        config = {
-          -- TODO?: is this even any different from default snacks lazygit config anymore?
-          os = {
-            edit = vim.v.progpath
-              .. [[ --server "$NVIM" --remote-send '<Cmd>lua require("snacks").lazygit()<CR>' && ]]
-              .. vim.v.progpath
-              .. [[ --server "$NVIM" --remote-silent {{filename}} ]],
-            editAtLine = vim.v.progpath
-              .. [[ --server "$NVIM" --remote-send '<Cmd>lua require("snacks").lazygit()<CR>' && ]]
-              .. vim.v.progpath
-              .. [[ --server "$NVIM" --remote-silent {{filename}} && ]]
-              .. vim.v.progpath
-              .. [[ --server "$NVIM" --remote-send ':{{line}}<CR>' ]],
-            openDirInEditor = vim.v.progpath
-              .. [[ --server "$NVIM" --remote-send '<Cmd>lua require("snacks").lazygit()<CR>' && ]]
-              .. vim.v.progpath
-              .. [[ --server "$NVIM" --remote-silent {{dir}} ]],
-          },
-        },
       },
       zen = {
         zoom = {
@@ -487,7 +563,6 @@ return {
             winhighlight = 'Normal:Normal,WinBar:SnacksWinBar,WinBarNC:SnacksWinBarNC,FloatTitle:SnacksTitle,FloatFooter:SnacksFooter,WinSeparator:SnacksWinSeparator,FloatBorder:Border',
           },
         },
-        lazygit = { width = 0, height = 0, border = 'rounded' },
         float = { backdrop = false },
         notification = { border = NVBorders.padded },
         notification_history = {
@@ -532,7 +607,7 @@ return {
           end
           local ft = vim.bo.filetype
           -- NOTE!: this is where I can specify other filetypes that don't trigger the layout mananger
-          if ft == 'snacks_dashboard' or ft == '' or ft == 'nofile' or ft == 'snacks_terminal' or NVFff.is_active() then
+          if ft == 'snacks_dashboard' or ft == '' or ft == 'nofile' or ft == 'snacks_terminal' then
             return
           end
           layout_enabled = true
@@ -556,6 +631,27 @@ return {
           NVSPickers.highlights()
         end,
         desc = 'Search Highlights',
+      },
+      {
+        '<leader>ff',
+        NVFffPicker.find_files,
+        desc = 'Find Files (fff)',
+      },
+      {
+        '<leader>fs',
+        NVFffPicker.live_grep,
+        desc = 'Live Grep (fff)',
+      },
+      {
+        '<leader>fw',
+        NVFffPicker.live_grep_word,
+        mode = { 'n', 'x' },
+        desc = 'Grep Word (fff)',
+      },
+      {
+        '<leader>fl',
+        NVFffPicker.resume,
+        desc = 'Resume Last Picker',
       },
     },
   },
