@@ -1,12 +1,14 @@
 NVSPickers = {}
 NVFffPicker = {}
 
+-- TODO: configure just preview width
 NVSPickerVerticalLayout = {
   width = NVScreen.is_large() and 0.35 or 0.4,
   height = 0.7,
   border = NVBorders.none,
   backdrop = true,
 }
+
 NVSPickerHorizontalLayout = {
   width = NVScreen.is_large() and 0.75 or 0.95,
   height = 0.9,
