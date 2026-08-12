@@ -94,6 +94,7 @@ NVSPickers.actions = {
   end,
 }
 
+-- FIXME: still showing current buffer after refresh
 function NVSPickers.bufdelete(picker)
   picker.preview:reset()
   for _, item in ipairs(picker:selected { fallback = true }) do
