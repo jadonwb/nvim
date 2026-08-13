@@ -1,29 +1,30 @@
+-- TODO: revisit this, I like the concept but it doesn't appear/dissapear when I want it to
 return {
-  'b0o/incline.nvim',
-  event = 'VeryLazy',
-  opts = {
-    hide = {
-      cursorline = 'smart',
-      focused_win = true,
-      only_win = false,
-    },
-    render = function(props)
-      local bufname = vim.api.nvim_buf_get_name(props.buf)
-      if bufname == '' then
-        bufname = '-'
-      end
-      local filename = vim.fn.fnamemodify(bufname, ':t')
-      local ext = vim.fn.fnamemodify(bufname, ':e')
-      local icon, _ = require('nvim-web-devicons').get_icon(filename, ext)
-      local modified = vim.bo[props.buf].modified
-
-      return {
-        { (icon or '') .. ' ' },
-        {
-          filename .. ' ',
-          gui = modified and 'bold,italic' or 'bold',
-        },
-      }
-    end,
-  },
+  -- 'b0o/incline.nvim',
+  -- event = 'VeryLazy',
+  -- opts = {
+  --   hide = {
+  --     cursorline = 'smart',
+  --     focused_win = true,
+  --     only_win = false,
+  --   },
+  --   render = function(props)
+  --     local bufname = vim.api.nvim_buf_get_name(props.buf)
+  --     if bufname == '' then
+  --       bufname = '-'
+  --     end
+  --     local filename = vim.fn.fnamemodify(bufname, ':t')
+  --     local ext = vim.fn.fnamemodify(bufname, ':e')
+  --     local icon, _ = require('nvim-web-devicons').get_icon(filename, ext)
+  --     local modified = vim.bo[props.buf].modified
+  --
+  --     return {
+  --       { (icon or '') .. ' ' },
+  --       {
+  --         filename .. ' ',
+  --         gui = modified and 'bold,italic' or 'bold',
+  --       },
+  --     }
+  --   end,
+  -- },
 }
