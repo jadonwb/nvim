@@ -6,9 +6,11 @@ NVWindows = {
 local fn = {}
 
 function NVWindows.keymaps()
-  -- TODO!: move and rename/remap
-  K.map { '<leader>bs', 'Create new buffer in a horizontal split', '<Cmd>new<CR>', mode = 'n' }
-  K.map { '<leader>bv', 'Create new buffer in a vertical split', '<Cmd>vnew<CR>', mode = 'n' }
+  -- TODO?: move, or rename, or remap
+  -- K.map { '<A-b>s', 'Create new buffer in a horizontal split', '<Cmd>new<CR>', mode = 'n' }
+  -- K.map { '<A-b>v', 'Create new buffer in a vertical split', '<Cmd>vnew<CR>', mode = 'n' }
+  K.map { '<A-t>', 'Create new buffer', '<Cmd>enew<CR>', mode = 'n' } -- TODO: just like tab make it ask for buffer name first? also prefill input with cwd path?
+  K.map { '<A-b>', 'Switch to other buffer', function() end, mode = 'n' }
 
   -- TODO/FIXME!: this interferes with vim-tmux nav and sidebars like trouble? or is the layout managers fault due to empty sidepad windows?
   -- K.map { NVKeymaps.window_move.left, 'Move to window on the left', '<Cmd>wincmd h<CR>', mode = { 'n', 'v', 'i', 't' } }

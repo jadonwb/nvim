@@ -87,6 +87,7 @@ return {
         { '<Leader>dp', hidden = true },
         { '<leader>w', hidden = true },
         { '<leader>q', hidden = true },
+        { '<leader>b', hidden = true },
       })
     end,
   },
