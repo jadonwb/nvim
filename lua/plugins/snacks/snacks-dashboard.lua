@@ -86,9 +86,9 @@ return {
             table.insert(items, { icon = ' ', key = 'l', desc = 'Restore Session', section = 'session' })
           end
 
-          -- table.insert(items, { icon = ' ', key = 'g', desc = 'LazyGit', action = NVSLazygit.show })
-          -- table.insert(items, { icon = ' ', key = 'f', desc = 'Find file', action = NVFffPicker.find_files })
-          -- table.insert(items, { icon = ' ', key = 's', desc = 'Find text', action = NVFffPicker.live_grep })
+          table.insert(items, { icon = ' ', key = 'g', desc = 'LazyGit', action = NVSLazygit.show })
+          table.insert(items, { icon = ' ', key = 'f', desc = 'Find file', action = NVFffPicker.find_files })
+          table.insert(items, { icon = ' ', key = 's', desc = 'Find text', action = NVFffPicker.live_grep })
           table.insert(items, { icon = ' ', key = 'e', desc = 'Browse Files', action = ':Yazi' })
           -- ' ' TODO: make a new file option?
           table.insert(items, { icon = ' ', key = 'q', desc = 'Quit', action = ':qa' })
