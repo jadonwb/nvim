@@ -6,6 +6,8 @@ NVPersistence = {
 
 -- TODO: make option to delete last session / don't save session and start fresh?
 
+-- FIXME: ignore /tmp/* (opencode), ignore other scenarios
+
 function NVPersistence.autocmds()
   vim.api.nvim_create_autocmd('User', {
     pattern = 'PersistenceSavePre',
