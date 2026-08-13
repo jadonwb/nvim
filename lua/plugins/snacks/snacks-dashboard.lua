@@ -34,6 +34,7 @@ return {
         })
       end,
     })
+    -- FIXME: ????
     if vim.bo.filetype == 'snacks_dashboard' then
       vim.api.nvim_exec_autocmds('FileType', { pattern = 'snacks_dashboard' })
     end
@@ -45,7 +46,17 @@ return {
         end
         local ft = vim.bo.filetype
         -- NOTE!: this is where I can specify other filetypes that don't trigger the layout mananger
-        if ft == 'snacks_dashboard' or ft == '' or ft == 'nofile' or ft == 'snacks_terminal' then
+        -- TODO!: make this a function or something that I can make a nice list somewhere instead of hardcoded here
+        if
+          ft == 'snacks_dashboard'
+          or ft == ''
+          or ft == 'nofile'
+          or ft == 'snacks_terminal'
+          -- TODO?: make a picker.is_active ?
+          or ft == 'snacks_picker_input'
+          or ft == 'snacks_picker_list'
+          or ft == 'snacks_picker_preview'
+        then
           return
         end
         layout_enabled = true
