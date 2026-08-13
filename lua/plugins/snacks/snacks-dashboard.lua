@@ -83,7 +83,7 @@ return {
           end
 
           if NVPersistence.has_session() then
-            table.insert(items, { icon = ' ', key = 'l', desc = 'Restore Session', section = 'session' })
+            table.insert(items, { icon = ' ', key = 'l', desc = 'Restore Session', action = NVPersistence.restore })
           end
 
           table.insert(items, { icon = ' ', key = 'g', desc = 'LazyGit', action = NVSLazygit.show })
