@@ -52,7 +52,7 @@ function NVTabs.keymaps()
 end
 
 function fn.create_tab()
-  vim.ui.input({ prompt = 'Tab name: ' }, function(name)
+  NVDialogs.input({ title = 'Tab name' }, function(name)
     if name and name ~= '' then
       vim.cmd 'tabnew'
       NVTabs.set_label { icon = NVTabs.editor_icon, name = name }
