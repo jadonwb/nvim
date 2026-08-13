@@ -196,6 +196,8 @@ end
 
 function fn.delete_buf()
   -- Give each registered floating UI/mode a chance to consume the close event
+  -- TODO: handle /tmp and other direct close vim scenarios
+  -- (if inside /tmp/*.md for example, opencode, then close also means quit)
   if NVClose.consume() then
     return
   end

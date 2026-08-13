@@ -166,7 +166,9 @@ NVNoice = {
           },
           size = 'auto',
           border = {
-            style = Layout.common.border.style,
+            -- TODO: style
+            -- style = Layout.common.border.style,
+            style = NVBorders.rounded,
             padding = Layout.common.border.padding,
             text = {
               top = ' Confirm ',
