@@ -44,6 +44,25 @@ return {
         if layout_enabled then
           return true
         end
+
+        -- Short-circuit: NVQuit.restart() leaves a flag file before :restart.
+        -- Delete it, restore the session and enable the layout manager, so the
+        -- dashboard is skipped entirely on restart. This UIEnter autocmd is created
+        -- before snacks' own UIEnter handler (which opens the dashboard), so the
+        -- restore wins and the dashboard's startup guards skip it.
+        -- local restart_flag = vim.fn.stdpath 'cache' .. '/nvim_restart_flag'
+        -- if vim.fn.filereadable(restart_flag) == 1 then
+        --   vim.fn.delete(restart_flag)
+        --   vim.api.nvim_create_autocmd('UIEnter', {
+        --     once = true,
+        --     nested = true,
+        --     callback = function()
+        --       NVPersistence.restore()
+        --       NVLayoutManager.enable()
+        --     end,
+        --   })
+        -- end
+
         local ft = vim.bo.filetype
         -- NOTE!: this is where I can specify other filetypes that don't trigger the layout mananger
         -- TODO!: make this a function or something that I can make a nice list somewhere instead of hardcoded here
