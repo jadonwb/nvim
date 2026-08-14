@@ -28,6 +28,7 @@ NVNoice = {
           winhighlight = {
             Normal = 'NormalFloat',
             FloatBorder = 'FloatBorder',
+            FloatTitle = 'FloatTitle',
           },
           winbar = '',
           foldenable = false,
@@ -56,6 +57,15 @@ NVNoice = {
 
       notify = {
         enabled = false,
+      },
+
+      format = {
+        confirm = {
+          hl_group = {
+            choice = 'Normal',
+            default_choice = 'CurSearch',
+          },
+        },
       },
 
       lsp = {
@@ -160,24 +170,26 @@ NVNoice = {
           enter = false,
           zindex = 210,
           format = { '{confirm}' },
-          position = {
-            row = 3,
-            col = '50%',
-          },
+          position = Layout.common.position.visually_centered,
           size = 'auto',
           border = {
-            -- TODO: style
-            -- style = Layout.common.border.style,
             style = NVBorders.rounded,
             padding = Layout.common.border.padding,
             text = {
               top = ' Confirm ',
             },
           },
-          win_options = Layout.common.win_options,
+          win_options = {
+            winhighlight = {
+              Normal = 'Normal',
+              FloatBorder = 'Border',
+              FloatTitle = 'Title',
+            },
+            winbar = '',
+            foldenable = false,
+          },
         },
       },
-
       routes = {
         {
           filter = { event = 'lsp', kind = 'progress' },
