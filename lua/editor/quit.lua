@@ -123,6 +123,7 @@ end
 
 --- Save session and restart Neovim.
 --- Reviews unsaved buffers with the same dialog as save_and_quit.
+--- TODO: detect if I restarted, then auto restore session?
 function NVQuit.restart()
   process_unsaved_then(function()
     save_session()
