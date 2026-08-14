@@ -126,9 +126,8 @@ end
 function NVQuit.restart()
   process_unsaved_then(function()
     save_session()
-    -- BUG: this isn't firing until my next keypress triggers the next event
     vim.schedule(function()
-      vim.cmd 'restart'
+      vim.cmd 'silent! restart'
     end)
   end)
 end
