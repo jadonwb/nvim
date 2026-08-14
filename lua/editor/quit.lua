@@ -21,7 +21,7 @@ function fn.get_modified_buffers()
 end
 
 --- Save the session via persistence.
-local function save_session()
+function fn.save_session()
   local ok = pcall(require, 'persistence')
   if ok then
     pcall(function()
@@ -111,7 +111,7 @@ end
 --- Reviews each modified buffer with Write/Discard/Cancel dialog.
 function NVQuit.save_and_quit()
   process_unsaved_then(function()
-    save_session()
+    fn.save_session()
     vim.cmd 'qall'
   end)
 end
@@ -121,14 +121,23 @@ function NVQuit.force_quit()
   vim.cmd 'qall!'
 end
 
+function fn.restart()
+  local flag_file = vim.fn.stdpath 'cache' .. '/nvim_restart_flag'
+
+  local file = io.open(flag_file, 'w')
+  if file then
+    file:write 'restart'
+    file:close()
+  end
+
+  vim.cmd 'silent! restart'
+end
+
 --- Save session and restart Neovim.
 --- Reviews unsaved buffers with the same dialog as save_and_quit.
---- TODO: detect if I restarted, then auto restore session?
 function NVQuit.restart()
   process_unsaved_then(function()
-    save_session()
-    vim.schedule(function()
-      vim.cmd 'silent! restart'
-    end)
+    fn.save_session()
+    fn.restart()
   end)
 end
