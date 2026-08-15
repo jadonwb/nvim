@@ -15,7 +15,7 @@ NVBlink = {
     completion = {
       list = {
         selection = {
-          preselect = true,
+          preselect = false,
         },
       },
       documentation = {
