@@ -113,6 +113,11 @@ NVUi2 = NVUi2 or {}
 NVUi2.progress = NVUi2.progress or {}  -- keyed client_id.token
 NVUi2.progress_hl = NVUi2.progress_hl or ''
 NVUi2._progress_end_timers = NVUi2._progress_end_timers or {}
+NVUi2._progress_spinner = NVUi2._progress_spinner or 1
+NVUi2._progress_timer = NVUi2._progress_timer or nil
+
+local uv = vim.uv or vim.loop
+local spinner_frames = {'⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'}
 
 local function format_progress_hl(p)
   if not p then
@@ -138,6 +143,9 @@ local function format_progress_hl(p)
   local s = table.concat(parts, ' ')
   if p.kind == 'end' then
     s = '✔ ' .. s
+  else
+    local frame = spinner_frames[NVUi2._progress_spinner] or spinner_frames[1]
+    s = '%#Constant#' .. frame .. ' ' .. s
   end
   return s
 end
@@ -161,6 +169,42 @@ local function rebuild_progress_hl()
   if chosen then
     NVUi2.progress_hl = format_progress_hl(chosen)
   end
+end
+
+local function has_running_progress()
+  for _, p in pairs(NVUi2.progress or {}) do
+    if p.kind ~= 'end' then
+      return true
+    end
+  end
+  return false
+end
+
+local function stop_progress_timer()
+  local t = NVUi2._progress_timer
+  if t then
+    pcall(function() t:stop() end)
+    if not t:is_closing() then
+      pcall(function() t:close() end)
+    end
+    NVUi2._progress_timer = nil
+  end
+end
+
+local function start_progress_timer()
+  if NVUi2._progress_timer then
+    return
+  end
+  local timer = uv.new_timer()
+  NVUi2._progress_timer = timer
+  timer:start(100, 100, vim.schedule_wrap(function()
+    NVUi2._progress_spinner = (NVUi2._progress_spinner % #spinner_frames) + 1
+    rebuild_progress_hl()
+    pcall(vim.cmd, 'redrawstatus')
+    if not has_running_progress() then
+      stop_progress_timer()
+    end
+  end))
 end
 
 vim.api.nvim_create_autocmd('LspProgress', {
@@ -187,6 +231,11 @@ vim.api.nvim_create_autocmd('LspProgress', {
     NVUi2.progress[id] = vim.tbl_deep_extend('force', NVUi2.progress[id] or { client_id = client_id, name = client.name }, update)
     rebuild_progress_hl()
     pcall(vim.cmd, 'redrawstatus')
+    if val.kind ~= 'end' then
+      start_progress_timer()
+    elseif not has_running_progress() then
+      stop_progress_timer()
+    end
     if val.kind == 'end' then
       local prev = NVUi2._progress_end_timers[id]
       if prev then
@@ -198,6 +247,9 @@ vim.api.nvim_create_autocmd('LspProgress', {
           NVUi2._progress_end_timers[id] = nil
           rebuild_progress_hl()
           pcall(vim.cmd, 'redrawstatus')
+          if not has_running_progress() then
+            stop_progress_timer()
+          end
         end
       end, 1500)
     end
