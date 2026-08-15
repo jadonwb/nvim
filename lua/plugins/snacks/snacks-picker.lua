@@ -124,17 +124,6 @@ function NVSPickers.copy_path(item, fmt)
   end
 end
 
-function NVSPickers.files()
-  Snacks.picker.files {
-    show_empty = true,
-    hidden = true,
-    ignored = false,
-    follow = false,
-    supports_live = true,
-    layout = NVSPickerVerticalLayout.build(),
-  }
-end
-
 function NVSPickers.buffers()
   Snacks.picker.buffers {
     hidden = true,
@@ -176,15 +165,6 @@ function NVSPickers.buffers()
         },
       },
     },
-  }
-end
-
-function NVSPickers.text_search()
-  Snacks.picker.grep {
-    hidden = true,
-    ignored = false,
-    regex = false,
-    layout = NVSPickerHorizontalLayout.build(),
   }
 end
 
@@ -271,7 +251,7 @@ end
 local function files_to_items(query)
   local results = require('fff').file_search(query, {
     mode = 'files',
-    max_results = 100, -- TODO: don't limit, handle pagination, eventually
+    max_results = 100,
   })
   local items = {}
   for i, item in ipairs(results.items) do
@@ -413,7 +393,6 @@ return {
           },
           git = NVIcons.git,
         },
-        layout = vim.tbl_extend('force', NVSPickerHorizontalLayout.build(), { cycle = false }),
         win = {
           input = { keys = NVSPickers.keys },
           list = { keys = NVSPickers.keys },
@@ -421,18 +400,13 @@ return {
         },
         actions = NVSPickers.actions,
         formatters = {
-          -- TODO: configure git status highlight for list entry here
           file = { filename_first = true, truncate = 80 },
         },
         layouts = {
-          default = {
-            layout = NVSPickerHorizontalLayout.build(),
-          },
-          -- TODO: make buildable layouts and new keymaps, e.g. for search history, icons, etc.
           select = {
             layout = {
               box = 'vertical',
-              backdrop = false,
+              backdrop = true,
               width = 0.5,
               height = 0.5,
               border = NVBorders.none,
@@ -443,12 +417,12 @@ return {
           vscode = {
             hidden = { 'preview' },
             layout = {
-              backdrop = false,
+              backdrop = true,
               row = 1,
               width = 0.4,
               min_width = 80,
               height = 0.4,
-              border = 'none',
+              border = NVBorders.none,
               box = 'vertical',
               { win = 'input', height = 1, border = NVBorders.bottom_hr, title = '{title} {live} {flags}', title_pos = 'center' },
               { win = 'list', border = NVBorders.top_none },
