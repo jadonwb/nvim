@@ -4,13 +4,13 @@ NVFffPicker = {}
 -- TODO: configure just preview width
 NVSPickerVerticalLayout = {
   width = NVScreen.is_large() and 0.35 or 0.4,
-  height = 0.7,
+  height = 0.68,
   border = NVBorders.none,
   backdrop = true,
 }
 
 NVSPickerHorizontalLayout = {
-  width = NVScreen.is_large() and 0.75 or 0.95,
+  width = NVScreen.is_large() and 0.75 or 0.85,
   height = 0.9,
   border = NVBorders.none,
   backdrop = true,
@@ -46,7 +46,7 @@ function NVSPickerHorizontalLayout.build(opts)
         { win = 'input', height = 1, title = '{title} {live}', title_pos = 'center', border = NVBorders.padded },
         { win = 'list', border = NVBorders.top_none },
       },
-      { win = 'preview', title = '{preview}', border = NVBorders.preview },
+      { win = 'preview', title = '{preview}', width = 0.6, border = NVBorders.preview },
     },
   }
 end

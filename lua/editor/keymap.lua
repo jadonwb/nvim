@@ -8,7 +8,7 @@ NVKeymaps = {
   close_esc = '<Esc>',
   close_q = 'q',
 
-  focus = '<M-z>',
+  focus = '<M-S-z>',
 
   scroll = { up = '<C-u>', down = '<C-d>' },
   scroll_alt = { up = '<C-b>', down = '<C-f>' },

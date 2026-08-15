@@ -98,7 +98,7 @@ return {
       },
     },
     keys = {
-      { '<M-f>', NVSZoom.activate, mode = { 'n', 'i', 'v' }, desc = 'Maximize' },
+      { '<M-z>', NVSZoom.activate, mode = { 'n', 'i', 'v' }, desc = 'Zoom' },
     },
   },
 }
