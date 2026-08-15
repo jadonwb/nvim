@@ -1,6 +1,7 @@
 NVLspPopup = {}
 
 local fn = {}
+fn.ts_queries = {}
 
 ---@class Popup
 ---@field type PopupType
@@ -39,6 +40,7 @@ local INFO = vim.diagnostic.severity.INFO
 local HINT = vim.diagnostic.severity.HINT
 
 local hover_seq = 0
+local signature_seq = 0
 
 function NVLspPopup.show_hover()
   HoverPopup.show()
@@ -50,15 +52,6 @@ end
 
 function NVLspPopup.show_signature()
   SignaturePopup.show()
-end
-
-function NVLspPopup.autocmds()
-  vim.api.nvim_create_autocmd('LspProgress', {
-    pattern = '*',
-    callback = function()
-      vim.cmd 'redrawstatus'
-    end,
-  })
 end
 
 --- Config ---
@@ -388,7 +381,9 @@ function Popup:fit_concealed_height()
     if self.layout.position.row < 0 then
       self.layout.position.row = -text_height - 1
     end
-    pcall(function() self.popup:update_layout { size = self.layout.size, position = self.layout.position } end)
+    pcall(function()
+      self.popup:update_layout { size = self.layout.size, position = self.layout.position }
+    end)
     pcall(vim.api.nvim_win_set_height, win, text_height)
   end
 end
@@ -762,7 +757,13 @@ function SignaturePopup.show()
 
   local params = vim.lsp.util.make_position_params(current_winid, 'utf-16')
 
+  signature_seq = signature_seq + 1
+  local this_seq = signature_seq
+
   vim.lsp.buf_request(0, 'textDocument/signatureHelp', params, function(_, result, ctx, _)
+    if this_seq ~= signature_seq then
+      return
+    end
     if not result or not result.signatures or #result.signatures == 0 then
       return
     end
@@ -784,21 +785,36 @@ function SignaturePopup.show()
 
     local shown_popup = Popups:get_signature_popup(current_winid)
     if shown_popup then
-      shown_popup.lines = lines
-      shown_popup.active_hl = active_hl
-      shown_popup.marks = markup
-      if shown_popup.popup and vim.api.nvim_buf_is_valid(shown_popup.popup.bufnr) then
-        -- best effort: allow size growth for multi-overload signatures
-        shown_popup.layout.size = { width = bounding_box.w, height = bounding_box.h }
-        vim.schedule(function()
-          if shown_popup.popup and vim.api.nvim_buf_is_valid(shown_popup.popup.bufnr) then
-            pcall(function() shown_popup.popup:update_layout { size = shown_popup.layout.size } end)
-            shown_popup:render_update()
-          end
-        end)
-        return
+      if vim.deep_equal(shown_popup.lines, lines) then
+        shown_popup.active_hl = active_hl
+        if shown_popup.popup and vim.api.nvim_buf_is_valid(shown_popup.popup.bufnr) then
+          vim.schedule(function()
+            if shown_popup.popup and vim.api.nvim_buf_is_valid(shown_popup.popup.bufnr) then
+              shown_popup:apply_active_param_highlight()
+            end
+          end)
+          return
+        end
+        -- buf invalid: fall through
+      else
+        shown_popup.lines = lines
+        shown_popup.active_hl = active_hl
+        shown_popup.marks = markup
+        if shown_popup.popup and vim.api.nvim_buf_is_valid(shown_popup.popup.bufnr) then
+          -- best effort: allow size growth for multi-overload signatures
+          shown_popup.layout.size = { width = bounding_box.w, height = bounding_box.h }
+          vim.schedule(function()
+            if shown_popup.popup and vim.api.nvim_buf_is_valid(shown_popup.popup.bufnr) then
+              pcall(function()
+                shown_popup.popup:update_layout { size = shown_popup.layout.size }
+              end)
+              shown_popup:render_update()
+            end
+          end)
+          return
+        end
+        -- buf invalid: fall through to unmount+create
       end
-      -- shown exists but buf invalid: do not return, fall through to unmount+create
     end
 
     Popups:ensure_unmounted(current_winid)
@@ -855,7 +871,6 @@ function SignaturePopup.format_signature(result, triggers)
   return emitted, active_hl, markup
 end
 
-
 function SignaturePopup.get_bounding_box(lines)
   return HoverPopup.get_bounding_box(lines)
 end
@@ -887,10 +902,18 @@ function SignaturePopup:apply_active_param_highlight()
   if not self.active_hl or not self.popup or not vim.api.nvim_buf_is_valid(self.popup.bufnr) then
     return
   end
+  local bufnr = self.popup.bufnr
+  local ns = self.popup.ns_id
+  -- remove any prior active param hl (without touching rule/ts marks) so only-active updates work
+  for _, ext in ipairs(vim.api.nvim_buf_get_extmarks(bufnr, ns, 0, -1, { details = true }) or {}) do
+    if (ext[4] or {}).hl_group == 'LspSignatureActiveParameter' then
+      pcall(vim.api.nvim_buf_del_extmark, bufnr, ns, ext[1])
+    end
+  end
   local hl = self.active_hl
   local sc = math.max(0, (hl[2] or 0) - 1)
   local ec = math.max(0, (hl[4] or 0) - 1)
-  pcall(vim.api.nvim_buf_set_extmark, self.popup.bufnr, self.popup.ns_id, hl[1], sc, {
+  pcall(vim.api.nvim_buf_set_extmark, bufnr, ns, hl[1], sc, {
     end_line = hl[3],
     end_col = ec,
     hl_group = 'LspSignatureActiveParameter',
@@ -1022,25 +1045,25 @@ end
 ---@param line string
 ---@return boolean
 function fn.is_fence(line)
-  return line:match('^%s*```') ~= nil
+  return line:match '^%s*```' ~= nil
 end
 
 ---@param line string
 ---@return string
 function fn.get_lang(line)
-  return line:match('^%s*```%s*(%S+)') or 'text'
+  return line:match '^%s*```%s*(%S+)' or 'text'
 end
 
 ---@param line string
 ---@return boolean
 function fn.is_rule(line)
-  return line:match('^%s*[%*%-_][%*%-_][%*%-_]+%s*$') ~= nil
+  return line:match '^%s*[%*%-_][%*%-_][%*%-_]+%s*$' ~= nil
 end
 
 ---@param line string
 ---@return boolean
 function fn.is_empty(line)
-  return line:match('^%s*$') ~= nil
+  return line:match '^%s*$' ~= nil
 end
 
 --- Parse raw markdown-ish lines (with possible fences and --- rules) into emitted buffer lines + metadata for rendering.
@@ -1137,7 +1160,7 @@ function fn.prepare_markup(raw_lines)
       local next_is_fence = fn.is_fence(next_line)
       local next_is_rule = fn.is_rule(next_line)
       if not next_is_fence and not next_is_rule and not is_first and not is_last then
-        emit_line('')
+        emit_line ''
       end
       -- (no emit, and i already past; do not start md here)
     else
@@ -1187,19 +1210,22 @@ function Popup:render_markup()
       if not lang or lang == '' then
         lang = 'text'
       end
-      local lt = vim.treesitter.languagetree.new(bufnr, lang, {})
-      lt:parse()
-      lt:set_included_regions({ { { srow, 0, erow, 0 } } })
-      lt:parse()
-      local query = vim.treesitter.query.get(lang, 'highlights')
+      local query = fn.ts_queries[lang]
+      if query == nil then
+        query = vim.treesitter.query.get(lang, 'highlights')
+        fn.ts_queries[lang] = query or false
+      end
       if not query then
         return
       end
+      local lt = vim.treesitter.languagetree.new(bufnr, lang, {})
+      lt:set_included_regions { { { srow, 0, erow, 0 } } }
+      lt:parse(true)
       for _, tree in ipairs(lt:trees()) do
         local root = tree:root()
         for id, node, metadata in query:iter_captures(root, bufnr, srow, erow) do
           local cap = query.captures[id]
-          if cap and not cap:match('^_') and cap ~= 'spell' then
+          if cap and not cap:match '^_' and cap ~= 'spell' then
             local conceal = metadata.conceal
             if not conceal and metadata[id] then
               conceal = metadata[id].conceal

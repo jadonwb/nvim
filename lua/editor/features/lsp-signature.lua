@@ -21,24 +21,10 @@ local function do_check(opts)
     return
   end
 
-  -- detect already-open via get_signature_popup (parent win == current in insert/select)
-  local has_open = false
-  if NVLspPopup and NVLspPopup.get_signature_popup then
-    local sig = NVLspPopup.get_signature_popup()
-    if sig then
-      has_open = true
-    end
-  end
-
-  if opts.force or has_open then
-    NVLspPopup.show_signature()
-    return
-  end
-
   local line = vim.api.nvim_get_current_line()
   local col = vim.fn.col('.') - 1
   local char = col > 0 and line:sub(col, col) or ''
-  if vim.tbl_contains(triggers, char) then
+  if opts.force or vim.tbl_contains(triggers, char) then
     NVLspPopup.show_signature()
   end
   -- if not trigger, leave any open signature popup alone

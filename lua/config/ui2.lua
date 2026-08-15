@@ -230,7 +230,15 @@ vim.api.nvim_create_autocmd('LspProgress', {
     if val.percentage ~= nil then update.percent = val.percentage end
     NVUi2.progress[id] = vim.tbl_deep_extend('force', NVUi2.progress[id] or { client_id = client_id, name = client.name }, update)
     rebuild_progress_hl()
-    pcall(vim.cmd, 'redrawstatus')
+    if val.kind ~= 'end' then
+      if not NVUi2._progress_timer then
+        start_progress_timer()
+        pcall(vim.cmd, 'redrawstatus')
+      end
+      -- timer already running: another progress report, do not redraw (timer paints)
+    else
+      pcall(vim.cmd, 'redrawstatus')
+    end
     if val.kind ~= 'end' then
       start_progress_timer()
     elseif not has_running_progress() then
@@ -239,7 +247,10 @@ vim.api.nvim_create_autocmd('LspProgress', {
     if val.kind == 'end' then
       local prev = NVUi2._progress_end_timers[id]
       if prev then
-        pcall(vim.fn.timer_stop, prev)
+        pcall(function() prev:stop() end)
+        if not prev:is_closing() then
+          pcall(function() prev:close() end)
+        end
       end
       NVUi2._progress_end_timers[id] = vim.defer_fn(function()
         if NVUi2.progress[id] and NVUi2.progress[id].kind == 'end' then
