@@ -13,7 +13,8 @@ local Popup = Class()
 ---@field type "hover"
 ---@field popup NuiPopup
 ---@field lines string[]
----@field new fun(self, parent: WinID, bounding_box: BoundingBox, lines: string[]): HoverPopup
+---@field marks {rules: integer[], codes: {start: integer, finish: integer, lang: string}[], mds: {start: integer, finish: integer}[] }?
+---@field new fun(self, parent: WinID, bounding_box: BoundingBox, lines: string[], marks?: table): HoverPopup
 local HoverPopup = Class(Popup)
 
 ---@class DiagnosticPopup: Popup
@@ -28,7 +29,8 @@ local DiagnosticPopup = Class(Popup)
 ---@field popup NuiPopup
 ---@field lines string[]
 ---@field active_hl Range4?
----@field new fun(self, parent: WinID, bounding_box: BoundingBox, lines: string[], active_hl?: Range4): SignaturePopup
+---@field marks {rules: integer[], codes: {start: integer, finish: integer, lang: string}[], mds: {start: integer, finish: integer}[] }?
+---@field new fun(self, parent: WinID, bounding_box: BoundingBox, lines: string[], active_hl?: Range4, marks?: table): SignaturePopup
 local SignaturePopup = Class(Popup)
 
 local ERROR = vim.diagnostic.severity.ERROR
@@ -661,9 +663,11 @@ end
 ---@param parent WinID
 ---@param bounding_box BoundingBox
 ---@param lines string[]
-function HoverPopup:init(parent, bounding_box, lines)
+---@param marks? table
+function HoverPopup:init(parent, bounding_box, lines, marks)
   Popup.init(self, { type = POPUP_TYPE.hover, parent = parent, bounding_box = bounding_box }) -- Initialize NuiPopup as needed
   self.lines = lines
+  self.marks = marks
 end
 
 function HoverPopup.show()
@@ -695,10 +699,11 @@ function HoverPopup.show()
       return
     end
 
-    local lines = HoverPopup.format_message(result, ctx)
-    local bounding_box = HoverPopup.get_bounding_box(lines)
+    local raw_lines = HoverPopup.format_message(result, ctx)
+    local emitted, markup = fn.prepare_markup(raw_lines)
+    local bounding_box = HoverPopup.get_bounding_box(emitted)
 
-    local popup = HoverPopup:new(current_winid, bounding_box, lines)
+    local popup = HoverPopup:new(current_winid, bounding_box, emitted, markup)
 
     vim.schedule(function()
       popup:render()
@@ -732,12 +737,7 @@ function HoverPopup:render()
 
   popup:mount()
 
-  vim.api.nvim_buf_set_lines(popup.bufnr, 0, -1, false, self.lines or {})
-  pcall(vim.treesitter.start, popup.bufnr, 'markdown')
-  vim.wo[popup.winid].conceallevel = 2
-  vim.wo[popup.winid].concealcursor = 'n'
-
-  self:fit_concealed_height()
+  self:render_markup()
 
   self:store_meta()
   self:attach_listeners()
@@ -749,10 +749,12 @@ end
 ---@param bounding_box BoundingBox
 ---@param lines string[]
 ---@param active_hl Range4?
-function SignaturePopup:init(parent, bounding_box, lines, active_hl)
+---@param marks? table
+function SignaturePopup:init(parent, bounding_box, lines, active_hl, marks)
   Popup.init(self, { type = POPUP_TYPE.signature, parent = parent, bounding_box = bounding_box })
   self.lines = lines
   self.active_hl = active_hl
+  self.marks = marks
 end
 
 function SignaturePopup.show()
@@ -776,7 +778,7 @@ function SignaturePopup.show()
       triggers = client.server_capabilities.signatureHelpProvider.triggerCharacters
     end
 
-    local lines, active_hl = SignaturePopup.format_signature(result, triggers)
+    local lines, active_hl, markup = SignaturePopup.format_signature(result, triggers)
     lines = lines or {}
     local bounding_box = SignaturePopup.get_bounding_box(lines)
 
@@ -784,6 +786,7 @@ function SignaturePopup.show()
     if shown_popup then
       shown_popup.lines = lines
       shown_popup.active_hl = active_hl
+      shown_popup.marks = markup
       if shown_popup.popup and vim.api.nvim_buf_is_valid(shown_popup.popup.bufnr) then
         -- best effort: allow size growth for multi-overload signatures
         shown_popup.layout.size = { width = bounding_box.w, height = bounding_box.h }
@@ -800,7 +803,7 @@ function SignaturePopup.show()
 
     Popups:ensure_unmounted(current_winid)
 
-    local popup = SignaturePopup:new(current_winid, bounding_box, lines, active_hl)
+    local popup = SignaturePopup:new(current_winid, bounding_box, lines, active_hl, markup)
 
     vim.schedule(function()
       popup:render()
@@ -812,9 +815,10 @@ end
 ---@param triggers string[]?
 ---@return string[]
 ---@return Range4?
+---@return table? markup
 function SignaturePopup.format_signature(result, triggers)
   if not result or not result.signatures or #result.signatures == 0 then
-    return {}, nil
+    return {}, nil, nil
   end
   local all_lines = {}
   local active_hl = nil
@@ -847,7 +851,8 @@ function SignaturePopup.format_signature(result, triggers)
       }
     end
   end
-  return all_lines, active_hl
+  local emitted, markup = fn.prepare_markup(all_lines)
+  return emitted, active_hl, markup
 end
 
 
@@ -860,13 +865,7 @@ function SignaturePopup:render()
 
   popup:mount()
 
-  vim.api.nvim_buf_set_lines(popup.bufnr, 0, -1, false, self.lines or {})
-  pcall(vim.treesitter.start, popup.bufnr, 'markdown')
-  vim.wo[popup.winid].conceallevel = 2
-  vim.wo[popup.winid].concealcursor = 'n'
-
-  self:fit_concealed_height()
-
+  self:render_markup()
   self:apply_active_param_highlight()
 
   self:store_meta()
@@ -879,14 +878,8 @@ function SignaturePopup:render_update()
     return
   end
 
-  vim.api.nvim_buf_set_lines(popup.bufnr, 0, -1, false, self.lines or {})
   vim.api.nvim_buf_clear_namespace(popup.bufnr, popup.ns_id, 0, -1)
-  pcall(vim.treesitter.start, popup.bufnr, 'markdown')
-  vim.wo[popup.winid].conceallevel = 2
-  vim.wo[popup.winid].concealcursor = 'n'
-
-  self:fit_concealed_height()
-
+  self:render_markup()
   self:apply_active_param_highlight()
 end
 
@@ -895,9 +888,11 @@ function SignaturePopup:apply_active_param_highlight()
     return
   end
   local hl = self.active_hl
-  pcall(vim.api.nvim_buf_set_extmark, self.popup.bufnr, self.popup.ns_id, hl[1], hl[2], {
+  local sc = math.max(0, (hl[2] or 0) - 1)
+  local ec = math.max(0, (hl[4] or 0) - 1)
+  pcall(vim.api.nvim_buf_set_extmark, self.popup.bufnr, self.popup.ns_id, hl[1], sc, {
     end_line = hl[3],
-    end_col = hl[4],
+    end_col = ec,
     hl_group = 'LspSignatureActiveParameter',
   })
 end
@@ -1020,6 +1015,223 @@ function fn.scroll_popup(direction)
     end, 0)
   end)
   return true
+end
+
+--- Markup parse + render (to match noice) ---
+
+---@param line string
+---@return boolean
+function fn.is_fence(line)
+  return line:match('^%s*```') ~= nil
+end
+
+---@param line string
+---@return string
+function fn.get_lang(line)
+  return line:match('^%s*```%s*(%S+)') or 'text'
+end
+
+---@param line string
+---@return boolean
+function fn.is_rule(line)
+  return line:match('^%s*[%*%-_][%*%-_][%*%-_]+%s*$') ~= nil
+end
+
+---@param line string
+---@return boolean
+function fn.is_empty(line)
+  return line:match('^%s*$') ~= nil
+end
+
+--- Parse raw markdown-ish lines (with possible fences and --- rules) into emitted buffer lines + metadata for rendering.
+--- Fences are stripped (not emitted); code content highlighted with lang; rules become empty line + virt ─ ; text with markdown_inline.
+--- Matches noice blank collapsing: eat after fence/rule, conditional blank emit (not before fence/rule, not lead/trail).
+---@param raw_lines string[]?
+---@return string[] emitted
+---@return { rules: integer[], codes: {start: integer, finish: integer, lang: string}[], mds: {start: integer, finish: integer}[] } marks
+function fn.prepare_markup(raw_lines)
+  raw_lines = raw_lines or {}
+  local emitted = {}
+  local marks = { rules = {}, codes = {}, mds = {} }
+  local row = 0
+  local md_start = nil
+
+  local function flush_md()
+    if md_start ~= nil then
+      table.insert(marks.mds, { start = md_start, finish = row })
+      md_start = nil
+    end
+  end
+
+  local function emit_line(l)
+    if md_start == nil then
+      md_start = row
+    end
+    table.insert(emitted, l or '')
+    row = row + 1
+  end
+
+  local function emit_rule()
+    flush_md()
+    table.insert(emitted, '')
+    table.insert(marks.rules, row)
+    row = row + 1
+  end
+
+  local function emit_code(lang, lines)
+    flush_md()
+    local start = row
+    for _, cl in ipairs(lines or {}) do
+      table.insert(emitted, cl or '')
+      row = row + 1
+    end
+    local finish = row
+    if start < finish then
+      table.insert(marks.codes, { start = start, finish = finish, lang = lang or 'text' })
+    end
+  end
+
+  local i = 1
+  local n = #raw_lines
+
+  -- do not emit leading empty lines
+  while i <= n and fn.is_empty(raw_lines[i] or '') do
+    i = i + 1
+  end
+
+  while i <= n do
+    local line = raw_lines[i] or ''
+    if fn.is_fence(line) then
+      flush_md()
+      local lang = fn.get_lang(line)
+      local code_lines = {}
+      i = i + 1
+      while i <= n and not fn.is_fence(raw_lines[i] or '') do
+        table.insert(code_lines, raw_lines[i])
+        i = i + 1
+      end
+      if i <= n then
+        i = i + 1 -- skip closing fence
+      end
+      -- after finishing a code fence: skip subsequent empty lines (eat_nl)
+      while i <= n and fn.is_empty(raw_lines[i] or '') do
+        i = i + 1
+      end
+      emit_code(lang, code_lines)
+    elseif fn.is_rule(line) then
+      -- rule: emit exactly one empty line + mark; no surrounding blanks from source
+      emit_rule()
+      i = i + 1
+      -- after a rule: skip subsequent empty lines (eat_nl)
+      while i <= n and fn.is_empty(raw_lines[i] or '') do
+        i = i + 1
+      end
+    elseif fn.is_empty(line) then
+      -- on empty: skip consecutive; emit a blank ONLY if next not fence/rule and not first/last
+      while i <= n and fn.is_empty(raw_lines[i] or '') do
+        i = i + 1
+      end
+      local next_line = (i <= n) and (raw_lines[i] or '') or ''
+      local is_first = (row == 0)
+      local is_last = (i > n)
+      local next_is_fence = fn.is_fence(next_line)
+      local next_is_rule = fn.is_rule(next_line)
+      if not next_is_fence and not next_is_rule and not is_first and not is_last then
+        emit_line('')
+      end
+      -- (no emit, and i already past; do not start md here)
+    else
+      if md_start == nil then
+        md_start = row
+      end
+      table.insert(emitted, line)
+      row = row + 1
+      i = i + 1
+    end
+  end
+  flush_md()
+
+  return emitted, marks
+end
+
+function Popup:render_markup()
+  local popup = self.popup
+  if not popup or not vim.api.nvim_buf_is_valid(popup.bufnr) then
+    return
+  end
+  local bufnr = popup.bufnr
+  local lines = self.lines or {}
+  vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+
+  local winid = popup.winid
+  local width = 80
+  if vim.api.nvim_win_is_valid(winid) then
+    width = math.max(1, vim.api.nvim_win_get_width(winid))
+  end
+
+  local marks = self.marks or { rules = {}, codes = {}, mds = {} }
+
+  -- rules: empty line + overlay virt_text ─ (no fences, no literal ---)
+  for _, r in ipairs(marks.rules or {}) do
+    if r < #lines then
+      vim.api.nvim_buf_set_extmark(bufnr, popup.ns_id, r, 0, {
+        virt_text = { { string.rep('─', width), '@punctuation.special.markdown' } },
+        virt_text_pos = 'overlay',
+      })
+    end
+  end
+
+  -- ts highlights via LanguageTree + included_regions + query iter_captures -> extmarks @capture.lang
+  local function do_ts_highlight(srow, erow, lang)
+    pcall(function()
+      if not lang or lang == '' then
+        lang = 'text'
+      end
+      local lt = vim.treesitter.languagetree.new(bufnr, lang, {})
+      lt:parse()
+      lt:set_included_regions({ { { srow, 0, erow, 0 } } })
+      lt:parse()
+      local query = vim.treesitter.query.get(lang, 'highlights')
+      if not query then
+        return
+      end
+      for _, tree in ipairs(lt:trees()) do
+        local root = tree:root()
+        for id, node, metadata in query:iter_captures(root, bufnr, srow, erow) do
+          local cap = query.captures[id]
+          if cap and not cap:match('^_') and cap ~= 'spell' then
+            local conceal = metadata.conceal
+            if not conceal and metadata[id] then
+              conceal = metadata[id].conceal
+            end
+            local sr, sc, er, ec = node:range()
+            local hl_group = string.format('@%s.%s', cap, lang)
+            vim.api.nvim_buf_set_extmark(bufnr, popup.ns_id, sr, sc, {
+              end_line = er,
+              end_col = ec,
+              hl_group = hl_group,
+              conceal = conceal,
+            })
+          end
+        end
+      end
+    end)
+  end
+
+  for _, c in ipairs(marks.codes or {}) do
+    do_ts_highlight(c.start, c.finish, c.lang)
+  end
+  for _, m in ipairs(marks.mds or {}) do
+    do_ts_highlight(m.start, m.finish, 'markdown_inline')
+  end
+
+  -- keep conceal (for any md_inline backticks etc that support via queries); no filetype=markdown
+  if vim.api.nvim_win_is_valid(winid) then
+    vim.wo[winid].conceallevel = 2
+    vim.wo[winid].concealcursor = 'n'
+  end
+
+  self:fit_concealed_height()
 end
 
 --- Exports ---
