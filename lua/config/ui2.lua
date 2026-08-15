@@ -110,47 +110,57 @@ end
 
 -- LspProgress stored for lualine (no nvim_echo, does not go to msg/pager)
 NVUi2 = NVUi2 or {}
-NVUi2.progress = NVUi2.progress or {}
-NVUi2.progress_text = NVUi2.progress_text or nil
+NVUi2.progress = NVUi2.progress or {}  -- keyed client_id.token
+NVUi2.progress_hl = NVUi2.progress_hl or ''
 NVUi2._progress_end_timers = NVUi2._progress_end_timers or {}
 
-local function format_progress(p, name_fallback)
+local function format_progress_hl(p)
   if not p then
     return ''
   end
   local parts = {}
-  if p.title then
-    table.insert(parts, p.title)
-  end
-  local nm = p.name or name_fallback
-  if nm then
-    if #parts > 0 then
-      table.insert(parts, '/')
-    end
-    table.insert(parts, nm)
-  end
-  if p.message and tostring(p.message) ~= '' then
-    table.insert(parts, ': ' .. p.message)
+  local msg = p.message
+  if msg and tostring(msg) ~= '' then
+    local m = tostring(msg):gsub('%%', '%%%%')
+    table.insert(parts, '%#StatusLine#' .. m)
   end
   if p.percent ~= nil then
-    table.insert(parts, ' ' .. p.percent .. '%')
+    table.insert(parts, '%#StatusLine#(' .. p.percent .. '%%)')
+  end
+  if p.title then
+    local t = tostring(p.title):gsub('%%', '%%%%')
+    table.insert(parts, '%#NonText#' .. t)
+  end
+  local nm = p.name
+  if nm then
+    table.insert(parts, '%#Title#' .. nm)
   end
   local s = table.concat(parts, ' ')
-  if p._ended then
-    s = s .. ' done'
+  if p.kind == 'end' then
+    s = '✔ ' .. s
   end
   return s
 end
 
-local function update_progress_text()
-  local parts = {}
-  for _, p in pairs(NVUi2.progress or {}) do
-    local t = format_progress(p, nil)
-    if t and t ~= '' then
-      table.insert(parts, t)
+local function rebuild_progress_hl()
+  NVUi2.progress_hl = ''
+  if not NVUi2.progress or next(NVUi2.progress) == nil then
+    return
+  end
+  -- prefer a non-'end' one
+  local chosen
+  for _, p in pairs(NVUi2.progress) do
+    if p.kind ~= 'end' then
+      chosen = p
+      break
     end
   end
-  NVUi2.progress_text = #parts > 0 and table.concat(parts, ' | ') or nil
+  if not chosen then
+    _, chosen = next(NVUi2.progress)
+  end
+  if chosen then
+    NVUi2.progress_hl = format_progress_hl(chosen)
+  end
 end
 
 vim.api.nvim_create_autocmd('LspProgress', {
@@ -160,38 +170,33 @@ vim.api.nvim_create_autocmd('LspProgress', {
     if not client_id then
       return
     end
+    local params = ev.data.params or ev.data.result or {}
+    local val = params.value
+    if type(val) ~= 'table' then
+      return
+    end
+    local id = client_id .. '.' .. tostring(params.token)
     local client = vim.lsp.get_client_by_id(client_id)
     if not client then
       return
     end
-    local params = ev.data.params or {}
-    local val = params.value or {}
-    local is_end = val.kind == 'end'
-    if is_end then
-      if NVUi2.progress[client_id] then
-        NVUi2.progress[client_id]._ended = true
-      end
-    else
-      NVUi2.progress[client_id] = {
-        name = client.name,
-        title = val.title,
-        message = val.message,
-        percent = val.percentage,
-        _ended = false,
-      }
-    end
-    update_progress_text()
+    local update = { kind = val.kind }
+    if val.title ~= nil then update.title = val.title end
+    if val.message ~= nil then update.message = val.message end
+    if val.percentage ~= nil then update.percent = val.percentage end
+    NVUi2.progress[id] = vim.tbl_deep_extend('force', NVUi2.progress[id] or { client_id = client_id, name = client.name }, update)
+    rebuild_progress_hl()
     pcall(vim.cmd, 'redrawstatus')
-    if is_end then
-      local cid = client_id
-      local prev = NVUi2._progress_end_timers[cid]
+    if val.kind == 'end' then
+      local prev = NVUi2._progress_end_timers[id]
       if prev then
         pcall(vim.fn.timer_stop, prev)
       end
-      NVUi2._progress_end_timers[cid] = vim.defer_fn(function()
-        if NVUi2.progress[cid] and NVUi2.progress[cid]._ended then
-          NVUi2.progress[cid] = nil
-          update_progress_text()
+      NVUi2._progress_end_timers[id] = vim.defer_fn(function()
+        if NVUi2.progress[id] and NVUi2.progress[id].kind == 'end' then
+          NVUi2.progress[id] = nil
+          NVUi2._progress_end_timers[id] = nil
+          rebuild_progress_hl()
           pcall(vim.cmd, 'redrawstatus')
         end
       end, 1500)

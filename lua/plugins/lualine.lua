@@ -75,34 +75,11 @@ return {
       },
       {
         function()
-          if not NVUi2 then
-            return ''
-          end
-          if NVUi2.progress_text and NVUi2.progress_text ~= '' then
-            return NVUi2.progress_text
-          end
-          -- fallback to table (first entry formatted)
-          local _, p = next(NVUi2.progress or {})
-          if not p then
-            return ''
-          end
-          local parts = {}
-          if p.name then table.insert(parts, p.name) end
-          if p.title then table.insert(parts, p.title) end
-          if p.message then table.insert(parts, p.message) end
-          if p.percent then table.insert(parts, p.percent .. '%') end
-          return table.concat(parts, ' ')
+          return (NVUi2 and NVUi2.progress_hl) or ''
         end,
         cond = function()
-          if not NVUi2 then
-            return false
-          end
-          if NVUi2.progress_text and NVUi2.progress_text ~= '' then
-            return true
-          end
-          return NVUi2.progress and next(NVUi2.progress) ~= nil
+          return NVUi2 and type(NVUi2.progress_hl) == 'string' and NVUi2.progress_hl ~= ''
         end,
-        color = 'MsgArea',
       },
       {
         function()
