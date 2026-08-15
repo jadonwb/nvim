@@ -1127,20 +1127,30 @@ function fn.prepare_markup(raw_lines)
     if fn.is_fence(line) then
       flush_md()
       local lang = fn.get_lang(line)
+      if row ~= 0 then
+        table.insert(emitted, '')
+        row = row + 1
+      end
       local code_lines = {}
       i = i + 1
       while i <= n and not fn.is_fence(raw_lines[i] or '') do
         table.insert(code_lines, raw_lines[i])
         i = i + 1
       end
+      local closed = false
       if i <= n then
         i = i + 1 -- skip closing fence
+        closed = true
+      end
+      emit_code(lang, code_lines)
+      if closed then
+        table.insert(emitted, '')
+        row = row + 1
       end
       -- after finishing a code fence: skip subsequent empty lines (eat_nl)
       while i <= n and fn.is_empty(raw_lines[i] or '') do
         i = i + 1
       end
-      emit_code(lang, code_lines)
     elseif fn.is_rule(line) then
       -- rule: emit exactly one empty line + mark; no surrounding blanks from source
       emit_rule()
