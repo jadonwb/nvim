@@ -1,6 +1,5 @@
 NVSZoom = {}
 NVSNotifier = {}
-NVSInput = {}
 
 -- Zoom
 function NVSZoom.activate()
@@ -28,24 +27,6 @@ end
 function NVSNotifier.hide()
   Snacks.notifier.hide()
 end
-
--- Input
-function NVSInput.is_input(bufid)
-  bufid = bufid or vim.api.nvim_get_current_buf()
-  return vim.bo[bufid].filetype == 'snacks_input'
-end
-
-function NVSInput.ensure_hidden()
-  if NVSInput.is_input() then
-    vim.cmd.close()
-    return true
-  end
-  return false
-end
-
-NVClose.register('snacks_input', function()
-  return NVSInput.ensure_hidden()
-end, 20)
 
 return {
   {
@@ -79,9 +60,7 @@ return {
           win = { width = 0, backdrop = false },
         },
       },
-      input = {
-        win = { border = NVBorders.padded },
-      },
+      input = { enabled = false },
       styles = {
         terminal = {
           wo = {

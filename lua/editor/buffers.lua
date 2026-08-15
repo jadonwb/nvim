@@ -170,7 +170,7 @@ function NVBuffers.delete_buf(buf, win)
         continue_delete()
       elseif choice == 'Save As...' then
         NVDialogs.input({
-          title = 'Save As',
+          prompt = 'Save As',
         }, function(filename)
           if filename and filename ~= '' then
             pcall(vim.api.nvim_buf_set_name, buf, filename)

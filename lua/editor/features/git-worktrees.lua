@@ -8,7 +8,7 @@ function NVGitWorktrees.keymaps()
 end
 
 function fn.create_tab_with_worktree()
-  NVDialogs.input({ title = 'Worktree name' }, function(name)
+  NVDialogs.input({ prompt = 'Worktree name' }, function(name)
     if name and name ~= '' then
       fn.create_worktree_from_name(name)
     end

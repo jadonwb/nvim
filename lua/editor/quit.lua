@@ -82,7 +82,7 @@ local function process_unsaved_then(done_fn)
       if choice == 'Write' then
         if item.name == '[No Name]' then
           NVDialogs.input({
-            title = 'Save As',
+            prompt = 'Save As',
           }, function(filename)
             if filename and filename ~= '' then
               table.insert(decisions, { buf = item.buf, action = 'write', filename = filename })

@@ -16,7 +16,7 @@ function fn.save()
   local name = vim.api.nvim_buf_get_name(0)
   if name == '' then
     NVDialogs.input({
-      title = 'Save As',
+      prompt = 'Save As',
     }, function(filename)
       if filename and filename ~= '' then
         pcall(vim.api.nvim_buf_set_name, 0, filename)
@@ -165,13 +165,13 @@ function NVEditing.keymaps()
   vim.api.nvim_create_autocmd('BufEnter', {
     pattern = '*',
     callback = function()
-      if vim.bo.filetype ~= 'snacks_input' and vim.bo.filetype ~= 'snacks_picker_input' and vim.bo.filetype ~= 'delta-input' then
+      if vim.bo.filetype ~= 'snacks_picker_input' and vim.bo.filetype ~= 'delta-input' then
         K.map { '<M-BS>', 'Delete word to the left', '<C-w>', mode = 'i', buffer = true }
       end
     end,
   })
   vim.api.nvim_create_autocmd({ 'FileType' }, {
-    pattern = { 'snacks_input', 'snacks_picker_input', 'delta-input' },
+    pattern = { 'snacks_picker_input', 'delta-input' },
     callback = function()
       K.map { '<M-BS>', 'Delete word to the left', '<C-S-w>', mode = 'i', buffer = true }
     end,

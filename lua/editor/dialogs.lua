@@ -1,5 +1,5 @@
---- Custom floating dialog UI for select and confirm.
---- Replaces vim.fn.confirm with a rounded-border floating window dialog.
+--- Custom floating dialog UI for select and input.
+--- Also implements vim.ui.input. Uses rounded-border floating window dialogs.
 
 NVDialogs = {}
 
@@ -257,9 +257,20 @@ function NVDialogs.select(opts, callback)
 end
 
 --- Text input dialog with a modifiable field.
----@param opts { title: string, default?: string }
+---@param opts { prompt?: string, default?: string }
 ---@param callback fun(value: string?)
 function NVDialogs.input(opts, callback)
+  opts = opts or {}
+  local prompt = opts.prompt
+  if type(prompt) ~= 'string' then
+    prompt = 'Input'
+  end
+  -- Strip trailing colon and whitespace (common in vim.ui.input prompts like "foo: ")
+  prompt = prompt:gsub(':%s*$', ''):gsub('%s+$', '')
+  if prompt == '' then
+    prompt = 'Input'
+  end
+
   local default = opts.default or ''
   local lines = #default > 0 and vim.split(default, '\n', { plain = true }) or { '' }
   if #lines == 0 then
@@ -268,7 +279,7 @@ function NVDialogs.input(opts, callback)
 
   local was_insert = is_insert()
 
-  local float = create_float(lines, opts.title or 'Input', { modifiable = true, min_width = 40 })
+  local float = create_float(lines, prompt, { modifiable = true, min_width = 40 })
   local buf, win = float.buf, float.win
 
   -- Place cursor at end and enter insert mode
@@ -334,6 +345,15 @@ function NVDialogs.input(opts, callback)
       resolve(nil)
     end,
   })
+end
+
+-- Implement vim.ui.input using NVDialogs.input.
+-- This makes our input live before plugins (loaded early via editor.lua).
+-- Snacks input is disabled separately.
+vim.ui.input = function(opts, on_confirm)
+  opts = opts or {}
+  assert(type(on_confirm) == 'function', 'on_confirm must be a function')
+  NVDialogs.input(opts, on_confirm)
 end
 
 --- Informational dialog with static content.
