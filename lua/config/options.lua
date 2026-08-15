@@ -28,6 +28,7 @@ vim.opt.laststatus = 3
 vim.opt.showmode = false
 vim.opt.ruler = false
 vim.opt.showtabline = 1
+vim.opt.cmdheight = 1
 
 vim.opt.smoothscroll = true
 

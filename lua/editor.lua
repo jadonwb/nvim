@@ -29,6 +29,7 @@ require 'editor.features.git-commit'
 require 'editor.features.git-worktrees'
 require 'editor.features.layout-manager'
 require 'editor.features.lsp-popup'
+require 'editor.features.lsp-signature'
 require 'editor.features.focus-mode'
 
 require 'editor.disabled'

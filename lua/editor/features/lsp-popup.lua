@@ -12,8 +12,8 @@ local Popup = Class()
 ---@class HoverPopup: Popup
 ---@field type "hover"
 ---@field popup NuiPopup
----@field message NoiceMessage
----@field new fun(self, parent: WinID, bounding_box: BoundingBox, message: NoiceMessage): DiagnosticPopup
+---@field lines string[]
+---@field new fun(self, parent: WinID, bounding_box: BoundingBox, lines: string[]): HoverPopup
 local HoverPopup = Class(Popup)
 
 ---@class DiagnosticPopup: Popup
@@ -22,6 +22,14 @@ local HoverPopup = Class(Popup)
 ---@field diagnostics Diagnostic[]
 ---@field new fun(self, parent: WinID, bounding_box: BoundingBox, diagnostics: Diagnostic[]): DiagnosticPopup
 local DiagnosticPopup = Class(Popup)
+
+---@class SignaturePopup: Popup
+---@field type "signature"
+---@field popup NuiPopup
+---@field lines string[]
+---@field active_hl Range4?
+---@field new fun(self, parent: WinID, bounding_box: BoundingBox, lines: string[], active_hl?: Range4): SignaturePopup
+local SignaturePopup = Class(Popup)
 
 local ERROR = vim.diagnostic.severity.ERROR
 local WARN = vim.diagnostic.severity.WARN
@@ -36,6 +44,10 @@ end
 
 function NVLspPopup.show_diagnostics()
   DiagnosticPopup.show_current()
+end
+
+function NVLspPopup.show_signature()
+  SignaturePopup.show()
 end
 
 function NVLspPopup.autocmds()
@@ -75,7 +87,7 @@ local config = {
     max_height = nil,
     border = {
       style = 'none',
-      padding = { top = 1, bottom = 1, left = 3, right = 3 },
+      padding = { top = 1, bottom = 1, left = 2, right = 2 },
     },
   },
   diagnostic = {
@@ -94,6 +106,7 @@ local config = {
 local POPUP_TYPE = {
   hover = 1,
   diagnostic = 2,
+  signature = 3,
 }
 
 ---@class PopupLayout
@@ -105,14 +118,16 @@ local POPUP_TYPE = {
 ---@field w integer
 ---@field h integer
 
+---@alias Range4 [integer, integer, integer, integer]
+
 --- Popups Store ---
 
 ---@class Popups
----@field [WinID] HoverPopup | DiagnosticPopup
+---@field [WinID] HoverPopup | DiagnosticPopup | SignaturePopup
 local Popups = {}
 
 ---@param winid WinID
----@return (HoverPopup | DiagnosticPopup)?
+---@return (HoverPopup | DiagnosticPopup | SignaturePopup)?
 function Popups:get_popup(winid)
   return self[winid]
 end
@@ -137,6 +152,24 @@ function Popups:get_diagnoscic_popup(winid)
     ---@cast popup DiagnosticPopup
     return popup
   end
+end
+
+---@param winid WinID
+---@return SignaturePopup?
+function Popups:get_signature_popup(winid)
+  local popup = self[winid]
+
+  if popup and popup.type == POPUP_TYPE.signature then
+    ---@cast popup SignaturePopup
+    return popup
+  end
+end
+
+---@param winid WinID?
+---@return SignaturePopup?
+function NVLspPopup.get_signature_popup(winid)
+  winid = winid or vim.api.nvim_get_current_win()
+  return Popups:get_signature_popup(winid)
 end
 
 ---@param winid WinID
@@ -610,10 +643,10 @@ end
 
 ---@param parent WinID
 ---@param bounding_box BoundingBox
----@param message NoiceMessage
-function HoverPopup:init(parent, bounding_box, message)
+---@param lines string[]
+function HoverPopup:init(parent, bounding_box, lines)
   Popup.init(self, { type = POPUP_TYPE.hover, parent = parent, bounding_box = bounding_box }) -- Initialize NuiPopup as needed
-  self.message = message
+  self.lines = lines
 end
 
 function HoverPopup.show()
@@ -645,10 +678,10 @@ function HoverPopup.show()
       return
     end
 
-    local message = HoverPopup.format_message(result, ctx)
-    local bounding_box = HoverPopup.get_bounding_box(message)
+    local lines = HoverPopup.format_message(result, ctx)
+    local bounding_box = HoverPopup.get_bounding_box(lines)
 
-    local popup = HoverPopup:new(current_winid, bounding_box, message)
+    local popup = HoverPopup:new(current_winid, bounding_box, lines)
 
     vim.schedule(function()
       popup:render()
@@ -658,25 +691,23 @@ end
 
 ---@param result any
 ---@param ctx lsp.HandlerContext
----@return NoiceMessage
+---@return string[]
 function HoverPopup.format_message(result, ctx)
-  local Message = require 'noice.message'
-  local Format = require 'noice.lsp.format'
-
-  local message = Message('lsp', 'hover')
-
-  Format.format(message, result.contents, { ft = vim.bo[ctx.bufnr].filetype })
-
-  return message
+  return vim.lsp.util.convert_input_to_markdown_lines(result.contents)
 end
 
----@param message NoiceMessage
+---@param lines string[]
 ---@return BoundingBox
-function HoverPopup.get_bounding_box(message)
-  return {
-    w = message:width(),
-    h = message:height(),
-  }
+function HoverPopup.get_bounding_box(lines)
+  local w = 1
+  for _, line in ipairs(lines or {}) do
+    w = math.max(w, vim.api.nvim_strwidth(line))
+  end
+  local h = #lines
+  if h < 1 then
+    h = 1
+  end
+  return { w = w, h = h }
 end
 
 function HoverPopup:render()
@@ -684,22 +715,259 @@ function HoverPopup:render()
 
   popup:mount()
 
-  self.message:render(popup.bufnr, popup.ns_id)
+  vim.api.nvim_buf_set_lines(popup.bufnr, 0, -1, false, self.lines or {})
+  pcall(vim.treesitter.start, popup.bufnr, 'markdown')
+  vim.wo[popup.winid].conceallevel = 2
+  vim.wo[popup.winid].concealcursor = 'n'
 
   self:store_meta()
   self:attach_listeners()
 end
 
----@param direction "up"|"down"
-function fn.scroll(direction)
-  if fn.scroll_popup(direction) then
-    return
-  else
-    local ok, noice_lsp = pcall(require, 'noice.lsp')
-    if ok and noice_lsp.scroll then
-      noice_lsp.scroll(direction == 'up' and -4 or 4)
+--- SignaturePopup ---
+
+---@param parent WinID
+---@param bounding_box BoundingBox
+---@param lines string[]
+---@param active_hl Range4?
+function SignaturePopup:init(parent, bounding_box, lines, active_hl)
+  Popup.init(self, { type = POPUP_TYPE.signature, parent = parent, bounding_box = bounding_box })
+  self.lines = lines
+  self.active_hl = active_hl
+end
+
+function SignaturePopup.show()
+  local current_winid = vim.api.nvim_get_current_win()
+
+  local params = vim.lsp.util.make_position_params(current_winid, 'utf-16')
+
+  vim.lsp.buf_request(0, 'textDocument/signatureHelp', params, function(_, result, ctx, _)
+    if not result or not result.signatures or #result.signatures == 0 then
+      return
+    end
+
+    local client = vim.lsp.get_client_by_id(ctx.client_id)
+    local triggers = {}
+    if
+      client
+      and client.server_capabilities
+      and client.server_capabilities.signatureHelpProvider
+      and client.server_capabilities.signatureHelpProvider.triggerCharacters
+    then
+      triggers = client.server_capabilities.signatureHelpProvider.triggerCharacters
+    end
+
+    local lines, active_hl = SignaturePopup.format_signature(result, triggers)
+    lines = lines or {}
+    local bounding_box = SignaturePopup.get_bounding_box(lines)
+
+    local shown_popup = Popups:get_signature_popup(current_winid)
+    if shown_popup then
+      shown_popup.lines = lines
+      shown_popup.active_hl = active_hl
+      if shown_popup.popup and vim.api.nvim_buf_is_valid(shown_popup.popup.bufnr) then
+        -- best effort: allow size growth for multi-overload signatures
+        shown_popup.layout.size = { width = bounding_box.w, height = bounding_box.h }
+        vim.schedule(function()
+          if shown_popup.popup and vim.api.nvim_buf_is_valid(shown_popup.popup.bufnr) then
+            pcall(function() shown_popup.popup:update_layout { size = shown_popup.layout.size } end)
+            shown_popup:render_update()
+          end
+        end)
+        return
+      end
+      -- shown exists but buf invalid: do not return, fall through to unmount+create
+    end
+
+    Popups:ensure_unmounted(current_winid)
+
+    local popup = SignaturePopup:new(current_winid, bounding_box, lines, active_hl)
+
+    vim.schedule(function()
+      popup:render()
+    end)
+  end)
+end
+
+---@param result any
+---@param triggers string[]?
+---@return string[]
+---@return Range4?
+function SignaturePopup.format_signature(result, triggers)
+  if not result or not result.signatures or #result.signatures == 0 then
+    return {}, nil
+  end
+  local all_lines = {}
+  local active_hl = nil
+  local active_idx = result.activeSignature or 0
+  local current_line = 0
+  for i, sig in ipairs(result.signatures) do
+    if i > 1 then
+      table.insert(all_lines, '---')
+      current_line = current_line + 1
+    end
+    local block_start = current_line
+    local sub_result = {
+      signatures = { sig },
+      activeSignature = 0,
+      activeParameter = sig.activeParameter or result.activeParameter,
+    }
+    local sub_lines, sub_hl = vim.lsp.util.convert_signature_help_to_markdown_lines(sub_result, nil, triggers)
+    sub_lines = sub_lines or {}
+    for _, l in ipairs(sub_lines) do
+      table.insert(all_lines, l)
+      current_line = current_line + 1
+    end
+    if (i - 1) == active_idx and sub_hl then
+      -- offset Range4 by the starting line of this block
+      active_hl = {
+        (sub_hl[1] or 0) + block_start,
+        sub_hl[2] or 0,
+        (sub_hl[3] or 0) + block_start,
+        sub_hl[4] or 0,
+      }
     end
   end
+  return all_lines, active_hl
+end
+
+
+function SignaturePopup.get_bounding_box(lines)
+  return HoverPopup.get_bounding_box(lines)
+end
+
+function SignaturePopup:render()
+  local popup = self.popup
+
+  popup:mount()
+
+  vim.api.nvim_buf_set_lines(popup.bufnr, 0, -1, false, self.lines or {})
+  pcall(vim.treesitter.start, popup.bufnr, 'markdown')
+  vim.wo[popup.winid].conceallevel = 2
+  vim.wo[popup.winid].concealcursor = 'n'
+
+  self:apply_active_param_highlight()
+
+  self:store_meta()
+  self:attach_listeners()
+end
+
+function SignaturePopup:render_update()
+  local popup = self.popup
+  if not popup or not vim.api.nvim_buf_is_valid(popup.bufnr) then
+    return
+  end
+
+  vim.api.nvim_buf_set_lines(popup.bufnr, 0, -1, false, self.lines or {})
+  vim.api.nvim_buf_clear_namespace(popup.bufnr, popup.ns_id, 0, -1)
+  pcall(vim.treesitter.start, popup.bufnr, 'markdown')
+  vim.wo[popup.winid].conceallevel = 2
+  vim.wo[popup.winid].concealcursor = 'n'
+
+  self:apply_active_param_highlight()
+end
+
+function SignaturePopup:apply_active_param_highlight()
+  if not self.active_hl or not self.popup or not vim.api.nvim_buf_is_valid(self.popup.bufnr) then
+    return
+  end
+  local hl = self.active_hl
+  pcall(vim.api.nvim_buf_set_extmark, self.popup.bufnr, self.popup.ns_id, hl[1], hl[2], {
+    end_line = hl[3],
+    end_col = hl[4],
+    hl_group = 'LspSignatureActiveParameter',
+  })
+end
+
+function SignaturePopup:attach_listeners()
+  local popup = self.popup
+
+  -- Set up buffer-local scroll keymaps for the parent window
+  local parent_bufnr = vim.api.nvim_win_get_buf(self.parent)
+
+  K.map {
+    NVKeymaps.scroll_alt.up,
+    'LSP: Scroll popup up',
+    function()
+      fn.scroll 'up'
+    end,
+    mode = { 'n', 'i' },
+    buffer = parent_bufnr,
+  }
+
+  K.map {
+    NVKeymaps.scroll_alt.down,
+    'LSP: Scroll popup down',
+    function()
+      fn.scroll 'down'
+    end,
+    mode = { 'n', 'i' },
+    buffer = parent_bufnr,
+  }
+
+  -- Close and scroll keymaps directly on the popup buffer
+  K.map {
+    NVKeymaps.close_q,
+    'LSP: Close with q',
+    function()
+      self:unmount()
+    end,
+    mode = { 'n' },
+    buffer = popup.bufnr,
+  }
+
+  local augroup_id = vim.api.nvim_create_augroup('LSPSigPopupGroup', { clear = true })
+
+  vim.api.nvim_create_autocmd({ 'InsertLeave', 'BufHidden' }, {
+    group = augroup_id,
+    callback = function()
+      self:unmount()
+      pcall(vim.api.nvim_del_augroup_by_id, augroup_id)
+    end,
+    once = true,
+  })
+
+  vim.api.nvim_create_autocmd({ 'WinScrolled' }, {
+    group = augroup_id,
+    buffer = vim.api.nvim_get_current_buf(),
+    callback = function()
+      local layout = self.layout
+
+      popup:update_layout {
+        relative = layout.relative,
+        position = layout.position,
+      }
+    end,
+  })
+
+  vim.api.nvim_create_autocmd('WinClosed', {
+    group = augroup_id,
+    pattern = tostring(popup.winid),
+    callback = function()
+      self:unmount()
+      pcall(vim.api.nvim_del_augroup_by_id, augroup_id)
+    end,
+    once = true,
+  })
+end
+
+---@param direction "up"|"down"
+function fn.scroll(direction)
+  fn.scroll_popup(direction)
+end
+
+local function win_buf_height(win)
+  local buf = vim.api.nvim_win_get_buf(win)
+  if not vim.wo[win].wrap then
+    return vim.api.nvim_buf_line_count(buf)
+  end
+  local width = vim.api.nvim_win_get_width(win)
+  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  local h = 0
+  for _, l in ipairs(lines) do
+    h = h + math.max(1, math.ceil(vim.fn.strwidth(l) / width))
+  end
+  return h
 end
 
 ---@param direction "up"|"down"
@@ -710,20 +978,25 @@ function fn.scroll_popup(direction)
     return false
   end
 
-  local nuice = require 'noice.util.nui'
-
   local winid = popup:winid()
+  local delta = direction == 'up' and -4 or 4
 
-  if direction == 'up' then
-    nuice.scroll(winid, -4)
-    return true
-  elseif direction == 'down' then
-    nuice.scroll(winid, 4)
-    return true
-  else
-    log.error('Unexpected direction: ' .. direction)
-    return false
-  end
+  vim.api.nvim_win_call(winid, function()
+    vim.wo.scrolloff = 0
+    local view = vim.fn.winsaveview()
+    local height = vim.api.nvim_win_get_height(winid)
+    local top = view.topline + delta
+    top = math.max(top, 1)
+    top = math.min(top, win_buf_height(winid) - height + 1)
+    vim.defer_fn(function()
+      if vim.api.nvim_win_is_valid(winid) then
+        vim.api.nvim_win_call(winid, function()
+          vim.fn.winrestview { topline = top, lnum = top }
+        end)
+      end
+    end, 0)
+  end)
+  return true
 end
 
 --- Exports ---

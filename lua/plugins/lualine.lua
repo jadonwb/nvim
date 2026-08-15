@@ -64,17 +64,62 @@ return {
     -- Make nice path and modified indicator
     opts.sections.lualine_x = {
       {
-        require('noice').api.status.mode.get,
-        cond = require('noice').api.status.mode.has,
+        function()
+          local reg = vim.fn.reg_recording()
+          return reg ~= '' and 'Recording @' .. reg or ''
+        end,
+        cond = function()
+          return #vim.fn.reg_recording() > 0
+        end,
         color = 'DiagnosticWarn',
       },
       {
         function()
-          return require('noice').api.status.lsp_progress.get_hl()
+          if not NVUi2 then
+            return ''
+          end
+          if NVUi2.progress_text and NVUi2.progress_text ~= '' then
+            return NVUi2.progress_text
+          end
+          -- fallback to table (first entry formatted)
+          local _, p = next(NVUi2.progress or {})
+          if not p then
+            return ''
+          end
+          local parts = {}
+          if p.name then table.insert(parts, p.name) end
+          if p.title then table.insert(parts, p.title) end
+          if p.message then table.insert(parts, p.message) end
+          if p.percent then table.insert(parts, p.percent .. '%') end
+          return table.concat(parts, ' ')
         end,
         cond = function()
-          return package.loaded['noice'] and require('noice').api.status.lsp_progress.has()
+          if not NVUi2 then
+            return false
+          end
+          if NVUi2.progress_text and NVUi2.progress_text ~= '' then
+            return true
+          end
+          return NVUi2.progress and next(NVUi2.progress) ~= nil
         end,
+        color = 'MsgArea',
+      },
+      {
+        function()
+          local sc = vim.fn.searchcount { recompute = true, maxcount = 999 }
+          if sc.incomplete == 1 then
+            return '[?/??]'
+          end
+          return string.format('[%d/%d]', sc.current, sc.total)
+        end,
+        cond = function()
+          if vim.v.hlsearch == 0 then
+            return false
+          end
+          local sc = vim.fn.searchcount { recompute = true, maxcount = 999 }
+          return sc.total > 0
+        end,
+        color = 'DiagnosticInfo',
       },
     }
     opts.sections.lualine_c = {

@@ -78,6 +78,7 @@ return {
     },
     keys = {
       { '<M-z>', NVSZoom.activate, mode = { 'n', 'i', 'v' }, desc = 'Zoom' },
+      { '<A-S-l>', NVSNotifier.log, mode = { 'n', 'i', 'v' }, desc = 'Notification history' },
     },
   },
 }
