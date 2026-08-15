@@ -155,16 +155,26 @@ local function rebuild_progress_hl()
   if not NVUi2.progress or next(NVUi2.progress) == nil then
     return
   end
-  -- prefer a non-'end' one
+  -- pick the running (kind ~= 'end') with highest .updated; else highest-updated ended (stable, no hash order flip)
   local chosen
+  local best = -1
   for _, p in pairs(NVUi2.progress) do
     if p.kind ~= 'end' then
-      chosen = p
-      break
+      local u = p.updated or 0
+      if u > best then
+        best = u
+        chosen = p
+      end
     end
   end
   if not chosen then
-    _, chosen = next(NVUi2.progress)
+    for _, p in pairs(NVUi2.progress) do
+      local u = p.updated or 0
+      if u > best then
+        best = u
+        chosen = p
+      end
+    end
   end
   if chosen then
     NVUi2.progress_hl = format_progress_hl(chosen)
@@ -228,7 +238,10 @@ vim.api.nvim_create_autocmd('LspProgress', {
     if val.title ~= nil then update.title = val.title end
     if val.message ~= nil then update.message = val.message end
     if val.percentage ~= nil then update.percent = val.percentage end
-    NVUi2.progress[id] = vim.tbl_deep_extend('force', NVUi2.progress[id] or { client_id = client_id, name = client.name }, update)
+    local base = NVUi2.progress[id] or { client_id = client_id, name = client.name }
+    local entry = vim.tbl_deep_extend('force', base, update)
+    entry.updated = (vim.uv or vim.loop).hrtime()
+    NVUi2.progress[id] = entry
     rebuild_progress_hl()
     if val.kind ~= 'end' then
       if not NVUi2._progress_timer then
