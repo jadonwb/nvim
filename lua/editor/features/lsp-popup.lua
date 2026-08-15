@@ -374,6 +374,23 @@ function Popup:unmount()
   Popups[self.parent] = nil
 end
 
+function Popup:fit_concealed_height()
+  local win = self:winid()
+  if not vim.api.nvim_win_is_valid(win) then
+    return
+  end
+  local win_height = vim.api.nvim_win_get_height(win)
+  local text_height = vim.api.nvim_win_text_height(win, { max_height = win_height }).all
+  if text_height < win_height and text_height >= 1 then
+    self.layout.size.height = text_height
+    if self.layout.position.row < 0 then
+      self.layout.position.row = -text_height - 1
+    end
+    pcall(function() self.popup:update_layout { size = self.layout.size, position = self.layout.position } end)
+    pcall(vim.api.nvim_win_set_height, win, text_height)
+  end
+end
+
 --- DiagnosticPopup ---
 
 ---@param parent WinID
@@ -720,6 +737,8 @@ function HoverPopup:render()
   vim.wo[popup.winid].conceallevel = 2
   vim.wo[popup.winid].concealcursor = 'n'
 
+  self:fit_concealed_height()
+
   self:store_meta()
   self:attach_listeners()
 end
@@ -846,6 +865,8 @@ function SignaturePopup:render()
   vim.wo[popup.winid].conceallevel = 2
   vim.wo[popup.winid].concealcursor = 'n'
 
+  self:fit_concealed_height()
+
   self:apply_active_param_highlight()
 
   self:store_meta()
@@ -863,6 +884,8 @@ function SignaturePopup:render_update()
   pcall(vim.treesitter.start, popup.bufnr, 'markdown')
   vim.wo[popup.winid].conceallevel = 2
   vim.wo[popup.winid].concealcursor = 'n'
+
+  self:fit_concealed_height()
 
   self:apply_active_param_highlight()
 end
