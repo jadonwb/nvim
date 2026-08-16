@@ -48,7 +48,7 @@ end)
 
 function NVTerminal.ensure_vsplit_hidden()
   local term = Snacks.terminal.get(nil, { create = false })
-  if term then
+  if term and term:valid() then
     term:hide()
     return true
   end
