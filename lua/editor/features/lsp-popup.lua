@@ -113,8 +113,6 @@ local POPUP_TYPE = {
 ---@field w integer
 ---@field h integer
 
----@alias Range4 [integer, integer, integer, integer]
-
 --- Popups Store ---
 
 ---@class Popups
@@ -1216,6 +1214,7 @@ function Popup:render_markup()
     return
   end
   local bufnr = popup.bufnr
+  -- FIXME?: undefined field lines
   local lines = self.lines or {}
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 
@@ -1225,6 +1224,7 @@ function Popup:render_markup()
     width = math.max(1, vim.api.nvim_win_get_width(winid))
   end
 
+  -- FIXME?: undefined field marks
   local marks = self.marks or { rules = {}, codes = {}, mds = {} }
 
   -- rules: empty line + overlay virt_text ─ (no fences, no literal ---)
@@ -1252,6 +1252,7 @@ function Popup:render_markup()
         return
       end
       local lt = vim.treesitter.languagetree.new(bufnr, lang, {})
+      -- FIXME: field set_included_regions is private
       lt:set_included_regions { { { srow, 0, erow, 0 } } }
       lt:parse(true)
       for _, tree in ipairs(lt:trees()) do
