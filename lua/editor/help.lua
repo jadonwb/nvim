@@ -18,9 +18,19 @@ function NVHelp.is_doc(bufnr)
 end
 
 --- Move the current help/man window to the far-right companion slot.
+--- Closes any other help/man window in the tab so only one doc panel exists.
 function NVHelp.reposition()
-  vim.cmd 'wincmd L' -- far right, full height
   local win = vim.api.nvim_get_current_win()
+
+  for _, other in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    if other ~= win and NVHelp.is_doc(vim.api.nvim_win_get_buf(other)) then
+      if vim.api.nvim_win_is_valid(other) then
+        vim.api.nvim_win_close(other, true)
+      end
+    end
+  end
+
+  vim.cmd 'wincmd L' -- far right, full height
   vim.wo[win].winfixwidth = true -- layout manager recognizes this as a companion panel
   local width = math.floor(vim.o.columns * NVCompanionPanels.width())
   vim.api.nvim_win_set_width(win, width)
