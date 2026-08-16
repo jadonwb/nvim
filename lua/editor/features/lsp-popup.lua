@@ -1103,9 +1103,20 @@ function fn.prepare_markup(raw_lines)
 
   local function emit_code(lang, lines)
     flush_md()
+    lines = lines or {}
+    -- strip leading and trailing empty lines from the code block content
+    -- (prevents stray blank at start of top hover signature section)
+    local s = 1
+    while s <= #lines and fn.is_empty(lines[s] or '') do
+      s = s + 1
+    end
+    local e = #lines
+    while e >= s and fn.is_empty(lines[e] or '') do
+      e = e - 1
+    end
     local start = row
-    for _, cl in ipairs(lines or {}) do
-      table.insert(emitted, cl or '')
+    for j = s, e do
+      table.insert(emitted, lines[j] or '')
       row = row + 1
     end
     local finish = row
@@ -1143,13 +1154,21 @@ function fn.prepare_markup(raw_lines)
         closed = true
       end
       emit_code(lang, code_lines)
-      if closed then
-        table.insert(emitted, '')
-        row = row + 1
-      end
+
       -- after finishing a code fence: skip subsequent empty lines (eat_nl)
       while i <= n and fn.is_empty(raw_lines[i] or '') do
         i = i + 1
+      end
+
+      -- insert separator blank *only* if followed by ordinary content.
+      -- if next is rule, the rule's own '' becomes the line for ─ (tight spacing).
+      -- if next is fence, its pre-blank (if row~=0) will handle separation.
+      if closed and i <= n then
+        local next_line = raw_lines[i] or ''
+        if not fn.is_fence(next_line) and not fn.is_rule(next_line) then
+          table.insert(emitted, '')
+          row = row + 1
+        end
       end
     elseif fn.is_rule(line) then
       -- rule: emit exactly one empty line + mark; no surrounding blanks from source
