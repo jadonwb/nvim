@@ -15,7 +15,7 @@ end
 
 NVClose.register('mason', function()
   return NVMason.ensure_hidden()
-end, 15)
+end)
 
 return {
   'mason-org/mason.nvim',

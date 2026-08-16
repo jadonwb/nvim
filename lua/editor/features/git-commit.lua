@@ -599,7 +599,7 @@ end
 
 NVClose.register('git_commit', function()
   return NVGitCommit.ensure_hidden()
-end, 11)
+end)
 
 function NVGitCommit.keymaps()
   K.map { '<leader>gc', 'Git: Commit', NVGitCommit.new, mode = { 'n', 'v' } }

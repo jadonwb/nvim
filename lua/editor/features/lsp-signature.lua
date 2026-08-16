@@ -86,4 +86,4 @@ end
 
 NVClose.register('lsp_signature', function()
   return NVLspSignature.ensure_hidden()
-end, 13)
+end)

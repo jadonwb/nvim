@@ -1050,4 +1050,4 @@ end
 
 NVClose.register('lsp_popup', function()
   return NVLspPopup.ensure_hidden()
-end, 12)
+end, { before = 'lsp_signature' })

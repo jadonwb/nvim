@@ -6,7 +6,7 @@ end
 
 NVClose.register('dashboard', function()
   return NVSnacksDashboard.is_active()
-end, 10)
+end)
 
 return {
   'folke/snacks.nvim',

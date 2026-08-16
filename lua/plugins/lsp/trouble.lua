@@ -154,6 +154,6 @@ end
 
 NVClose.register('trouble', function()
   return NVTrouble.ensure_hidden()
-end, 30)
+end)
 
 return { NVTrouble }

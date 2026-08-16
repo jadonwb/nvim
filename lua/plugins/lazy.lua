@@ -4,7 +4,7 @@ NVLazy = {}
 
 NVClose.register('nvlazy', function()
   return NVLazy.ensure_hidden()
-end, 7)
+end)
 
 function NVLazy.ensure_hidden()
   if lazy_fn.is_active() then

@@ -158,6 +158,6 @@ function fn.is_active()
 end
 
 NVCompanionPanels.register(filetype, NVGrugFar.ensure_hidden)
-NVClose.register(filetype, NVGrugFar.ensure_current_hidden, 48)
+NVClose.register(filetype, NVGrugFar.ensure_current_hidden)
 
 return { NVGrugFar }

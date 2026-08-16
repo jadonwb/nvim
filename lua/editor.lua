@@ -9,7 +9,6 @@ require 'editor.tabs'
 require 'editor.companion-panels'
 require 'editor.close'
 
--- TODO!: make this require list be in priority order for UI registration
 require 'editor.buffers'
 require 'editor.clipboard'
 require 'editor.debug'

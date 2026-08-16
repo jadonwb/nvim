@@ -57,7 +57,7 @@ function NVHelp.ensure_hidden()
 end
 
 NVCompanionPanels.register(PANEL_NAME, NVHelp.ensure_hidden)
-NVClose.register(PANEL_NAME, NVHelp.ensure_hidden, 45)
+NVClose.register(PANEL_NAME, NVHelp.ensure_hidden)
 
 -- Reposition any help/man buffer as soon as it's displayed in a window
 -- (covers :h, :help, :Man, K keyword lookups).
@@ -75,11 +75,15 @@ function NVHelp.autocmds()
       if win == -1 or vim.w[win].nvhelp_panel then
         return
       end
-      vim.w[win].nvhelp_panel = true
-
       vim.api.nvim_set_current_win(win)
-      -- Hide other companion panels (no-op in temporary tabs).
-      NVCompanionPanels.ensure_exclusive(PANEL_NAME)
+      -- Help must not open inside temporary tabs (diffview, focus).
+      if not NVCompanionPanels.ensure_exclusive(PANEL_NAME) then
+        if vim.api.nvim_win_is_valid(win) then
+          vim.api.nvim_win_close(win, true)
+        end
+        return
+      end
+      vim.w[win].nvhelp_panel = true
       NVHelp.reposition()
     end,
   })
