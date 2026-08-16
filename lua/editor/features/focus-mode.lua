@@ -34,7 +34,7 @@ function NVFocusMode.autocmds()
 end
 
 function NVFocusMode.toggle()
-  -- Guard: don't activate focus mode in temporary tabs (diffview, terminal, etc.)
+  -- Guard: don't activate focus mode in temporary tabs (diffview, etc.)
   local current_tab = vim.api.nvim_get_current_tabpage()
   if NVTabs.is_temporary(current_tab) and not NVFocusMode.is_focus_tab(current_tab) then
     return

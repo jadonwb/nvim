@@ -10,7 +10,7 @@ function NVCompanionPanels.register(name, ensure_hidden)
 end
 
 --- Hide all companion panels except the one about to open.
---- Refuses to open in temporary tabs (diffview, terminal, focus).
+--- Refuses to open in temporary tabs (diffview, focus).
 ---@param caller string Name of the panel that's opening
 ---@return boolean false if blocked (temporary tab), true otherwise
 function NVCompanionPanels.ensure_exclusive(caller)
