@@ -4,6 +4,7 @@ local function debounce(ms, fn)
   local timer = (vim.uv or vim.loop).new_timer()
   return function(...)
     local argv = vim.F.pack_len(...)
+    -- FIXME: need check nil timer
     timer:start(ms, 0, function()
       timer:stop()
       vim.schedule_wrap(fn)(vim.F.unpack_len(argv))
@@ -18,15 +19,19 @@ local function get_char(buf)
   local row = cursor[1] - 1
   local col = cursor[2]
   local _, lines = pcall(vim.api.nvim_buf_get_text, buf, row, 0, row, col, {})
-  local line = vim.trim(lines and lines[1] or "")
+  local line = vim.trim(lines and lines[1] or '')
   return line:sub(-1, -1)
 end
 
 local function do_check(opts)
   opts = opts or {}
   local bufnr = vim.api.nvim_get_current_buf()
-  local client = vim.lsp.get_clients({ bufnr = bufnr, method = "textDocument/signatureHelp" })[1]
-  local chars = client and client.server_capabilities and client.server_capabilities.signatureHelpProvider and client.server_capabilities.signatureHelpProvider.triggerCharacters or nil
+  local client = vim.lsp.get_clients({ bufnr = bufnr, method = 'textDocument/signatureHelp' })[1]
+  local chars = client
+      and client.server_capabilities
+      and client.server_capabilities.signatureHelpProvider
+      and client.server_capabilities.signatureHelpProvider.triggerCharacters
+    or nil
   if not (client and chars and #chars > 0) then
     return
   end
@@ -74,7 +79,7 @@ function NVLspSignature.autocmds()
     group = group,
     pattern = '*:s',
     callback = function()
-      NVLspSignature.check({ force = true })
+      NVLspSignature.check { force = true }
     end,
   })
 end
