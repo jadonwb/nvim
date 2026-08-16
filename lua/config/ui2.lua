@@ -11,6 +11,7 @@ local skip_patterns = {
   '%d lines yanked',
 }
 
+-- TODO: actually sit down and read and configure what I want
 local function setup()
   local ui2 = require 'vim._core.ui2'
   ui2.enable {
@@ -47,7 +48,7 @@ local function setup()
       cmd = { height = 0.5 },
       dialog = { height = 0.5 },
       msg = { height = 0.3, timeout = 4000 },
-      pager = { height = 0.8 },
+      pager = { height = 0.5 },
     },
   }
 
