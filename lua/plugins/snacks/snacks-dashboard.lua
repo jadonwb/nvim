@@ -50,19 +50,12 @@ return {
           local restart_name = lines[1] or ''
           local restart_ft = lines[2] or ''
           vim.fn.delete(restart_flag)
-          vim.api.nvim_create_autocmd('UIEnter', {
-            once = true,
-            nested = true,
-            callback = function()
-              NVLayoutManager.enable()
-              NVPersistence.restore()
-              local buf = vim.api.nvim_get_current_buf()
-              if restart_ft ~= '' and vim.api.nvim_buf_get_name(buf) == restart_name then
-                vim.bo[buf].filetype = restart_ft
-                vim.api.nvim_exec_autocmds('FileType', { pattern = restart_ft, buffer = buf })
-              end
-            end,
-          })
+          NVPersistence.restore()
+          local buf = vim.api.nvim_get_current_buf()
+          if restart_ft ~= '' and vim.api.nvim_buf_get_name(buf) == restart_name then
+            vim.bo[buf].filetype = restart_ft
+            vim.api.nvim_exec_autocmds('FileType', { pattern = restart_ft })
+          end
         end
 
         local ft = vim.bo.filetype
