@@ -11,6 +11,8 @@ function NVEditing.esc()
   vim.cmd 'silent noh'
 end
 
+-- FIXME: doesn't set ft after save, is there
+-- a way to make it detect?
 function fn.save()
   NVEditing.esc()
   local name = vim.api.nvim_buf_get_name(0)
