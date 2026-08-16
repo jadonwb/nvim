@@ -124,9 +124,13 @@ end
 function fn.restart()
   local flag_file = vim.fn.stdpath 'cache' .. '/nvim_restart_flag'
 
+  local buf = vim.api.nvim_get_current_buf()
+  local name = vim.api.nvim_buf_get_name(buf)
+  local ft = vim.bo[buf].filetype
+
   local file = io.open(flag_file, 'w')
   if file then
-    file:write 'restart'
+    file:write(name .. '\n' .. (ft or ''))
     file:close()
   end
 

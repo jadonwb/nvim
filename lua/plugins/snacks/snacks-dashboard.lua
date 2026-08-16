@@ -34,7 +34,6 @@ return {
         })
       end,
     })
-    -- FIXME: ????
     if vim.bo.filetype == 'snacks_dashboard' then
       vim.api.nvim_exec_autocmds('FileType', { pattern = 'snacks_dashboard' })
     end
@@ -45,23 +44,26 @@ return {
           return true
         end
 
-        -- Short-circuit: NVQuit.restart() leaves a flag file before :restart.
-        -- Delete it, restore the session and enable the layout manager, so the
-        -- dashboard is skipped entirely on restart. This UIEnter autocmd is created
-        -- before snacks' own UIEnter handler (which opens the dashboard), so the
-        -- restore wins and the dashboard's startup guards skip it.
-        -- local restart_flag = vim.fn.stdpath 'cache' .. '/nvim_restart_flag'
-        -- if vim.fn.filereadable(restart_flag) == 1 then
-        --   vim.fn.delete(restart_flag)
-        --   vim.api.nvim_create_autocmd('UIEnter', {
-        --     once = true,
-        --     nested = true,
-        --     callback = function()
-        --       NVPersistence.restore()
-        --       NVLayoutManager.enable()
-        --     end,
-        --   })
-        -- end
+        local restart_flag = vim.fn.stdpath 'cache' .. '/nvim_restart_flag'
+        if vim.fn.filereadable(restart_flag) == 1 then
+          local lines = vim.fn.readfile(restart_flag)
+          local restart_name = lines[1] or ''
+          local restart_ft = lines[2] or ''
+          vim.fn.delete(restart_flag)
+          vim.api.nvim_create_autocmd('UIEnter', {
+            once = true,
+            nested = true,
+            callback = function()
+              NVLayoutManager.enable()
+              NVPersistence.restore()
+              local buf = vim.api.nvim_get_current_buf()
+              if restart_ft ~= '' and vim.api.nvim_buf_get_name(buf) == restart_name then
+                vim.bo[buf].filetype = restart_ft
+                vim.api.nvim_exec_autocmds('FileType', { pattern = restart_ft, buffer = buf })
+              end
+            end,
+          })
+        end
 
         local ft = vim.bo.filetype
         -- NOTE!: this is where I can specify other filetypes that don't trigger the layout mananger
