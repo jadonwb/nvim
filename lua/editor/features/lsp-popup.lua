@@ -1,7 +1,8 @@
 NVLspPopup = {}
 
+local Markup = require 'editor.features.lsp-markup'
+
 local fn = {}
-fn.ts_queries = {}
 
 ---@class Popup
 ---@field type PopupType
@@ -14,8 +15,8 @@ local Popup = Class()
 ---@field type "hover"
 ---@field popup NuiPopup
 ---@field lines string[]
----@field marks {rules: integer[], codes: {start: integer, finish: integer, lang: string}[], mds: {start: integer, finish: integer}[] }?
----@field new fun(self, parent: WinID, bounding_box: BoundingBox, lines: string[], marks?: table): HoverPopup
+---@field marks LspMarkupMarks?
+---@field new fun(self, parent: WinID, bounding_box: BoundingBox, lines: string[], marks?: LspMarkupMarks): HoverPopup
 local HoverPopup = Class(Popup)
 
 ---@class DiagnosticPopup: Popup
@@ -30,8 +31,8 @@ local DiagnosticPopup = Class(Popup)
 ---@field popup NuiPopup
 ---@field lines string[]
 ---@field active_hl Range4?
----@field marks {rules: integer[], codes: {start: integer, finish: integer, lang: string}[], mds: {start: integer, finish: integer}[] }?
----@field new fun(self, parent: WinID, bounding_box: BoundingBox, lines: string[], active_hl?: Range4, marks?: table): SignaturePopup
+---@field marks LspMarkupMarks?
+---@field new fun(self, parent: WinID, bounding_box: BoundingBox, lines: string[], active_hl?: Range4, marks?: LspMarkupMarks): SignaturePopup
 local SignaturePopup = Class(Popup)
 
 local ERROR = vim.diagnostic.severity.ERROR
@@ -273,7 +274,14 @@ function Popup:store_meta()
   self:set_lsp_popup_parent_winid()
 end
 
-function Popup:attach_listeners()
+---@class PopupListenerOpts
+---@field close_events string[]?
+---@field augroup string?
+---@field always boolean?
+
+---@param opts PopupListenerOpts?
+function Popup:attach_listeners(opts)
+  opts = opts or {}
   local popup = self.popup
 
   -- Set up buffer-local scroll keymaps for the parent window
@@ -310,18 +318,16 @@ function Popup:attach_listeners()
     buffer = popup.bufnr,
   }
 
-  local augroup_id = vim.api.nvim_create_augroup('LSPPopupGroup', { clear = true })
+  local augroup_id = vim.api.nvim_create_augroup(opts.augroup or 'LSPPopupGroup', { clear = true })
 
   local function unmount()
-    local current_bufid = vim.api.nvim_get_current_buf()
-
-    if current_bufid ~= popup.bufnr then
+    if opts.always or vim.api.nvim_get_current_buf() ~= popup.bufnr then
       self:unmount()
-      vim.api.nvim_del_augroup_by_id(augroup_id)
+      pcall(vim.api.nvim_del_augroup_by_id, augroup_id)
     end
   end
 
-  vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI', 'InsertEnter' }, {
+  vim.api.nvim_create_autocmd(opts.close_events or { 'CursorMoved', 'CursorMovedI', 'InsertEnter' }, {
     group = augroup_id,
     callback = unmount,
     once = true,
@@ -656,7 +662,7 @@ end
 ---@param parent WinID
 ---@param bounding_box BoundingBox
 ---@param lines string[]
----@param marks? table
+---@param marks? LspMarkupMarks
 function HoverPopup:init(parent, bounding_box, lines, marks)
   Popup.init(self, { type = POPUP_TYPE.hover, parent = parent, bounding_box = bounding_box }) -- Initialize NuiPopup as needed
   self.lines = lines
@@ -693,7 +699,8 @@ function HoverPopup.show()
     end
 
     local raw_lines = HoverPopup.format_message(result, ctx)
-    local emitted, markup = fn.prepare_markup(raw_lines)
+    local ft = ctx.bufnr and vim.bo[ctx.bufnr].filetype or nil
+    local emitted, markup = Markup.prepare(raw_lines, { ft = ft })
     local bounding_box = HoverPopup.get_bounding_box(emitted)
 
     local popup = HoverPopup:new(current_winid, bounding_box, emitted, markup)
@@ -708,7 +715,7 @@ end
 ---@param ctx lsp.HandlerContext
 ---@return string[]
 function HoverPopup.format_message(result, ctx)
-  return vim.lsp.util.convert_input_to_markdown_lines(result.contents)
+  return Markup.from_lsp(result.contents)
 end
 
 ---@param lines string[]
@@ -742,7 +749,7 @@ end
 ---@param bounding_box BoundingBox
 ---@param lines string[]
 ---@param active_hl Range4?
----@param marks? table
+---@param marks? LspMarkupMarks
 function SignaturePopup:init(parent, bounding_box, lines, active_hl, marks)
   Popup.init(self, { type = POPUP_TYPE.signature, parent = parent, bounding_box = bounding_box })
   self.lines = lines
@@ -778,7 +785,8 @@ function SignaturePopup.show()
       triggers = client.server_capabilities.signatureHelpProvider.triggerCharacters
     end
 
-    local lines, active_hl, markup = SignaturePopup.format_signature(result, triggers)
+    local ft = ctx.bufnr and vim.bo[ctx.bufnr].filetype or nil
+    local lines, active_hl, markup = SignaturePopup.format_signature(result, triggers, ft)
     lines = lines or {}
     local bounding_box = SignaturePopup.get_bounding_box(lines)
 
@@ -828,10 +836,11 @@ end
 
 ---@param result any
 ---@param triggers string[]?
+---@param ft string?
 ---@return string[]
 ---@return Range4?
----@return table? markup
-function SignaturePopup.format_signature(result, triggers)
+---@return LspMarkupMarks? markup
+function SignaturePopup.format_signature(result, triggers, ft)
   if not result or not result.signatures or #result.signatures == 0 then
     return {}, nil, nil
   end
@@ -866,7 +875,7 @@ function SignaturePopup.format_signature(result, triggers)
       }
     end
   end
-  local emitted, markup = fn.prepare_markup(all_lines)
+  local emitted, markup = Markup.prepare(all_lines, { ft = ft })
   return emitted, active_hl, markup
 end
 
@@ -883,7 +892,11 @@ function SignaturePopup:render()
   self:apply_active_param_highlight()
 
   self:store_meta()
-  self:attach_listeners()
+  self:attach_listeners {
+    close_events = { 'InsertLeave', 'BufHidden' },
+    augroup = 'LSPSigPopupGroup',
+    always = true,
+  }
 end
 
 function SignaturePopup:render_update()
@@ -916,78 +929,6 @@ function SignaturePopup:apply_active_param_highlight()
     hl_group = 'LspSignatureActiveParameter',
   })
   self._active_param_ext_id = (ok and type(id) == 'number') and id or nil
-end
-
-function SignaturePopup:attach_listeners()
-  local popup = self.popup
-
-  -- Set up buffer-local scroll keymaps for the parent window
-  local parent_bufnr = vim.api.nvim_win_get_buf(self.parent)
-
-  K.map {
-    NVKeymaps.scroll_alt.up,
-    'LSP: Scroll popup up',
-    function()
-      fn.scroll 'up'
-    end,
-    mode = { 'n', 'i' },
-    buffer = parent_bufnr,
-  }
-
-  K.map {
-    NVKeymaps.scroll_alt.down,
-    'LSP: Scroll popup down',
-    function()
-      fn.scroll 'down'
-    end,
-    mode = { 'n', 'i' },
-    buffer = parent_bufnr,
-  }
-
-  -- Close and scroll keymaps directly on the popup buffer
-  K.map {
-    NVKeymaps.close_q,
-    'LSP: Close with q',
-    function()
-      self:unmount()
-    end,
-    mode = { 'n' },
-    buffer = popup.bufnr,
-  }
-
-  local augroup_id = vim.api.nvim_create_augroup('LSPSigPopupGroup', { clear = true })
-
-  vim.api.nvim_create_autocmd({ 'InsertLeave', 'BufHidden' }, {
-    group = augroup_id,
-    callback = function()
-      self:unmount()
-      pcall(vim.api.nvim_del_augroup_by_id, augroup_id)
-    end,
-    once = true,
-  })
-
-  vim.api.nvim_create_autocmd({ 'WinScrolled' }, {
-    group = augroup_id,
-    buffer = vim.api.nvim_get_current_buf(),
-    callback = function()
-      local layout = self.layout
-
-      popup:update_layout {
-        relative = layout.relative,
-        position = layout.position,
-      }
-    end,
-  })
-
-  vim.api.nvim_create_autocmd('WinClosed', {
-    group = augroup_id,
-    pattern = tostring(popup.winid),
-    callback = function()
-      self:unmount()
-      pcall(vim.api.nvim_del_augroup_by_id, augroup_id)
-    end,
-    once = true,
-  })
 end
 
 ---@param direction "up"|"down"
@@ -1038,258 +979,19 @@ function fn.scroll_popup(direction)
   return true
 end
 
---- Markup parse + render (to match noice) ---
-
----@param line string
----@return boolean
-function fn.is_fence(line)
-  return line:match '^%s*```' ~= nil
-end
-
----@param line string
----@return string
-function fn.get_lang(line)
-  return line:match '^%s*```%s*(%S+)' or 'text'
-end
-
----@param line string
----@return boolean
-function fn.is_rule(line)
-  return line:match '^%s*[%*%-_][%*%-_][%*%-_]+%s*$' ~= nil
-end
-
----@param line string
----@return boolean
-function fn.is_empty(line)
-  return line:match '^%s*$' ~= nil
-end
-
---- Parse raw markdown-ish lines (with possible fences and --- rules) into emitted buffer lines + metadata for rendering.
---- Fences are stripped (not emitted); code content highlighted with lang; rules become empty line + virt ─ ; text with markdown_inline.
---- Matches noice blank collapsing: eat after fence/rule, conditional blank emit (not before fence/rule, not lead/trail).
----@param raw_lines string[]?
----@return string[] emitted
----@return { rules: integer[], codes: {start: integer, finish: integer, lang: string}[], mds: {start: integer, finish: integer}[] } marks
-function fn.prepare_markup(raw_lines)
-  raw_lines = raw_lines or {}
-  local emitted = {}
-  local marks = { rules = {}, codes = {}, mds = {} }
-  local row = 0
-  local md_start = nil
-
-  local function flush_md()
-    if md_start ~= nil then
-      table.insert(marks.mds, { start = md_start, finish = row })
-      md_start = nil
-    end
-  end
-
-  local function emit_line(l)
-    if md_start == nil then
-      md_start = row
-    end
-    table.insert(emitted, l or '')
-    row = row + 1
-  end
-
-  local function emit_rule()
-    flush_md()
-    table.insert(emitted, '')
-    table.insert(marks.rules, row)
-    row = row + 1
-  end
-
-  local function emit_code(lang, lines)
-    flush_md()
-    lines = lines or {}
-    -- strip leading and trailing empty lines from the code block content
-    -- (prevents stray blank at start of top hover signature section)
-    local s = 1
-    while s <= #lines and fn.is_empty(lines[s] or '') do
-      s = s + 1
-    end
-    local e = #lines
-    while e >= s and fn.is_empty(lines[e] or '') do
-      e = e - 1
-    end
-    local start = row
-    for j = s, e do
-      table.insert(emitted, lines[j] or '')
-      row = row + 1
-    end
-    local finish = row
-    if start < finish then
-      table.insert(marks.codes, { start = start, finish = finish, lang = lang or 'text' })
-    end
-  end
-
-  local i = 1
-  local n = #raw_lines
-
-  -- do not emit leading empty lines
-  while i <= n and fn.is_empty(raw_lines[i] or '') do
-    i = i + 1
-  end
-
-  while i <= n do
-    local line = raw_lines[i] or ''
-    if fn.is_fence(line) then
-      flush_md()
-      local lang = fn.get_lang(line)
-      if row ~= 0 then
-        -- insert pre-fence separator blank only if not immediately after a rule.
-        -- keeps rule immediately followed by code content (tight spacing, e.g. last decl block).
-        local last_rule = marks.rules[#marks.rules]
-        if not (last_rule and last_rule == row - 1) then
-          table.insert(emitted, '')
-          row = row + 1
-        end
-      end
-      local code_lines = {}
-      i = i + 1
-      while i <= n and not fn.is_fence(raw_lines[i] or '') do
-        table.insert(code_lines, raw_lines[i])
-        i = i + 1
-      end
-      local closed = false
-      if i <= n then
-        i = i + 1 -- skip closing fence
-        closed = true
-      end
-      emit_code(lang, code_lines)
-
-      -- after finishing a code fence: skip subsequent empty lines (eat_nl)
-      while i <= n and fn.is_empty(raw_lines[i] or '') do
-        i = i + 1
-      end
-
-      -- insert separator blank *only* if followed by ordinary content (not rule/fence).
-      -- rule supplies its own blank line for the ─ .
-      if closed and i <= n then
-        local next_line = raw_lines[i] or ''
-        if not fn.is_fence(next_line) and not fn.is_rule(next_line) then
-          table.insert(emitted, '')
-          row = row + 1
-        end
-      end
-    elseif fn.is_rule(line) then
-      -- rule: emit exactly one empty line + mark; no surrounding blanks from source
-      emit_rule()
-      i = i + 1
-      -- after a rule: skip subsequent empty lines (eat_nl)
-      while i <= n and fn.is_empty(raw_lines[i] or '') do
-        i = i + 1
-      end
-    elseif fn.is_empty(line) then
-      -- on empty: skip consecutive; emit a blank ONLY if next not fence/rule and not first/last
-      while i <= n and fn.is_empty(raw_lines[i] or '') do
-        i = i + 1
-      end
-      local next_line = (i <= n) and (raw_lines[i] or '') or ''
-      local is_first = (row == 0)
-      local is_last = (i > n)
-      local next_is_fence = fn.is_fence(next_line)
-      local next_is_rule = fn.is_rule(next_line)
-      if not next_is_fence and not next_is_rule and not is_first and not is_last then
-        emit_line ''
-      end
-      -- (no emit, and i already past; do not start md here)
-    else
-      if md_start == nil then
-        md_start = row
-      end
-      table.insert(emitted, line)
-      row = row + 1
-      i = i + 1
-    end
-  end
-  flush_md()
-
-  return emitted, marks
-end
-
 function Popup:render_markup()
   local popup = self.popup
   if not popup or not vim.api.nvim_buf_is_valid(popup.bufnr) then
     return
   end
-  local bufnr = popup.bufnr
-  -- FIXME?: undefined field lines
-  local lines = self.lines or {}
-  vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 
-  local winid = popup.winid
-  local width = 80
-  if vim.api.nvim_win_is_valid(winid) then
-    width = math.max(1, vim.api.nvim_win_get_width(winid))
-  end
-
-  -- FIXME?: undefined field marks
-  local marks = self.marks or { rules = {}, codes = {}, mds = {} }
-
-  -- rules: empty line + overlay virt_text ─ (no fences, no literal ---)
-  for _, r in ipairs(marks.rules or {}) do
-    if r < #lines then
-      vim.api.nvim_buf_set_extmark(bufnr, popup.ns_id, r, 0, {
-        virt_text = { { string.rep('─', width), '@punctuation.special.markdown' } },
-        virt_text_pos = 'overlay',
-      })
-    end
-  end
-
-  -- ts highlights via LanguageTree + included_regions + query iter_captures -> extmarks @capture.lang
-  local function do_ts_highlight(srow, erow, lang)
-    pcall(function()
-      if not lang or lang == '' then
-        lang = 'text'
-      end
-      local query = fn.ts_queries[lang]
-      if query == nil then
-        query = vim.treesitter.query.get(lang, 'highlights')
-        fn.ts_queries[lang] = query or false
-      end
-      if not query then
-        return
-      end
-      local lt = vim.treesitter.languagetree.new(bufnr, lang, {})
-      -- FIXME: field set_included_regions is private
-      lt:set_included_regions { { { srow, 0, erow, 0 } } }
-      lt:parse(true)
-      for _, tree in ipairs(lt:trees()) do
-        local root = tree:root()
-        for id, node, metadata in query:iter_captures(root, bufnr, srow, erow) do
-          local cap = query.captures[id]
-          if cap and not cap:match '^_' and cap ~= 'spell' then
-            local conceal = metadata.conceal
-            if not conceal and metadata[id] then
-              conceal = metadata[id].conceal
-            end
-            local sr, sc, er, ec = node:range()
-            local hl_group = string.format('@%s.%s', cap, lang)
-            vim.api.nvim_buf_set_extmark(bufnr, popup.ns_id, sr, sc, {
-              end_line = er,
-              end_col = ec,
-              hl_group = hl_group,
-              conceal = conceal,
-            })
-          end
-        end
-      end
-    end)
-  end
-
-  for _, c in ipairs(marks.codes or {}) do
-    do_ts_highlight(c.start, c.finish, c.lang)
-  end
-  for _, m in ipairs(marks.mds or {}) do
-    do_ts_highlight(m.start, m.finish, 'markdown_inline')
-  end
-
-  -- keep conceal (for any md_inline backticks etc that support via queries); no filetype=markdown
-  if vim.api.nvim_win_is_valid(winid) then
-    vim.wo[winid].conceallevel = 2
-    vim.wo[winid].concealcursor = 'n'
-  end
+  Markup.render {
+    bufnr = popup.bufnr,
+    ns_id = popup.ns_id,
+    winid = popup.winid,
+    lines = self.lines or {},
+    marks = self.marks or { rules = {}, codes = {}, mds = {} },
+  }
 
   self:fit_concealed_height()
 end
