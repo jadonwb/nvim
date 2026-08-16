@@ -145,3 +145,33 @@ function NVQuit.restart()
     fn.restart()
   end)
 end
+
+vim.api.nvim_create_autocmd('VimEnter', {
+  once = true,
+  nested = true,
+  callback = function()
+    local restart_flag = vim.fn.stdpath 'cache' .. '/nvim_restart_flag'
+
+    if vim.fn.filereadable(restart_flag) ~= 1 then
+      return
+    end
+
+    local lines = vim.fn.readfile(restart_flag)
+    local restart_name = lines[1] or ''
+    local restart_ft = lines[2] or ''
+
+    vim.fn.delete(restart_flag)
+
+    NVPersistence.restore()
+
+    local buf = vim.api.nvim_get_current_buf()
+
+    if vim.api.nvim_buf_get_name(buf) == restart_name then
+      vim.bo[buf].filetype = restart_ft
+    end
+
+    vim.api.nvim_exec_autocmds('BufEnter', {
+      buffer = buf,
+    })
+  end,
+})
