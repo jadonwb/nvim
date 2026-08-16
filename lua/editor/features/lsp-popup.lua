@@ -750,6 +750,7 @@ function SignaturePopup:init(parent, bounding_box, lines, active_hl, marks)
   self.lines = lines
   self.active_hl = active_hl
   self.marks = marks
+  self._active_param_ext_id = nil
 end
 
 function SignaturePopup.show()
@@ -904,20 +905,19 @@ function SignaturePopup:apply_active_param_highlight()
   end
   local bufnr = self.popup.bufnr
   local ns = self.popup.ns_id
-  -- remove any prior active param hl (without touching rule/ts marks) so only-active updates work
-  for _, ext in ipairs(vim.api.nvim_buf_get_extmarks(bufnr, ns, 0, -1, { details = true }) or {}) do
-    if (ext[4] or {}).hl_group == 'LspSignatureActiveParameter' then
-      pcall(vim.api.nvim_buf_del_extmark, bufnr, ns, ext[1])
-    end
+  -- remove prior active param hl
+  if self._active_param_ext_id then
+    pcall(vim.api.nvim_buf_del_extmark, bufnr, ns, self._active_param_ext_id)
   end
   local hl = self.active_hl
   local sc = math.max(0, (hl[2] or 0) - 1)
   local ec = math.max(0, (hl[4] or 0) - 1)
-  pcall(vim.api.nvim_buf_set_extmark, bufnr, ns, hl[1], sc, {
+  local ok, id = pcall(vim.api.nvim_buf_set_extmark, bufnr, ns, hl[1], sc, {
     end_line = hl[3],
     end_col = ec,
     hl_group = 'LspSignatureActiveParameter',
   })
+  self._active_param_ext_id = (ok and type(id) == 'number') and id or nil
 end
 
 function SignaturePopup:attach_listeners()

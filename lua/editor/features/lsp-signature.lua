@@ -1,43 +1,47 @@
 NVLspSignature = {}
 
-local check_version = 0
+local function debounce(ms, fn)
+  local timer = (vim.uv or vim.loop).new_timer()
+  return function(...)
+    local argv = vim.F.pack_len(...)
+    timer:start(ms, 0, function()
+      timer:stop()
+      vim.schedule_wrap(fn)(vim.F.unpack_len(argv))
+    end)
+  end
+end
+
+local function get_char(buf)
+  local current_win = vim.api.nvim_get_current_win()
+  local win = buf == vim.api.nvim_win_get_buf(current_win) and current_win or vim.fn.bufwinid(buf)
+  local cursor = vim.api.nvim_win_get_cursor(win == -1 and 0 or win)
+  local row = cursor[1] - 1
+  local col = cursor[2]
+  local _, lines = pcall(vim.api.nvim_buf_get_text, buf, row, 0, row, col, {})
+  local line = vim.trim(lines and lines[1] or "")
+  return line:sub(-1, -1)
+end
 
 local function do_check(opts)
   opts = opts or {}
   local bufnr = vim.api.nvim_get_current_buf()
-  local triggers = { '(', ',' }
-  local supports = false
-  for _, client in ipairs(vim.lsp.get_clients { bufnr = bufnr }) do
-    if client:supports_method('textDocument/signatureHelp') then
-      supports = true
-      local cap = client.server_capabilities
-      if cap and cap.signatureHelpProvider and cap.signatureHelpProvider.triggerCharacters then
-        triggers = cap.signatureHelpProvider.triggerCharacters
-      end
-      break
-    end
-  end
-  if not supports then
+  local client = vim.lsp.get_clients({ bufnr = bufnr, method = "textDocument/signatureHelp" })[1]
+  local chars = client and client.server_capabilities and client.server_capabilities.signatureHelpProvider and client.server_capabilities.signatureHelpProvider.triggerCharacters or nil
+  if not (client and chars and #chars > 0) then
     return
   end
 
-  local line = vim.api.nvim_get_current_line()
-  local col = vim.fn.col('.') - 1
-  local char = col > 0 and line:sub(col, col) or ''
-  if opts.force or vim.tbl_contains(triggers, char) then
+  local char = get_char(bufnr)
+  if opts.force or vim.tbl_contains(chars, char) then
     NVLspPopup.show_signature()
   end
   -- if not trigger, leave any open signature popup alone
 end
 
-function NVLspSignature.check()
-  check_version = check_version + 1
-  local this = check_version
-  vim.defer_fn(function()
-    if this == check_version then
-      do_check()
-    end
-  end, 80)
+local debounced_do_check = debounce(100, do_check)
+
+function NVLspSignature.check(opts)
+  debounced_do_check(opts or {})
 end
 
 function NVLspSignature.ensure_hidden()
@@ -70,8 +74,7 @@ function NVLspSignature.autocmds()
     group = group,
     pattern = '*:s',
     callback = function()
-      -- immediate (no debounce) so snippet jumps update signature; force shows even w/o trigger char
-      do_check({ force = true })
+      NVLspSignature.check({ force = true })
     end,
   })
 end
