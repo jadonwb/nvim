@@ -38,6 +38,7 @@ return {
         NVDebug.keymaps()
         NVGrugFar.autocmds()
         NVPi.autocmds()
+        NVHelp.autocmds()
       end)
     end,
   },
