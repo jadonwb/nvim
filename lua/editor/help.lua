@@ -78,9 +78,11 @@ function NVHelp.autocmds()
       vim.api.nvim_set_current_win(win)
       -- Help must not open inside temporary tabs (diffview, focus).
       if not NVCompanionPanels.ensure_exclusive(PANEL_NAME) then
-        if vim.api.nvim_win_is_valid(win) then
-          vim.api.nvim_win_close(win, true)
-        end
+        vim.schedule(function()
+          if vim.api.nvim_win_is_valid(win) then
+            pcall(vim.api.nvim_win_close, win, true)
+          end
+        end)
         return
       end
       vim.w[win].nvhelp_panel = true
