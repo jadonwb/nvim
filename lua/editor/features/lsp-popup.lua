@@ -1135,41 +1135,45 @@ function fn.prepare_markup(raw_lines)
 
   while i <= n do
     local line = raw_lines[i] or ''
-    if fn.is_fence(line) then
-      flush_md()
-      local lang = fn.get_lang(line)
-      if row ~= 0 then
-        table.insert(emitted, '')
-        row = row + 1
-      end
-      local code_lines = {}
-      i = i + 1
-      while i <= n and not fn.is_fence(raw_lines[i] or '') do
-        table.insert(code_lines, raw_lines[i])
-        i = i + 1
-      end
-      local closed = false
-      if i <= n then
-        i = i + 1 -- skip closing fence
-        closed = true
-      end
-      emit_code(lang, code_lines)
-
-      -- after finishing a code fence: skip subsequent empty lines (eat_nl)
-      while i <= n and fn.is_empty(raw_lines[i] or '') do
-        i = i + 1
-      end
-
-      -- insert separator blank *only* if followed by ordinary content.
-      -- if next is rule, the rule's own '' becomes the line for ─ (tight spacing).
-      -- if next is fence, its pre-blank (if row~=0) will handle separation.
-      if closed and i <= n then
-        local next_line = raw_lines[i] or ''
-        if not fn.is_fence(next_line) and not fn.is_rule(next_line) then
-          table.insert(emitted, '')
-          row = row + 1
+      if fn.is_fence(line) then
+        flush_md()
+        local lang = fn.get_lang(line)
+        if row ~= 0 then
+          -- insert pre-fence separator blank only if not immediately after a rule.
+          -- keeps rule immediately followed by code content (tight spacing, e.g. last decl block).
+          local last_rule = marks.rules[#marks.rules]
+          if not (last_rule and last_rule == row - 1) then
+            table.insert(emitted, '')
+            row = row + 1
+          end
         end
-      end
+        local code_lines = {}
+        i = i + 1
+        while i <= n and not fn.is_fence(raw_lines[i] or '') do
+          table.insert(code_lines, raw_lines[i])
+          i = i + 1
+        end
+        local closed = false
+        if i <= n then
+          i = i + 1 -- skip closing fence
+          closed = true
+        end
+        emit_code(lang, code_lines)
+
+        -- after finishing a code fence: skip subsequent empty lines (eat_nl)
+        while i <= n and fn.is_empty(raw_lines[i] or '') do
+          i = i + 1
+        end
+
+        -- insert separator blank *only* if followed by ordinary content (not rule/fence).
+        -- rule supplies its own blank line for the ─ .
+        if closed and i <= n then
+          local next_line = raw_lines[i] or ''
+          if not fn.is_fence(next_line) and not fn.is_rule(next_line) then
+            table.insert(emitted, '')
+            row = row + 1
+          end
+        end
     elseif fn.is_rule(line) then
       -- rule: emit exactly one empty line + mark; no surrounding blanks from source
       emit_rule()
