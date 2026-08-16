@@ -47,6 +47,9 @@ function NVFocusMode.toggle()
   end
   local current_buf = vim.api.nvim_win_get_buf(target_win)
   local current_cursor = vim.api.nvim_win_get_cursor(target_win)
+  local current_view = vim.api.nvim_win_call(target_win, function()
+    return vim.fn.winsaveview()
+  end)
 
   log.trace('Toggling focus — state: ' .. (NVFocusMode.tab and 'active' or 'inactive'))
 
@@ -81,7 +84,7 @@ function NVFocusMode.toggle()
   local empty_buf = vim.api.nvim_get_current_buf()
 
   vim.api.nvim_win_set_buf(focus_win, current_buf)
-  vim.api.nvim_win_set_cursor(focus_win, current_cursor)
+  vim.fn.winrestview(current_view)
   vim.api.nvim_buf_delete(empty_buf, { force = true })
 
   NVFocusMode.tab = {
