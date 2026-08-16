@@ -110,14 +110,14 @@ end
 
 -- LspProgress stored for lualine (no nvim_echo, does not go to msg/pager)
 NVUi2 = NVUi2 or {}
-NVUi2.progress = NVUi2.progress or {}  -- keyed client_id.token
+NVUi2.progress = NVUi2.progress or {} -- keyed client_id.token
 NVUi2.progress_hl = NVUi2.progress_hl or ''
 NVUi2._progress_end_timers = NVUi2._progress_end_timers or {}
 NVUi2._progress_spinner = NVUi2._progress_spinner or 1
 NVUi2._progress_timer = NVUi2._progress_timer or nil
 
 local uv = vim.uv or vim.loop
-local spinner_frames = {'⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'}
+local spinner_frames = { '⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏' }
 
 local function format_progress_hl(p)
   if not p then
@@ -193,9 +193,13 @@ end
 local function stop_progress_timer()
   local t = NVUi2._progress_timer
   if t then
-    pcall(function() t:stop() end)
+    pcall(function()
+      t:stop()
+    end)
     if not t:is_closing() then
-      pcall(function() t:close() end)
+      pcall(function()
+        t:close()
+      end)
     end
     NVUi2._progress_timer = nil
   end
@@ -207,14 +211,18 @@ local function start_progress_timer()
   end
   local timer = uv.new_timer()
   NVUi2._progress_timer = timer
-  timer:start(100, 100, vim.schedule_wrap(function()
-    NVUi2._progress_spinner = (NVUi2._progress_spinner % #spinner_frames) + 1
-    rebuild_progress_hl()
-    pcall(vim.cmd, 'redrawstatus')
-    if not has_running_progress() then
-      stop_progress_timer()
-    end
-  end))
+  timer:start(
+    100,
+    100,
+    vim.schedule_wrap(function()
+      NVUi2._progress_spinner = (NVUi2._progress_spinner % #spinner_frames) + 1
+      rebuild_progress_hl()
+      pcall(vim.cmd, 'redrawstatus')
+      if not has_running_progress() then
+        stop_progress_timer()
+      end
+    end)
+  )
 end
 
 vim.api.nvim_create_autocmd('LspProgress', {
@@ -235,9 +243,15 @@ vim.api.nvim_create_autocmd('LspProgress', {
       return
     end
     local update = { kind = val.kind }
-    if val.title ~= nil then update.title = val.title end
-    if val.message ~= nil then update.message = val.message end
-    if val.percentage ~= nil then update.percent = val.percentage end
+    if val.title ~= nil then
+      update.title = val.title
+    end
+    if val.message ~= nil then
+      update.message = val.message
+    end
+    if val.percentage ~= nil then
+      update.percent = val.percentage
+    end
     local base = NVUi2.progress[id] or { client_id = client_id, name = client.name }
     local entry = vim.tbl_deep_extend('force', base, update)
     entry.updated = (vim.uv or vim.loop).hrtime()
@@ -260,9 +274,13 @@ vim.api.nvim_create_autocmd('LspProgress', {
     if val.kind == 'end' then
       local prev = NVUi2._progress_end_timers[id]
       if prev then
-        pcall(function() prev:stop() end)
+        pcall(function()
+          prev:stop()
+        end)
         if not prev:is_closing() then
-          pcall(function() prev:close() end)
+          pcall(function()
+            prev:close()
+          end)
         end
       end
       NVUi2._progress_end_timers[id] = vim.defer_fn(function()
@@ -279,14 +297,6 @@ vim.api.nvim_create_autocmd('LspProgress', {
     end
   end,
 })
-
--- FileType for ui2 windows: use float highlights (overrides ui2's MsgArea)
--- vim.api.nvim_create_autocmd('FileType', {
---   pattern = { 'msg', 'pager', 'dialog' },
---   callback = function()
---     vim.api.nvim_set_option_value('winhighlight', 'Normal:NormalFloat,FloatBorder:FloatBorder', { scope = 'local' })
---   end,
--- })
 
 -- Pager buffer keymaps for close (keep q from ui2; add <M-w> and <Esc> equiv)
 vim.api.nvim_create_autocmd('FileType', {
