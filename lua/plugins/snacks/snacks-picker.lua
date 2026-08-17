@@ -11,7 +11,7 @@ NVSPickerVerticalLayout = {
 
 NVSPickerHorizontalLayout = {
   width = NVScreen.is_large() and 0.75 or 0.85,
-  height = 0.9,
+  height = 0.85,
   border = NVBorders.none,
   backdrop = true,
 }
