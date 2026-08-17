@@ -13,6 +13,10 @@ end
 
 -- FIXME: doesn't set ft after save, is there
 -- a way to make it detect?
+-- TODO: make this handle permissions / detect writeability
+-- with my own dialog instead of letting it get to vim.fn.confirm
+-- e.g. 'this buffer is marked as readonly, write anyway?' type stuff
+-- handle this with buffer close + save too
 function fn.save()
   NVEditing.esc()
   local name = vim.api.nvim_buf_get_name(0)
