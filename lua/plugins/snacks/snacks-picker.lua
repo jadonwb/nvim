@@ -43,7 +43,7 @@ function NVSPickerHorizontalLayout.build(opts)
       backdrop = config.backdrop,
       {
         box = 'vertical',
-        { win = 'input', height = 1, title = '{title} {live}', title_pos = 'center', border = NVBorders.padded },
+        { win = 'input', height = 1, title = '{title} {live}', title_pos = 'center', border = NVBorders.bottom_hr },
         { win = 'list', border = NVBorders.top_none },
       },
       { win = 'preview', title = '{preview}', width = 0.6, border = NVBorders.preview },
@@ -393,6 +393,7 @@ return {
           },
           git = NVIcons.git,
         },
+        layout = { cycle = false },
         win = {
           input = { keys = NVSPickers.keys },
           list = { keys = NVSPickers.keys },
