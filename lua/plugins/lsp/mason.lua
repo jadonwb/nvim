@@ -19,9 +19,8 @@ return {
   'mason-org/mason.nvim',
   opts = {
     ui = {
-      backdrop = 100,
-      width = 0.8,
-      height = 0.79,
+      width = 0.6,
+      height = 0.8,
     },
     ensure_installed = {
       'clang-format',
