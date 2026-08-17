@@ -25,8 +25,7 @@ require('lazy').setup {
     { import = 'plugins/lsp/languages' },
   },
   ui = {
-    backdrop = 100,
-    size = { width = 0.8, height = 0.8 },
+    size = { width = 0.7, height = 0.8 },
   },
   defaults = {
     -- By default, only LazyVim plugins will be lazy-loaded. Your custom plugins will load during startup.
