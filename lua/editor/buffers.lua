@@ -202,6 +202,7 @@ function fn.get_buf_info(bufid)
   return vim.fn.getbufinfo(bufid)[1]
 end
 
+-- TODO?: silently argdelete all buffers when close so they **never** restore with session?
 function fn.delete_buf()
   -- Give each registered floating UI/mode a chance to consume the close event
   -- TODO: handle /tmp and other direct close vim scenarios
