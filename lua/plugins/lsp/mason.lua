@@ -11,9 +11,11 @@ function NVMason.ensure_hidden()
   return false
 end
 
-NVClose.register('mason', function()
-  return NVMason.ensure_hidden()
-end)
+function NVMason.setup()
+  NVClose.register('mason', function()
+    return NVMason.ensure_hidden()
+  end)
+end
 
 return {
   'mason-org/mason.nvim',

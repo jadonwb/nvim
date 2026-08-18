@@ -310,22 +310,6 @@ vim.api.nvim_create_autocmd('FileType', {
   end,
 })
 
-NVClose.register('ui2_pager', function()
-  if not package.loaded['vim._core.ui2'] then
-    return false
-  end
-  local ok, ui2 = pcall(require, 'vim._core.ui2')
-  if not ok or not ui2 or not ui2.wins then
-    return false
-  end
-  local pager = ui2.wins.pager
-  if pager and vim.api.nvim_win_is_valid(pager) and pager == vim.api.nvim_get_current_win() then
-    vim.cmd 'wincmd c'
-    return true
-  end
-  return false
-end, { before = 'lsp_popup' })
-
 if #vim.api.nvim_list_uis() == 0 then
   vim.api.nvim_create_autocmd('UIEnter', {
     once = true,

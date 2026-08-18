@@ -235,16 +235,18 @@ function NVGitWorktrees.close_tab(info)
   end)
 end
 
-NVTabs.register_type {
-  name = 'worktree',
-  is_temporary = false,
-  is_match = NVGit.is_worktree,
-  close_hook = function()
-    local info = NVGit.get_worktree_info()
-    if info then
-      NVGitWorktrees.close_tab(info)
-      return true
-    end
-    return false
-  end,
-}
+function NVGitWorktrees.setup()
+  NVTabs.register_type {
+    name = 'worktree',
+    is_temporary = false,
+    is_match = NVGit.is_worktree,
+    close_hook = function()
+      local info = NVGit.get_worktree_info()
+      if info then
+        NVGitWorktrees.close_tab(info)
+        return true
+      end
+      return false
+    end,
+  }
+end

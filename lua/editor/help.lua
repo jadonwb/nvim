@@ -56,11 +56,11 @@ function NVHelp.ensure_hidden()
   return false
 end
 
-NVCompanionPanels.register(PANEL_NAME, NVHelp.ensure_hidden)
-NVClose.register(PANEL_NAME, NVHelp.ensure_hidden)
+function NVHelp.setup()
+  NVCompanionPanels.register(PANEL_NAME, NVHelp.ensure_hidden)
+  NVClose.register(PANEL_NAME, NVHelp.ensure_hidden)
+end
 
--- Reposition any help/man buffer as soon as it's displayed in a window
--- (covers :h, :help, :Man, K keyword lookups).
 function NVHelp.autocmds()
   local group = vim.api.nvim_create_augroup('NVHelpPanel', { clear = true })
 

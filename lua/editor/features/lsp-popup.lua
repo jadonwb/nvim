@@ -1,3 +1,5 @@
+require 'editor.class'
+
 NVLspPopup = {}
 
 local Markup = require 'editor.features.lsp-markup'
@@ -309,8 +311,8 @@ function Popup:attach_listeners(opts)
 
   -- Close and scroll keymaps directly on the popup buffer
   K.map {
-    NVKeymaps.close_q,
-    'LSP: Close with q',
+    NVKeymaps.close,
+    'LSP: Close popup',
     function()
       self:unmount()
     end,
@@ -1048,6 +1050,8 @@ function NVLspPopup.hide_unless_active()
   end
 end
 
-NVClose.register('lsp_popup', function()
-  return NVLspPopup.ensure_hidden()
-end, { before = 'lsp_signature' })
+function NVLspPopup.setup()
+  NVClose.register('lsp_popup', function()
+    return NVLspPopup.ensure_hidden()
+  end)
+end

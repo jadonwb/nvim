@@ -84,6 +84,8 @@ function NVLspSignature.autocmds()
   })
 end
 
-NVClose.register('lsp_signature', function()
-  return NVLspSignature.ensure_hidden()
-end)
+function NVLspSignature.setup()
+  NVClose.register('lsp_signature', function()
+    return NVLspSignature.ensure_hidden()
+  end)
+end

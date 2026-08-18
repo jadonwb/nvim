@@ -477,6 +477,60 @@ function NVLayoutManager.autocmds()
       end
     end,
   })
+
+  local skip_enable = {
+    snacks_dashboard = true,
+    [''] = true,
+    nofile = true,
+    snacks_terminal = true,
+    snacks_picker_input = true,
+    snacks_picker_list = true,
+    snacks_picker_preview = true,
+  }
+
+  local dashboard_setup = {}
+  vim.api.nvim_create_autocmd('FileType', {
+    group = group,
+    pattern = 'snacks_dashboard',
+    callback = function()
+      local buf = vim.api.nvim_get_current_buf()
+      if dashboard_setup[buf] then
+        return
+      end
+      dashboard_setup[buf] = true
+      NVLualine.hide_everything()
+      vim.api.nvim_create_autocmd('BufWipeout', {
+        callback = function(args)
+          if args.buf ~= buf then
+            return
+          end
+          dashboard_setup[buf] = nil
+          NVTabs.set_label_if_empty { icon = NVTabs.editor_icon, name = 'main' }
+          NVLualine.show_everything()
+          NVLayoutManager.enable()
+        end,
+      })
+    end,
+  })
+  if vim.bo.filetype == 'snacks_dashboard' then
+    vim.api.nvim_exec_autocmds('FileType', { pattern = 'snacks_dashboard' })
+  end
+
+  local layout_enabled = false
+  vim.api.nvim_create_autocmd('BufEnter', {
+    group = group,
+    callback = function()
+      if layout_enabled then
+        return true
+      end
+      if skip_enable[vim.bo.filetype] then
+        return
+      end
+      layout_enabled = true
+      NVLualine.show_everything()
+      NVLayoutManager.enable()
+    end,
+  })
 end
 
 function NVLayoutManager.enable()

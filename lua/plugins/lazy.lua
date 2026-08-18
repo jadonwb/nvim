@@ -2,9 +2,11 @@ local lazy_fn = {}
 
 NVLazy = {}
 
-NVClose.register('nvlazy', function()
-  return NVLazy.ensure_hidden()
-end)
+function NVLazy.setup()
+  NVClose.register('nvlazy', function()
+    return NVLazy.ensure_hidden()
+  end)
+end
 
 function NVLazy.ensure_hidden()
   if lazy_fn.is_active() then
@@ -35,7 +37,10 @@ function lazy_fn.is_active()
 end
 
 function lazy_fn.close()
-  NVKeys.send('q', { mode = 'x' })
+  local ok, view = pcall(require, 'lazy.view')
+  if ok and view.visible() and view.view then
+    view.view:close()
+  end
 end
 
 -- Refresh dashboard items after lazy operations complete

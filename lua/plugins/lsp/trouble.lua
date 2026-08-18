@@ -152,8 +152,10 @@ function NVTrouble.ensure_hidden()
   end
 end
 
-NVClose.register('trouble', function()
-  return NVTrouble.ensure_hidden()
-end)
+function NVTrouble.setup()
+  NVClose.register('trouble', function()
+    return NVTrouble.ensure_hidden()
+  end)
+end
 
 return { NVTrouble }

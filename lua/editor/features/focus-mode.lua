@@ -174,13 +174,15 @@ function NVFocusMode.deactivate_active()
   vim.api.nvim_win_set_cursor(current_win, current_cursor)
 end
 
-NVTabs.register_type {
-  name = 'focus',
-  is_temporary = true,
-  is_match = NVFocusMode.is_focus_tab,
-  close_hook = NVFocusMode.ensure_deactivated,
-}
+function NVFocusMode.setup()
+  NVTabs.register_type {
+    name = 'focus',
+    is_temporary = true,
+    is_match = NVFocusMode.is_focus_tab,
+    close_hook = NVFocusMode.ensure_deactivated,
+  }
 
-NVClose.register('focus_mode', function()
-  return NVFocusMode.ensure_deactivated_if_active()
-end)
+  NVClose.register('focus_mode', function()
+    return NVFocusMode.ensure_deactivated_if_active()
+  end)
+end

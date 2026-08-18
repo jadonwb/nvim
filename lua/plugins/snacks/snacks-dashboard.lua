@@ -4,67 +4,14 @@ function NVSnacksDashboard.is_active()
   return vim.bo.filetype == 'snacks_dashboard'
 end
 
-NVClose.register('dashboard', function()
-  return NVSnacksDashboard.is_active()
-end)
+function NVSnacksDashboard.setup()
+  NVClose.register('dashboard', function()
+    return NVSnacksDashboard.is_active()
+  end)
+end
 
 return {
   'folke/snacks.nvim',
-  init = function()
-    local dashboard_setup = {}
-    vim.api.nvim_create_autocmd('FileType', {
-      pattern = 'snacks_dashboard',
-      callback = function()
-        local buf = vim.api.nvim_get_current_buf()
-        if dashboard_setup[buf] then
-          return
-        end
-        dashboard_setup[buf] = true
-        NVLualine.hide_everything()
-        vim.api.nvim_create_autocmd('BufWipeout', {
-          callback = function(args)
-            if args.buf ~= buf then
-              return
-            end
-            dashboard_setup[buf] = nil
-            NVTabs.set_label_if_empty { icon = NVTabs.editor_icon, name = 'main' }
-            NVLualine.show_everything()
-            NVLayoutManager.enable()
-          end,
-        })
-      end,
-    })
-    if vim.bo.filetype == 'snacks_dashboard' then
-      vim.api.nvim_exec_autocmds('FileType', { pattern = 'snacks_dashboard' })
-    end
-    local layout_enabled = false
-    vim.api.nvim_create_autocmd('BufEnter', {
-      callback = function()
-        if layout_enabled then
-          return true
-        end
-
-        local ft = vim.bo.filetype
-        -- NOTE!: this is where I can specify other filetypes that don't trigger the layout mananger
-        -- TODO!: make this a function or something that I can make a nice list somewhere instead of hardcoded here
-        if
-          ft == 'snacks_dashboard'
-          or ft == ''
-          or ft == 'nofile'
-          or ft == 'snacks_terminal'
-          -- TODO?: make a picker.is_active ?
-          or ft == 'snacks_picker_input'
-          or ft == 'snacks_picker_list'
-          or ft == 'snacks_picker_preview'
-        then
-          return
-        end
-        layout_enabled = true
-        NVLualine.show_everything()
-        NVLayoutManager.enable()
-      end,
-    })
-  end,
   opts = {
     dashboard = {
       preset = {

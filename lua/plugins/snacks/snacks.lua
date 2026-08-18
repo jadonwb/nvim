@@ -47,7 +47,7 @@ return {
         notification_history = {
           backdrop = false,
           border = NVBorders.padded,
-          keys = { q = 'close', ['<Esc>'] = 'close' }, -- TODO: cleanup and use nvkeymaps, remove q?
+          keys = { [NVKeymaps.close] = 'close', ['<Esc>'] = 'close' },
         },
       },
     },

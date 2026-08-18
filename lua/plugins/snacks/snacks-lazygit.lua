@@ -27,9 +27,11 @@ function NVSLazygit.ensure_hidden()
   return false
 end
 
-NVClose.register('snacks_lazygit', function()
-  return NVSLazygit.ensure_hidden()
-end, { before = 'terminal_vsplit' })
+function NVSLazygit.setup()
+  NVClose.register('snacks_lazygit', function()
+    return NVSLazygit.ensure_hidden()
+  end)
+end
 
 return {
   'folke/snacks.nvim',

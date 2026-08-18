@@ -157,7 +157,9 @@ function fn.is_active()
   return vim.bo.filetype == filetype
 end
 
-NVCompanionPanels.register(filetype, NVGrugFar.ensure_hidden)
-NVClose.register(filetype, NVGrugFar.ensure_current_hidden)
+function NVGrugFar.setup()
+  NVCompanionPanels.register(filetype, NVGrugFar.ensure_hidden)
+  NVClose.register(filetype, NVGrugFar.ensure_current_hidden)
+end
 
 return { NVGrugFar }

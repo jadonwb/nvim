@@ -13,48 +13,50 @@ return {
 
   {
     'MeanderingProgrammer/render-markdown.nvim',
-    opts = {
-      heading = {
-        sign = true,
-        width = 'block',
-        min_width = NVLayoutManager.default_width() - 5,
-        border = true,
-        border_virtual = true,
-        icons = {
-          '█' .. ' ' .. '󰉫' .. ' ',
-          '██' .. ' ' .. '󰉬' .. ' ',
-          '███' .. ' ' .. '󰉭' .. ' ',
-          '████' .. ' ' .. '󰉮' .. ' ',
-          '█████' .. ' ' .. '󰉯' .. ' ',
-          '██████' .. ' ' .. '󰉰' .. ' ',
-        },
-      },
-      checkbox = {
-        enabled = false,
-      },
-      pipe_table = {
-        preset = 'heavy',
-      },
-      code = {
-        width = 'block',
-        min_width = 80,
-        border = 'thick',
-        language_left = '',
-        language_border = ' ',
-        language_right = '',
-        left_pad = 1,
-      },
-      render_modes = true,
-      anti_conceal = {
-        ignore = {
-          code_background = true,
-          indent = true,
+    opts = function()
+      return {
+        heading = {
           sign = true,
-          virtual_lines = true,
-          head_background = true,
+          width = 'block',
+          min_width = NVLayoutManager.default_width() - 5,
+          border = true,
+          border_virtual = true,
+          icons = {
+            '█' .. ' ' .. '󰉫' .. ' ',
+            '██' .. ' ' .. '󰉬' .. ' ',
+            '███' .. ' ' .. '󰉭' .. ' ',
+            '████' .. ' ' .. '󰉮' .. ' ',
+            '█████' .. ' ' .. '󰉯' .. ' ',
+            '██████' .. ' ' .. '󰉰' .. ' ',
+          },
         },
-      },
-    },
+        checkbox = {
+          enabled = false,
+        },
+        pipe_table = {
+          preset = 'heavy',
+        },
+        code = {
+          width = 'block',
+          min_width = 80,
+          border = 'thick',
+          language_left = '',
+          language_border = ' ',
+          language_right = '',
+          left_pad = 1,
+        },
+        render_modes = true,
+        anti_conceal = {
+          ignore = {
+            code_background = true,
+            indent = true,
+            sign = true,
+            virtual_lines = true,
+            head_background = true,
+          },
+        },
+      }
+    end,
   },
   {
     'numEricL/table.vim',

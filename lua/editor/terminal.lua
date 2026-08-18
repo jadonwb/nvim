@@ -37,15 +37,6 @@ function NVTerminal.open_vsplit()
   })
 end
 
-NVCompanionPanels.register('terminal_vsplit', function()
-  local term = Snacks.terminal.get(nil, { create = false })
-  if term and term:valid() then
-    term:hide()
-    return true
-  end
-  return false
-end)
-
 function NVTerminal.ensure_vsplit_hidden()
   local term = Snacks.terminal.get(nil, { create = false })
   if term and term:valid() then
@@ -55,12 +46,13 @@ function NVTerminal.ensure_vsplit_hidden()
   return false
 end
 
+function NVTerminal.setup()
+  NVCompanionPanels.register('terminal_vsplit', NVTerminal.ensure_vsplit_hidden)
+  NVClose.register('terminal_vsplit', NVTerminal.ensure_vsplit_hidden)
+end
+
 function fn.paste()
   local content = vim.fn.getreg '*'
   content = vim.api.nvim_replace_termcodes(content, true, true, true)
   vim.api.nvim_feedkeys(content, 't', true)
 end
-
-NVClose.register('terminal_vsplit', function()
-  return NVTerminal.ensure_vsplit_hidden()
-end)
