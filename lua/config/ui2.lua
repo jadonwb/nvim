@@ -305,14 +305,8 @@ vim.api.nvim_create_autocmd('FileType', {
   callback = function(ev)
     local buf = ev.buf
     local close_cmd = '<Cmd>wincmd c<CR>'
-    if NVKeymaps then
-      if NVKeymaps.close then
-        vim.keymap.set('n', NVKeymaps.close, close_cmd, { buffer = buf, silent = true, nowait = true })
-      end
-      if NVKeymaps.close_esc then
-        vim.keymap.set('n', NVKeymaps.close_esc, close_cmd, { buffer = buf, silent = true, nowait = true })
-      end
-    end
+    vim.keymap.set('n', NVKeymaps.close, close_cmd, { buffer = buf, silent = true, nowait = true })
+    vim.keymap.set('n', NVKeymaps.close_esc, close_cmd, { buffer = buf, silent = true, nowait = true })
   end,
 })
 
