@@ -25,7 +25,7 @@ function NVSPickerVerticalLayout.build(opts)
       height = config.height,
       border = config.border,
       backdrop = config.backdrop,
-      { win = 'input', height = 1, title = '{title} {live}', title_pos = 'center', border = NVBorders.padded },
+      { win = 'input', height = 1, title = '{title} {live}', title_pos = 'center', border = NVBorders.bottom_hr },
       { win = 'list', border = NVBorders.list },
       { win = 'preview', title = '{preview}', border = NVBorders.top_hr },
     },
