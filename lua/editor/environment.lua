@@ -1,5 +1,7 @@
 NVEnv = {}
 
+local DEFAULT_HOSTS = { opencode = true, yazi = true }
+
 local cached_ancestors
 
 local function process_info(pid)
@@ -38,7 +40,7 @@ end
 
 --- True when nvim runs as a child editor of an embedded host (opencode, yazi, ...).
 function NVEnv.is_embedded()
-  return NVEnv.launched_by({ opencode = true, yazi = true }) ~= nil
+  return NVEnv.launched_by(DEFAULT_HOSTS) ~= nil
 end
 
 --- Return a copy of the ancestor process name chain (index 1 = self, last = root).
@@ -53,7 +55,10 @@ function NVEnv.ancestors()
 end
 
 vim.api.nvim_create_user_command('NVEnv', function(opts)
-  local names = { opencode = true, yazi = true }
+  local names = {}
+  for k in pairs(DEFAULT_HOSTS) do
+    names[k] = true
+  end
   for _, a in ipairs(opts.fargs) do
     names[a] = true
   end

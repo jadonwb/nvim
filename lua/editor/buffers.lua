@@ -204,15 +204,15 @@ end
 
 -- TODO?: silently argdelete all buffers when close so they **never** restore with session?
 function fn.delete_buf()
-  -- Running as opencode/yazi editor: close means quit back to the host.
-  if NVEnv.is_embedded() then
-    vim.cmd 'silent! wa'
-    vim.cmd 'qa'
+  -- Give each registered floating UI/mode a chance to consume the close event first.
+  if NVClose.consume() then
     return
   end
 
-  -- Give each registered floating UI/mode a chance to consume the close event
-  if NVClose.consume() then
+  -- Running as opencode/yazi editor: if nothing consumed, close means quit back to the host.
+  if NVEnv.is_embedded() then
+    vim.cmd 'silent! wa'
+    vim.cmd 'qa'
     return
   end
 
@@ -221,10 +221,24 @@ function fn.delete_buf()
   NVBuffers.delete_buf(current_buf, current_win)
 end
 
+-- TODO: rethink this for closing window too
+local function try_quit_to_host()
+  if NVEnv.is_embedded() then
+    vim.cmd 'silent! wa'
+    vim.cmd 'qa'
+    return true
+  end
+  return false
+end
+
+-- TODO: do I even need/want this anymore?
 function fn.delete_buf_and_close_win()
   local tab_windows = NVWindows.get_tab_windows_with_listed_buffers { incl_help = true }
 
   if tab_windows == nil then
+    if try_quit_to_host() then
+      return
+    end
     vim.cmd 'q'
     return
   end
@@ -246,6 +260,9 @@ function fn.delete_buf_and_close_win()
         end
       end)
     else
+      if try_quit_to_host() then
+        return
+      end
       -- Last non-temporary tab: create empty buffer instead of closing
       local current_buf = vim.api.nvim_get_current_buf()
       local empty_buf = vim.api.nvim_create_buf(true, false)
@@ -256,6 +273,9 @@ function fn.delete_buf_and_close_win()
       end
     end
   else
+    if try_quit_to_host() then
+      return
+    end
     vim.cmd 'q'
   end
 end
