@@ -10,6 +10,7 @@ require 'editor.fs'
 require 'editor.clipboard'
 
 require 'editor.close'
+require 'editor.environment'
 require 'editor.tabs'
 require 'editor.companion-panels'
 

@@ -204,9 +204,14 @@ end
 
 -- TODO?: silently argdelete all buffers when close so they **never** restore with session?
 function fn.delete_buf()
+  -- Running as opencode/yazi editor: close means quit back to the host.
+  if NVEnv.is_embedded() then
+    vim.cmd 'silent! wa'
+    vim.cmd 'qa'
+    return
+  end
+
   -- Give each registered floating UI/mode a chance to consume the close event
-  -- TODO: handle /tmp and other direct close vim scenarios
-  -- (if inside /tmp/*.md for example, opencode, then close also means quit)
   if NVClose.consume() then
     return
   end
