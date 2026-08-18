@@ -8,6 +8,9 @@ return {
         statusline = 'normal',
       },
       lualine_bold = true,
+      -- FIXME: arrowlake cache is broken?
+      -- or is not updating when it should?
+      cache = false,
     },
     keys = {
       {
