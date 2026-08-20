@@ -1,6 +1,8 @@
 NVSPickers = {}
 NVFffPicker = {}
 
+local grep_preview_ns = vim.api.nvim_create_namespace 'nvfff.grep_preview'
+
 -- TODO: configure just preview width
 NVSPickerVerticalLayout = {
   width = NVScreen.is_large() and 0.35 or 0.4,
@@ -296,7 +298,8 @@ local function grep_to_items(query)
   local results = require('fff').content_search(query, {
     mode = 'plain',
     smart_case = true,
-    page_size = 100,
+    page_size = 1000,
+    max_matches_per_file = 1000,
   })
   local items = {}
   for _, match in ipairs(results.items) do
@@ -329,6 +332,46 @@ local function grep_to_items(query)
   return items
 end
 
+function NVFffPicker.grep_previewer(ctx)
+  Snacks.picker.preview.file(ctx)
+
+  local match = ctx.item._fff and ctx.item._fff.match
+  local query = vim.trim(ctx.picker:filter().search or '')
+  if not match or match.line_number == nil or match.line_number <= 0 or query == '' then
+    return
+  end
+
+  -- active match = match text only (CurSearch bg), no whole-line cursorline
+  vim.api.nvim_set_option_value('cursorline', false, { win = ctx.preview.win.win })
+
+  local buf = ctx.preview.win.buf
+  vim.api.nvim_buf_clear_namespace(buf, grep_preview_ns, 0, -1)
+
+  -- fff's own query parser: strips constraint tokens, matches its search
+  local ok, parsed = pcall(require('fff.fuzzy').parse_grep_query, query)
+  local needle = (ok and parsed.grep_text) or query
+  if needle == '' then needle = query end
+  local has_upper = needle:match('[A-Z]')
+
+  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  for row, line in ipairs(lines) do
+    if row ~= match.line_number then -- active line stays CurSearch via snacks loc()
+      local hay, pat = line, needle
+      if not has_upper then hay, pat = line:lower(), needle:lower() end
+      local from = 1
+      while true do
+        local s, e = string.find(hay, pat, from, true)
+        if not s then break end
+        vim.api.nvim_buf_set_extmark(buf, grep_preview_ns, row - 1, s - 1, {
+          end_col = e,
+          hl_group = 'Search', -- tan in your theme
+        })
+        from = e + 1
+      end
+    end
+  end
+end
+
 ---@param opts table
 ---@param ctx snacks.picker.finder.ctx
 function NVFffPicker.files_finder(opts, ctx)
@@ -346,7 +389,7 @@ function NVFffPicker.find_files()
 end
 
 function NVFffPicker.live_grep()
-  Snacks.picker(fff_defaults { title = 'Live Grep (fff)', finder = NVFffPicker.grep_finder })
+  Snacks.picker(fff_defaults { title = 'Live Grep (fff)', finder = NVFffPicker.grep_finder, preview = NVFffPicker.grep_previewer })
 end
 
 function NVFffPicker.live_grep_word()
@@ -369,6 +412,7 @@ function NVFffPicker.live_grep_word()
     title = 'Grep Word (fff)',
     finder = NVFffPicker.grep_finder,
     search = word, -- pre-fill the input with the word/selection
+    preview = NVFffPicker.grep_previewer,
   })
 end
 
