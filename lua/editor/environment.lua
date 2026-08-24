@@ -1,27 +1,43 @@
 NVEnv = {}
 
-local DEFAULT_HOSTS = { opencode = true, yazi = true }
+-- TODO!: expand to handle argv detection and use this to create a
+-- full environment and startup utility to determine things like
+-- sessions handling, e.g. don't save or start session in certain directories or when embedded
+-- or, the ability to create logic with these helpers, e.g.
+-- if yazi opened neovim with a list of files, don't close until they are all
+-- custom behavior per application or startup condition I want to check for,
+-- but shared core behavior
+
+local DEFAULT_HOSTS = { ['opencode.exe'] = true, opencode = true, yazi = true }
 
 local cached_ancestors
 
 local function process_info(pid)
   local f = io.open('/proc/' .. pid .. '/stat')
-  if not f then return nil end
-  local stat = f:read('*a')
+  if not f then
+    return nil
+  end
+  local stat = f:read '*a'
   f:close()
-  local comm, ppid = stat:match('^%d+ %((.*)%) %S+ (%d+)')
+  local comm, ppid = stat:match '^%d+ %((.*)%) %S+ (%d+)'
   return comm, tonumber(ppid)
 end
 
 --- Cached list of ancestor process names (comm), from nvim up to init.
 local function ancestors()
-  if cached_ancestors then return cached_ancestors end
+  if cached_ancestors then
+    return cached_ancestors
+  end
   cached_ancestors = {}
-  if vim.fn.has('linux') == 0 then return cached_ancestors end
+  if vim.fn.has 'linux' == 0 then
+    return cached_ancestors
+  end
   local pid = vim.fn.getpid()
   while pid and pid > 1 do
     local name, ppid = process_info(pid)
-    if not name then break end
+    if not name then
+      break
+    end
     cached_ancestors[#cached_ancestors + 1] = name
     pid = ppid
   end
@@ -33,7 +49,9 @@ end
 ---@return string|nil
 function NVEnv.launched_by(names)
   for _, comm in ipairs(ancestors()) do
-    if names[comm] then return comm end
+    if names[comm] then
+      return comm
+    end
   end
   return nil
 end
@@ -77,4 +95,3 @@ end, {
   nargs = '*',
   desc = 'Debug: show process ancestry for embedded editor detection (opencode/yazi)',
 })
-
