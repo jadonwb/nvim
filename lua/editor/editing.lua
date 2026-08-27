@@ -92,25 +92,25 @@ function NVEditing.keymaps()
   K.map { '<Esc>', 'Drop all the noise and Esc', '<Cmd>lua NVEditing.esc()<CR><Esc>', mode = 'n', silent = false }
 
   K.map {
-    '<A-s>',
+    '<C-s>',
     'Save file',
     fn.save,
     mode = 'n',
   }
   K.map {
-    '<A-s>',
+    '<C-s>',
     'Save file',
     '<Cmd>lua NVEditing.esc()<CR><Esc><Cmd>silent w<CR>',
     mode = { 'i', 'v' },
   }
   K.map {
-    '<A-S-s>',
+    '<C-S-s>',
     'Save all files',
     fn.save_all,
     mode = 'n',
   }
   K.map {
-    '<A-S-s>',
+    '<C-S-s>',
     'Save all files',
     '<Cmd>lua NVEditing.esc()<CR><Esc><Cmd>silent w<CR><Cmd>silent! wa<CR>',
     mode = { 'i', 'v' },
