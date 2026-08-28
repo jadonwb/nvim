@@ -8,7 +8,7 @@ NVEnv = {}
 -- custom behavior per application or startup condition I want to check for,
 -- but shared core behavior
 
-local DEFAULT_HOSTS = { ['opencode.exe'] = true, opencode = true, yazi = true }
+local DEFAULT_HOSTS = { sudoedit = true, ['opencode.exe'] = true, opencode = true, yazi = true }
 
 local cached_ancestors
 
