@@ -130,7 +130,7 @@ function NVBuffers.delete_buf(buf, win)
     end
 
     if next_buf ~= nil then
-      if file_exists and vim.bo[buf].modified then -- TODO!: consider disabling autoformat here somehow, same for below modified checks
+      if file_exists and vim.bo[buf].modified then
         vim.cmd 'silent! write'
       end
       vim.api.nvim_win_set_buf(win, next_buf)
