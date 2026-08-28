@@ -10,6 +10,13 @@ function NVBuffers.keymaps()
     mode = { 'n', 'v', 'i', 't', 'c' },
   }
 
+  K.map {
+    '<M-b>',
+    'Toggle most recent buffer',
+    fn.toggle_recent_buf,
+    mode = 'n',
+  }
+
   -- repurpose into close tab?
   K.map {
     '<M-S-w>',
@@ -310,4 +317,26 @@ function fn.is_opened_elsewhere(tabs, current_tab, current_win, current_buf)
   end
 
   return nil
+end
+
+function fn.toggle_recent_buf()
+  local current = vim.api.nvim_get_current_buf()
+
+  -- Neovim's alternate buffer gives us the natural A <-> B toggle.
+  local alternate = vim.fn.bufnr '#'
+
+  if alternate > 0 and alternate ~= current and vim.api.nvim_buf_is_valid(alternate) and NVBuffers.is_buf_listed(alternate) then
+    vim.api.nvim_set_current_buf(alternate)
+    return
+  end
+
+  -- Alternate buffer was deleted/unlisted/etc.; recover using MRU ordering.
+  local bufs = NVBuffers.get_listed_bufs { sort_lastused = true }
+
+  for _, buf in ipairs(bufs) do
+    if buf.bufnr ~= current and vim.api.nvim_buf_is_valid(buf.bufnr) then
+      vim.api.nvim_set_current_buf(buf.bufnr)
+      return
+    end
+  end
 end
