@@ -157,6 +157,9 @@ function NVEditing.keymaps()
   -- K.map { '<Tab>', 'Indent', '>gv', mode = 'v' }
   -- K.map { '<S-Tab>', 'Unindent', '<gv', mode = 'v' }
 
+  K.map { '<S-Space>', 'Insert Space', 'i<Space><Esc>', mode = 'n' }
+  K.map { '<S-Space>', 'Insert Space', '<Space><Left>', mode = 'i' }
+
   K.map { '<A-Left>', 'Jump one word to the left', "<C-o><Cmd>lua require('spider').motion('b')<CR>", mode = 'i' }
   K.map { '<A-Right>', 'Jump one word to the right', fn.jump_to_end_of_word, mode = 'i' }
   -- K.map { '<A-Left>', 'Jump to the beginning of the line', '<C-o>I', mode = 'i' }
