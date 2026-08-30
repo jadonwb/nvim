@@ -1,3 +1,5 @@
+require('config.remote_clipboard').setup()
+
 -- FIXME: make sure now that I match reference config with layout manager, these options don't break anything / revisit these
 vim.opt.termguicolors = true
 
@@ -21,8 +23,6 @@ vim.opt.sidescrolloff = 8
 
 vim.opt.autowrite = true
 vim.opt.autoread = true
-
-vim.opt.clipboard = vim.env.SSH_TTY and '' or 'unnamedplus'
 
 vim.opt.laststatus = 3
 vim.opt.showmode = false
