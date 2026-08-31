@@ -4,11 +4,11 @@ NVEnv = {}
 -- full environment and startup utility to determine things like
 -- sessions handling, e.g. don't save or start session in certain directories or when embedded
 -- or, the ability to create logic with these helpers, e.g.
--- if yazi opened neovim with a list of files, don't close until they are all
+-- if yazi opened neovim with a list of files, don't close neovim until they are all closed, same with sudoedit
 -- custom behavior per application or startup condition I want to check for,
 -- but shared core behavior
 
-local DEFAULT_HOSTS = { sudoedit = true, ['opencode.exe'] = true, opencode = true, yazi = true }
+local DEFAULT_HOSTS = { chezmoi = true, sudoedit = true, ['opencode.exe'] = true, opencode = true, yazi = true }
 
 local cached_ancestors
 
