@@ -41,14 +41,30 @@ function NVNavigation.keymaps()
   }
 end
 
+local horizontal_scroll_ve = {}
+
 ---@param direction "left" | "right"
 function fn.scroll_horizontal(direction)
+  local win = vim.api.nvim_get_current_win()
+
+  if horizontal_scroll_ve[win] == nil then
+    horizontal_scroll_ve[win] = vim.wo[win].virtualedit
+  end
+
+  vim.wo[win].virtualedit = 'all'
+
   if direction == 'left' then
     vim.cmd 'normal! 7zh'
   elseif direction == 'right' then
     vim.cmd 'normal! 7zl'
   else
     log.error 'Unexpected scroll direction'
+    return
+  end
+
+  if vim.fn.winsaveview().leftcol == 0 then
+    vim.wo[win].virtualedit = horizontal_scroll_ve[win]
+    horizontal_scroll_ve[win] = nil
   end
 end
 
