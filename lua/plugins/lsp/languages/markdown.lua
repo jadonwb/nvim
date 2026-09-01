@@ -72,7 +72,7 @@ return {
     'ice345/markdown-table-wrap.nvim',
     ft = { 'markdown' },
     keys = {
-      { '<leader>mr', ft = 'markdown', '<cmd>MarkdownTableToggleReader<cr>', desc = 'Toggle Markdown reader/source' },
+      { '<A-m>', ft = 'markdown', '<cmd>MarkdownTableToggleReader<cr>', desc = 'Toggle Markdown reader/source' },
     },
     opts = {
       highlights = {
