@@ -66,6 +66,7 @@ return {
     ft = 'markdown',
     opts = {
       format_on_edit = true,
+      border = { enabled = true, style = 'full' }, -- 'full' | 'rows' | 'none'
       column = { min_width = 3, max_width = 45, padding = 1 },
       cursor = { row_highlight = false },
       highlights = {
@@ -93,6 +94,7 @@ return {
       highlights = {
         border = { link = 'Border' },
       },
+      row_separator = false,
       table_border = 'single',
       mappings = {
         reader = {
