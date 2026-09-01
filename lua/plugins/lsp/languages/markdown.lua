@@ -46,7 +46,6 @@ return {
           left_margin = 1,
           inline_pad = 1,
         },
-        pipe_table = { enabled = false },
         render_modes = true,
         anti_conceal = {
           ignore = {
@@ -57,6 +56,7 @@ return {
             head_background = true,
           },
         },
+        pipe_table = { enabled = false },
         win_options = { concealcursor = { rendered = 'nvic' } },
       }
     end,
