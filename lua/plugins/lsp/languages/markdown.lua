@@ -57,8 +57,17 @@ return {
             head_background = true,
           },
         },
+        win_options = { concealcursor = { rendered = 'nvic' } },
       }
     end,
+  },
+  {
+    'dominic-righthere/markdown-pipetable.nvim',
+    ft = 'markdown',
+    opts = {
+      format_on_edit = true,
+      column = { min_width = 3, max_width = 45, padding = 1 },
+    },
   },
   {
     'numEricL/table.vim',
@@ -68,23 +77,23 @@ return {
       disable_mappings = true,
     },
   },
-  {
-    'ice345/markdown-table-wrap.nvim',
-    ft = { 'markdown' },
-    keys = {
-      { '<A-m>', ft = 'markdown', '<cmd>MarkdownTableToggleReader<cr>', desc = 'Toggle Markdown reader/source' },
-    },
-    opts = {
-      highlights = {
-        border = { link = 'Border' },
-      },
-      table_border = 'single',
-      mappings = {
-        reader = {
-          close = 'q',
-          edit = '',
-        },
-      },
-    },
-  },
+  -- {
+  --   'ice345/markdown-table-wrap.nvim',
+  --   ft = { 'markdown' },
+  --   keys = {
+  --     { '<A-m>', ft = 'markdown', '<cmd>MarkdownTableToggleReader<cr>', desc = 'Toggle Markdown reader/source' },
+  --   },
+  --   opts = {
+  --     highlights = {
+  --       border = { link = 'Border' },
+  --     },
+  --     table_border = 'single',
+  --     mappings = {
+  --       reader = {
+  --         close = 'q',
+  --         edit = '',
+  --       },
+  --     },
+  --   },
+  -- },
 }
