@@ -44,7 +44,7 @@ return {
           },
         },
         pipe_table = { enabled = false },
-        win_options = { concealcursor = { rendered = 'nvic' } },
+        -- win_options = { concealcursor = { rendered = 'nvic' } },
       }
     end,
   },
