@@ -11,3 +11,5 @@ map('n', '<leader>ud', function()
   local status = not enabled and 'Enabled' or 'Disabled'
   vim.notify(status .. ' Diagnostics', not enabled and vim.log.levels.INFO or vim.log.levels.WARN, { title = 'Diagnostics' })
 end, { buffer = true, desc = 'Toggle Diagnostics' })
+
+vim.b.snacks_scope = false
