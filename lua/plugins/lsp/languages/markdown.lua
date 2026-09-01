@@ -70,7 +70,7 @@ return {
       { '<A-m>', ft = 'markdown', '<cmd>MarkdownTableToggleReader<cr>', desc = 'Toggle Markdown reader/source' },
     },
     opts = {
-      auto_reader = false,
+      auto_preview = false,
       highlights = {
         border = { link = 'Border' },
       },
