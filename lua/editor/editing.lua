@@ -157,8 +157,9 @@ function NVEditing.keymaps()
   -- K.map { '<Tab>', 'Indent', '>gv', mode = 'v' }
   -- K.map { '<S-Tab>', 'Unindent', '<gv', mode = 'v' }
 
+  -- TODO: get rid of pi.nvim and delta and make A-space be space before, S-space be space after
   K.map { '<S-Space>', 'Insert Space', 'i<Space><Esc>', mode = 'n' }
-  K.map { '<S-Space>', 'Insert Space', '<Space><Left>', mode = 'i' }
+  K.map { '<A-Space>', 'Insert Space', '<Space><Left>', mode = 'i' }
 
   K.map { '<A-Left>', 'Jump one word to the left', "<C-o><Cmd>lua require('spider').motion('b')<CR>", mode = 'i' }
   K.map { '<A-Right>', 'Jump one word to the right', fn.jump_to_end_of_word, mode = 'i' }
