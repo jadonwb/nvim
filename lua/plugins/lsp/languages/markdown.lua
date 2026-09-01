@@ -1,16 +1,4 @@
 return {
-  -- {
-  --   'iamcco/markdown-preview.nvim',
-  --   keys = {
-  --     {
-  --       '<leader>mp',
-  --       ft = 'markdown',
-  --       '<cmd>MarkdownPreviewToggle<cr>',
-  --       desc = 'Markdown Preview',
-  --     },
-  --   },
-  -- },
-
   {
     'MeanderingProgrammer/render-markdown.nvim',
     opts = function()
@@ -73,14 +61,6 @@ return {
         border = 'Border',
         edit = 'CursorLine',
       },
-    },
-  },
-  {
-    'numEricL/table.vim',
-    opts = {
-      style = 'markdown',
-      -- options = {},
-      disable_mappings = true,
     },
   },
   {
