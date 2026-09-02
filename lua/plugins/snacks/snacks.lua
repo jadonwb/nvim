@@ -42,10 +42,8 @@ return {
             winhighlight = 'Normal:Normal,WinBar:SnacksWinBar,WinBarNC:SnacksWinBarNC,FloatTitle:SnacksTitle,FloatFooter:SnacksFooter,WinSeparator:SnacksWinSeparator,FloatBorder:Border',
           },
         },
-        float = { backdrop = false },
         notification = { border = NVBorders.padded },
         notification_history = {
-          backdrop = false,
           border = NVBorders.padded,
           keys = { [NVKeymaps.close] = 'close', ['<Esc>'] = 'close' },
         },
