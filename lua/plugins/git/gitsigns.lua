@@ -17,7 +17,7 @@ NVGitsigns = {
       changedelete = { text = '▎' },
       untracked = { text = '▎' },
     },
-    on_attach = function() end,
+    -- on_attach = function() end,
   },
 }
 

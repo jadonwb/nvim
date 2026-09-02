@@ -86,7 +86,6 @@ return {
         NVDebug.keymaps()
 
         NVGrugFar.autocmds()
-        NVPi.autocmds()
       end)
     end,
   },
