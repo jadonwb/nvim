@@ -73,6 +73,7 @@ return {
         NVFocusMode.keymaps()
         NVGitCommit.keymaps()
         NVGitWorktrees.keymaps()
+        NVSLazygit.keymaps()
         NVTabs.keymaps()
         NVWindows.keymaps()
         NVBuffers.keymaps()
