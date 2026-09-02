@@ -99,7 +99,11 @@ return {
       show_help_hints = false,
       watch_index = true,
 
-      -- TODO!: make default merge diff3_horizontal I think
+      view = {
+        merge_tool = {
+          layout = 'diff3_mixed',
+        },
+      },
 
       keymaps = {
         -- stylua: ignore
