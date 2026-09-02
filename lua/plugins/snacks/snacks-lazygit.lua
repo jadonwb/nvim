@@ -50,6 +50,21 @@ function NVSLazygit.branch()
   lazygit_view 'branch'
 end
 
+--- Hide the snacks terminal running in the current window.
+--- Used by lazygit's edit integration to dismiss the lazygit float before
+--- opening the edited file, without caring whether it was launched bare or
+--- with args (e.g. `lazygit status`).
+function NVSLazygit.hide_current()
+  local buf = vim.api.nvim_get_current_buf()
+  for _, term in ipairs(Snacks.terminal.list()) do
+    if term.buf == buf and term:valid() then
+      term:hide()
+      return true
+    end
+  end
+  return false
+end
+
 function NVSLazygit.ensure_hidden()
   local app = NVSTerminal.is_app 'lazygit'
   if app == true then
@@ -65,6 +80,9 @@ function NVSLazygit.ensure_hidden()
 end
 
 function NVSLazygit.setup()
+  vim.api.nvim_create_user_command('NVLazygitHide', function()
+    NVSLazygit.hide_current()
+  end, { desc = 'Hide the current lazygit terminal' })
   NVClose.register('snacks_lazygit', function()
     return NVSLazygit.ensure_hidden()
   end)
@@ -103,17 +121,17 @@ return {
         -- TODO?: is this even any different from default snacks lazygit config anymore?
         os = {
           edit = vim.v.progpath
-            .. [[ --server "$NVIM" --remote-send '<Cmd>lua require("snacks").lazygit()<CR>' && ]]
+            .. [[ --server "$NVIM" --remote-send '<Cmd>NVLazygitHide<CR>' && ]]
             .. vim.v.progpath
             .. [[ --server "$NVIM" --remote-silent {{filename}} ]],
           editAtLine = vim.v.progpath
-            .. [[ --server "$NVIM" --remote-send '<Cmd>lua require("snacks").lazygit()<CR>' && ]]
+            .. [[ --server "$NVIM" --remote-send '<Cmd>NVLazygitHide<CR>' && ]]
             .. vim.v.progpath
             .. [[ --server "$NVIM" --remote-silent {{filename}} && ]]
             .. vim.v.progpath
             .. [[ --server "$NVIM" --remote-send ':{{line}}<CR>' ]],
           openDirInEditor = vim.v.progpath
-            .. [[ --server "$NVIM" --remote-send '<Cmd>lua require("snacks").lazygit()<CR>' && ]]
+            .. [[ --server "$NVIM" --remote-send '<Cmd>NVLazygitHide<CR>' && ]]
             .. vim.v.progpath
             .. [[ --server "$NVIM" --remote-silent {{dir}} ]],
         },
