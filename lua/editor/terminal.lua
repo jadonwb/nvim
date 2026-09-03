@@ -6,17 +6,38 @@ function NVTerminal.keymaps()
   K.map { '<C-v>', 'Paste text', fn.paste, mode = 't', expr = true }
   K.map { NVKeymaps.scroll.up, 'Exit terminal mode', '<C-\\><C-n>', mode = 't' }
   K.map { NVKeymaps.scroll_alt.up, 'Exit terminal mode', '<C-\\><C-n>', mode = 't' }
-  K.map { NVKeymaps.scroll_ctx.up, 'Lazygit: Scroll up main panel', '<C-\\><C-u>', mode = 't' }
-  K.map { NVKeymaps.scroll_ctx.down, 'Lazygit: Scroll down main panel', '<C-\\><C-d>', mode = 't' }
 
   K.map { '<C-/>', 'Toggle vsplit terminal', NVTerminal.open_vsplit, mode = { 'n', 'v', 'i', 't' } }
   K.map { '<C-_>', 'Toggle vsplit terminal', NVTerminal.open_vsplit, mode = { 'n', 'v', 'i', 't' } }
 
   vim.api.nvim_create_autocmd('FileType', {
     pattern = 'snacks_terminal',
-    callback = function()
+    callback = function(event)
       K.map { '&', 'Enter terminal mode', 'i', mode = 'n', buffer = true }
       K.map { '&', 'Enter terminal mode', '<Esc>i', mode = 'v', buffer = true }
+
+      vim.schedule(function()
+        if not vim.api.nvim_buf_is_valid(event.buf) then
+          return
+        end
+
+        if NVSTerminal.is_app('lazygit', event.buf) then
+          K.map {
+            NVKeymaps.scroll_ctx.up,
+            'Lazygit: Scroll up main panel',
+            '<C-\\><C-u>',
+            mode = 't',
+            buffer = event.buf,
+          }
+          K.map {
+            NVKeymaps.scroll_ctx.down,
+            'Lazygit: Scroll down main panel',
+            '<C-\\><C-d>',
+            mode = 't',
+            buffer = event.buf,
+          }
+        end
+      end)
     end,
   })
 end
