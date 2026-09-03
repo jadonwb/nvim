@@ -7,12 +7,6 @@ return {
     },
     keys = {
       {
-        '<leader>E',
-        mode = { 'n', 'v' },
-        '<cmd>Yazi<cr>',
-        desc = 'which_key_ignore',
-      },
-      {
         '<leader>e',
         '<cmd>Yazi toggle<cr>',
         desc = 'which_key_ignore',
@@ -20,35 +14,37 @@ return {
       {
         '<A-E>',
         mode = { 'n', 'v' },
-        '<cmd>Yazi<cr>',
+        '<cmd>Yazi cwd<cr>',
         desc = 'which_key_ignore',
       },
       {
         '<A-e>',
-        '<cmd>Yazi toggle<cr>',
+        mode = { 'n', 'v' },
+        '<cmd>Yazi<cr>',
         desc = 'which_key_ignore',
       },
     },
     ---@type YaziConfig | {}
     opts = {
       open_for_directories = true,
-      yazi_floating_window_border = 'rounded',
+      yazi_floating_window_border = 'none',
+      yazi_floating_window_zindex = 999,
       floating_window_scaling_factor = 1,
       keymaps = {
         show_help = '?',
-        open_file_in_vertical_split = '<c-v>',
-        open_file_in_horizontal_split = '<c-x>',
-        open_file_in_tab = '<c-t>',
-        grep_in_directory = '<c-g>',
-        replace_in_directory = '<c-r>',
-        cycle_open_buffers = false,
-        copy_relative_path_to_selected_files = '<c-y>',
-        send_to_quickfix_list = '<c-q>',
-        change_working_directory = '<c-\\>',
-        open_and_pick_window = '<c-o>',
+        open_file_in_vertical_split = NVKeymaps.open_vsplit,
+        open_file_in_horizontal_split = NVKeymaps.open_hsplit,
+        open_file_in_tab = '<C-t>',
+        grep_in_directory = '<C-g>',
+        replace_in_directory = '<C-r>',
+        cycle_open_buffers = '<C-o>',
+        copy_relative_path_to_selected_files = '<C-y>',
+        send_to_quickfix_list = '<C-q>',
+        change_working_directory = '<C-CR>',
+        open_and_pick_window = false,
       },
       integrations = {
-        --- What should be done when the user wants to grep in a directory
+        -- TODO!: use my styled fff picker, if fff capable, or use snacks but styled same
         grep_in_directory = 'snacks.picker',
         grep_in_selected_files = 'snacks.picker',
       },

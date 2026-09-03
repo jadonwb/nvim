@@ -1,8 +1,8 @@
 K = {}
 
 NVKeymaps = {
-  open_vsplit = '<A-C-CR>',
-  open_hsplit = '<A-C-S-CR>',
+  open_vsplit = '<C-v>',
+  open_hsplit = '<C-s>',
 
   close = '<M-w>',
   close_esc = '<Esc>',
@@ -16,7 +16,7 @@ NVKeymaps = {
   scroll_side = { left = '<A-h>', right = '<A-l>' },
 
   tab_create = '<C-t>',
-  tab_close = '<M-C-w>', -- TODO?: make M-S-w fully cover close tab?
+  tab_close = '<C-w>',
   tab_move = { left = '<C-Left>', right = '<C-Right>' },
   tab_swap = { left = '<C-S-Left>', right = '<C-S-Right>' },
   window_move = { up = '<C-k>', down = '<C-j>', left = '<C-h>', right = '<C-l>' },
