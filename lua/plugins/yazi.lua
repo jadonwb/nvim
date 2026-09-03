@@ -7,24 +7,24 @@ return {
     },
     keys = {
       {
-        '<leader>e',
+        '<leader>E',
         mode = { 'n', 'v' },
         '<cmd>Yazi<cr>',
         desc = 'which_key_ignore',
       },
       {
-        '<leader>E',
+        '<leader>e',
         '<cmd>Yazi toggle<cr>',
         desc = 'which_key_ignore',
       },
       {
-        '<A-e>',
+        '<A-E>',
         mode = { 'n', 'v' },
         '<cmd>Yazi<cr>',
         desc = 'which_key_ignore',
       },
       {
-        '<A-E>',
+        '<A-e>',
         '<cmd>Yazi toggle<cr>',
         desc = 'which_key_ignore',
       },
