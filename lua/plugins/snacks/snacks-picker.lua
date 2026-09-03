@@ -67,10 +67,10 @@ NVSPickers.keys = {
   -- ['<C-S-l>'] = { 'focus_list', mode = { 'n', 'i', 'v' } },
   -- ['<C-S-p>'] = { 'focus_preview', mode = { 'n', 'i', 'v' } },
   ['<C-S-p>'] = { 'toggle_preview', mode = { 'n', 'i', 'v' } },
-  ['<C-S-c>'] = { 'x_copy_absolute_path', mode = { 'n', 'i', 'v' } },
-  ['<C-S-r>'] = { 'x_copy_relative_path', mode = { 'n', 'i', 'v' } },
-  ['<C-S-f>'] = { 'x_copy_filename', mode = { 'n', 'i', 'v' } },
-  ['<C-S-s>'] = { 'x_copy_filestem', mode = { 'n', 'i', 'v' } },
+  ['<C-c>'] = { 'x_copy_absolute_path', mode = { 'n', 'i', 'v' } },
+  ['<C-y>'] = { 'x_copy_relative_path', mode = { 'n', 'i', 'v' } },
+  ['<C-f>'] = { 'x_copy_filename', mode = { 'n', 'i', 'v' } },
+  ['<C-S-f>'] = { 'x_copy_filestem', mode = { 'n', 'i', 'v' } },
   [NVKeymaps.close] = { 'close', mode = { 'n', 'i', 'v' } },
 }
 
@@ -350,18 +350,24 @@ function NVFffPicker.grep_previewer(ctx)
   -- fff's own query parser: strips constraint tokens, matches its search
   local ok, parsed = pcall(require('fff.fuzzy').parse_grep_query, query)
   local needle = (ok and parsed.grep_text) or query
-  if needle == '' then needle = query end
-  local has_upper = needle:match('[A-Z]')
+  if needle == '' then
+    needle = query
+  end
+  local has_upper = needle:match '[A-Z]'
 
   local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
   for row, line in ipairs(lines) do
     if row ~= match.line_number then -- active line stays CurSearch via snacks loc()
       local hay, pat = line, needle
-      if not has_upper then hay, pat = line:lower(), needle:lower() end
+      if not has_upper then
+        hay, pat = line:lower(), needle:lower()
+      end
       local from = 1
       while true do
         local s, e = string.find(hay, pat, from, true)
-        if not s then break end
+        if not s then
+          break
+        end
         vim.api.nvim_buf_set_extmark(buf, grep_preview_ns, row - 1, s - 1, {
           end_col = e,
           hl_group = 'Search', -- tan in your theme
