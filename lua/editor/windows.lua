@@ -12,11 +12,10 @@ function NVWindows.keymaps()
   K.map { '<A-t>', 'Create new buffer', '<Cmd>enew<CR>', mode = 'n' } -- TODO: just like tab make it ask for buffer name first? also prefill input with cwd path?
   K.map { '<A-b>', 'Switch to other buffer', function() end, mode = 'n' }
 
-  -- TODO/FIXME!: this interferes with vim-tmux nav and sidebars like trouble? or is the layout managers fault due to empty sidepad windows?
-  -- K.map { NVKeymaps.window_move.left, 'Move to window on the left', '<Cmd>wincmd h<CR>', mode = { 'n', 'v', 'i', 't' } }
-  -- K.map { NVKeymaps.window_move.down, 'Move to window below', '<Cmd>wincmd j<CR>', mode = { 'n', 'v', 'i', 't' } }
-  -- K.map { NVKeymaps.window_move.up, 'Move to window above', '<Cmd>wincmd k<CR>', mode = { 'n', 'v', 'i', 't' } }
-  -- K.map { NVKeymaps.window_move.down, 'Move to window on the right', '<Cmd>wincmd l<CR>', mode = { 'n', 'v', 'i', 't' } }
+  K.map { NVKeymaps.window_move.left, 'Move to window on the left', '<Cmd>wincmd h<CR>', mode = { 'n', 'v', 'i', 't' } }
+  K.map { NVKeymaps.window_move.down, 'Move to window below', '<Cmd>wincmd j<CR>', mode = { 'n', 'v', 'i', 't' } }
+  K.map { NVKeymaps.window_move.up, 'Move to window above', '<Cmd>wincmd k<CR>', mode = { 'n', 'v', 'i', 't' } }
+  K.map { NVKeymaps.window_move.down, 'Move to window on the right', '<Cmd>wincmd l<CR>', mode = { 'n', 'v', 'i', 't' } }
 
   -- Window move/swap (requires winshift.nvim)
   K.map {
