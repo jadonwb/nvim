@@ -31,7 +31,6 @@ return {
           language_right = '',
           left_pad = 2,
           right_pad = 2,
-          left_margin = 1,
         },
         render_modes = true,
         anti_conceal = {
