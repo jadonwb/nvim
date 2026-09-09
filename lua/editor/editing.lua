@@ -60,6 +60,29 @@ function fn.paste()
   end
 end
 
+---@param fmt "cwd" | "absolute" | "relative" | "filename" | "filestem"
+function fn.yank_path(fmt)
+  local result
+
+  if fmt == 'cwd' then
+    result = vim.fn.getcwd()
+  else
+    local path = vim.api.nvim_buf_get_name(0)
+
+    if path == '' then
+      vim.notify('Current buffer has no file path', vim.log.levels.WARN)
+      return
+    end
+
+    result = NVFS.format(path, fmt)
+  end
+
+  if result then
+    NVClipboard.yank(result)
+    vim.notify('Yanked: ' .. result, vim.log.levels.INFO)
+  end
+end
+
 function fn.jump_to_end_of_word()
   require('spider').motion 'e'
 
@@ -171,6 +194,51 @@ function NVEditing.keymaps()
   K.map { NVKeymaps.restart, 'Save session and restart', NVQuit.restart, mode = 'n' }
 
   K.map { '<leader>u<tab>', 'Toggle tab characters', fn.toggle_tabs, mode = 'n' }
+
+  K.map {
+    '<leader>yc',
+    'Yank working directory',
+    function()
+      fn.yank_path 'cwd'
+    end,
+    mode = 'n',
+  }
+
+  K.map {
+    '<leader>ya',
+    'Yank absolute file path',
+    function()
+      fn.yank_path 'absolute'
+    end,
+    mode = 'n',
+  }
+
+  K.map {
+    '<leader>yr',
+    'Yank file path relative to cwd',
+    function()
+      fn.yank_path 'relative'
+    end,
+    mode = 'n',
+  }
+
+  K.map {
+    '<leader>yf',
+    'Yank filename',
+    function()
+      fn.yank_path 'filename'
+    end,
+    mode = 'n',
+  }
+
+  K.map {
+    '<leader>yF',
+    'Yank filename without extension',
+    function()
+      fn.yank_path 'filestem'
+    end,
+    mode = 'n',
+  }
 
   vim.api.nvim_create_autocmd('BufEnter', {
     pattern = '*',
