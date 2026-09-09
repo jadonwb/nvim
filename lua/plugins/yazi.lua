@@ -6,15 +6,15 @@ return {
       'folke/snacks.nvim',
     },
     keys = {
-      {
-        '<leader>e',
-        '<cmd>Yazi toggle<cr>',
-        desc = 'which_key_ignore',
-      },
+      -- {
+      --   '<leader>e',
+      --   '<cmd>Yazi toggle<cr>',
+      --   desc = 'which_key_ignore',
+      -- },
       {
         '<A-E>',
         mode = { 'n', 'v' },
-        '<cmd>Yazi cwd<cr>',
+        '<cmd>Yazi toggle<cr>',
         desc = 'which_key_ignore',
       },
       {
