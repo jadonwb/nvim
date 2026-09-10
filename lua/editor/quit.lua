@@ -20,22 +20,35 @@ end
 -- Review all decisions first. Cancellation changes nothing. Write failures
 -- abort the operation; already successful writes cannot be rolled back.
 local function review(only, done)
-  if busy then return end
+  if busy then
+    return
+  end
   busy = true
   local items, decisions = modified_buffers(only), {}
   local function abort(err)
     busy = false
-    if err then report(err) end
+    if err then
+      report(err)
+    end
   end
   local function apply()
     for _, decision in ipairs(decisions) do
       if decision.action == 'write' then
         local ok, err = pcall(function()
-          if decision.filename then vim.api.nvim_buf_set_name(decision.buf, decision.filename) end
-          vim.api.nvim_buf_call(decision.buf, function() vim.cmd 'write' end)
-          if vim.bo[decision.buf].modified then error('Buffer remains modified after write') end
+          if decision.filename then
+            vim.api.nvim_buf_set_name(decision.buf, decision.filename)
+          end
+          vim.api.nvim_buf_call(decision.buf, function()
+            vim.cmd 'write'
+          end)
+          if vim.bo[decision.buf].modified then
+            error 'Buffer remains modified after write'
+          end
         end)
-        if not ok then abort('Failed to write: ' .. tostring(err)); return end
+        if not ok then
+          abort('Failed to write: ' .. tostring(err))
+          return
+        end
       end
     end
     for _, decision in ipairs(decisions) do
@@ -45,12 +58,20 @@ local function review(only, done)
     end
     local ok, err = pcall(done)
     busy = false
-    if not ok then report(err) end
+    if not ok then
+      report(err)
+    end
   end
   local function step(index)
     local item = items[index]
-    if not item then apply(); return end
-    if not vim.api.nvim_buf_is_valid(item.buf) then abort('Buffer changed during review'); return end
+    if not item then
+      apply()
+      return
+    end
+    if not vim.api.nvim_buf_is_valid(item.buf) then
+      abort 'Buffer changed during review'
+      return
+    end
     NVDialogs.select({
       title = 'Unsaved Changes (' .. index .. '/' .. #items .. ')',
       message = item.name == '' and '[No Name]' or vim.fn.fnamemodify(item.name, ':~:.'),
@@ -61,7 +82,10 @@ local function review(only, done)
       if choice == 'Write' then
         if item.name == '' then
           NVDialogs.input({ prompt = 'Save As' }, function(filename)
-            if not filename or filename == '' then abort(); return end
+            if not filename or filename == '' then
+              abort()
+              return
+            end
             decisions[#decisions + 1] = { buf = item.buf, action = 'write', filename = filename }
             step(index + 1)
           end)
@@ -88,7 +112,9 @@ function NVQuit.save_and_quit()
     NVPersistence.stop()
     local ok, err = pcall(vim.cmd, 'qall')
     if not ok then
-      if was_saving then NVPersistence.apply_policy() end
+      if was_saving then
+        NVPersistence.apply_policy()
+      end
       error(err)
     end
   end)
@@ -102,7 +128,9 @@ end
 local function other_editor_buffers(buf)
   for _, item in ipairs(NVBuffers.get_listed_bufs()) do
     if item.bufnr ~= buf and vim.bo[item.bufnr].buftype == '' then
-      if item.name ~= '' or vim.bo[item.bufnr].modified then return true end
+      if item.name ~= '' or vim.bo[item.bufnr].modified then
+        return true
+      end
     end
   end
   return false
@@ -112,13 +140,17 @@ end
 function NVQuit.should_finish(buf)
   local policy = NVEnv.startup.policy.close.finish
   if policy == 'view' then
-    if NVEnv.startup.purpose == 'pager' then return vim.bo[buf].filetype == 'man' end
+    if NVEnv.startup.purpose == 'pager' then
+      return vim.bo[buf].filetype == 'man'
+    end
     return NVDiffview and NVDiffview.is_diffview_tab(vim.api.nvim_get_current_tabpage()) or false
   end
   if policy == 'targets' then
     local target = NVEnv.target_for_buffer(buf)
     for _, path in ipairs(NVEnv.pending_files()) do
-      if path ~= target then return false end
+      if path ~= target then
+        return false
+      end
     end
     return true
   end
@@ -126,19 +158,27 @@ function NVQuit.should_finish(buf)
 end
 
 function NVQuit.close_current(opts)
-  if busy then return end
+  if busy then
+    return
+  end
   opts = opts or {}
   local pager = NVEnv.startup.purpose == 'pager'
-  if NVClose.consume(pager and { help_docs = true } or nil) then return end
+  if NVClose.consume(pager and { help_docs = true } or nil) then
+    return
+  end
   local buf, win = vim.api.nvim_get_current_buf(), vim.api.nvim_get_current_win()
-  if NVQuit.should_finish(buf) then NVQuit.save_and_quit(); return end
+  if NVQuit.should_finish(buf) then
+    NVQuit.save_and_quit()
+    return
+  end
   local target = NVEnv.target_for_buffer(buf)
   review({ buf }, function()
     -- Keep existing replacement-buffer selection and MRU logic.
     NVBuffers.delete_buf(buf, win, function(deleted)
-      if deleted then NVEnv.complete_target(target) end
-      if opts.close_window and vim.api.nvim_win_is_valid(win)
-        and #vim.api.nvim_tabpage_list_wins(vim.api.nvim_win_get_tabpage(win)) > 1 then
+      if deleted then
+        NVEnv.complete_target(target)
+      end
+      if opts.close_window and vim.api.nvim_win_is_valid(win) and #vim.api.nvim_tabpage_list_wins(vim.api.nvim_win_get_tabpage(win)) > 1 then
         vim.api.nvim_win_close(win, false)
       end
       -- Startup arguments can be unloaded, so advance explicitly instead of
@@ -155,7 +195,6 @@ function NVQuit.close_current(opts)
 end
 
 function NVQuit.restart()
-  if vim.fn.exists ':restart' ~= 2 then report('This Neovim does not support :restart'); return end
   review(nil, function()
     NVTabs.save_labels()
     NVEnv.sync_restart_context()
