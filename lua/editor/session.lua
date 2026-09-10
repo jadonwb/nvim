@@ -60,12 +60,16 @@ local function delete_session_buffer(buf)
 end
 
 local function capture(restart)
-  local data =
-    { version = 1, files = {}, tabs = {}, active = {
+  local data = {
+    version = 1,
+    files = {},
+    tabs = {},
+    active = {
       name = vim.api.nvim_buf_get_name(0),
       tab = vim.fn.tabpagenr(),
       view = vim.fn.winsaveview(),
-    } }
+    },
+  }
   local captured = {}
   for _, item in ipairs(NVBuffers.get_managed { sort_lastused = true }) do
     -- Keep `sessionoptions=buffers`, but do not write deleted/renamed files
@@ -327,23 +331,6 @@ function M.list()
     return (astat and astat.mtime.sec or 0) > (bstat and bstat.mtime.sec or 0)
   end)
   return files
-end
-
-function M.select()
-  if not NVEnv.startup.policy.session.load then
-    return
-  end
-  vim.ui.select(M.list(), { prompt = 'Restore session' }, function(file)
-    if not file then
-      return
-    end
-    local ok, err = xpcall(function()
-      load_snapshot(file, false)
-    end, debug.traceback)
-    if not ok then
-      vim.notify(tostring(err), vim.log.levels.ERROR)
-    end
-  end)
 end
 
 function M.autocmds()
