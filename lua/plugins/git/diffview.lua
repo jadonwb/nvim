@@ -1,6 +1,7 @@
 NVDiffview = {}
 
 local dv_fn = {}
+local cleanup_scheduled = {}
 
 function NVDiffview.is_diffview_tab(tabid)
   local ok, dv = pcall(require, 'diffview.lib')
@@ -39,22 +40,36 @@ function NVDiffview.close()
 end
 
 function NVDiffview.close_other_tabs(view)
-  if NVEnv.startup.purpose ~= 'difftool' then return end
+  if NVEnv.startup.purpose ~= 'difftool' then
+    return
+  end
+  if not view or cleanup_scheduled[view.tabpage] then
+    return
+  end
+  cleanup_scheduled[view.tabpage] = true
   -- Diffview creates its tab during the open event. Defer until that tab and
   -- the original editor tab are both fully registered, then keep only the
   -- Diffview tab for a dedicated difftool invocation.
   vim.defer_fn(function()
-    if not vim.api.nvim_tabpage_is_valid(view.tabpage) then return end
+    if not vim.api.nvim_tabpage_is_valid(view.tabpage) then
+      cleanup_scheduled[view.tabpage] = nil
+      return
+    end
     local diff_tab = view.tabpage
-    for _, tab in ipairs(vim.api.nvim_list_tabpages()) do
+    local tabs = vim.api.nvim_list_tabpages()
+    for _, tab in ipairs(tabs) do
       if tab ~= diff_tab and vim.api.nvim_tabpage_is_valid(tab) then
         vim.api.nvim_set_current_tabpage(tab)
-        vim.cmd 'tabclose'
+        pcall(vim.cmd, 'tabclose')
       end
     end
     if vim.api.nvim_tabpage_is_valid(diff_tab) then
       vim.api.nvim_set_current_tabpage(diff_tab)
     end
+    vim.schedule(function()
+      vim.o.showtabline = 2
+    end)
+    cleanup_scheduled[diff_tab] = nil
   end, 50)
 end
 
@@ -176,8 +191,8 @@ return {
       -- ── hooks: tab renaming + diff2 highlighting ──────────────
       hooks = {
         view_opened = function(view)
-          NVTabs.set_label { icon = '', name = 'diff' }
           NVDiffview.close_other_tabs(view)
+          NVTabs.set_label { icon = '', name = 'diff' }
         end,
         view_closed = function() end,
         diff_buf_win_enter = function(_bufnr, _winid, ctx)
