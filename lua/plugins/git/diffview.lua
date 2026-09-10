@@ -38,6 +38,26 @@ function NVDiffview.close()
   return true
 end
 
+function NVDiffview.close_other_tabs(view)
+  if NVEnv.startup.purpose ~= 'difftool' then return end
+  -- Diffview creates its tab during the open event. Defer until that tab and
+  -- the original editor tab are both fully registered, then keep only the
+  -- Diffview tab for a dedicated difftool invocation.
+  vim.defer_fn(function()
+    if not vim.api.nvim_tabpage_is_valid(view.tabpage) then return end
+    local diff_tab = view.tabpage
+    for _, tab in ipairs(vim.api.nvim_list_tabpages()) do
+      if tab ~= diff_tab and vim.api.nvim_tabpage_is_valid(tab) then
+        vim.api.nvim_set_current_tabpage(tab)
+        vim.cmd 'tabclose'
+      end
+    end
+    if vim.api.nvim_tabpage_is_valid(diff_tab) then
+      vim.api.nvim_set_current_tabpage(diff_tab)
+    end
+  end, 50)
+end
+
 function NVDiffview.setup()
   NVTabs.register_type {
     name = 'diffview',
@@ -134,7 +154,9 @@ return {
         -- file_panel: whole-file conflict resolution only
         -- stylua: ignore
         file_panel = {
-          { 'n', NVKeymaps.close, NVDiffview.close, { desc = 'Close Diffview' } },
+          -- Preserve Diffview's contextual action: in the file panel this
+          -- closes the panel; pressing close again from a view closes the view.
+          { 'n', NVKeymaps.close, actions.close, { desc = 'Close Diffview panel' } },
           { 'n', '<leader>cO', false },
           { 'n', '<leader>cT', false },
           { 'n', '<leader>cB', false },
@@ -147,7 +169,7 @@ return {
 
         -- stylua: ignore
         file_history_panel = {
-          { 'n', NVKeymaps.close, NVDiffview.close, { desc = 'Close Diffview' } },
+          { 'n', NVKeymaps.close, actions.close, { desc = 'Close Diffview' } },
         },
       },
 
@@ -155,6 +177,7 @@ return {
       hooks = {
         view_opened = function(view)
           NVTabs.set_label { icon = '', name = 'diff' }
+          NVDiffview.close_other_tabs(view)
         end,
         view_closed = function() end,
         diff_buf_win_enter = function(_bufnr, _winid, ctx)

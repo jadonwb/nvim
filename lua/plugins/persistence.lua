@@ -1,7 +1,7 @@
 NVPersistence = {
   'folke/persistence.nvim',
   event = 'BufReadPre',
-  opts = {},
+  opts = { need = 0 },
   -- Override inherited LazyVim mappings so they cannot bypass this policy.
   keys = {
     { '<leader>qs', function() NVPersistence.restore() end, desc = 'Restore Session' },
@@ -11,7 +11,7 @@ NVPersistence = {
   },
   config = function(_, opts)
     local plugin = require 'persistence'
-    NVPersistence.need = opts.need or 1
+    NVPersistence.need = opts.need or 0
     plugin.setup(opts)
     -- Our wrapper owns exit saving, so native restart and forced exit can
     -- never accidentally trigger the plugin's unconditional exit callback.
@@ -145,7 +145,17 @@ function NVPersistence.save()
       count = count + 1
     end
   end
-  if count < (NVPersistence.need or 1) then return false end
+  if count < (NVPersistence.need or 0) then return false end
+  if count == 0 and not NVEnv.workspace_activated then return false end
+  if count == 0 then
+    -- An intentionally emptied workspace should not leave a restorable stale
+    -- session. Remove the current file so the dashboard has no Restore entry.
+    local current = require('persistence').current()
+    if current and vim.fn.filereadable(current) == 1 then
+      vim.fn.delete(current)
+    end
+    return true
+  end
   local ok, err = pcall(function() require('persistence').save() end)
   NVEnv.sync_restart_context()
   if not ok then error(err) end

@@ -162,6 +162,7 @@ local function capture_startup()
 end
 
 NVEnv.startup = capture_startup()
+NVEnv.workspace_activated = false
 NVEnv.completed = {}
 local target_buffers = {}
 
@@ -187,7 +188,18 @@ end
 function NVEnv.restart_payload()
   local session_saving = NVEnv.startup.policy.session.save
   if NVPersistence and NVPersistence.is_saving then session_saving = NVPersistence.is_saving() end
-  return vim.json.encode { version = 1, startup = NVEnv.startup, completed = NVEnv.completed, session_saving = session_saving }
+  local buf = vim.api.nvim_get_current_buf()
+  return vim.json.encode {
+    version = 1,
+    startup = NVEnv.startup,
+    completed = NVEnv.completed,
+    workspace_activated = NVEnv.workspace_activated,
+    session_saving = session_saving,
+    active = {
+      name = vim.api.nvim_buf_get_name(buf),
+      filetype = vim.bo[buf].filetype,
+    },
+  }
 end
 
 function NVEnv.sync_restart_context()
@@ -211,6 +223,7 @@ function NVEnv.restore_restart(payload)
   startup.policy = derive_policy(startup)
   NVEnv.startup = startup
   NVEnv.completed = data.completed or {}
+  NVEnv.workspace_activated = data.workspace_activated == true
   target_buffers = {}
   NVEnv.restored_context = true
   NVEnv.sync_restart_context()
@@ -219,6 +232,24 @@ function NVEnv.restore_restart(payload)
     if data.session_saving == false then NVPersistence.stop() end
   end
   if NVTabs then NVTabs.restore_labels() end
+  local buf = vim.api.nvim_get_current_buf()
+  if data.active and data.active.name ~= '' and vim.api.nvim_buf_get_name(buf) == data.active.name then
+    vim.bo[buf].filetype = data.active.filetype or vim.bo[buf].filetype
+  end
+  -- Native restart restores windows and buffers before this continuation, but
+  -- some startup autocmds have already run. Re-run the filetype and entry
+  -- hooks explicitly so syntax, LSP, layout, and status UI initialize again.
+  vim.schedule(function()
+    if not vim.api.nvim_buf_is_valid(buf) then return end
+    if vim.bo[buf].filetype == '' then vim.cmd 'filetype detect' end
+    if vim.bo[buf].filetype ~= '' then
+      -- `buffer` scopes the event; Neovim does not allow `pattern` with it.
+      vim.api.nvim_exec_autocmds('FileType', { buffer = buf })
+    end
+    vim.api.nvim_exec_autocmds('BufEnter', { buffer = buf, modeline = true })
+    vim.api.nvim_exec_autocmds('BufWinEnter', { buffer = buf, modeline = true })
+    if NVLayoutManager then NVLayoutManager.enable() end
+  end)
 end
 
 -- Native :restart saves globals in its own session. The Persistence hooks
@@ -231,7 +262,13 @@ vim.api.nvim_create_autocmd('SessionLoadPost', {
   end,
 })
 vim.api.nvim_create_autocmd({ 'BufReadPost', 'BufNewFile', 'BufEnter' }, {
-  callback = function(event) NVEnv.target_for_buffer(event.buf) end,
+  callback = function(event)
+    NVEnv.target_for_buffer(event.buf)
+    if NVEnv.startup.mode == 'workspace' and vim.bo[event.buf].buftype == ''
+      and vim.api.nvim_buf_get_name(event.buf) ~= '' then
+      NVEnv.workspace_activated = true
+    end
+  end,
 })
 
 vim.api.nvim_create_user_command('NVEnv', function()
