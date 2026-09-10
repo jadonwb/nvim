@@ -57,7 +57,6 @@ function fn.create_tab()
     if name and name ~= '' then
       vim.cmd 'tabnew'
       NVTabs.set_label { icon = NVTabs.editor_icon, name = name }
-      NVPi.open_float()
     end
   end)
 end
@@ -79,7 +78,9 @@ function fn.close_tab()
   -- Explicitly closing the final tab finishes a temporary editor invocation.
   -- Workspace invocations keep their final tab.
   if #vim.api.nvim_list_tabpages() == 1 then
-    if NVEnv.startup.transient then NVQuit.save_and_quit() end
+    if NVEnv.startup.transient then
+      NVQuit.save_and_quit()
+    end
     return
   end
 
