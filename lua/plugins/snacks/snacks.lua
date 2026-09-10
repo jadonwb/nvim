@@ -21,9 +21,11 @@ return {
         level = vim.log.levels.DEBUG,
         date_format = '%T',
         filter = function(n)
+          -- TODO: match via cleaner method?
           local tab_label = vim.t.tab_label
           if tab_label and tab_label.name and tab_label.name:find 'diff' then
-            if string.find(n.msg, '^Client %S+ quit with exit code %d+ and signal %d+%.') or string.find(n.msg, '^%[null%-ls%] failed to run generator') then
+            -- TODO: enhance filtering?
+            if string.find(n.msg, '^Client %S+ quit with exit code %d+ and signal %d+%.') then
               return false
             end
           end
