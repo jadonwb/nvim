@@ -9,6 +9,7 @@ require 'editor.icons'
 require 'editor.fs'
 require 'editor.clipboard'
 require 'editor.environment'
+require 'editor.session'
 
 require 'editor.close'
 require 'editor.tabs'

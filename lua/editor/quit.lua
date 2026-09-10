@@ -5,6 +5,23 @@ local function report(err)
   vim.notify(tostring(err), vim.log.levels.ERROR, { title = 'Editor' })
 end
 
+-- Keep the final layout-manager content window intact.  This helper is local
+-- so quit.lua does not require an extra, unstaged layout-manager API.
+local function can_close_main_window(win)
+  if not win or not vim.api.nvim_win_is_valid(win) then
+    return false
+  end
+  local tab = vim.api.nvim_win_get_tabpage(win)
+  local main = {}
+  for _, candidate in ipairs(vim.api.nvim_tabpage_list_wins(tab)) do
+    local config = vim.api.nvim_win_get_config(candidate)
+    if config.relative == '' and not NVLayoutManager.is_sidepad_win(candidate) then
+      main[#main + 1] = candidate
+    end
+  end
+  return #main > 1 and vim.tbl_contains(main, win)
+end
+
 local function modified_buffers(only)
   local result = {}
   for _, buf in ipairs(only or vim.api.nvim_list_bufs()) do
@@ -25,7 +42,51 @@ local function review(only, done)
   end
   busy = true
   local items, decisions = modified_buffers(only), {}
+  local origin = vim.api.nvim_get_current_win()
+  local swapped = {}
+  local autowrite, autowriteall = vim.o.autowrite, vim.o.autowriteall
+  vim.o.autowrite, vim.o.autowriteall = false, false
+  local function restore_review_view()
+    for win, state in pairs(swapped) do
+      if vim.api.nvim_win_is_valid(win) and vim.api.nvim_buf_is_valid(state.buf) then
+        vim.api.nvim_win_set_buf(win, state.buf)
+        vim.api.nvim_win_call(win, function()
+          vim.fn.winrestview(state.view)
+        end)
+      end
+    end
+    if vim.api.nvim_win_is_valid(origin) then
+      vim.api.nvim_set_current_win(origin)
+    end
+    vim.o.autowrite, vim.o.autowriteall = autowrite, autowriteall
+  end
+  local function show_buffer(buf)
+    for _, win in ipairs(vim.fn.win_findbuf(buf)) do
+      if vim.api.nvim_win_get_config(win).relative == '' and not NVLayoutManager.is_sidepad_win(win) then
+        vim.api.nvim_set_current_win(win)
+        vim.cmd 'redraw'
+        return
+      end
+    end
+    local win = NVLayoutManager.get_main_content_win()
+    if not win or vim.api.nvim_win_get_config(win).relative ~= '' or NVLayoutManager.is_sidepad_win(win) then
+      for _, candidate in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+        if vim.api.nvim_win_get_config(candidate).relative == '' and not NVLayoutManager.is_sidepad_win(candidate) then
+          win = candidate
+          break
+        end
+      end
+    end
+    assert(win, 'No window available to review unsaved changes')
+    if not swapped[win] then
+      swapped[win] = { buf = vim.api.nvim_win_get_buf(win), view = vim.api.nvim_win_call(win, vim.fn.winsaveview) }
+    end
+    vim.api.nvim_set_current_win(win)
+    vim.api.nvim_win_set_buf(win, buf)
+    vim.cmd 'redraw'
+  end
   local function abort(err)
+    restore_review_view()
     busy = false
     if err then
       report(err)
@@ -56,6 +117,7 @@ local function review(only, done)
         vim.bo[decision.buf].modified = false
       end
     end
+    restore_review_view()
     local ok, err = pcall(done)
     busy = false
     if not ok then
@@ -70,6 +132,11 @@ local function review(only, done)
     end
     if not vim.api.nvim_buf_is_valid(item.buf) then
       abort 'Buffer changed during review'
+      return
+    end
+    local shown, show_error = pcall(show_buffer, item.buf)
+    if not shown then
+      abort(show_error)
       return
     end
     NVDialogs.select({
@@ -87,15 +154,21 @@ local function review(only, done)
               return
             end
             decisions[#decisions + 1] = { buf = item.buf, action = 'write', filename = filename }
-            step(index + 1)
+            vim.schedule(function()
+              step(index + 1)
+            end)
           end)
         else
           decisions[#decisions + 1] = { buf = item.buf, action = 'write' }
-          step(index + 1)
+          vim.schedule(function()
+            step(index + 1)
+          end)
         end
       elseif choice == 'Discard' then
         decisions[#decisions + 1] = { buf = item.buf, action = 'discard' }
-        step(index + 1)
+        vim.schedule(function()
+          step(index + 1)
+        end)
       else
         abort()
       end
@@ -106,14 +179,14 @@ end
 
 function NVQuit.save_and_quit()
   review(nil, function()
-    NVPersistence.save()
+    NVSession.save()
     -- A successful explicit save must not run destructive save hooks twice.
-    local was_saving = NVPersistence.is_saving()
-    NVPersistence.stop()
+    local was_saving = NVSession.is_saving()
+    NVSession.stop()
     local ok, err = pcall(vim.cmd, 'qall')
     if not ok then
       if was_saving then
-        NVPersistence.apply_policy()
+        NVSession.apply_policy()
       end
       error(err)
     end
@@ -121,7 +194,7 @@ function NVQuit.save_and_quit()
 end
 
 function NVQuit.force_quit()
-  NVPersistence.stop()
+  NVSession.stop()
   vim.cmd 'qall!'
 end
 
@@ -173,12 +246,11 @@ function NVQuit.close_current(opts)
   end
   local target = NVEnv.target_for_buffer(buf)
   review({ buf }, function()
-    -- Keep existing replacement-buffer selection and MRU logic.
     NVBuffers.delete_buf(buf, win, function(deleted)
       if deleted then
         NVEnv.complete_target(target)
       end
-      if opts.close_window and vim.api.nvim_win_is_valid(win) and #vim.api.nvim_tabpage_list_wins(vim.api.nvim_win_get_tabpage(win)) > 1 then
+      if deleted and opts.close_window and can_close_main_window(win) then
         vim.api.nvim_win_close(win, false)
       end
       -- Startup arguments can be unloaded, so advance explicitly instead of
@@ -194,25 +266,41 @@ function NVQuit.close_current(opts)
   end)
 end
 
-function NVQuit.restart()
-  review(nil, function()
-    NVTabs.save_labels()
-    NVEnv.sync_restart_context()
-    local payload = NVEnv.restart_payload()
-    NVEnv.restarting = true
-    NVPersistence.stop()
-    -- Native restart owns session save/restore. Its trailing command also
-    -- carries invocation context if session globals were not restored.
-    local ok, err = pcall(vim.cmd, 'restart lua NVEnv.restore_restart(' .. string.format('%q', payload) .. ')')
-    if not ok then
-      NVEnv.restarting = false
-      NVPersistence.apply_policy()
-      error(err)
+-- Picker deletion uses the same unsaved-change transaction as normal close.
+function NVQuit.delete_buffers(buffers, done)
+  review(buffers, function()
+    for _, buf in ipairs(buffers) do
+      if NVBuffers.is_managed(buf) then
+        local target = NVEnv.target_for_buffer(buf)
+        NVBuffers.delete_buf(buf, nil, function(deleted)
+          if deleted then
+            NVEnv.complete_target(target)
+          end
+        end)
+      end
     end
+    if done then
+      done()
+    end
+    vim.schedule(function()
+      local finish = NVEnv.startup.policy.close.finish
+      if (finish == 'targets' and #NVEnv.pending_files() == 0) or (finish == 'last_buffer' and #NVBuffers.get_managed() == 0) then
+        NVQuit.save_and_quit()
+      end
+    end)
   end)
 end
 
-function NVQuit.autocmds()
-  -- Restoration is handled by native :restart and NVEnv's SessionLoadPost.
-  -- Kept for the existing editor-init call site.
+function NVQuit.restart()
+  review(nil, function()
+    -- Explicitly write the current state even when workspace sessions are off.
+    local file = NVSession.save_restart()
+    NVEnv.restarting = true
+    local command = 'restart lua require("editor.session").restore_restart(' .. string.format('%q', file) .. ')'
+    local ok, err = pcall(vim.cmd, command)
+    if not ok then
+      NVEnv.restarting = false
+      error('Restart failed; snapshot retained at ' .. file .. ': ' .. tostring(err))
+    end
+  end)
 end

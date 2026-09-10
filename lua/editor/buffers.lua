@@ -1,6 +1,7 @@
 NVBuffers = {}
 
 local fn = {}
+local recent, clock = {}, 0
 
 function NVBuffers.keymaps()
   K.map {
@@ -26,6 +27,15 @@ function NVBuffers.keymaps()
 end
 
 function NVBuffers.autocmds()
+  vim.api.nvim_create_autocmd('BufEnter', {
+    callback = function(args)
+      if NVBuffers.is_managed(args.buf) then
+        clock = clock + 1
+        recent[args.buf] = clock
+      end
+    end,
+  })
+  -- TODO: nvim 13 has better handling for this
   -- Auto-reload files when they change externally
   vim.api.nvim_create_autocmd({ 'BufEnter', 'FocusGained', 'CursorHold', 'CursorHoldI' }, {
     pattern = '*',
@@ -57,6 +67,86 @@ function NVBuffers.get_listed_bufs(opts)
   end
 
   return bufs
+end
+
+-- The editor/session/picker layer uses this narrower universe while the
+-- existing window-navigation callers continue to use get_listed_bufs().
+function NVBuffers.is_managed(buf, opts)
+  if not vim.api.nvim_buf_is_valid(buf) or not vim.bo[buf].buflisted or vim.bo[buf].buftype ~= '' then
+    return false
+  end
+  local name = vim.api.nvim_buf_get_name(buf)
+  if name == '' or name:match '^%w+://' or vim.b[buf].sidepad then
+    return false
+  end
+  return not (opts and opts.loaded) or vim.api.nvim_buf_is_loaded(buf)
+end
+
+function NVBuffers.get_managed(opts)
+  opts = opts or {}
+  local result = {}
+  for _, item in ipairs(vim.fn.getbufinfo { buflisted = 1 }) do
+    if NVBuffers.is_managed(item.bufnr, opts) then
+      result[#result + 1] = item
+    end
+  end
+  if opts.sort_lastused then
+    table.sort(result, function(a, b)
+      local ar, br = recent[a.bufnr] or 0, recent[b.bufnr] or 0
+      if ar ~= br then
+        return ar > br
+      end
+      return a.lastused > b.lastused
+    end)
+  end
+  return result
+end
+
+function NVBuffers.restore_recent(items)
+  recent, clock = {}, 0
+  for i = #items, 1, -1 do
+    local buf = vim.fn.bufnr(items[i].name)
+    if buf >= 0 and NVBuffers.is_managed(buf) then
+      clock = clock + 1
+      recent[buf] = clock
+    end
+  end
+end
+
+function NVBuffers.forget_arguments(name)
+  if not name or name == '' then
+    return
+  end
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    if vim.api.nvim_win_is_valid(win) then
+      vim.api.nvim_win_call(win, function()
+        local args = vim.fn.argv()
+        for i = #args, 1, -1 do
+          if vim.fn.fnamemodify(args[i], ':p') == name then
+            vim.cmd(i .. 'argdelete')
+          end
+        end
+      end)
+    end
+  end
+end
+
+function NVBuffers.prune_arguments()
+  local removed = {}
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    vim.api.nvim_win_call(win, function()
+      for _, arg in ipairs(vim.fn.argv()) do
+        local name = vim.fn.fnamemodify(arg, ':p')
+        local buf = vim.fn.bufnr(name)
+        if buf < 0 or not NVBuffers.is_managed(buf) then
+          removed[name] = true
+        end
+      end
+    end)
+  end
+  for name in pairs(removed) do
+    NVBuffers.forget_arguments(name)
+  end
 end
 
 function NVBuffers.delete_buf(buf, win, on_closed)

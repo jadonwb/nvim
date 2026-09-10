@@ -34,8 +34,8 @@ return {
             })
           end
 
-          if NVPersistence.can_restore() then
-            table.insert(items, { icon = ' ', key = 'l', desc = 'Restore Session', action = NVPersistence.restore })
+          if NVSession and NVSession.can_restore() then
+            table.insert(items, { icon = ' ', key = 'l', desc = 'Restore Session', action = NVSession.restore })
           end
 
           table.insert(items, { icon = ' ', key = 'g', desc = 'LazyGit', action = NVSLazygit.show })

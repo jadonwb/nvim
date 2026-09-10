@@ -7,7 +7,6 @@ return {
 
     config = function()
       require 'editor.quit'
-      NVQuit.autocmds()
 
       require 'editor.buffers'
       NVBuffers.autocmds()
@@ -43,7 +42,7 @@ return {
       NVLspSignature.setup()
       NVLspSignature.autocmds()
 
-      NVPersistence.autocmds()
+      NVSession.autocmds()
       NVMason.setup()
       NVTrouble.setup()
       NVGrugFar.setup()
