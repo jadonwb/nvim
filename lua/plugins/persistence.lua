@@ -2,13 +2,6 @@ NVPersistence = {
   'folke/persistence.nvim',
   event = 'BufReadPre',
   opts = { need = 0 },
-  -- Override inherited LazyVim mappings so they cannot bypass this policy.
-  keys = {
-    { '<leader>qs', function() NVPersistence.restore() end, desc = 'Restore Session' },
-    { '<leader>ql', function() NVPersistence.restore { last = true } end, desc = 'Restore Last Session' },
-    { '<leader>qS', function() NVPersistence.select() end, desc = 'Select Session' },
-    { '<leader>qd', function() NVPersistence.stop() end, desc = 'Disable Session Saving' },
-  },
   config = function(_, opts)
     local plugin = require 'persistence'
     NVPersistence.need = opts.need or 0
@@ -28,19 +21,24 @@ end
 function NVPersistence.stop()
   saving = false
   local plugin = package.loaded.persistence
-  if plugin then plugin.stop() end
-  if not NVEnv.restarting then NVEnv.sync_restart_context() end
+  if plugin then
+    plugin.stop()
+  end
+  if not NVEnv.restarting then
+    NVEnv.sync_restart_context()
+  end
 end
 
 function NVPersistence.apply_policy()
   saving = NVEnv.startup.policy.session.save
   local plugin = package.loaded.persistence
-  if plugin then plugin.stop() end
+  if plugin then
+    plugin.stop()
+  end
 end
 
 local function restarting()
-  return NVEnv.restarting or (vim.fn.exists 'v:exitreason' == 1
-    and tostring(vim.v.exitreason):match '^restart' ~= nil)
+  return NVEnv.restarting or (vim.fn.exists 'v:exitreason' == 1 and tostring(vim.v.exitreason):match '^restart' ~= nil)
 end
 
 function NVPersistence.autocmds()
@@ -50,7 +48,9 @@ function NVPersistence.autocmds()
     callback = function()
       if not restarting() then
         local ok, err = pcall(NVPersistence.save)
-        if not ok then vim.notify(tostring(err), vim.log.levels.ERROR) end
+        if not ok then
+          vim.notify(tostring(err), vim.log.levels.ERROR)
+        end
       end
     end,
   })
@@ -112,7 +112,9 @@ function NVPersistence.has_session()
 end
 
 function NVPersistence.restore(opts)
-  if not NVEnv.startup.policy.session.load then return false end
+  if not NVEnv.startup.policy.session.load then
+    return false
+  end
   if not (opts and opts.last) and not NVPersistence.has_session() then
     return false
   end
@@ -122,7 +124,9 @@ function NVPersistence.restore(opts)
 end
 
 function NVPersistence.select()
-  if not NVEnv.startup.policy.session.load then return false end
+  if not NVEnv.startup.policy.session.load then
+    return false
+  end
   require('persistence').select()
   NVPersistence.apply_policy()
   return true
@@ -140,13 +144,16 @@ function NVPersistence.save()
   -- Quitting an untouched dashboard must not replace an existing workspace.
   local count = 0
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].buflisted
-      and vim.bo[buf].buftype == '' and vim.api.nvim_buf_get_name(buf) ~= '' then
+    if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].buflisted and vim.bo[buf].buftype == '' and vim.api.nvim_buf_get_name(buf) ~= '' then
       count = count + 1
     end
   end
-  if count < (NVPersistence.need or 0) then return false end
-  if count == 0 and not NVEnv.workspace_activated then return false end
+  if count < (NVPersistence.need or 0) then
+    return false
+  end
+  if count == 0 and not NVEnv.workspace_activated then
+    return false
+  end
   if count == 0 then
     -- An intentionally emptied workspace should not leave a restorable stale
     -- session. Remove the current file so the dashboard has no Restore entry.
@@ -156,9 +163,13 @@ function NVPersistence.save()
     end
     return true
   end
-  local ok, err = pcall(function() require('persistence').save() end)
+  local ok, err = pcall(function()
+    require('persistence').save()
+  end)
   NVEnv.sync_restart_context()
-  if not ok then error(err) end
+  if not ok then
+    error(err)
+  end
   return true
 end
 
