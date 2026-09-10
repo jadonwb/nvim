@@ -31,6 +31,9 @@ end
 
 function NVPersistence.apply_policy()
   saving = NVEnv.startup.policy.session.save
+  -- TODO: can we condense all these spots into:
+  -- pcall(package.loaded.persistence.stop)
+  -- ?
   local plugin = package.loaded.persistence
   if plugin then
     plugin.stop()
