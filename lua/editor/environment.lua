@@ -1,6 +1,12 @@
 NVEnv = {}
 
-local DEFAULT_HOSTS = { chezmoi = true, sudoedit = true, ['opencode.exe'] = true, opencode = true, yazi = true, man = true }
+local DEFAULT_HOSTS = {
+  chezmoi = true,
+  sudoedit = true,
+  opencode = true,
+  yazi = true,
+  man = true,
+}
 
 local cached_ancestors
 
@@ -68,9 +74,17 @@ end
 local function startup_commands(argv)
   local commands = {}
   local takes_value = {
-    ['-u'] = true, ['-i'] = true, ['-S'] = true, ['-s'] = true,
-    ['-w'] = true, ['-W'] = true, ['-t'] = true, ['-T'] = true,
-    ['--listen'] = true, ['--server'] = true, ['--startuptime'] = true,
+    ['-u'] = true,
+    ['-i'] = true,
+    ['-S'] = true,
+    ['-s'] = true,
+    ['-w'] = true,
+    ['-W'] = true,
+    ['-t'] = true,
+    ['-T'] = true,
+    ['--listen'] = true,
+    ['--server'] = true,
+    ['--startuptime'] = true,
     ['--log'] = true,
   }
   local i = 2
@@ -131,27 +145,38 @@ local function capture_startup()
       purpose = 'difftool'
     end
   end
-  if host == 'man' then purpose = 'pager' end
+  if host == 'man' then
+    purpose = 'pager'
+  end
   local launch_mode = vim.env.NVIM_LAUNCH_MODE
   vim.env.NVIM_LAUNCH_MODE = nil
   if launch_mode ~= 'transient' and launch_mode ~= 'pager' and launch_mode ~= 'difftool' then
     launch_mode = nil
   end
-  if launch_mode == 'pager' or launch_mode == 'difftool' then purpose = launch_mode end
+  if launch_mode == 'pager' or launch_mode == 'difftool' then
+    purpose = launch_mode
+  end
   local reason = vim.fn.exists 'v:startreason' == 1 and vim.v.startreason or 'normal'
   local startup = {
-    pid = vim.fn.getpid(), ancestors = NVEnv.ancestors(),
-    cwd = vim.fn.getcwd(), argv = vim.deepcopy(vim.v.argv),
-    commands = commands, files = files, file_count = #files, has_files = #files > 0,
+    pid = vim.fn.getpid(),
+    ancestors = NVEnv.ancestors(),
+    cwd = vim.fn.getcwd(),
+    argv = vim.deepcopy(vim.v.argv),
+    commands = commands,
+    files = files,
+    file_count = #files,
+    has_files = #files > 0,
     file_source = has_argf and 'v:argf' or 'argv()',
-    host = host, launch_mode = launch_mode, purpose = purpose,
+    host = host,
+    launch_mode = launch_mode,
+    purpose = purpose,
     embedded = host ~= nil,
     transient = launch_mode ~= nil or host ~= nil or purpose ~= nil,
-    reason = reason, restarted = reason == 'restart' or reason == 'restart!',
+    reason = reason,
+    restarted = reason == 'restart' or reason == 'restart!',
   }
   -- mode is a display summary only. Policies use the independent facts above.
-  startup.mode = purpose or (host and 'host_editor') or (startup.transient and 'transient')
-    or (startup.has_files and 'files') or 'workspace'
+  startup.mode = purpose or (host and 'host_editor') or (startup.transient and 'transient') or (startup.has_files and 'files') or 'workspace'
   startup.policy = derive_policy(startup)
   if startup.restarted then
     -- Do not activate Persistence before the native restart session restores
@@ -169,13 +194,17 @@ local target_buffers = {}
 function NVEnv.pending_files()
   local pending = {}
   for _, path in ipairs(NVEnv.startup.files) do
-    if not NVEnv.completed[path] then pending[#pending + 1] = path end
+    if not NVEnv.completed[path] then
+      pending[#pending + 1] = path
+    end
   end
   return pending
 end
 
 function NVEnv.target_for_buffer(buf)
-  if target_buffers[buf] then return target_buffers[buf] end
+  if target_buffers[buf] then
+    return target_buffers[buf]
+  end
   local name = vim.api.nvim_buf_get_name(buf)
   for _, path in ipairs(NVEnv.startup.files) do
     if name == path then
@@ -187,7 +216,9 @@ end
 
 function NVEnv.restart_payload()
   local session_saving = NVEnv.startup.policy.session.save
-  if NVPersistence and NVPersistence.is_saving then session_saving = NVPersistence.is_saving() end
+  if NVPersistence and NVPersistence.is_saving then
+    session_saving = NVPersistence.is_saving()
+  end
   local buf = vim.api.nvim_get_current_buf()
   return vim.json.encode {
     version = 1,
@@ -207,14 +238,21 @@ function NVEnv.sync_restart_context()
 end
 
 function NVEnv.complete_target(path)
-  if path then NVEnv.completed[path] = true end
+  if path then
+    NVEnv.completed[path] = true
+  end
   NVEnv.sync_restart_context()
 end
 
+-- FIXME: this is really hard to read
 function NVEnv.restore_restart(payload)
-  if not NVEnv.startup.restarted or NVEnv.restored_context then return end
+  if not NVEnv.startup.restarted or NVEnv.restored_context then
+    return
+  end
   local ok, data = pcall(vim.json.decode, payload or '')
-  if not ok or type(data) ~= 'table' or data.version ~= 1 or type(data.startup) ~= 'table' then return end
+  if not ok or type(data) ~= 'table' or data.version ~= 1 or type(data.startup) ~= 'table' then
+    return
+  end
   local current = NVEnv.startup
   local startup = data.startup
   startup.origin_pid = startup.origin_pid or startup.pid
@@ -229,9 +267,14 @@ function NVEnv.restore_restart(payload)
   NVEnv.sync_restart_context()
   if NVPersistence and NVPersistence.apply_policy then
     NVPersistence.apply_policy()
-    if data.session_saving == false then NVPersistence.stop() end
+    -- FIXME?: apply_policy calls plugin.stop, so is next line redundant?
+    if data.session_saving == false then
+      NVPersistence.stop()
+    end
   end
-  if NVTabs then NVTabs.restore_labels() end
+  if NVTabs then
+    NVTabs.restore_labels()
+  end
   local buf = vim.api.nvim_get_current_buf()
   if data.active and data.active.name ~= '' and vim.api.nvim_buf_get_name(buf) == data.active.name then
     vim.bo[buf].filetype = data.active.filetype or vim.bo[buf].filetype
@@ -240,38 +283,46 @@ function NVEnv.restore_restart(payload)
   -- some startup autocmds have already run. Re-run the filetype and entry
   -- hooks explicitly so syntax, LSP, layout, and status UI initialize again.
   vim.schedule(function()
-    if not vim.api.nvim_buf_is_valid(buf) then return end
-    if vim.bo[buf].filetype == '' then vim.cmd 'filetype detect' end
+    if not vim.api.nvim_buf_is_valid(buf) then
+      return
+    end
+    if vim.bo[buf].filetype == '' then
+      vim.cmd 'filetype detect'
+    end
     if vim.bo[buf].filetype ~= '' then
       -- `buffer` scopes the event; Neovim does not allow `pattern` with it.
       vim.api.nvim_exec_autocmds('FileType', { buffer = buf })
     end
     vim.api.nvim_exec_autocmds('BufEnter', { buffer = buf, modeline = true })
     vim.api.nvim_exec_autocmds('BufWinEnter', { buffer = buf, modeline = true })
-    if NVLayoutManager then NVLayoutManager.enable() end
+    if NVLayoutManager then
+      NVLayoutManager.enable()
+    end
   end)
 end
 
 -- Native :restart saves globals in its own session. The Persistence hooks
 -- exclude this process-specific context from ordinary project sessions.
 vim.opt.sessionoptions:append 'globals'
-if not NVEnv.startup.restarted then NVEnv.sync_restart_context() end
+if not NVEnv.startup.restarted then
+  NVEnv.sync_restart_context()
+end
 vim.api.nvim_create_autocmd('SessionLoadPost', {
   callback = function()
-    if NVEnv.startup.restarted then NVEnv.restore_restart(vim.g.NVSTARTUP_CONTEXT) end
+    if NVEnv.startup.restarted then
+      NVEnv.restore_restart(vim.g.NVSTARTUP_CONTEXT)
+    end
   end,
 })
 vim.api.nvim_create_autocmd({ 'BufReadPost', 'BufNewFile', 'BufEnter' }, {
   callback = function(event)
     NVEnv.target_for_buffer(event.buf)
-    if NVEnv.startup.mode == 'workspace' and vim.bo[event.buf].buftype == ''
-      and vim.api.nvim_buf_get_name(event.buf) ~= '' then
+    if NVEnv.startup.mode == 'workspace' and vim.bo[event.buf].buftype == '' and vim.api.nvim_buf_get_name(event.buf) ~= '' then
       NVEnv.workspace_activated = true
     end
   end,
 })
 
 vim.api.nvim_create_user_command('NVEnv', function()
-  vim.notify(vim.inspect { startup = NVEnv.startup, pending_files = NVEnv.pending_files() },
-    vim.log.levels.INFO, { title = 'NVEnv startup' })
+  vim.notify(vim.inspect { startup = NVEnv.startup, pending_files = NVEnv.pending_files() }, vim.log.levels.INFO, { title = 'NVEnv startup' })
 end, { desc = 'Show startup facts, policy, and remaining targets' })
