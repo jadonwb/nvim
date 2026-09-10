@@ -1,3 +1,4 @@
+-- FIXME: necessary?
 vim.api.nvim_create_autocmd('FileType', {
   pattern = { '*' },
   callback = function()
@@ -28,7 +29,7 @@ vim.api.nvim_create_autocmd('FileType', {
 })
 
 vim.api.nvim_create_autocmd('FileType', {
-  pattern = { 'gitcommit', 'pi-dialog' },
+  pattern = { 'gitcommit' },
   callback = function()
     vim.b.completion = false
   end,
