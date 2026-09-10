@@ -17,7 +17,6 @@ function NVBuffers.keymaps()
     mode = 'n',
   }
 
-  -- repurpose into close tab?
   K.map {
     '<M-S-w>',
     'Delete current buffer and close current window if there are multiple',
