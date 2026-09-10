@@ -8,6 +8,7 @@ require 'editor.keys'
 require 'editor.icons'
 require 'editor.fs'
 require 'editor.clipboard'
+require 'editor.environment'
 
 require 'editor.close'
 require 'editor.tabs'
