@@ -24,12 +24,27 @@ function NVDiffview.ensure_hidden()
   return false
 end
 
+-- Only user actions finish a dedicated difftool invocation. Session cleanup
+-- continues to use ensure_hidden(), which never exits the editor.
+function NVDiffview.close()
+  if not dv_fn.current_diff() then
+    return false
+  end
+  if NVEnv.startup.purpose == 'difftool' then
+    NVQuit.save_and_quit()
+  else
+    dv_fn.hide_current_diff()
+  end
+  return true
+end
+
 function NVDiffview.setup()
   NVTabs.register_type {
     name = 'diffview',
     is_temporary = true,
     is_match = NVDiffview.is_diffview_tab,
     close_hook = NVDiffview.ensure_hidden,
+    user_close_hook = NVDiffview.close,
   }
 end
 
@@ -108,7 +123,7 @@ return {
       keymaps = {
         -- stylua: ignore
         view = {
-          { 'n', NVKeymaps.close, actions.close, { desc = 'Close Diffview' } },
+          { 'n', NVKeymaps.close, NVDiffview.close, { desc = 'Close Diffview' } },
         },
 
         -- diff1/diff3/diff4: identical conflict keymaps, only non-conflict extras differ
@@ -119,7 +134,7 @@ return {
         -- file_panel: whole-file conflict resolution only
         -- stylua: ignore
         file_panel = {
-          { 'n', NVKeymaps.close, actions.close, { desc = 'Close Diffview' } },
+          { 'n', NVKeymaps.close, NVDiffview.close, { desc = 'Close Diffview' } },
           { 'n', '<leader>cO', false },
           { 'n', '<leader>cT', false },
           { 'n', '<leader>cB', false },
@@ -132,7 +147,7 @@ return {
 
         -- stylua: ignore
         file_history_panel = {
-          { 'n', NVKeymaps.close, actions.close, { desc = 'Close Diffview' } },
+          { 'n', NVKeymaps.close, NVDiffview.close, { desc = 'Close Diffview' } },
         },
       },
 

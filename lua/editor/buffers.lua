@@ -60,7 +60,7 @@ function NVBuffers.get_listed_bufs(opts)
   return bufs
 end
 
-function NVBuffers.delete_buf(buf, win)
+function NVBuffers.delete_buf(buf, win, on_closed)
   if vim.bo[buf].readonly then
     local ft = vim.bo[buf].filetype
     -- TODO: need to expand to list of all filetypes that should close?
@@ -171,6 +171,9 @@ function NVBuffers.delete_buf(buf, win)
         vim.api.nvim_buf_delete(buf, { force = not file_exists })
       end
     end
+    if on_closed then
+      on_closed(not vim.api.nvim_buf_is_valid(buf) or not vim.bo[buf].buflisted)
+    end
   end
 
   if buf_info.name == '' and buf_info.changed == 1 then
@@ -209,82 +212,12 @@ function fn.get_buf_info(bufid)
   return vim.fn.getbufinfo(bufid)[1]
 end
 
--- TODO?: silently argdelete all buffers when close so they **never** restore with session?
 function fn.delete_buf()
-  -- Give each registered floating UI/mode a chance to consume the close event first.
-  if NVClose.consume() then
-    return
-  end
-
-  -- Running as opencode/yazi editor: if nothing consumed, close means quit back to the host.
-  if NVEnv.is_embedded() then
-    vim.cmd 'silent! wa'
-    vim.cmd 'qa'
-    return
-  end
-
-  local current_buf = vim.api.nvim_get_current_buf()
-  local current_win = vim.api.nvim_get_current_win()
-  NVBuffers.delete_buf(current_buf, current_win)
+  NVQuit.close_current()
 end
 
--- TODO: rethink this for closing window too
-local function try_quit_to_host()
-  if NVEnv.is_embedded() then
-    vim.cmd 'silent! wa'
-    vim.cmd 'qa'
-    return true
-  end
-  return false
-end
-
--- TODO: do I even need/want this anymore?
 function fn.delete_buf_and_close_win()
-  local tab_windows = NVWindows.get_tab_windows_with_listed_buffers { incl_help = true }
-
-  if tab_windows == nil then
-    if try_quit_to_host() then
-      return
-    end
-    vim.cmd 'q'
-    return
-  end
-
-  local is_last_window_in_tab = #tab_windows <= 1
-  local non_temporary_tabs = NVTabs.get_non_temporary()
-
-  if is_last_window_in_tab then
-    if #non_temporary_tabs > 1 then
-      NVDialogs.select({
-        title = 'Close Tab',
-        message = 'Close tab?',
-        options = { 'Yes', 'No' },
-        shortcuts = { y = 'Yes', n = 'No' },
-        initial_index = 2,
-      }, function(choice)
-        if choice == 'Yes' then
-          vim.cmd 'tabclose'
-        end
-      end)
-    else
-      if try_quit_to_host() then
-        return
-      end
-      -- Last non-temporary tab: create empty buffer instead of closing
-      local current_buf = vim.api.nvim_get_current_buf()
-      local empty_buf = vim.api.nvim_create_buf(true, false)
-
-      if empty_buf ~= 0 then
-        vim.api.nvim_set_current_buf(empty_buf)
-        vim.api.nvim_buf_delete(current_buf, { force = true })
-      end
-    end
-  else
-    if try_quit_to_host() then
-      return
-    end
-    vim.cmd 'q'
-  end
+  NVQuit.close_current { close_window = true }
 end
 
 ---@param tabs TabID[]

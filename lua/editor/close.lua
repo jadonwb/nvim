@@ -61,10 +61,10 @@ function NVClose.order()
   return names
 end
 
-local function each_handler(stop_on_true)
+local function each_handler(stop_on_true, skip)
   for _, name in ipairs(NVClose.priority) do
     local handler = NVClose._handlers[name]
-    if handler then
+    if handler and not (skip and skip[name]) then
       local ok, consumed = pcall(handler)
       if ok and consumed and stop_on_true then
         return true
@@ -73,7 +73,7 @@ local function each_handler(stop_on_true)
   end
   for _, name in ipairs(NVClose._extra) do
     local handler = NVClose._handlers[name]
-    if handler then
+    if handler and not (skip and skip[name]) then
       local ok, consumed = pcall(handler)
       if ok and consumed and stop_on_true then
         return true
@@ -86,8 +86,8 @@ end
 --- First-match-wins: iterate in priority order, stop at the first handler
 --- that returns true. Used by close keymap to consume close events before buffer deletion.
 ---@return boolean true if an entry consumed the event
-function NVClose.consume()
-  return each_handler(true)
+function NVClose.consume(skip)
+  return each_handler(true, skip)
 end
 
 --- Call all registered handlers unconditionally.

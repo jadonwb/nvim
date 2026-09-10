@@ -12,6 +12,7 @@ NVTabs = {
 ---@field is_match fun(tabid: TabID): boolean
 ---@field create_hook? fun(tab: TabID) Called after tab creation
 ---@field close_hook? fun(tabid: TabID): boolean Custom close behavior
+---@field user_close_hook? fun(tabid: TabID): boolean User-only close behavior; never called by cleanup
 
 ---@type TabType[]
 NVTabs._types = {}
@@ -56,6 +57,7 @@ function fn.create_tab()
     if name and name ~= '' then
       vim.cmd 'tabnew'
       NVTabs.set_label { icon = NVTabs.editor_icon, name = name }
+      NVPi.open_float()
     end
   end)
 end
@@ -65,8 +67,19 @@ function fn.close_tab()
   local tabid = vim.api.nvim_get_current_tabpage()
   local tab_type = NVTabs.get_tab_type(tabid)
 
+  if tab_type and tab_type.user_close_hook and tab_type.user_close_hook(tabid) then
+    return
+  end
+
   -- Tab-type-specific close hook
   if tab_type and tab_type.close_hook and tab_type.close_hook(tabid) then
+    return
+  end
+
+  -- Explicitly closing the final tab finishes a temporary editor invocation.
+  -- Workspace invocations keep their final tab.
+  if #vim.api.nvim_list_tabpages() == 1 then
+    if NVEnv.startup.transient then NVQuit.save_and_quit() end
     return
   end
 

@@ -1,5 +1,9 @@
 NVSnacksDashboard = {}
 
+function NVSnacksDashboard.should_show()
+  return NVEnv.startup.policy.dashboard.show
+end
+
 function NVSnacksDashboard.is_active()
   return vim.bo.filetype == 'snacks_dashboard'
 end
@@ -14,6 +18,7 @@ return {
   'folke/snacks.nvim',
   opts = {
     dashboard = {
+      enabled = NVSnacksDashboard.should_show(),
       preset = {
         keys = function()
           local items = {}
@@ -29,7 +34,7 @@ return {
             })
           end
 
-          if NVPersistence.has_session() then
+          if NVPersistence.can_restore() then
             table.insert(items, { icon = ' ', key = 'l', desc = 'Restore Session', action = NVPersistence.restore })
           end
 
