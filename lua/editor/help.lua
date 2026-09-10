@@ -64,7 +64,7 @@ end
 function NVHelp.autocmds()
   local group = vim.api.nvim_create_augroup('NVHelpPanel', { clear = true })
 
-  vim.api.nvim_create_autocmd('BufWinEnter', {
+  vim.api.nvim_create_autocmd({ 'BufWinEnter', 'FileType' }, {
     group = group,
     callback = function(ev)
       if not NVHelp.is_doc(ev.buf) then
@@ -73,6 +73,16 @@ function NVHelp.autocmds()
 
       local win = vim.fn.bufwinid(ev.buf)
       if win == -1 or vim.w[win].nvhelp_panel then
+        return
+      end
+      if NVEnv.startup.purpose == 'pager' then
+        vim.schedule(function()
+          if vim.api.nvim_win_is_valid(win) then
+            vim.api.nvim_set_current_win(win)
+            NVLualine.show_everything()
+            NVLayoutManager.enable()
+          end
+        end)
         return
       end
       vim.api.nvim_set_current_win(win)
