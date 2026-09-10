@@ -2,9 +2,9 @@ NVPi = {
   'pablopunk/pi.nvim',
   cmd = { 'PiAsk', 'PiAskSelection', 'PiCancel', 'PiLog' },
   keys = {
-    { '<leader>aa', ':PiAsk<CR>', mode = 'n', desc = 'π: ask (buffer context)' },
-    { '<leader>aa', ':PiAskSelection<CR>', mode = 'v', desc = 'π: ask (selection)' },
-    { '<leader>ac', ':PiCancel<CR>', mode = 'n', desc = 'π: cancel active run' },
+    { '<A-a>', '<Cmd>PiAsk<CR>', mode = { 'i', 'n' }, desc = 'π: ask (buffer context)' },
+    { '<A-a>', '<Cmd>PiAskSelection<CR>', mode = 'v', desc = 'π: ask (selection)' },
+    { '<leader>ac', '<Cmd>PiCancel<CR>', mode = { 'i', 'n', 'v' }, desc = 'π: cancel active run' },
   },
   opts = {},
 }
