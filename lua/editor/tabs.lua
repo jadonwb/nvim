@@ -89,6 +89,7 @@ function fn.close_tab()
     -- message = 'Close tab?',
     options = { 'Yes', 'No' },
     shortcuts = { y = 'Yes', n = 'No' },
+    inline_indicator = true,
     initial_index = 1,
   }, function(choice)
     if choice == 'Yes' then

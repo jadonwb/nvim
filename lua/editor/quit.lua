@@ -139,9 +139,18 @@ local function review(only, done)
       abort(show_error)
       return
     end
+    local icon, icon_hl
+    local ok, MiniIcons = pcall(require, 'mini.icons')
+    if ok then
+      icon, icon_hl = MiniIcons.get('file', item.name)
+    end
     NVDialogs.select({
       title = 'Unsaved Changes (' .. index .. '/' .. #items .. ')',
       message = item.name == '' and '[No Name]' or vim.fn.fnamemodify(item.name, ':~:.'),
+      icon = icon,
+      icon_hl = icon_hl,
+      center_message = true,
+      inline_indicator = true,
       options = { 'Write', 'Discard', 'Cancel' },
       shortcuts = { w = 'Write', d = 'Discard', c = 'Cancel' },
       initial_index = 1,

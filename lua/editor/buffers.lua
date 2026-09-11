@@ -150,13 +150,22 @@ function NVBuffers.prune_arguments()
 end
 
 function NVBuffers.delete_buf(buf, win, on_closed)
+  -- nil or stale window id: fall back to whichever window shows `buf`, if any.
+  -- A nil win afterwards means the buffer is hidden and the delete must not
+  -- touch any window or split layout.
+  if win == nil or not vim.api.nvim_win_is_valid(win) then
+    local buf_win = vim.fn.bufwinid(buf)
+    win = buf_win ~= -1 and buf_win or nil
+  end
+
   if vim.bo[buf].readonly then
     local ft = vim.bo[buf].filetype
     -- TODO: need to expand to list of all filetypes that should close?
     -- is this already intercepted above by the consume chain?
     if ft == 'help' or ft == 'man' then
-      vim.api.nvim_win_close(win, true)
-      --vim.cmd.close()
+      if win then
+        vim.api.nvim_win_close(win, true)
+      end
       return
     end
     -- permission-based readonly (e.g. system paths like /usr/share) or :view:
@@ -179,6 +188,19 @@ function NVBuffers.delete_buf(buf, win, on_closed)
 
     if mode ~= 'n' then
       NVKeys.send('<Esc>', { mode = 'x' })
+    end
+
+    -- Hidden buffer (no window shows it): skip all window handling and just
+    -- write (if needed) and delete in place.
+    if win == nil then
+      if file_exists and vim.bo[buf].modified then
+        vim.cmd 'silent! write'
+      end
+      vim.api.nvim_buf_delete(buf, { force = not file_exists })
+      if on_closed then
+        on_closed(not vim.api.nvim_buf_is_valid(buf) or not vim.bo[buf].buflisted)
+      end
+      return
     end
 
     local tab_windows = NVWindows.get_tab_windows_with_listed_buffers { incl_help = true }
@@ -266,9 +288,19 @@ function NVBuffers.delete_buf(buf, win, on_closed)
   end
 
   if buf_info.name == '' and buf_info.changed == 1 then
+    local icon, icon_hl
+    local ok, MiniIcons = pcall(require, 'mini.icons')
+    if ok then
+      icon, icon_hl = MiniIcons.get('file', item.name)
+    end
+
     NVDialogs.select({
       title = 'Unsaved Changes',
       message = 'Buffer has unsaved changes.',
+      icon = icon,
+      icon_hl = icon_hl,
+      center_message = true,
+      inline_indicator = true,
       options = { 'Discard', 'Save As...', 'Cancel' },
       shortcuts = { d = 'Discard', s = 'Save As...', c = 'Cancel' },
       initial_index = 3,

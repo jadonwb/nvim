@@ -174,6 +174,7 @@ function NVGitWorktrees.close_tab(info)
     title = 'Close: ' .. info.branch,
     options = options,
     shortcuts = shortcuts,
+    inline_indicator = true,
   }, function(choice)
     if not choice then
       return
@@ -221,8 +222,12 @@ function NVGitWorktrees.close_tab(info)
       NVDialogs.select({
         title = 'Force Remove',
         message = 'Worktree has uncommitted changes. Force remove?',
+        center_message = true,
         options = { 'Yes', 'No' },
         shortcuts = { y = 'Yes', n = 'No' },
+        inline_indicator = true,
+        divider = true,
+        min_width = 40,
         initial_index = 2,
       }, function(confirm_choice)
         if confirm_choice == 'Yes' then
