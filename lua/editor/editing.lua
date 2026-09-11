@@ -179,11 +179,14 @@ function NVEditing.keymaps()
   -- K.map { '<S-Tab>', 'Unindent', '<<', mode = 'n' }
 
   -- stylua: ignore start
+  local indent_tick = {}
   local function join_indent(dir)
-    -- collapse repeated indents while still in visual mode into one undo step
-    pcall(function() vim.cmd 'silent undojoin' end)
-    vim.cmd('normal! ' .. dir)
-    vim.api.nvim_feedkeys('gv', 'n', false)
+    local buf = vim.api.nvim_get_current_buf()
+    if indent_tick[buf] == vim.api.nvim_buf_get_changedtick(buf) then
+      pcall(function() vim.cmd 'silent undojoin' end)
+    end
+    vim.cmd('normal! ' .. dir .. 'gv')
+    indent_tick[buf] = vim.api.nvim_buf_get_changedtick(buf)
   end
   K.map { '<Tab>', 'Indent', function() join_indent '>' end, mode = 'v' }
   K.map { '<S-Tab>', 'Unindent', function() join_indent '<' end, mode = 'v' }

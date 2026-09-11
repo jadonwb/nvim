@@ -2,14 +2,45 @@
 -- msg target default cmd; specific kinds routed; skip some noise; pin msg location + rounded borders.
 -- lsp progress stored in NVUi2.progress / .progress_text for lualine only (no echo/msg)
 
-local skip_patterns = {
-  '%d+L, %d+B',
-  '; after #%d+',
-  '; before #%d+',
-  '%d fewer lines',
-  '%d more lines',
-  '%d lines yanked',
+local message_filters = {
+  kinds = {
+    search_count = true,
+    undo = true,
+  },
+  ids = {
+    ['nvim.indent'] = true,
+  },
+  text = {
+    '%d+L, %d+B',
+    '%d+ fewer lines',
+    '%d+ more lines',
+    '%d+ lines? yanked',
+    '%d+ lines? [<>]ed %d+ times?',
+    'Already at newest change',
+    'Already at oldest change',
+  },
 }
+
+local function should_filter_message(kind, content, id)
+  if message_filters.kinds[kind] or message_filters.ids[id] then
+    return true
+  end
+
+  local text = {}
+  for _, chunk in ipairs(content or {}) do
+    -- msg_show content is {attr_id, text_chunk, hl_id}.
+    text[#text + 1] = chunk[2] or ''
+  end
+  text = table.concat(text)
+
+  for _, pattern in ipairs(message_filters.text) do
+    if text:match(pattern) then
+      return true
+    end
+  end
+
+  return false
+end
 
 -- TODO: actually sit down and read and configure what I want
 local function setup()
@@ -54,24 +85,25 @@ local function setup()
 
   local messages = require 'vim._core.ui2.messages'
 
-  -- wrap msg_show conservatively: skip only noise patterns, then delegate (no re-route)
+  -- Filter live messages before ui2 routes or renders them.
   local orig_msg_show = messages.msg_show
   messages.msg_show = function(kind, content, replace_last, history, append, id, trigger)
-    if kind == 'search_count' then
+    if should_filter_message(kind, content, id) then
       return
     end
-    if kind ~= 'list_cmd' and kind ~= 'confirm' and not kind:find 'err' and not kind:find 'error' then
-      local text = ''
-      for _, c in ipairs(content or {}) do
-        text = text .. (c[2] or '')
-      end
-      for _, pat in ipairs(skip_patterns) do
-        if text:match(pat) then
-          return
-        end
+    return orig_msg_show(kind, content, replace_last, history, append, id, trigger)
+  end
+
+  -- Filter the same messages when :messages or g< replays message history.
+  local orig_msg_history_show = messages.msg_history_show
+  messages.msg_history_show = function(entries, prev_cmd)
+    local filtered = {}
+    for _, entry in ipairs(entries) do
+      if not should_filter_message(entry[1], entry[2]) then
+        filtered[#filtered + 1] = entry
       end
     end
-    return orig_msg_show(kind, content, replace_last, history, append, id, trigger)
+    return orig_msg_history_show(filtered, prev_cmd)
   end
 
   -- wrap set_pos AFTER original: pin msg top-right, rounded on dialog/pager (pager position unchanged)
