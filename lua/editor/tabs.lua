@@ -61,7 +61,6 @@ function fn.create_tab()
   end)
 end
 
--- TODO: guard against / noop on last tab
 function fn.close_tab()
   local tabid = vim.api.nvim_get_current_tabpage()
   local tab_type = NVTabs.get_tab_type(tabid)
