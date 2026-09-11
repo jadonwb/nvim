@@ -7,13 +7,6 @@ local PANEL_NAME = 'help_docs'
 ---@return boolean
 function NVHelp.is_help(bufnr)
   local buf = bufnr or vim.api.nvim_get_current_buf()
-  return vim.bo[buf].filetype == 'help'
-end
-
----@param bufnr BufID?
----@return boolean
-function NVHelp.is_doc(bufnr)
-  local buf = bufnr or vim.api.nvim_get_current_buf()
   return DOC_FT[vim.bo[buf].filetype] == true
 end
 
@@ -23,7 +16,7 @@ function NVHelp.reposition()
   local win = vim.api.nvim_get_current_win()
 
   for _, other in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-    if other ~= win and NVHelp.is_doc(vim.api.nvim_win_get_buf(other)) then
+    if other ~= win and NVHelp.is_help(vim.api.nvim_win_get_buf(other)) then
       if vim.api.nvim_win_is_valid(other) then
         vim.api.nvim_win_close(other, true)
       end
@@ -45,7 +38,7 @@ function NVHelp.ensure_hidden()
   end
 
   for _, win in ipairs(wins) do
-    if NVHelp.is_doc(vim.api.nvim_win_get_buf(win)) then
+    if NVHelp.is_help(vim.api.nvim_win_get_buf(win)) then
       if vim.api.nvim_win_is_valid(win) then
         vim.api.nvim_win_close(win, true)
       end
@@ -67,7 +60,7 @@ function NVHelp.autocmds()
   vim.api.nvim_create_autocmd({ 'BufWinEnter', 'FileType' }, {
     group = group,
     callback = function(ev)
-      if not NVHelp.is_doc(ev.buf) then
+      if not NVHelp.is_help(ev.buf) then
         return
       end
 
