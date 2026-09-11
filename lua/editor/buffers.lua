@@ -144,21 +144,6 @@ function NVBuffers.delete_buf(buf, win, on_closed)
     win = buf_win ~= -1 and buf_win or nil
   end
 
-  if vim.bo[buf].readonly then
-    local ft = vim.bo[buf].filetype
-    -- TODO: need to expand to list of all filetypes that should close?
-    -- is this already intercepted above by the consume chain?
-    if ft == 'help' or ft == 'man' then
-      if win then
-        vim.api.nvim_win_close(win, true)
-      end
-      return
-    end
-    -- permission-based readonly (e.g. system paths like /usr/share) or :view:
-    -- fall through to normal buffer replace + delete so window stays and layout is preserved
-    -- TODO: verify this doesn't mess with the next buf's perms
-  end
-
   local buf_info = fn.get_buf_info(buf)
 
   if buf_info == nil then
