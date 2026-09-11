@@ -177,8 +177,17 @@ function NVEditing.keymaps()
 
   -- K.map { '<Tab>', 'Indent', '>>', mode = 'n' }
   -- K.map { '<S-Tab>', 'Unindent', '<<', mode = 'n' }
-  -- K.map { '<Tab>', 'Indent', '>gv', mode = 'v' }
-  -- K.map { '<S-Tab>', 'Unindent', '<gv', mode = 'v' }
+
+  -- stylua: ignore start
+  local function join_indent(dir)
+    -- collapse repeated indents while still in visual mode into one undo step
+    pcall(function() vim.cmd 'silent undojoin' end)
+    vim.cmd('normal! ' .. dir)
+    vim.api.nvim_feedkeys('gv', 'n', false)
+  end
+  K.map { '<Tab>', 'Indent', function() join_indent '>' end, mode = 'v' }
+  K.map { '<S-Tab>', 'Unindent', function() join_indent '<' end, mode = 'v' }
+  -- stylua: ignore end
 
   K.map { '<A-Space>', 'Insert Space', 'i<Space><Esc>', mode = 'n' }
   K.map { '<A-Space>', 'Insert Space', '<Space><Left>', mode = 'i' }
