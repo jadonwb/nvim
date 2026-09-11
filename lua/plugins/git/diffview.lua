@@ -3,6 +3,15 @@ NVDiffview = {}
 local dv_fn = {}
 local cleanup_scheduled = {}
 
+-- diffview-diff ($NVIM path): the wrapper copies Git's temporary difftool
+-- files into a private directory with left/ and right/ subdirectories and
+-- invokes NVDiffview.open_difftool remotely. The copies are view-only and
+-- must outlive that call, so the only lifecycle state is the pending
+-- directory during the synchronous open and a view-to-directory cleanup
+-- association afterwards.
+local difftool_dirs = setmetatable({}, { __mode = 'k' })
+local pending_difftool_dir
+
 function NVDiffview.is_diffview_tab(tabid)
   local ok, dv = pcall(require, 'diffview.lib')
   if not ok or not dv.views then
@@ -23,6 +32,57 @@ function NVDiffview.ensure_hidden()
     return true
   end
   return false
+end
+
+-- Resolve the wrapper's single copied file on one side of the private
+-- directory and verify it is readable: Diffview's entry point only checks
+-- readability before it schedules the actual buffer reads.
+local function difftool_side(dirpath)
+  local name
+  for entry in vim.fs.dir(dirpath) do
+    if name then
+      error(('NVDiffview.open_difftool: multiple copies in %s'):format(dirpath), 0)
+    end
+    name = entry
+  end
+  if not name then
+    error(('NVDiffview.open_difftool: no copy in %s'):format(dirpath), 0)
+  end
+  local path = dirpath .. '/' .. name
+  if vim.fn.filereadable(path) ~= 1 then
+    error(('NVDiffview.open_difftool: file not readable: %s'):format(path), 0)
+  end
+  return path
+end
+
+-- Remote difftool entry point (diffview-diff with a reachable $NVIM): open
+-- the wrapper's copied pair in a new Diffview tab and own the copies'
+-- directory until that view closes. Invoked remotely; any failure before
+-- ownership transfers deletes the directory and errors back to the caller.
+function NVDiffview.open_difftool(dir)
+  local files = { difftool_side(dir .. '/left'), difftool_side(dir .. '/right') }
+
+  -- view_opened fires synchronously from view:open(), before Diffview
+  -- schedules the actual file reads: the association must happen during
+  -- this call, and the caller may return as soon as it succeeds.
+  pending_difftool_dir = dir
+  local ok, err = pcall(require('diffview').diff_files, files)
+  local claimed = pending_difftool_dir == nil
+  pending_difftool_dir = nil
+
+  if claimed then
+    -- A view took ownership in view_opened; cleanup happens in view_closed,
+    -- never on the caller side.
+    return true
+  end
+
+  -- Opening failed before association: delete the copies and report the
+  -- failure to the remote caller.
+  vim.fn.delete(dir, 'rf')
+  if not ok then
+    error(err, 0)
+  end
+  error('NVDiffview.open_difftool: failed to open Diffview for ' .. dir, 0)
 end
 
 -- Only user actions finish a dedicated difftool invocation. Session cleanup
@@ -191,10 +251,24 @@ return {
       -- ── hooks: tab renaming + diff2 highlighting ──────────────
       hooks = {
         view_opened = function(view)
+          -- Own the difftool copies for exactly the view opened by
+          -- NVDiffview.open_difftool: this fires synchronously from
+          -- view:open() before Diffview schedules the actual file reads.
+          if pending_difftool_dir then
+            difftool_dirs[view] = pending_difftool_dir
+            pending_difftool_dir = nil
+          end
           NVDiffview.close_other_tabs(view)
           NVTabs.set_label { icon = '', name = 'diff' }
         end,
-        view_closed = function() end,
+        view_closed = function(view)
+          -- Delete the copies only together with the view that owns them.
+          local dir = view and difftool_dirs[view] or nil
+          if dir then
+            difftool_dirs[view] = nil
+            vim.fn.delete(dir, 'rf')
+          end
+        end,
         diff_buf_win_enter = function(_bufnr, _winid, ctx)
           if ctx.layout_name:match '^diff2' then
             if ctx.symbol == 'a' then
