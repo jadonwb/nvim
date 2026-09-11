@@ -210,11 +210,9 @@ function NVQuit.force_quit()
 end
 
 local function other_editor_buffers(buf)
-  for _, item in ipairs(NVBuffers.get_listed_bufs()) do
-    if item.bufnr ~= buf and vim.bo[item.bufnr].buftype == '' then
-      if item.name ~= '' or vim.bo[item.bufnr].modified then
-        return true
-      end
+  for _, item in ipairs(NVBuffers.get_managed()) do
+    if item.bufnr ~= buf then
+      return true
     end
   end
   return false

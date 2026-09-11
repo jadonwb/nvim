@@ -136,7 +136,7 @@ function NVWindows.get_tab_windows_with_listed_buffers(options)
     local buf = vim.api.nvim_win_get_buf(win)
     local incl_if_help = opts.incl_help and NVHelp.is_help(buf)
 
-    if NVBuffers.is_buf_listed(buf) or incl_if_help then
+    if NVBuffers.is_managed(buf) or incl_if_help then
       table.insert(result, win)
     end
   end

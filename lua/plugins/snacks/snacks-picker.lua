@@ -132,8 +132,6 @@ function NVSPickers.buffers()
     sort_lastused = true,
     layout = NVSPickerVerticalLayout.build(),
     filter = {
-      -- Managed buffers only: listed, regular filetype, named, non-URI,
-      -- non-sidepad (NVBuffers.is_managed).
       filter = function(item, _)
         return item.buf and NVBuffers.is_managed(item.buf)
       end,

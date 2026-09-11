@@ -33,41 +33,21 @@ function NVBuffers.autocmds()
   })
 end
 
----@param bufid BufID
+---@param buf BufID
 ---@return boolean
-function NVBuffers.is_buf_listed(bufid)
-  local buf = fn.get_buf_info(bufid)
-  return buf and buf.listed == 1
-end
-
----@param opts {sort_lastused: boolean}?
----@return vim.fn.getbufinfo.ret.item[]
-function NVBuffers.get_listed_bufs(opts)
-  opts = opts or {}
-  local bufs = vim.fn.getbufinfo { buflisted = 1 }
-
-  if opts.sort_lastused then
-    table.sort(bufs, function(a, b)
-      return a.lastused > b.lastused
-    end)
-  end
-
-  return bufs
-end
-
--- The editor/session/picker layer uses this narrower universe while the
--- existing window-navigation callers continue to use get_listed_bufs().
 function NVBuffers.is_managed(buf, opts)
   if not vim.api.nvim_buf_is_valid(buf) or not vim.bo[buf].buflisted or vim.bo[buf].buftype ~= '' then
     return false
   end
   local name = vim.api.nvim_buf_get_name(buf)
-  if name == '' or name:match '^%w+://' or vim.b[buf].sidepad then
+  if name == '' or name:match '^%w+://' or NVLayoutManager.is_sidepad_buf(buf) then
     return false
   end
   return not (opts and opts.loaded) or vim.api.nvim_buf_is_loaded(buf)
 end
 
+---@param opts {sort_lastused: boolean}?
+---@return vim.fn.getbufinfo.ret.item[]
 function NVBuffers.get_managed(opts)
   opts = opts or {}
   local result = {}
@@ -186,7 +166,7 @@ function NVBuffers.delete_buf(buf, win, on_closed)
     is_opened_elsewhere = fn.is_opened_elsewhere(tabs, current_tab, win, buf)
   end
 
-  local bufs = NVBuffers.get_listed_bufs { sort_lastused = true }
+  local bufs = NVBuffers.get_managed { sort_lastused = true }
 
   -- Searching for the next buffer to show in the current window
   local next_buf = nil
@@ -285,13 +265,13 @@ function fn.toggle_recent_buf()
   -- Neovim's alternate buffer gives us the natural A <-> B toggle.
   local alternate = vim.fn.bufnr '#'
 
-  if alternate > 0 and alternate ~= current and vim.api.nvim_buf_is_valid(alternate) and NVBuffers.is_buf_listed(alternate) then
+  if alternate > 0 and alternate ~= current and NVBuffers.is_managed(alternate) then
     vim.api.nvim_set_current_buf(alternate)
     return
   end
 
-  -- Alternate buffer was deleted/unlisted/etc.; recover using MRU ordering.
-  local bufs = NVBuffers.get_listed_bufs { sort_lastused = true }
+  -- Alternate buffer was deleted/unlisted/etc.; recover
+  local bufs = NVBuffers.get_managed { sort_lastused = true }
 
   for _, buf in ipairs(bufs) do
     if buf.bufnr ~= current and vim.api.nvim_buf_is_valid(buf.bufnr) then
