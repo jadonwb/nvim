@@ -165,21 +165,15 @@ local function review(only, done)
               return
             end
             decisions[#decisions + 1] = { buf = item.buf, action = 'write', filename = filename }
-            vim.schedule(function()
-              step(index + 1)
-            end)
+            step(index + 1)
           end)
         else
           decisions[#decisions + 1] = { buf = item.buf, action = 'write' }
-          vim.schedule(function()
-            step(index + 1)
-          end)
+          step(index + 1)
         end
       elseif choice == 'Discard' then
         decisions[#decisions + 1] = { buf = item.buf, action = 'discard' }
-        vim.schedule(function()
-          step(index + 1)
-        end)
+        step(index + 1)
       else
         abort()
       end
