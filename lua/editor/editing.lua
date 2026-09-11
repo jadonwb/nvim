@@ -192,6 +192,20 @@ function NVEditing.keymaps()
   K.map { NVKeymaps.quit_save, 'Save all and quit', NVQuit.save_and_quit, mode = 'n' }
   K.map { NVKeymaps.quit_force, 'Force quit all', NVQuit.force_quit, mode = 'n' }
   K.map { NVKeymaps.restart, 'Save session and restart', NVQuit.restart, mode = 'n' }
+  K.map {
+    NVKeymaps.close,
+    'Delete current buffer, but do not close current window if there are multiple',
+    NVQuit.close_current,
+    mode = { 'n', 'v', 'i', 't', 'c' },
+  }
+  K.map {
+    '<M-S-w>',
+    'Delete current buffer and close current window if there are multiple',
+    function()
+      NVQuit.close_current { close_window = true }
+    end,
+    mode = { 'n', 'i', 'v', 't', 'c' },
+  }
 
   K.map { '<leader>u<tab>', 'Toggle tab characters', fn.toggle_tabs, mode = 'n' }
 
