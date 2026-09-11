@@ -33,6 +33,20 @@ function NVTerminal.keymaps()
             mode = 't',
             buffer = event.buf,
           }
+          K.map {
+            '<C-w>',
+            'Lazygit: Toggle Whitespace',
+            '<C-\\><C-w>',
+            mode = 't',
+            buffer = event.buf,
+          }
+          K.map {
+            '<C-t>',
+            'Lazygit: Open difftool',
+            '<C-\\><C-t>',
+            mode = 't',
+            buffer = event.buf,
+          }
         end
       end)
     end,

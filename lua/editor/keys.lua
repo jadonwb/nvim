@@ -13,7 +13,8 @@ function NVKeys.send(keys, options)
     local termcodes = vim.api.nvim_replace_termcodes(keys, true, false, true)
     vim.api.nvim_feedkeys(termcodes, 'x', false)
   elseif mode == 't' then
-    vim.api.nvim_feedkeys(keys, 't', false)
+    local termcodes = vim.api.nvim_replace_termcodes(keys, true, false, true)
+    vim.api.nvim_feedkeys(termcodes, 'nt', false)
   else
     log.error('Unexpected mode in NVKeys.send: ' .. tostring(mode))
   end
