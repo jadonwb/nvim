@@ -101,17 +101,15 @@ NVSPickers.actions = {
 -- FIXME: still showing current buffer after refresh
 function NVSPickers.bufdelete(picker)
   picker.preview:reset()
+  local bufs = {}
   for _, item in ipairs(picker:selected { fallback = true }) do
     if item.buf then
-      local win = vim.fn.bufwinid(item.buf)
-      if win ~= -1 then
-        NVBuffers.delete_buf(item.buf, win)
-      else
-        vim.api.nvim_buf_delete(item.buf, { force = true })
-      end
+      bufs[#bufs + 1] = item.buf
     end
   end
-  pcall(picker.refresh, picker)
+  NVQuit.delete_buffers(bufs, function()
+    pcall(picker.refresh, picker)
+  end)
 end
 
 function NVSPickers.copy_path(item, fmt)
@@ -128,31 +126,16 @@ end
 
 function NVSPickers.buffers()
   Snacks.picker.buffers {
-    hidden = true,
+    hidden = false,
     unloaded = true,
     current = false,
     sort_lastused = true,
     layout = NVSPickerVerticalLayout.build(),
     filter = {
-      -- FIXME: filter out or don't show files in my picker from other neovim instances? keep seeing weird issues where other neovim files are showing up in my buffer picker, from different neovim sessions altogether
+      -- Managed buffers only: listed, regular filetype, named, non-URI,
+      -- non-sidepad (NVBuffers.is_managed).
       filter = function(item, _)
-        local file = item.file or ''
-        if file:find '^diffview://' then
-          return false
-        end
-        if file:find '^term://' then
-          return false
-        end
-        if file:find '^oil://' then
-          return false
-        end
-        if NVLayoutManager.is_sidepad_buf(item.buf) then
-          return false
-        end
-        if file == '[Scratch]' or file == '' then
-          return false
-        end
-        return true
+        return item.buf and NVBuffers.is_managed(item.buf)
       end,
     },
     win = {
