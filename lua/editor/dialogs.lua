@@ -5,6 +5,8 @@ NVDialogs = {}
 
 local ns = vim.api.nvim_create_namespace 'nv-dialog'
 local ns_disabled = vim.api.nvim_create_namespace 'nv-dialog-disabled'
+-- Separate namespace so highlight_selection (which clears `ns`) never wipes it.
+local ns_divider = vim.api.nvim_create_namespace 'nv-dialog-divider'
 
 local config = {
   border = NVBorders.rounded,
@@ -92,7 +94,11 @@ end
 --- Disabled options are shown grayed out, skipped during navigation, and show a
 --- notification if selected via <CR> or shortcut.
 ---
----@param opts { title: string, message?: string, options: (string|{text:string,disabled?:boolean,reason?:string})[], shortcuts?: table<string,string>, initial_index?: integer }
+--- With `divider`, a border-colored rule spanning the float's full inner text
+--- width separates the message from the options, with a blank row on each side.
+--- `min_width` is forwarded to the float sizing.
+---
+---@param opts { title: string, message?: string, options: (string|{text:string,disabled?:boolean,reason?:string})[], shortcuts?: table<string,string>, initial_index?: integer, divider?: boolean, min_width?: integer }
 ---@param callback fun(choice: string?)
 function NVDialogs.select(opts, callback)
   -- Normalize options to { text, disabled, reason } tables
@@ -117,12 +123,21 @@ function NVDialogs.select(opts, callback)
   local lines = {}
   local option_offset = 0
   local option_rows = {} -- maps 0-indexed option index → line index
+  local divider_row = nil -- 0-indexed divider placeholder row, filled after the float is created
 
   if opts.message and opts.message ~= '' then
     for _, line in ipairs(vim.split(opts.message, '\n', { plain = true })) do
       table.insert(lines, line)
     end
     table.insert(lines, '')
+    if opts.divider then
+      -- Divider placeholder plus a blank row on its far side; the regular
+      -- message spacer is the blank above. This runs before option_offset is
+      -- computed, so option rows, cursor, and sign math stay on the options.
+      divider_row = #lines
+      table.insert(lines, '')
+      table.insert(lines, '')
+    end
     option_offset = #lines
   end
 
@@ -134,8 +149,24 @@ function NVDialogs.select(opts, callback)
   local was_insert = is_insert()
   vim.cmd 'stopinsert'
 
-  local float = create_float(lines, opts.title or 'Select')
+  local float = create_float(lines, opts.title or 'Select', { min_width = opts.min_width })
   local buf, win = float.buf, float.win
+
+  -- Fill the divider placeholder after the float exists so the rule spans the
+  -- window's full inner text width without inflating the pre-create sizing.
+  -- textoff excludes the sign column, which sits inside the window width; a
+  -- rule as long as the raw window width would soft-wrap.
+  if divider_row then
+    local rule = string.rep('─', vim.api.nvim_win_get_width(win) - vim.fn.getwininfo(win)[1].textoff)
+    local was_modifiable = vim.bo[buf].modifiable
+    vim.bo[buf].modifiable = true
+    vim.api.nvim_buf_set_lines(buf, divider_row, divider_row + 1, false, { rule })
+    vim.bo[buf].modifiable = was_modifiable
+    vim.api.nvim_buf_set_extmark(buf, ns_divider, divider_row, 0, {
+      end_col = #rule,
+      hl_group = 'NVDialogFloatBorder',
+    })
+  end
 
   -- Gray out disabled options
   for i, opt in ipairs(norm_options) do

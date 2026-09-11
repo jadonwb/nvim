@@ -145,6 +145,8 @@ local function review(only, done)
       options = { 'Write', 'Discard', 'Cancel' },
       shortcuts = { w = 'Write', d = 'Discard', c = 'Cancel' },
       initial_index = 1,
+      divider = true,
+      min_width = 40,
     }, function(choice)
       if choice == 'Write' then
         if item.name == '' then
