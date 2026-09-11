@@ -5,8 +5,9 @@ local function report(err)
   vim.notify(tostring(err), vim.log.levels.ERROR, { title = 'Editor' })
 end
 
--- Keep the final layout-manager content window intact.  This helper is local
--- so quit.lua does not require an extra, unstaged layout-manager API.
+-- Keep the final layout-manager content window intact.  Only the "more than
+-- one content window may close" quit policy lives here; content-window
+-- classification is owned by NVLayoutManager.is_content_win.
 local function can_close_main_window(win)
   if not win or not vim.api.nvim_win_is_valid(win) then
     return false
@@ -14,8 +15,7 @@ local function can_close_main_window(win)
   local tab = vim.api.nvim_win_get_tabpage(win)
   local main = {}
   for _, candidate in ipairs(vim.api.nvim_tabpage_list_wins(tab)) do
-    local config = vim.api.nvim_win_get_config(candidate)
-    if config.relative == '' and not NVLayoutManager.is_sidepad_win(candidate) then
+    if NVLayoutManager.is_content_win(candidate) then
       main[#main + 1] = candidate
     end
   end
@@ -62,16 +62,16 @@ local function review(only, done)
   end
   local function show_buffer(buf)
     for _, win in ipairs(vim.fn.win_findbuf(buf)) do
-      if vim.api.nvim_win_get_config(win).relative == '' and not NVLayoutManager.is_sidepad_win(win) then
+      if NVLayoutManager.is_content_win(win) then
         vim.api.nvim_set_current_win(win)
         vim.cmd 'redraw'
         return
       end
     end
     local win = NVLayoutManager.get_main_content_win()
-    if not win or vim.api.nvim_win_get_config(win).relative ~= '' or NVLayoutManager.is_sidepad_win(win) then
+    if not NVLayoutManager.is_content_win(win) then
       for _, candidate in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-        if vim.api.nvim_win_get_config(candidate).relative == '' and not NVLayoutManager.is_sidepad_win(candidate) then
+        if NVLayoutManager.is_content_win(candidate) then
           win = candidate
           break
         end

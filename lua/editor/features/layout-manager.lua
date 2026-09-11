@@ -59,19 +59,14 @@ end
 
 local function delete_sidepads()
   local tab = get_tab_state()
-  -- Only close if window is valid AND is actually a sidepad
-  if tab.sidepads.left and vim.api.nvim_win_is_valid(tab.sidepads.left) then
-    if is_sidepad_win(tab.sidepads.left) then
-      vim.api.nvim_win_close(tab.sidepads.left, true)
+  -- is_sidepad_win rejects nil/invalid windows and windows that no longer
+  -- display a sidepad buffer, so validity and type checks are subsumed.
+  for _, side in ipairs { 'left', 'right' } do
+    if is_sidepad_win(tab.sidepads[side]) then
+      vim.api.nvim_win_close(tab.sidepads[side], true)
     end
+    tab.sidepads[side] = nil
   end
-  if tab.sidepads.right and vim.api.nvim_win_is_valid(tab.sidepads.right) then
-    if is_sidepad_win(tab.sidepads.right) then
-      vim.api.nvim_win_close(tab.sidepads.right, true)
-    end
-  end
-  tab.sidepads.left = nil
-  tab.sidepads.right = nil
 end
 
 local function create_sidepad_buf()
@@ -300,19 +295,14 @@ end
 ---@return boolean
 local function has_any_sidepad()
   local tab = get_tab_state()
-  -- Check both window validity AND that it still displays a sidepad buffer
-  local has_left = tab.sidepads.left ~= nil and is_sidepad_win(tab.sidepads.left)
-  local has_right = tab.sidepads.right ~= nil and is_sidepad_win(tab.sidepads.right)
-  return has_left or has_right
+  -- is_sidepad_win checks both window validity AND that it still displays a sidepad buffer.
+  return is_sidepad_win(tab.sidepads.left) or is_sidepad_win(tab.sidepads.right)
 end
 
 ---@return boolean
 local function has_sidepads_for_centered_layout()
   local tab = get_tab_state()
-  -- Check both window validity AND that it still displays a sidepad buffer
-  local has_left = tab.sidepads.left ~= nil and is_sidepad_win(tab.sidepads.left)
-  local has_right = tab.sidepads.right ~= nil and is_sidepad_win(tab.sidepads.right)
-  return has_left and has_right
+  return is_sidepad_win(tab.sidepads.left) and is_sidepad_win(tab.sidepads.right)
 end
 
 local function adjust_sidepads_for_centered_layout()
@@ -540,22 +530,26 @@ function NVLayoutManager.enable()
   vim.schedule(update_layout)
 end
 
-function NVLayoutManager.disable()
-  local tab = get_tab_state()
-  tab.on = false
-  vim.schedule(delete_sidepads)
-end
-
 ---@param buf BufID
 ---@return boolean
 function NVLayoutManager.is_sidepad_buf(buf)
   return is_sidepad_buf(buf)
 end
 
----@param win WinID
+---@param win WinID?
 ---@return boolean
 function NVLayoutManager.is_sidepad_win(win)
   return is_sidepad_win(win)
+end
+
+--- True for a normal (non-floating, non-sidepad) window in the current tab layout.
+---@param win WinID?
+---@return boolean
+function NVLayoutManager.is_content_win(win)
+  if not win or not vim.api.nvim_win_is_valid(win) then
+    return false
+  end
+  return vim.api.nvim_win_get_config(win).relative == '' and not is_sidepad_win(win)
 end
 
 --- Returns the "main" content window in the current tabpage.

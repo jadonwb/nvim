@@ -1,14 +1,10 @@
 NVWindows = {
-  maximized_width = 1, -- 100%
   window_picker_keys = 'HJKLASDFGQWERT',
 }
 
 local fn = {}
 
 function NVWindows.keymaps()
-  -- FIXME: belongs in buffers.lua?
-  K.map { '<A-t>', 'Create new buffer', '<Cmd>enew<CR>', mode = 'n' } -- TODO: just like tab make it ask for buffer name first? also prefill input with cwd path?
-
   K.map { NVKeymaps.window_move.left, 'Move to window on the left', '<Cmd>wincmd h<CR>', mode = { 'n', 'v', 'i', 't' } }
   K.map { NVKeymaps.window_move.down, 'Move to window below', '<Cmd>wincmd j<CR>', mode = { 'n', 'v', 'i', 't' } }
   K.map { NVKeymaps.window_move.up, 'Move to window above', '<Cmd>wincmd k<CR>', mode = { 'n', 'v', 'i', 't' } }
@@ -100,39 +96,14 @@ function NVWindows.is_window_floating(winid)
   return win.relative ~= ''
 end
 
----@return WinID[]?
-function NVWindows.get_floating_tab_windows()
-  local windows = fn.get_tab_windows()
-
-  if not windows then
-    return nil
-  end
-
-  local result = {}
-
-  for _, winnr in ipairs(windows) do
-    if NVWindows.is_window_floating(winnr) then
-      table.insert(result, winnr)
-    end
-  end
-
-  return result
-end
-
 ---@param options {incl_help: boolean}?
----@return WinID[]?
-function NVWindows.get_tab_windows_with_listed_buffers(options)
+---@return WinID[]
+function NVWindows.get_tab_windows_with_managed_buffers(options)
   local opts = vim.tbl_extend('keep', options or {}, { incl_help = false })
 
-  local windows = fn.get_normal_tab_windows()
-
-  if not windows then
-    return nil
-  end
-
   local result = {}
 
-  for _, win in ipairs(windows) do
+  for _, win in ipairs(fn.get_normal_tab_windows()) do
     local buf = vim.api.nvim_win_get_buf(win)
     local incl_if_help = opts.incl_help and NVHelp.is_help(buf)
 
@@ -199,34 +170,13 @@ function fn.equalize_layout()
   vim.cmd 'wincmd ='
 end
 
----@return WinID[]?
-function fn.get_tab_windows()
-  local tabs = vim.fn.gettabinfo()
-  local current_tab = vim.fn.tabpagenr()
-
-  local windows
-
-  for _, tab in ipairs(tabs) do
-    if tab.tabnr == current_tab then
-      windows = tab.windows
-      break
-    end
-  end
-
-  return windows
-end
-
----@return WinID[]?
+---@return WinID[]
 function fn.get_normal_tab_windows()
-  local windows = fn.get_tab_windows()
-
-  if not windows then
-    return nil
-  end
-
+  -- Returns the current tab's windows (floats included) and never nil, so the
+  -- caller filters floats and sidepads from a consistent list result.
   local result = {}
 
-  for _, winid in ipairs(windows) do
+  for _, winid in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
     if not NVWindows.is_window_floating(winid) then
       if not NVLayoutManager.is_sidepad_win(winid) then
         table.insert(result, winid)

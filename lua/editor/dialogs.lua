@@ -31,6 +31,24 @@ local function is_insert()
   return vim.fn.mode():match '^i' ~= nil
 end
 
+--- Post-close step shared by select, input, and info: exactly one schedule
+--- boundary that restores insert mode when the dialog was opened from insert
+--- mode, then runs the optional callback (used by select/input).
+---@param was_insert boolean
+---@return fun(fn?: fun())
+local function make_restore_insert(was_insert)
+  return function(fn)
+    vim.schedule(function()
+      if was_insert then
+        vim.cmd 'startinsert'
+      end
+      if fn then
+        fn()
+      end
+    end)
+  end
+end
+
 ---@param win integer
 ---@return integer
 local function usable_width(win)
@@ -188,6 +206,7 @@ function NVDialogs.select(opts, callback)
 
   local was_insert = is_insert()
   vim.cmd 'stopinsert'
+  local restore_insert = make_restore_insert(was_insert)
 
   local float = create_float(lines, opts.title or 'Select', { min_width = opts.min_width })
   local buf, win = float.buf, float.win
@@ -283,17 +302,6 @@ function NVDialogs.select(opts, callback)
     if vim.api.nvim_buf_is_valid(buf) then
       vim.api.nvim_buf_delete(buf, { force = true })
     end
-  end
-
-  local function restore_insert(fn)
-    vim.schedule(function()
-      if was_insert then
-        vim.cmd 'startinsert'
-      end
-      if fn then
-        fn()
-      end
-    end)
   end
 
   local function resolve(choice)
@@ -393,6 +401,7 @@ function NVDialogs.input(opts, callback)
   end
 
   local was_insert = is_insert()
+  local restore_insert = make_restore_insert(was_insert)
 
   local float = create_float(lines, prompt, { modifiable = true, min_width = 40 })
   local buf, win = float.buf, float.win
@@ -412,17 +421,6 @@ function NVDialogs.input(opts, callback)
     if vim.api.nvim_buf_is_valid(buf) then
       vim.api.nvim_buf_delete(buf, { force = true })
     end
-  end
-
-  local function restore_insert(fn)
-    vim.schedule(function()
-      if was_insert then
-        vim.cmd 'startinsert'
-      end
-      if fn then
-        fn()
-      end
-    end)
   end
 
   local function resolve(value)
@@ -481,6 +479,7 @@ function NVDialogs.info(opts)
 
   local was_insert = is_insert()
   vim.cmd 'stopinsert'
+  local restore_insert = make_restore_insert(was_insert)
 
   local float = create_float(lines, opts.title or 'Info', { min_width = 40 })
   local buf, win = float.buf, float.win
@@ -503,11 +502,7 @@ function NVDialogs.info(opts)
     if vim.api.nvim_buf_is_valid(buf) then
       vim.api.nvim_buf_delete(buf, { force = true })
     end
-    if was_insert then
-      vim.schedule(function()
-        vim.cmd 'startinsert'
-      end)
-    end
+    restore_insert()
   end
 
   for _, lhs in ipairs { '<Esc>', 'q', '<CR>' } do

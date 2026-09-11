@@ -34,7 +34,7 @@ end
 function M.has_session()
   local file = M.current()
   local stat = vim.uv.fs_stat(file)
-  return vim.fn.filereadable(file) == 1 and stat ~= nil and stat.size > 0
+  return stat ~= nil and stat.size > 0
 end
 function M.can_restore()
   return NVEnv.startup.policy.session.load and M.has_session()
@@ -51,6 +51,13 @@ local function is_startup_target(name)
     end
   end
   return false
+end
+
+-- Keep `sessionoptions=buffers`, but never write deleted/renamed files into a
+-- snapshot.  A still-pending startup target is retained even when it is a new
+-- file that has not been created on disk yet.
+local function is_snapshot_file(name)
+  return path_is_present(name) or is_startup_target(name)
 end
 
 local function delete_session_buffer(buf)
@@ -72,10 +79,7 @@ local function capture(restart)
   }
   local captured = {}
   for _, item in ipairs(NVBuffers.get_managed { sort_lastused = true }) do
-    -- Keep `sessionoptions=buffers`, but do not write deleted/renamed files
-    -- into the next session.  A still-pending startup target is retained even
-    -- when it is a new file that has not been created on disk yet.
-    if path_is_present(item.name) or is_startup_target(item.name) then
+    if is_snapshot_file(item.name) then
       data.files[#data.files + 1] = { name = item.name, filetype = vim.bo[item.bufnr].filetype, loaded = vim.api.nvim_buf_is_loaded(item.bufnr) }
       captured[item.name] = true
     end
@@ -152,7 +156,7 @@ function M.save()
   end
   local named = 0
   for _, item in ipairs(NVBuffers.get_managed()) do
-    if path_is_present(item.name) or is_startup_target(item.name) then
+    if is_snapshot_file(item.name) then
       named = named + 1
     end
   end
@@ -211,9 +215,7 @@ local function restore_ui(data)
   end
   vim.api.nvim_exec_autocmds('BufEnter', { buffer = 0, modeline = false })
   vim.api.nvim_exec_autocmds('BufWinEnter', { buffer = 0, modeline = false })
-  if NVLayoutManager then
-    NVLayoutManager.enable()
-  end
+  NVLayoutManager.enable()
 end
 
 local function load_snapshot(file, restart)
@@ -243,7 +245,7 @@ local function load_snapshot(file, restart)
     if data then
       local keep = {}
       for _, item in ipairs(data.files) do
-        if path_is_present(item.name) or is_startup_target(item.name) then
+        if is_snapshot_file(item.name) then
           keep[item.name] = true
           local buf = vim.fn.bufadd(item.name)
           vim.bo[buf].buflisted = true
@@ -302,35 +304,23 @@ function M.restore_restart(file)
   vim.schedule(function()
     local finish = NVEnv.startup.policy.close.finish
     if (finish == 'targets' and #NVEnv.pending_files() == 0) or (finish == 'last_buffer' and #NVBuffers.get_managed() == 0) then
-      if NVQuit and NVQuit.save_and_quit then
-        NVQuit.save_and_quit()
-      end
+      NVQuit.save_and_quit()
     end
   end)
   return true
 end
 
-function M.restore(opts)
+function M.restore()
   if not NVEnv.startup.policy.session.load then
     return false
   end
-  local file = opts and opts.last and M.list()[1] or M.current()
   local ok, err = xpcall(function()
-    load_snapshot(file, false)
+    load_snapshot(M.current(), false)
   end, debug.traceback)
   if not ok then
     vim.notify('Session restore failed: ' .. tostring(err), vim.log.levels.ERROR)
   end
   return ok
-end
-
-function M.list()
-  local files = vim.fn.glob(directory .. '*.vim', true, true)
-  table.sort(files, function(a, b)
-    local astat, bstat = vim.uv.fs_stat(a), vim.uv.fs_stat(b)
-    return (astat and astat.mtime.sec or 0) > (bstat and bstat.mtime.sec or 0)
-  end)
-  return files
 end
 
 function M.autocmds()

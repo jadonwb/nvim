@@ -10,6 +10,7 @@ function NVBuffers.keymaps()
     fn.toggle_recent_buf,
     mode = 'n',
   }
+  K.map { '<A-t>', 'Create new buffer', '<Cmd>enew<CR>', mode = 'n' } -- TODO: just like tab make it ask for buffer name first? also prefill input with cwd path?
 end
 
 function NVBuffers.autocmds()
@@ -79,36 +80,29 @@ function NVBuffers.restore_recent(items)
   end
 end
 
+-- The argument list is global in this config (`:arglocal` is never used), so
+-- one pass over `argv()` is enough and `argdelete` mutates that shared list.
 function NVBuffers.forget_arguments(name)
   if not name or name == '' then
     return
   end
-  for _, win in ipairs(vim.api.nvim_list_wins()) do
-    if vim.api.nvim_win_is_valid(win) then
-      vim.api.nvim_win_call(win, function()
-        local args = vim.fn.argv()
-        for i = #args, 1, -1 do
-          if vim.fn.fnamemodify(args[i], ':p') == name then
-            vim.cmd(i .. 'argdelete')
-          end
-        end
-      end)
+  -- Delete from the highest index down so duplicates and index shifts stay safe.
+  local args = vim.fn.argv()
+  for i = #args, 1, -1 do
+    if vim.fn.fnamemodify(args[i], ':p') == name then
+      vim.cmd(i .. 'argdelete')
     end
   end
 end
 
 function NVBuffers.prune_arguments()
   local removed = {}
-  for _, win in ipairs(vim.api.nvim_list_wins()) do
-    vim.api.nvim_win_call(win, function()
-      for _, arg in ipairs(vim.fn.argv()) do
-        local name = vim.fn.fnamemodify(arg, ':p')
-        local buf = vim.fn.bufnr(name)
-        if buf < 0 or not NVBuffers.is_managed(buf) then
-          removed[name] = true
-        end
-      end
-    end)
+  for _, arg in ipairs(vim.fn.argv()) do
+    local name = vim.fn.fnamemodify(arg, ':p')
+    local buf = vim.fn.bufnr(name)
+    if buf < 0 or not NVBuffers.is_managed(buf) then
+      removed[name] = true
+    end
   end
   for name in pairs(removed) do
     NVBuffers.forget_arguments(name)
@@ -150,12 +144,7 @@ function NVBuffers.delete_buf(buf, win, on_closed)
     return
   end
 
-  local tab_windows = NVWindows.get_tab_windows_with_listed_buffers { incl_help = true }
-
-  if tab_windows == nil then
-    log.error 'No windows in the current tab'
-    return
-  end
+  local tab_windows = NVWindows.get_tab_windows_with_managed_buffers { incl_help = true }
 
   local is_opened_elsewhere = nil
 
