@@ -1,9 +1,6 @@
 NVTerminal = {}
 
-local fn = {}
-
 function NVTerminal.keymaps()
-  K.map { '<C-v>', 'Paste text', fn.paste, mode = 't', expr = true }
   K.map { NVKeymaps.scroll.up, 'Exit terminal mode', '<C-\\><C-n>', mode = 't' }
   K.map { NVKeymaps.scroll_alt.up, 'Exit terminal mode', '<C-\\><C-n>', mode = 't' }
 
@@ -70,10 +67,4 @@ end
 function NVTerminal.setup()
   NVCompanionPanels.register('terminal_vsplit', NVTerminal.ensure_vsplit_hidden)
   NVClose.register('terminal_vsplit', NVTerminal.ensure_vsplit_hidden)
-end
-
-function fn.paste()
-  local content = vim.fn.getreg '*'
-  content = vim.api.nvim_replace_termcodes(content, true, true, true)
-  vim.api.nvim_feedkeys(content, 't', true)
 end
