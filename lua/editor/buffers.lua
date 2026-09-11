@@ -132,7 +132,7 @@ function NVBuffers.delete_buf(buf, win, on_closed)
   end
 
   -- Force the delete when the file no longer exists on disk (nothing to save).
-  local file_exists = buf_info.name ~= '' and vim.fn.filereadable(buf_info.name)
+  local file_exists = buf_info.name ~= '' and vim.fn.filereadable(buf_info.name) == 1
 
   local mode = vim.fn.mode()
 
