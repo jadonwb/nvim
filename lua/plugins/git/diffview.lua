@@ -85,6 +85,41 @@ function NVDiffview.open_difftool(dir)
   error('NVDiffview.open_difftool: failed to open Diffview for ' .. dir, 0)
 end
 
+-- Worktree difftool entry point (diffview-diff fast path): the wrapper has
+-- classified the comparison as reproducible against the real working-tree
+-- file and passes the repository-relative path, the revision ('' = index vs
+-- worktree, 'HEAD' = clean index), and the repository root. No temporary
+-- directory is involved and none is claimed: the worktree side is the real
+-- file, so the diff is editable like a plain :DiffviewOpen, while the
+-- existing view hooks (tab label, close behavior) still apply.
+---@param path string Repository-relative worktree path
+---@param rev string '' = index vs worktree, 'HEAD' = HEAD vs index
+---@param root string? Repository toplevel, passed as Diffview's -C flag
+function NVDiffview.open_worktree(path, rev, root)
+  local args = {}
+  if root and root ~= '' then
+    args[#args + 1] = '-C' .. root
+  end
+  if rev and rev ~= '' then
+    args[#args + 1] = rev
+  end
+  args[#args + 1] = '--'
+  args[#args + 1] = path
+
+  -- Same construction as :DiffviewOpen: lib.diffview_open returns a new
+  -- (not yet opened) view or switches to a matching existing one, and
+  -- view:open() fires the view_opened hook synchronously, so the caller may
+  -- return as soon as this succeeds.
+  local view = require('diffview.lib').diffview_open(args)
+  if not view then
+    error('NVDiffview.open_worktree: failed to open Diffview for ' .. path, 0)
+  end
+  if not (view.tabpage and vim.api.nvim_tabpage_is_valid(view.tabpage)) then
+    view:open()
+  end
+  return true
+end
+
 -- Only user actions finish a dedicated difftool invocation. Session cleanup
 -- continues to use ensure_hidden(), which never exits the editor.
 function NVDiffview.close()
