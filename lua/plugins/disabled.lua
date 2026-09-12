@@ -7,14 +7,15 @@ return {
   { 'folke/persistence.nvim', enabled = false },
   {
     'folke/flash.nvim',
+    enabled = false,
     -- stylua: ignore
-    keys = {
-      { 's',  mode = { 'n', 'x', 'o' }, false },
-      { 'S',  mode = { 'n', 'o', 'x' }, false },
-      { 'r',  mode = 'o',               false },
-      { 'R',  mode = { 'o', 'x' },      false },
-      { '<c-s>', mode = { 'c' },        false },
-    },
+    -- keys = {
+    --   { 's',  mode = { 'n', 'x', 'o' }, false },
+    --   { 'S',  mode = { 'n', 'o', 'x' }, false },
+    --   { 'r',  mode = 'o',               false },
+    --   { 'R',  mode = { 'o', 'x' },      false },
+    --   { '<c-s>', mode = { 'c' },        false },
+    -- },
   },
   {
     'folke/persistence.nvim',
