@@ -142,8 +142,8 @@ function NVEditing.keymaps()
   K.map { 'J', 'Join lines and keep cursor position', 'mzJ`z', mode = 'n' }
   K.map { 'U', 'Redo', '<C-r>', mode = 'n' }
 
-  K.map { '<C-S-c>', 'Copy selected text', [["+y]], mode = 'v' } -- TODO: make into omarchy universal copy Ctrl+Insert
-  K.map { '<C-S-v>', 'Paste text', 'P', mode = { 'n', 'v' } } -- TODO: make into omarchy universal paste Shift+Insert
+  K.map { '<C-S-c>', 'Copy selected text', [["+y]], mode = 'v' }
+  K.map { '<C-S-v>', 'Paste text', 'P', mode = { 'n', 'v' } }
   K.map { '<C-S-v>', 'Paste text', fn.paste, mode = { 'i', 'c' } }
   -- TODO: also make a keymap for cut?
 
