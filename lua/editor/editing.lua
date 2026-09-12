@@ -147,6 +147,7 @@ function NVEditing.keymaps()
   K.map { '<C-S-v>', 'Paste text', fn.paste, mode = { 'i', 'c' } }
   -- TODO: also make a keymap for cut?
 
+  -- FIXME: this isn't working right now?
   K.map {
     'p',
     "Don't replace clipboard content when pasting",
