@@ -198,8 +198,6 @@ function NVEditing.keymaps()
 
   K.map { '<A-Left>', 'Jump one word to the left', "<C-o><Cmd>lua require('spider').motion('b')<CR>", mode = 'i' }
   K.map { '<A-Right>', 'Jump one word to the right', fn.jump_to_end_of_word, mode = 'i' }
-  -- K.map { '<A-Left>', 'Jump to the beginning of the line', '<C-o>I', mode = 'i' }
-  -- K.map { '<A-Right>', 'Jump to the end of the line', '<C-o>A', mode = 'i' }
 
   K.map { NVKeymaps.quit_save, 'Save all and quit', NVQuit.save_and_quit, mode = 'n' }
   K.map { NVKeymaps.quit_force, 'Force quit all', NVQuit.force_quit, mode = 'n' }
@@ -269,7 +267,7 @@ function NVEditing.keymaps()
   vim.api.nvim_create_autocmd('BufEnter', {
     pattern = '*',
     callback = function()
-      if vim.bo.filetype ~= 'snacks_picker_input' and vim.bo.filetype ~= 'delta-input' then
+      if vim.bo.filetype ~= 'snacks_picker_input' then
         K.map { '<M-BS>', 'Delete word to the left', '<C-w>', mode = 'i', buffer = true }
       end
     end,
