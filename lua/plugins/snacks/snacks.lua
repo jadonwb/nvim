@@ -52,7 +52,7 @@ return {
       },
     },
     keys = {
-      { '<A-S-l>', NVSNotifier.log, mode = { 'n', 'i', 'v' }, desc = 'Notification history' },
+      { '<leader>,', NVSNotifier.log, mode = { 'n', 'i', 'v' }, desc = 'Notification history' },
     },
   },
 }
