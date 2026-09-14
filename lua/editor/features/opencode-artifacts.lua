@@ -29,7 +29,7 @@ local fn = {}
 -- fn.retry_from_record), so retryable submissions survive an editor restart.
 local retry_state = {}
 
-local EXE = '/home/jadon/.opencode/bin/opencode'
+local EXE = vim.fn.expand '~/.opencode/bin/opencode'
 local RPC_ID = 'personal.artifacts'
 local TIMEOUT_MS = 15000
 
@@ -46,7 +46,9 @@ local function notify(msg, level)
 end
 
 local function short_revision(revision)
-  if type(revision) ~= 'string' then return '?' end
+  if type(revision) ~= 'string' then
+    return '?'
+  end
   return revision
 end
 
@@ -88,7 +90,7 @@ function fn.build_argv(method, input)
     'post',
     M.rpc_path(method, M.location()),
     '--data',
-    vim.json.encode({ input = payload }),
+    vim.json.encode { input = payload },
   }
 end
 
@@ -102,7 +104,9 @@ end
 
 local function decode(stdout)
   local ok, decoded = pcall(vim.json.decode, stdout or '')
-  if not ok then return nil end
+  if not ok then
+    return nil
+  end
   return decoded
 end
 
@@ -112,10 +116,20 @@ function fn.rpc_done(method, result, callback)
     local decoded = decode(raw)
     local typed = rpc_error_from(decoded, method)
     local reason = vim.trim(result.stderr or '')
-    if reason == '' then reason = vim.trim(result.stdout or '') end
+    if reason == '' then
+      reason = vim.trim(result.stdout or '')
+    end
     local timed_out = (result.signal ~= nil and result.signal ~= 0)
-    callback(nil, typed or ('opencode api %s failed (exit %s%s): %s'):format(
-      method, tostring(result.code), timed_out and ', timed out' or '', vim.trim(reason) ~= '' and vim.trim(reason) or 'no output'))
+    callback(
+      nil,
+      typed
+        or ('opencode api %s failed (exit %s%s): %s'):format(
+          method,
+          tostring(result.code),
+          timed_out and ', timed out' or '',
+          vim.trim(reason) ~= '' and vim.trim(reason) or 'no output'
+        )
+    )
     return
   end
   local decoded = decode(result.stdout)
@@ -210,9 +224,13 @@ end
 --- Read the persisted attachments map, tolerating a missing or invalid file.
 function fn.read_attachments()
   local ok, lines = pcall(vim.fn.readfile, M.attachments_path)
-  if not ok or type(lines) ~= 'table' or #lines == 0 then return {} end
+  if not ok or type(lines) ~= 'table' or #lines == 0 then
+    return {}
+  end
   local decoded = decode(table.concat(lines, '\n'))
-  if type(decoded) ~= 'table' then return {} end
+  if type(decoded) ~= 'table' then
+    return {}
+  end
   return decoded
 end
 
@@ -242,7 +260,9 @@ function fn.save_attachments(map)
   end
   local moved, rename_err = vim.uv.fs_rename(tmp, M.attachments_path)
   attachments = { path = M.attachments_path, map = map }
-  if not moved then return nil, rename_err end
+  if not moved then
+    return nil, rename_err
+  end
   return true
 end
 
@@ -254,7 +274,9 @@ end
 --- Stored session id for a directory, or nil.
 function fn.stored_session_id(location)
   local id = fn.load_attachments()[fn.attachment_key(location)]
-  if type(id) == 'string' and id ~= '' then return id end
+  if type(id) == 'string' and id ~= '' then
+    return id
+  end
   return nil
 end
 
@@ -273,7 +295,9 @@ end
 local function cli_failure(subject, result)
   local timed_out = (result.signal ~= nil and result.signal ~= 0)
   local reason = vim.trim(result.stderr or '')
-  if reason == '' then reason = vim.trim(result.stdout or '') end
+  if reason == '' then
+    reason = vim.trim(result.stdout or '')
+  end
   return ('opencode %s failed (exit %s%s): %s'):format(
     subject,
     tostring(result.code),
@@ -317,7 +341,7 @@ function fn.session_create(cwd, callback)
     'post',
     '/api/session',
     '--data',
-    vim.json.encode({ location = { directory = cwd } }),
+    vim.json.encode { location = { directory = cwd } },
   }
   local ok, err = pcall(M.cli, argv, { cwd = cwd }, function(result)
     vim.schedule(function()
@@ -348,12 +372,22 @@ end
 
 --- Compact age from an epoch-ms timestamp (empty when unknown).
 function fn.session_age(updated)
-  if type(updated) ~= 'number' then return '' end
+  if type(updated) ~= 'number' then
+    return ''
+  end
   local secs = os.time() - math.floor(updated / 1000)
-  if secs < 0 then secs = 0 end
-  if secs < 60 then return ('%ds'):format(secs) end
-  if secs < 3600 then return ('%dm'):format(math.floor(secs / 60)) end
-  if secs < 86400 then return ('%dh'):format(math.floor(secs / 3600)) end
+  if secs < 0 then
+    secs = 0
+  end
+  if secs < 60 then
+    return ('%ds'):format(secs)
+  end
+  if secs < 3600 then
+    return ('%dm'):format(math.floor(secs / 60))
+  end
+  if secs < 86400 then
+    return ('%dh'):format(math.floor(secs / 3600))
+  end
   return ('%dd'):format(math.floor(secs / 86400))
 end
 
@@ -366,7 +400,9 @@ function fn.session_item_label(session)
     parts[#parts + 1] = session.id:sub(1, 12)
   end
   local age = fn.session_age(type(session) == 'table' and session.updated or nil)
-  if age ~= '' then parts[#parts + 1] = age end
+  if age ~= '' then
+    parts[#parts + 1] = age
+  end
   return table.concat(parts, ' · ')
 end
 
@@ -385,8 +421,12 @@ function fn.session_select(sessions, stored_id, allow_detach, on_choice)
   vim.ui.select(items, {
     prompt = 'OpenCode session for ' .. M.location() .. ':',
     format_item = function(item)
-      if item.kind == 'session' then return fn.session_item_label(item.session) end
-      if item.kind == 'detach' then return ('Detach session %s'):format(tostring(item.id):sub(1, 12)) end
+      if item.kind == 'session' then
+        return fn.session_item_label(item.session)
+      end
+      if item.kind == 'detach' then
+        return ('Detach session %s'):format(tostring(item.id):sub(1, 12))
+      end
       return 'New session'
     end,
   }, on_choice)
@@ -409,7 +449,7 @@ function fn.ensure_session(callback)
     if stored then
       for _, session in ipairs(sessions) do
         if session.id == stored then
-          callback({ id = session.id, title = session.title })
+          callback { id = session.id, title = session.title }
           return
         end
       end
@@ -422,7 +462,7 @@ function fn.ensure_session(callback)
       end
       if choice.kind == 'session' then
         fn.set_session(choice.id)
-        callback({ id = choice.id, title = choice.title })
+        callback { id = choice.id, title = choice.title }
         return
       end
       fn.session_create(location, function(session, create_err)
@@ -485,7 +525,9 @@ end
 function fn.buffer_bytes(buf)
   local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
   local text = table.concat(lines, '\n')
-  if vim.bo[buf].eol then text = text .. '\n' end
+  if vim.bo[buf].eol then
+    text = text .. '\n'
+  end
   return text
 end
 
@@ -494,18 +536,26 @@ end
 --- malformed shared document, or an unknown format, which is rejected rather
 --- than hashed with the wrong algorithm).
 function fn.revision_for_buffer(buf, format)
-  if vim.bo[buf].fileformat ~= 'unix' then return nil end
+  if vim.bo[buf].fileformat ~= 'unix' then
+    return nil
+  end
   local enc = vim.bo[buf].fileencoding
-  if enc ~= '' and enc ~= 'utf-8' then return nil end
+  if enc ~= '' and enc ~= 'utf-8' then
+    return nil
+  end
   local ok, revision = pcall(Format.revision_for_bytes, fn.buffer_bytes(buf), format)
-  if not ok then return nil end
+  if not ok then
+    return nil
+  end
   return revision
 end
 
 --- Displayed revision from the buffer's recorded artifact metadata format.
 function fn.displayed_revision(buf)
   local meta = fn.artifact_meta(buf)
-  if not meta then return nil end
+  if not meta then
+    return nil
+  end
   return fn.revision_for_buffer(buf, meta.format)
 end
 
@@ -547,8 +597,8 @@ function fn.attach_buffer_keymaps(buf)
     fn.feedback(buf)
   end, { buffer = buf, nowait = true, silent = true, desc = 'Ask about this artifact (general feedback)' })
   vim.keymap.set('x', '<leader>af', function()
-    local start = vim.fn.line("'<")
-    local stop = vim.fn.line("'>")
+    local start = vim.fn.line "'<"
+    local stop = vim.fn.line "'>"
     if type(start) ~= 'number' or type(stop) ~= 'number' or start < 1 then
       fn.feedback(buf)
       return
@@ -567,7 +617,9 @@ end
 --- Approval UI (command + keymap) exists only while the buffer shows a draft
 --- plan; it is removed whenever the buffer is known to show anything else.
 function fn.revoke_approval_ui(buf)
-  if not vim.api.nvim_buf_is_valid(buf) then return end
+  if not vim.api.nvim_buf_is_valid(buf) then
+    return
+  end
   pcall(vim.api.nvim_buf_del_user_command, buf, 'OpenCodeArtifactApprove')
   pcall(vim.keymap.del, 'n', '<leader>ay', { buffer = buf })
 end
@@ -701,16 +753,24 @@ end
 
 --- Non-empty short label for an attached session, or nil without one.
 function fn.session_label(session)
-  if type(session) ~= 'table' then return nil end
-  if type(session.title) == 'string' and session.title ~= '' then return session.title end
-  if type(session.id) == 'string' and session.id ~= '' then return session.id:sub(1, 12) end
+  if type(session) ~= 'table' then
+    return nil
+  end
+  if type(session.title) == 'string' and session.title ~= '' then
+    return session.title
+  end
+  if type(session.id) == 'string' and session.id ~= '' then
+    return session.id:sub(1, 12)
+  end
   return nil
 end
 
 --- Picker title: "<entry> · <session label> (approved hidden|included)".
 function fn.picker_title(entry, label, show_approved)
   local title = entry.title
-  if label then title = title .. ' · ' .. label end
+  if label then
+    title = title .. ' · ' .. label
+  end
   return title .. (show_approved and ' (approved included)' or ' (approved hidden)')
 end
 
@@ -741,7 +801,9 @@ function fn.picker_items(artifacts)
 end
 
 function fn.status_icon(status)
-  if status == 'approved' then return '󰗡' end
+  if status == 'approved' then
+    return '󰗡'
+  end
   return '󰤙'
 end
 
@@ -787,10 +849,7 @@ function fn.toggle_approved(picker, state, entry)
     end
     picker:find()
   end
-  notify(
-    state.show_approved and 'Including approved artifacts' or 'Hiding approved artifacts',
-    vim.log.levels.INFO
-  )
+  notify(state.show_approved and 'Including approved artifacts' or 'Hiding approved artifacts', vim.log.levels.INFO)
   return state.show_approved
 end
 
@@ -842,7 +901,9 @@ function fn.show_picker(artifacts, entry_key, session)
       }
     end,
     confirm = function(picker, item)
-      if not item then return end
+      if not item then
+        return
+      end
       picker:close()
       fn.open_artifact_buffer(item)
     end,
@@ -876,7 +937,9 @@ end
 function M.open_picker(entry_key)
   local entry = fn.entry_for(entry_key)
   fn.ensure_session(function(session)
-    if not session then return end
+    if not session then
+      return
+    end
     M.list(function(artifacts, err)
       if err then
         notify(err, vim.log.levels.ERROR)
@@ -932,7 +995,9 @@ function fn.refresh(buf)
   local artifact_id = meta.artifact_id
   M.get(artifact_id, function(artifact, err)
     -- Validate the callback target before touching anything.
-    if not vim.api.nvim_buf_is_valid(buf) then return end
+    if not vim.api.nvim_buf_is_valid(buf) then
+      return
+    end
     local current_meta = fn.artifact_meta(buf)
     if type(current_meta) ~= 'table' or current_meta.artifact_id ~= artifact_id then
       notify('Refresh skipped: not this artifact', vim.log.levels.INFO)
@@ -1011,10 +1076,7 @@ function fn.retry_request(artifact_id, request_id)
       artifact_id = artifact_id,
       location = M.location(),
     }
-    notify(
-      ('Retry failed (%s): %s'):format(tostring(delivery.state), tostring(delivery.error)),
-      vim.log.levels.ERROR
-    )
+    notify(('Retry failed (%s): %s'):format(tostring(delivery.state), tostring(delivery.error)), vim.log.levels.ERROR)
   end)
 end
 
@@ -1036,11 +1098,7 @@ function fn.retry_from_record(artifact_id)
         candidates[#candidates + 1] = {
           requestID = entry.requestID,
           kind = 'feedback',
-          label = ('feedback %s — %s%s'):format(
-            tostring(entry.requestID),
-            tostring(delivery.state),
-            delivery.error and (': ' .. delivery.error) or ''
-          ),
+          label = ('feedback %s — %s%s'):format(tostring(entry.requestID), tostring(delivery.state), delivery.error and (': ' .. delivery.error) or ''),
           detail = entry.question or entry.selectedText or '',
         }
       end
@@ -1052,11 +1110,7 @@ function fn.retry_from_record(artifact_id)
         candidates[#candidates + 1] = {
           requestID = approval.requestID,
           kind = 'approval',
-          label = ('approval %s — %s%s'):format(
-            tostring(approval.requestID),
-            tostring(delivery.state),
-            delivery.error and (': ' .. delivery.error) or ''
-          ),
+          label = ('approval %s — %s%s'):format(tostring(approval.requestID), tostring(delivery.state), delivery.error and (': ' .. delivery.error) or ''),
           detail = '',
         }
       end
@@ -1129,7 +1183,9 @@ function fn.feedback(buf, line_start, line_end)
     width = 74,
     height = 6,
   }, function(question)
-    if not vim.api.nvim_buf_is_valid(buf) then return end
+    if not vim.api.nvim_buf_is_valid(buf) then
+      return
+    end
     if not question or question == '' then
       notify('Artifact feedback cancelled', vim.log.levels.INFO)
       return
@@ -1149,10 +1205,7 @@ function fn.feedback(buf, line_start, line_end)
     }, function(output, err)
       if err then
         -- Transport failure: whether the submission was recorded is unknown.
-        notify(
-          'Feedback submit failed: ' .. err .. ' (admission unknown)',
-          vim.log.levels.ERROR
-        )
+        notify('Feedback submit failed: ' .. err .. ' (admission unknown)', vim.log.levels.ERROR)
         return
       end
       local delivery = output.delivery or {}
@@ -1168,11 +1221,7 @@ function fn.feedback(buf, line_start, line_end)
         artifact_id = meta.artifact_id,
         location = meta.location,
       }
-      notify(
-        ('Feedback recorded but NOT delivered (%s): %s')
-          :format(tostring(delivery.state), tostring(delivery.error)),
-        vim.log.levels.ERROR
-      )
+      notify(('Feedback recorded but NOT delivered (%s): %s'):format(tostring(delivery.state), tostring(delivery.error)), vim.log.levels.ERROR)
     end)
   end)
 end
@@ -1193,9 +1242,13 @@ end
 --- UI is removed. Delivery failures stay recoverable through the durable
 --- picker retry.
 function fn.close_after_approval(buf, meta)
-  if not vim.api.nvim_buf_is_valid(buf) then return end
+  if not vim.api.nvim_buf_is_valid(buf) then
+    return
+  end
   local current_meta = fn.artifact_meta(buf)
-  if not current_meta or current_meta.artifact_id ~= meta.artifact_id then return end
+  if not current_meta or current_meta.artifact_id ~= meta.artifact_id then
+    return
+  end
   if vim.bo[buf].modified then
     notify('Local modifications; buffer not closed', vim.log.levels.WARN)
     return
@@ -1227,7 +1280,9 @@ function fn.approve(buf)
     return
   end
   M.get(meta.artifact_id, function(artifact, err)
-    if not vim.api.nvim_buf_is_valid(buf) then return end
+    if not vim.api.nvim_buf_is_valid(buf) then
+      return
+    end
     if err then
       notify(err, vim.log.levels.ERROR)
       return
@@ -1241,7 +1296,9 @@ function fn.approve(buf)
         return item
       end,
     }, function(choice)
-      if not vim.api.nvim_buf_is_valid(buf) then return end
+      if not vim.api.nvim_buf_is_valid(buf) then
+        return
+      end
       if choice ~= label then
         notify('Artifact approval cancelled', vim.log.levels.INFO)
         return
@@ -1271,11 +1328,7 @@ function fn.approve(buf)
             artifact_id = meta.artifact_id,
             location = meta.location,
           }
-          notify(
-            ('Approval recorded but NOT delivered (%s): %s')
-              :format(tostring(delivery.state), tostring(delivery.error)),
-            vim.log.levels.ERROR
-          )
+          notify(('Approval recorded but NOT delivered (%s): %s'):format(tostring(delivery.state), tostring(delivery.error)), vim.log.levels.ERROR)
         end
         fn.close_after_approval(buf, meta)
       end)
@@ -1295,13 +1348,23 @@ end
 --- writer, so nothing here attributes the change to an agent. No polling, no
 --- SSE, no extra checktime loop.
 function fn.on_file_changed(buf)
-  if not vim.api.nvim_buf_is_valid(buf) then return end
+  if not vim.api.nvim_buf_is_valid(buf) then
+    return
+  end
   local meta = fn.artifact_meta(buf)
-  if not meta then return end
-  if vim.bo[buf].modified then return end
-  if vim.bo[buf].fileformat ~= 'unix' then return end
+  if not meta then
+    return
+  end
+  if vim.bo[buf].modified then
+    return
+  end
+  if vim.bo[buf].fileformat ~= 'unix' then
+    return
+  end
   local enc = vim.bo[buf].fileencoding
-  if enc ~= '' and enc ~= 'utf-8' then return end
+  if enc ~= '' and enc ~= 'utf-8' then
+    return
+  end
 
   local bytes = fn.buffer_bytes(buf)
   local fingerprint = 'sha256:' .. vim.fn.sha256(bytes)
@@ -1318,10 +1381,7 @@ function fn.on_file_changed(buf)
   vim.b[buf].opencode_artifact = updated
 
   if meta.fingerprint and meta.fingerprint ~= fingerprint then
-    notify(
-      ("artifact updated: '%s' (%s)"):format(tostring(meta.title), tostring(meta.artifact_id)),
-      vim.log.levels.INFO
-    )
+    notify(("artifact updated: '%s' (%s)"):format(tostring(meta.title), tostring(meta.artifact_id)), vim.log.levels.INFO)
   end
   -- A buffer that no longer shows a draft plan must not keep approval UI.
   if status and status ~= 'draft' then
@@ -1353,16 +1413,16 @@ function M.setup()
   end
 
   vim.api.nvim_create_user_command('OpenCodePlans', function()
-    M.open_picker('plans')
+    M.open_picker 'plans'
   end, { desc = 'List draft plans' })
   vim.api.nvim_create_user_command('OpenCodeEvidence', function()
-    M.open_picker('evidence')
+    M.open_picker 'evidence'
   end, { desc = 'List evidence' })
   vim.api.nvim_create_user_command('OpenCodeReviews', function()
-    M.open_picker('reviews')
+    M.open_picker 'reviews'
   end, { desc = 'List reviews' })
   vim.api.nvim_create_user_command('OpenCodeArtifacts', function()
-    M.open_picker('all')
+    M.open_picker 'all'
   end, { desc = 'List all artifacts' })
   vim.api.nvim_create_user_command('OpenCodeSession', function()
     M.open_session_picker()
@@ -1370,6 +1430,7 @@ function M.setup()
   fn.autocmds()
 end
 
+-- stylua: ignore
 function M.keymaps()
   K.map { '<leader>ap', 'Show OpenCode plans', function() M.open_picker('plans') end, mode = { 'n', 'v', 't' } }
   K.map { '<leader>ae', 'Show OpenCode evidence', function() M.open_picker('evidence') end, mode = { 'n', 'v', 't' } }
