@@ -39,7 +39,7 @@ local SELECTION_MAX_BYTES = 65536
 
 -- Approval label for a plan revision. Approval is the recorded decision that
 -- authorizes Builder for the displayed revision.
-local APPROVE_LABEL = 'Approve this revision (authorizes Builder)'
+local APPROVE_LABEL = 'Approve this revision'
 
 local function notify(msg, level)
   vim.notify(msg, level, { title = 'OpenCodeArtifacts' })
