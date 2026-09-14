@@ -683,6 +683,7 @@ function fn.open_artifact_buffer(item)
 
   -- Options, metadata, and commands attach to the verified handle only.
   vim.bo[target].readonly = true
+  vim.bo[target].modifiable = false
   vim.bo[target].modeline = false
   vim.bo[target].filetype = 'markdown'
   vim.bo[target].buflisted = true
