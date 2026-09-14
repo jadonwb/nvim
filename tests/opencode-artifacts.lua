@@ -161,7 +161,6 @@ local function summary(over)
     createdAt = '2026-09-13T10:00:00.000Z',
     updatedAt = '2026-09-13T10:00:00.000Z',
     format = 'shared-markdown',
-    authority = 'implementation',
   }, over or {})
 end
 
@@ -1532,7 +1531,7 @@ test('approval carries the displayed revision, never the server latest', functio
   wait_for(function() return #captured >= 2 end)
   restore_notify()
 
-  assert(selected_items[1] == 'Approve this revision (authorizes Builder)', 'implementation label authorizes Builder')
+  assert(selected_items[1] == 'Approve this revision (authorizes Builder)', 'approval label authorizes Builder')
 
   local approve_argv = captured[2]
   eq(method_of(approve_argv), 'approve', 'second call is approve')
@@ -1540,37 +1539,6 @@ test('approval carries the displayed revision, never the server latest', functio
   eq(input.revision, Format.document_revision(doc), 'approval carries displayed revision')
   assert(input.revision ~= server_latest, 'server latest must not be substituted')
   assert(select_opts.prompt:match('at %x%x%x%x%x%x%x%x%?'), 'prompt revision shown')
-end)
-
-test('historical authority approval records a freeze without Builder authorization', function()
-  local restore_notify = capture_notify()
-  local target = approval_setup('/tmp/opencode/artifacts-approve9.md', shared_doc({ id = 'art_approve000000000001' }, '# plan\n'))
-  script_transport(M, function(argv)
-    if method_of(argv) == 'get' then
-      return {
-        code = 0,
-        stdout = vim.json.encode {
-          output = { artifact = artifact_view { id = 'art_approve000000000001', title = 'Test artifact', status = 'draft', authority = 'historical' } },
-        },
-      }
-    end
-    return { code = 0, stdout = '{"output":{"requestID":"req_appr9","delivery":{"state":"delivered"}}}' }
-  end)
-  local selected
-  vim.ui.select = function(items, _, cb)
-    selected = items[1]
-    cb(items[1])
-  end
-  fn.approve(target)
-  wait_for(function()
-    return not vim.api.nvim_buf_is_valid(target)
-  end)
-  restore_notify()
-
-  eq(selected, 'Record historical approval (does not authorize Builder)', 'historical label states the freeze')
-  assert(vim.tbl_filter(function(n)
-    return tostring(n.msg):match('historical approval delivered')
-  end, notifications)[1], 'historical notice')
 end)
 
 print(('\ntests: %d passed, %d failed'):format(passed, failed))

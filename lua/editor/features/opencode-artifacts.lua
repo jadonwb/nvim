@@ -12,7 +12,7 @@
 -- only through explicit selection. The revision a buffer actually shows is
 -- always recomputed from the displayed bytes (never taken from the server
 -- latest), using the shared-markdown canonical revision (see ./format.lua).
--- Approval authorizes Builder only for an `authority=implementation` plan.
+-- Approval of a plan revision is what authorizes Builder.
 
 local Format = require 'editor.features.opencode-artifacts.format'
 
@@ -37,17 +37,9 @@ local TIMEOUT_MS = 15000
 local QUESTION_MAX_BYTES = 16384
 local SELECTION_MAX_BYTES = 65536
 
--- Approval labels by record authority. Unknown/absent authority reads as
--- historical so an incomplete server response can never authorize Builder.
-local APPROVE_LABEL_IMPLEMENTATION = 'Approve this revision (authorizes Builder)'
-local APPROVE_LABEL_HISTORICAL = 'Record historical approval (does not authorize Builder)'
-
-local function approval_label(meta)
-  if type(meta) == 'table' and meta.authority == 'implementation' then
-    return APPROVE_LABEL_IMPLEMENTATION
-  end
-  return APPROVE_LABEL_HISTORICAL
-end
+-- Approval label for a plan revision. Approval is the recorded decision that
+-- authorizes Builder for the displayed revision.
+local APPROVE_LABEL = 'Approve this revision (authorizes Builder)'
 
 local function notify(msg, level)
   vim.notify(msg, level, { title = 'OpenCodeArtifacts' })
@@ -649,7 +641,6 @@ function fn.open_artifact_buffer(item)
     title = item.title,
     kind = item.kind,
     status = item.status,
-    authority = item.authority,
     description = item.description,
     path = requested,
     format = item.format,
@@ -734,7 +725,6 @@ function fn.picker_items(artifacts)
       title = artifact.title,
       kind = artifact.kind,
       status = artifact.status,
-      authority = artifact.authority,
       description = artifact.description,
       revision = artifact.revision,
       path = artifact.path,
@@ -755,8 +745,8 @@ function fn.status_icon(status)
   return '󰤙'
 end
 
---- Row rendering: kind, title, status, authority and provenance (owner
---- session, update date, format).
+--- Row rendering: kind, title, status, and provenance (owner session, update
+--- date, format).
 function fn.item_format(item)
   local provenance = {}
   if type(item.owner) == 'string' and item.owner ~= '' then
@@ -764,9 +754,6 @@ function fn.item_format(item)
   end
   if type(item.updated_at) == 'string' and item.updated_at ~= '' then
     provenance[#provenance + 1] = item.updated_at:sub(1, 10)
-  end
-  if type(item.authority) == 'string' and item.authority ~= '' then
-    provenance[#provenance + 1] = item.authority
   end
   if type(item.format) == 'string' and item.format ~= '' then
     provenance[#provenance + 1] = item.format
@@ -1245,12 +1232,9 @@ function fn.approve(buf)
       notify(err, vim.log.levels.ERROR)
       return
     end
-    -- Single-line prompt; the authority-specific warning lives in the
-    -- selectable approval item itself so it cannot be clipped by a float
-    -- border. Server authority is preferred; the buffer's recorded authority
-    -- and a historical default keep an incomplete response non-authorizing.
-    local authority = artifact.authority or meta.authority
-    local label = approval_label({ authority = authority })
+    -- Single-line prompt; the selectable approval item carries the
+    -- authorization wording so it cannot be clipped by a float border.
+    local label = APPROVE_LABEL
     vim.ui.select({ label, 'Cancel' }, {
       prompt = ('Approve "%s" at %s?'):format(tostring(artifact.title), short_revision(displayed)),
       format_item = function(item)
@@ -1277,11 +1261,7 @@ function fn.approve(buf)
         local delivery = output.delivery or {}
         if delivery.state == 'delivered' then
           retry_state[meta.artifact_id] = nil
-          if authority == 'implementation' then
-            notify('approval delivered', vim.log.levels.INFO)
-          else
-            notify('historical approval delivered', vim.log.levels.INFO)
-          end
+          notify('approval delivered', vim.log.levels.INFO)
         else
           -- Recorded server-side, notification failed; the durable picker
           -- retry handles redelivery after this buffer closes.
