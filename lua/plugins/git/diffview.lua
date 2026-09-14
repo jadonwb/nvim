@@ -304,6 +304,20 @@ return {
             vim.fn.delete(dir, 'rf')
           end
         end,
+        diff_buf_read = function(bufnr)
+          local view = dv_fn.current_diff()
+          local historical = view ~= nil and difftool_dirs[view] ~= nil
+          if not historical and view ~= nil and NVEnv.startup.purpose == 'difftool' then
+            local ok, FileDiffView = pcall(function()
+              return require('diffview.scene.views.diff.file_diff_view').FileDiffView
+            end)
+            historical = ok and FileDiffView ~= nil and view:instanceof(FileDiffView)
+          end
+          if historical then
+            vim.bo[bufnr].readonly = true
+            vim.bo[bufnr].modifiable = false
+          end
+        end,
         diff_buf_win_enter = function(_bufnr, _winid, ctx)
           if ctx.layout_name:match '^diff2' then
             if ctx.symbol == 'a' then
