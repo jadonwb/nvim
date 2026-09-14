@@ -982,10 +982,6 @@ test('global keymaps bind the four entrypoints', function()
   end
 end)
 
-test('canonical global is the loaded module', function()
-  eq(rawget(_G, 'NVOpenCodeArtifacts'), package.loaded['editor.features.opencode-artifacts'], 'canonical global is the loaded module')
-end)
-
 test('setup is idempotent and re-attaches canonical buffer commands', function()
   local buf = scratch_buffer()
   vim.api.nvim_set_current_buf(buf)

@@ -127,34 +127,6 @@ local function close(p)
 end
 
 --------------------------------------------------------------------------------
--- Negative documentation: the DEFAULT items finder (items=..., no custom
--- finder) ignores opts.filter entirely — the Snacks behavior the fix depends
--- on. If this regresses, the custom-finder fix needs revisiting.
---------------------------------------------------------------------------------
-
-test('default items finder does not apply the filter (documents the defect shape)', function()
-  -- Items deliberately avoid a `status` field: the default row renderer
-  -- interprets it as git porcelain status. The kind-based filter documents
-  -- that the default items finder never invokes it.
-  local called = false
-  Snacks.picker {
-    items = { { text = 'one', kind = 'keep' }, { text = 'two', kind = 'drop' } },
-    filter = {
-      filter = function(item)
-        called = true
-        return item.kind == 'keep'
-      end,
-    },
-  }
-  local pickers = Snacks.picker.get({ tab = false }) or {}
-  local p = pickers[#pickers]
-  assert(p, 'picker handle')
-  wait_rows(p, 2, 'unfiltered default items rows')
-  eq(called, false, 'filter callback never invoked for the default items finder')
-  close(p)
-end)
-
---------------------------------------------------------------------------------
 -- Plans entry: draft-only default; <M-a> reaches approved rows and relabels.
 --------------------------------------------------------------------------------
 

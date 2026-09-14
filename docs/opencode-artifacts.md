@@ -21,7 +21,7 @@ All entrypoints hide approved artifacts until `<M-a>` (include-approved toggle)
 flips the filter; the toggle re-runs the finder and relabels the filter.
 `:OpenCodePlans` is an intentional kind-filtered view of draft plans, not an
 alias. Rows show kind, title, status and provenance (owner session, update
-date, format). Confirming an entry opens the artifact's stable Markdown file
+date, authority, format). Confirming an entry opens the artifact's stable Markdown file
 read-only in the current window; preview uses the real file. Nothing is ever
 deleted and there is no time-based retention.
 
