@@ -22,10 +22,11 @@ and never parses it back into runtime state.
 | `:OpenCodeArtifacts` | `<leader>aa` | Every kind |
 | `:OpenCodeSession` | `<leader>as` | Attach or switch session |
 
-All entrypoints hide approved artifacts until `<M-a>` (include-approved toggle)
-flips the filter; the toggle re-runs the finder and relabels the filter.
-`:OpenCodePlans` is an intentional kind-filtered view of draft plans, not an
-alias. Rows show kind, title, status and owner/update provenance. Confirming an
+Evidence, Reviews and All hide approved rows until `<M-a>` (include-approved
+toggle) flips the filter; the toggle re-runs the finder and relabels the filter.
+`:OpenCodePlans` is an intentional kind-filtered view of draft plans (approved
+plans only appear with the toggle), not an alias. Rows show kind, title, status
+and owner/update provenance. Confirming an
 entry opens the artifact's generated Markdown view read-only in the current
 window; preview uses the real file. Nothing is ever deleted and there is no
 time-based retention.
@@ -45,8 +46,9 @@ Buffer-local commands and keymaps:
   artifact; a visual range becomes the selected excerpt/range.
 - `OpenCodeArtifactRetryDelivery`: redeliver the recorded-but-undelivered
   submission for this artifact (same request ID, no new prompt).
-- `OpenCodeArtifactApprove` and `<leader>ay` (normal): approve the plan,
-  attached only to draft plans.
+- `OpenCodeArtifactApprove` and `<leader>ay` (normal): approve the artifact;
+  attached to every non-approved artifact (draft plan, published
+  evidence/review).
 
 ## Feedback submission
 
@@ -60,15 +62,20 @@ submission is recorded but not delivered, the exact request ID stays retryable.
 
 ## Approval
 
-`OpenCodeArtifactApprove`/`<leader>ay` exist only on draft plan buffers. The
-confirm step shows an explicitly selectable label (`Approve this plan`) and the
-title. A recorded approval authorizes Builder for the plan. After an approval is
-recorded — including when its notification fails — only the originating buffer
-is closed (revalidating buffer, identity and modified state; nothing is
-force-deleted, and transport failures or unknown admission keep the buffer
-open). If the approved buffer stays open (displayed elsewhere), its approval UI
-is removed. A recorded-but-undelivered approval is redeliverable from the picker
-after the close.
+`OpenCodeArtifactApprove`/`<leader>ay` exist on every non-approved artifact
+buffer: a draft plan, a published evidence, or a published review. The confirm
+step shows an explicitly selectable per-kind label (`Approve this plan`,
+`Approve this evidence`, `Approve this review`) and the title. A recorded plan
+approval authorizes Builder; approving evidence/review marks the artifact
+user-reviewed, and the picker hides approved rows for every kind until the
+include-approved toggle (`<M-a>`) includes them. After an approval is recorded —
+including when its notification fails — only the originating buffer is closed
+(revalidating buffer, identity and modified state; nothing is force-deleted, and
+transport failures or unknown admission keep the buffer open). If the approved
+buffer stays open (displayed elsewhere), its approval UI is removed. A
+recorded-but-undelivered approval is redeliverable from the picker after the
+close. Patching an approved evidence/review returns it to `published`
+(un-approved), so it reappears in pickers and its approval UI returns.
 
 ## Retry from the picker
 

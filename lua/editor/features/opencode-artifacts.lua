@@ -45,9 +45,17 @@ local TIMEOUT_MS = 15000
 local QUESTION_MAX_BYTES = 16384
 local SELECTION_MAX_BYTES = 65536
 
--- Approval label for a plan. Approval is the recorded decision that authorizes
--- Builder.
-local APPROVE_LABEL = 'Approve this plan'
+-- Approval label per kind. Approval is the recorded decision; for plans it
+-- also authorizes Builder.
+function fn.approval_label(kind)
+  if kind == 'evidence' then
+    return 'Approve this evidence'
+  end
+  if kind == 'review' then
+    return 'Approve this review'
+  end
+  return 'Approve this plan'
+end
 
 local function notify(msg, level)
   vim.notify(msg, level, { title = 'OpenCodeArtifacts' })
@@ -575,15 +583,16 @@ function fn.attach_buffer_keymaps(buf)
   end, { buffer = buf, nowait = true, silent = true, desc = 'Ask about the selected lines of this artifact' })
 end
 
---- Approval keymap (draft plans only).
-function fn.attach_approval_keymap(buf)
+--- Approval keymap (every non-approved artifact).
+function fn.attach_approval_keymap(buf, kind)
   vim.keymap.set('n', '<leader>ay', function()
     fn.approve(buf)
-  end, { buffer = buf, nowait = true, silent = true, desc = 'Approve this draft plan' })
+  end, { buffer = buf, nowait = true, silent = true, desc = fn.approval_label(kind) })
 end
 
---- Approval UI (command + keymap) exists only while the buffer shows a draft
---- plan; it is removed whenever the buffer is known to show anything else.
+--- Approval UI (command + keymap) exists only while the buffer shows a
+--- non-approved artifact; it is removed whenever the buffer is known to show an
+--- approved one.
 function fn.revoke_approval_ui(buf)
   if not vim.api.nvim_buf_is_valid(buf) then
     return
@@ -606,11 +615,11 @@ function fn.attach_artifact_commands(buf, meta)
   vim.api.nvim_buf_create_user_command(buf, 'OpenCodeArtifactRetryDelivery', retry_command(buf), {
     desc = 'Redeliver recorded request',
   })
-  if meta.kind == 'plan' and meta.status == 'draft' then
+  if meta.status ~= 'approved' then
     vim.api.nvim_buf_create_user_command(buf, 'OpenCodeArtifactApprove', function()
       fn.approve(buf)
-    end, { desc = 'Approve this draft plan' })
-    fn.attach_approval_keymap(buf)
+    end, { desc = fn.approval_label(meta.kind) })
+    fn.attach_approval_keymap(buf, meta.kind)
   end
 
   fn.attach_buffer_keymaps(buf)
@@ -1083,9 +1092,9 @@ end
 --- Close only the captured originating buffer after a recorded approval. The
 --- close revalidates buffer/identity/modified state; it never force-deletes
 --- and never touches unrelated buffers. If the buffer remains open (displayed
---- elsewhere, or undeletable), it now shows an approved plan and its approval
---- UI is removed. Delivery failures stay recoverable through the durable
---- picker retry.
+--- elsewhere, or undeletable), it now shows an approved artifact and its
+--- approval UI is removed. Delivery failures stay recoverable through the
+--- durable picker retry.
 function fn.close_after_approval(buf, meta)
   if not vim.api.nvim_buf_is_valid(buf) then
     return
@@ -1111,12 +1120,8 @@ function fn.approve(buf)
     notify('Buffer is not an artifact buffer', vim.log.levels.WARN)
     return
   end
-  if meta.kind ~= 'plan' then
-    notify('Only plan artifacts can be approved', vim.log.levels.WARN)
-    return
-  end
-  if meta.status ~= 'draft' then
-    notify('Only draft plans can be approved', vim.log.levels.WARN)
+  if meta.status == 'approved' then
+    notify('This artifact is already approved', vim.log.levels.WARN)
     return
   end
   M.get(meta.artifact_id, function(artifact, err)
@@ -1129,7 +1134,7 @@ function fn.approve(buf)
     end
     -- Single-line prompt; the selectable approval item carries the
     -- authorization wording so it cannot be clipped by a float border.
-    local label = APPROVE_LABEL
+    local label = fn.approval_label(meta.kind)
     vim.ui.select({ label, 'Cancel' }, {
       prompt = ('Approve "%s"?'):format(tostring(artifact.title)),
       format_item = function(item)
@@ -1219,8 +1224,10 @@ function fn.on_file_changed(buf)
       updated.path = artifact.path or updated.path
     end
     vim.b[buf].opencode_artifact = updated
-    -- A buffer that no longer shows a draft plan must not keep approval UI.
-    if updated.status ~= 'draft' then
+    -- An approved buffer must not keep approval UI; a previously approved
+    -- evidence/review that returns to `published` (after a patch) regains it
+    -- through attach_artifact_commands below.
+    if updated.status == 'approved' then
       fn.revoke_approval_ui(buf)
     end
     fn.attach_artifact_commands(buf, updated)
