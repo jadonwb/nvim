@@ -589,10 +589,10 @@ function fn.attach_artifact_commands(buf, meta)
 
   vim.api.nvim_buf_create_user_command(buf, 'OpenCodeArtifactFeedback', feedback_command(buf), {
     range = true,
-    desc = 'Ask about this artifact (optional visual range becomes the selected excerpt)',
+    desc = 'Ask about this artifact',
   })
   vim.api.nvim_buf_create_user_command(buf, 'OpenCodeArtifactRetryDelivery', retry_command(buf), {
-    desc = 'Redeliver the recorded feedback/approval for this artifact (same request ID)',
+    desc = 'Redeliver recorded request',
   })
   if meta.kind == 'plan' and meta.status == 'draft' then
     vim.api.nvim_buf_create_user_command(buf, 'OpenCodeArtifactApprove', function()
@@ -619,13 +619,13 @@ function fn.open_artifact_buffer(item)
   local current_win = vim.api.nvim_get_current_win()
   local original_buf = vim.api.nvim_win_get_buf(current_win)
   if vim.bo[original_buf].modified then
-    notify('Current buffer has unsaved changes; the artifact was not opened', vim.log.levels.WARN)
+    notify('Unsaved changes; artifact not opened', vim.log.levels.WARN)
     return
   end
 
   local target = vim.fn.bufadd(requested)
   if not vim.api.nvim_buf_is_valid(target) then
-    notify('Could not create a buffer for ' .. requested .. '; nothing was opened', vim.log.levels.ERROR)
+    notify('Could not create buffer for ' .. requested, vim.log.levels.ERROR)
     return
   end
   if vim.fn.bufloaded(target) == 0 then
@@ -633,7 +633,7 @@ function fn.open_artifact_buffer(item)
   end
   local actual = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(target), ':p')
   if actual ~= requested then
-    notify('Artifact buffer path mismatch; nothing was opened', vim.log.levels.ERROR)
+    notify('Artifact buffer path mismatch', vim.log.levels.ERROR)
     return
   end
 
@@ -801,8 +801,7 @@ function fn.toggle_approved(picker, state, entry)
     picker:find()
   end
   notify(
-    state.show_approved and ('Including approved artifacts (%s)'):format(entry.title)
-      or ('Hiding approved artifacts (%s)'):format(entry.title),
+    state.show_approved and 'Including approved artifacts' or 'Hiding approved artifacts',
     vim.log.levels.INFO
   )
   return state.show_approved
@@ -949,7 +948,7 @@ function fn.refresh(buf)
     if not vim.api.nvim_buf_is_valid(buf) then return end
     local current_meta = fn.artifact_meta(buf)
     if type(current_meta) ~= 'table' or current_meta.artifact_id ~= artifact_id then
-      notify('Refresh skipped: the buffer no longer shows this artifact', vim.log.levels.INFO)
+      notify('Refresh skipped: not this artifact', vim.log.levels.INFO)
       return
     end
     if err then
@@ -958,15 +957,12 @@ function fn.refresh(buf)
     end
     -- Re-check modification state at callback time; never overwrite local edits.
     if vim.bo[buf].modified then
-      notify(
-        'Artifact buffer has local modifications; refresh skipped (registry revision: ' .. short_revision(artifact.revision) .. ')',
-        vim.log.levels.WARN
-      )
+      notify('Local modifications; refresh skipped', vim.log.levels.WARN)
       return
     end
     local displayed = fn.displayed_revision(buf)
     if not displayed then
-      notify('Cannot establish the displayed revision consistently; refresh refused', vim.log.levels.ERROR)
+      notify('Cannot establish displayed revision; refresh refused', vim.log.levels.ERROR)
       return
     end
     local known = false
@@ -977,7 +973,7 @@ function fn.refresh(buf)
       end
     end
     if not known then
-      notify('Displayed content does not match any registry revision; refresh refused', vim.log.levels.ERROR)
+      notify('Displayed content matches no revision; refresh refused', vim.log.levels.ERROR)
       return
     end
     if displayed == artifact.revision then
@@ -987,7 +983,7 @@ function fn.refresh(buf)
       return
     end
     if type(artifact.path) ~= 'string' or vim.fn.filereadable(artifact.path) ~= 1 then
-      notify('Registry current file is not readable: ' .. tostring(artifact.path), vim.log.levels.ERROR)
+      notify('Registry file not readable: ' .. tostring(artifact.path), vim.log.levels.ERROR)
       return
     end
     fn.reload_buffer(buf)
@@ -1000,7 +996,7 @@ function fn.refresh(buf)
       vim.b[buf].opencode_artifact = updated_meta
       notify('Refreshed artifact to ' .. short_revision(artifact.revision), vim.log.levels.INFO)
     else
-      notify('Refresh could not verify the displayed revision after reload', vim.log.levels.ERROR)
+      notify('Refresh could not verify revision', vim.log.levels.ERROR)
     end
   end)
 end
@@ -1013,7 +1009,7 @@ function fn.retry_request(artifact_id, request_id)
     requestID = request_id,
   }, function(output, err)
     if err then
-      notify('Delivery retry failed: ' .. err .. ' — the recorded submission is preserved; try again', vim.log.levels.ERROR)
+      notify('Retry failed: ' .. err, vim.log.levels.ERROR)
       return
     end
     local delivery = output.delivery or {}
@@ -1029,8 +1025,7 @@ function fn.retry_request(artifact_id, request_id)
       location = M.location(),
     }
     notify(
-      ('Retry did not deliver (%s): %s — the recorded submission is preserved; try again')
-        :format(tostring(delivery.state), tostring(delivery.error)),
+      ('Retry failed (%s): %s'):format(tostring(delivery.state), tostring(delivery.error)),
       vim.log.levels.ERROR
     )
   end)
@@ -1080,7 +1075,7 @@ function fn.retry_from_record(artifact_id)
       end
     end
     if #candidates == 0 then
-      notify('No pending or failed feedback/approval submissions recorded for this artifact', vim.log.levels.INFO)
+      notify('No failed submissions recorded', vim.log.levels.INFO)
       return
     end
     vim.ui.select(candidates, {
@@ -1108,7 +1103,7 @@ function fn.retry_delivery(buf)
   end
   local state = retry_state[meta.artifact_id]
   if not state or not state.requestID then
-    notify('No recorded-but-undelivered artifact submission to retry for this artifact', vim.log.levels.WARN)
+    notify('No recorded submission to retry', vim.log.levels.WARN)
     return
   end
   fn.retry_request(meta.artifact_id, state.requestID)
@@ -1122,7 +1117,7 @@ function fn.feedback(buf, line_start, line_end)
   end
   local displayed = fn.displayed_revision(buf)
   if not displayed then
-    notify('Cannot establish the displayed revision consistently; feedback refused', vim.log.levels.ERROR)
+    notify('Cannot establish displayed revision; feedback refused', vim.log.levels.ERROR)
     return
   end
   -- Capture the target and the selection before the input UI opens.
@@ -1136,7 +1131,7 @@ function fn.feedback(buf, line_start, line_end)
       selected_text = nil
     end
     if selected_text and #selected_text > SELECTION_MAX_BYTES then
-      notify('Selected excerpt exceeds the 65536-byte UTF-8 limit; shrink the selection', vim.log.levels.ERROR)
+      notify('Selection exceeds 65536 bytes', vim.log.levels.ERROR)
       return
     end
   end
@@ -1153,7 +1148,7 @@ function fn.feedback(buf, line_start, line_end)
       return
     end
     if #question > QUESTION_MAX_BYTES then
-      notify('Feedback question exceeds the 16384-byte UTF-8 limit; shorten it', vim.log.levels.ERROR)
+      notify('Question exceeds 16384 bytes', vim.log.levels.ERROR)
       return
     end
     local request_id = M.request_id()
@@ -1168,7 +1163,7 @@ function fn.feedback(buf, line_start, line_end)
       if err then
         -- Transport failure: whether the submission was recorded is unknown.
         notify(
-          'Feedback could not be submitted: ' .. err .. ' — admission is unknown; check the service and submit the feedback again',
+          'Feedback submit failed: ' .. err .. ' (admission unknown)',
           vim.log.levels.ERROR
         )
         return
@@ -1176,7 +1171,7 @@ function fn.feedback(buf, line_start, line_end)
       local delivery = output.delivery or {}
       if delivery.state == 'delivered' then
         retry_state[meta.artifact_id] = nil
-        notify('Feedback delivered to the Planner session; delivery only, the Planner has not necessarily processed it', vim.log.levels.INFO)
+        notify('feedback delivered', vim.log.levels.INFO)
         return
       end
       -- Recorded server-side but not (yet) delivered; retry verbatim later.
@@ -1187,8 +1182,8 @@ function fn.feedback(buf, line_start, line_end)
         location = meta.location,
       }
       notify(
-        ('Feedback was recorded but NOT delivered (%s): %s — redeliver the recorded request %s with :OpenCodeArtifactRetryDelivery or <M-r> in the artifact picker')
-          :format(tostring(delivery.state), tostring(delivery.error), tostring(output.requestID)),
+        ('Feedback recorded but NOT delivered (%s): %s')
+          :format(tostring(delivery.state), tostring(delivery.error)),
         vim.log.levels.ERROR
       )
     end)
@@ -1215,7 +1210,7 @@ function fn.close_after_approval(buf, meta)
   local current_meta = fn.artifact_meta(buf)
   if not current_meta or current_meta.artifact_id ~= meta.artifact_id then return end
   if vim.bo[buf].modified then
-    notify('Artifact buffer has local modifications; it was not closed after approval', vim.log.levels.WARN)
+    notify('Local modifications; buffer not closed', vim.log.levels.WARN)
     return
   end
   NVBuffers.delete_buf(buf, nil, function(closed)
@@ -1241,7 +1236,7 @@ function fn.approve(buf)
   end
   local displayed = fn.displayed_revision(buf)
   if not displayed then
-    notify('Cannot establish the displayed revision consistently; approval refused', vim.log.levels.ERROR)
+    notify('Cannot establish displayed revision; approval refused', vim.log.levels.ERROR)
     return
   end
   M.get(meta.artifact_id, function(artifact, err)
@@ -1283,9 +1278,9 @@ function fn.approve(buf)
         if delivery.state == 'delivered' then
           retry_state[meta.artifact_id] = nil
           if authority == 'implementation' then
-            notify('Approval recorded and delivered (authority: implementation); the Planner may launch Builder for this revision', vim.log.levels.INFO)
+            notify('approval delivered', vim.log.levels.INFO)
           else
-            notify('Historical approval recorded and delivered (authority: historical); it does not authorize Builder', vim.log.levels.INFO)
+            notify('historical approval delivered', vim.log.levels.INFO)
           end
         else
           -- Recorded server-side, notification failed; the durable picker
@@ -1297,8 +1292,8 @@ function fn.approve(buf)
             location = meta.location,
           }
           notify(
-            ('Approval was recorded but NOT delivered (%s): %s — redeliver the recorded request %s from the artifact picker with <M-r>')
-              :format(tostring(delivery.state), tostring(delivery.error), tostring(output.requestID)),
+            ('Approval recorded but NOT delivered (%s): %s')
+              :format(tostring(delivery.state), tostring(delivery.error)),
             vim.log.levels.ERROR
           )
         end
@@ -1344,7 +1339,7 @@ function fn.on_file_changed(buf)
 
   if meta.fingerprint and meta.fingerprint ~= fingerprint then
     notify(
-      ('Artifact updated on disk: %s (%s)'):format(tostring(meta.title), short_revision(revision or meta.displayed_revision)),
+      ("artifact updated: '%s' (%s)"):format(tostring(meta.title), tostring(meta.artifact_id)),
       vim.log.levels.INFO
     )
   end
@@ -1379,19 +1374,19 @@ function M.setup()
 
   vim.api.nvim_create_user_command('OpenCodePlans', function()
     M.open_picker('plans')
-  end, { desc = 'List OpenCode draft plans for the current tab directory (<M-a> includes approved)' })
+  end, { desc = 'List draft plans' })
   vim.api.nvim_create_user_command('OpenCodeEvidence', function()
     M.open_picker('evidence')
-  end, { desc = 'List OpenCode evidence for the current tab directory' })
+  end, { desc = 'List evidence' })
   vim.api.nvim_create_user_command('OpenCodeReviews', function()
     M.open_picker('reviews')
-  end, { desc = 'List OpenCode reviews for the current tab directory' })
+  end, { desc = 'List reviews' })
   vim.api.nvim_create_user_command('OpenCodeArtifacts', function()
     M.open_picker('all')
-  end, { desc = 'List all OpenCode artifacts for the current tab directory' })
+  end, { desc = 'List all artifacts' })
   vim.api.nvim_create_user_command('OpenCodeSession', function()
     M.open_session_picker()
-  end, { desc = 'Attach, switch, or detach the OpenCode session for this tab directory' })
+  end, { desc = 'Attach or switch session' })
   fn.autocmds()
 end
 

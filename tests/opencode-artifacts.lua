@@ -474,7 +474,7 @@ test('recorded-but-undelivered feedback keeps the verbatim retry handle', functi
   eq(#failure_notices, 1, 'failure notice')
   -- Admission notices must not imply the Planner finished processing.
   local delivered_claims = vim.tbl_filter(function(n)
-    return tostring(n.msg):match('delivered to the Planner session') ~= nil
+    return tostring(n.msg):match('feedback delivered') ~= nil
   end, notifications)
   eq(#delivered_claims, 0, 'no delivered claim on failure')
 end)
@@ -500,7 +500,7 @@ test('open refuses a modified current buffer and opens nothing', function()
   eq(vim.bo[orig].readonly, false, 'original options untouched')
   eq(vim.b[orig].opencode_artifact, nil, 'no metadata attached to the original buffer')
   local warned = vim.tbl_filter(function(n) return n.level == vim.log.levels.WARN end, notifications)
-  assert(warned[1] and warned[1].msg:match('unsaved'), 'nonintrusive refusal notice shown')
+  assert(warned[1] and warned[1].msg:match('Unsaved'), 'nonintrusive refusal notice shown')
 end)
 
 test('open with an unreadable path returns without opening anything', function()
@@ -741,7 +741,7 @@ test('refresh aborts quietly on deleted targets and visibly on stale identities'
   restore_notify()
 
   eq(vim.tbl_contains(vim.api.nvim_buf_get_lines(buf_b, 0, -1, false), '# four'), true, 'stale target untouched')
-  assert(notifications[1].msg:match('no longer shows this artifact'), 'stale identity notice shown')
+  assert(notifications[1].msg:match('not this artifact'), 'stale identity notice shown')
 end)
 
 --------------------------------------------------------------------------------
@@ -880,7 +880,7 @@ test('retry_from_record reports when nothing is pending or failed', function()
   wait_for(function() return #notifications >= 1 end)
   restore_notify()
   eq(#captured, 1, 'get only, no retry RPC')
-  assert(notifications[1].msg:match('No pending or failed'), 'visible nothing-to-retry notice')
+  assert(notifications[1].msg:match('No failed submissions'), 'visible nothing-to-retry notice')
 end)
 
 --------------------------------------------------------------------------------
@@ -1224,7 +1224,7 @@ test('FileChangedShellPost recomputes metadata from displayed bytes and notices 
   eq(meta2.displayed_revision, Format.document_revision(doc2), 'revision recomputed from new bytes')
   eq(meta2.fingerprint, 'sha256:' .. vim.fn.sha256(doc2), 'fingerprint tracked separately')
   local update_notices = vim.tbl_filter(function(n)
-    return tostring(n.msg):match('Artifact updated on disk') ~= nil
+    return tostring(n.msg):match('artifact updated') ~= nil
   end, notifications)
   eq(#update_notices, 1, 'one update notice')
   vim.wait(50, function() return false end)
@@ -1232,7 +1232,7 @@ test('FileChangedShellPost recomputes metadata from displayed bytes and notices 
   -- Re-firing without any byte change suppresses the notice.
   reload_and_notify(target)
   update_notices = vim.tbl_filter(function(n)
-    return tostring(n.msg):match('Artifact updated on disk') ~= nil
+    return tostring(n.msg):match('artifact updated') ~= nil
   end, notifications)
   eq(#update_notices, 1, 'no notice when bytes unchanged')
   restore_notify()
@@ -1259,7 +1259,7 @@ test('status-only rewrites keep the content revision but still notice and revoke
   eq(meta.displayed_revision, Format.document_revision(draft_doc), 'revision unchanged by status flip')
   eq(meta.fingerprint, 'sha256:' .. vim.fn.sha256(approved_doc), 'fingerprint follows the bytes')
   eq(meta.status, 'approved', 'lifecycle status reassigned from the document')
-  assert(notifications[#notifications].msg:match('Artifact updated on disk'), 'bytes-change notice')
+  assert(notifications[#notifications].msg:match('artifact updated'), 'bytes-change notice')
   eq(buf_has_command(target, 'OpenCodeArtifactApprove'), false, 'approval command removed')
   eq(buf_maparg(target, '<leader>ay', 'n'), nil, 'approval keymap removed')
   restore_notify()
@@ -1339,7 +1339,7 @@ test('recorded and delivered approval closes only the originating buffer', funct
   local input = output_of(captured[2])
   eq(input.artifactID, 'art_approve000000000001', 'artifact binding')
   assert(tostring(input.revision):match('^%x%x%x%x%x%x%x%x$'), 'displayed revision sent')
-  assert(notifications[#notifications].msg:match('authority: implementation'), 'implementation authority notice')
+  assert(notifications[#notifications].msg:match('approval delivered'), 'delivered approval notice')
 end)
 
 test('recorded-but-undelivered approval still closes; delivery stays retryable', function()
@@ -1449,7 +1449,7 @@ test('an approved buffer shown elsewhere stays open and loses its approval UI', 
   restore_notify()
 
   assert(vim.tbl_filter(function(n)
-    return tostring(n.msg):match('Approval recorded and delivered')
+    return tostring(n.msg):match('approval delivered')
   end, notifications)[1], 'delivered approval notice')
   eq(vim.api.nvim_buf_is_valid(target), true, 'buffer still displayed elsewhere stays open')
   eq(buf_has_command(target, 'OpenCodeArtifactApprove'), false, 'approval command revoked')
@@ -1569,11 +1569,8 @@ test('historical authority approval records a freeze without Builder authorizati
 
   eq(selected, 'Record historical approval (does not authorize Builder)', 'historical label states the freeze')
   assert(vim.tbl_filter(function(n)
-    return tostring(n.msg):match('authority: historical')
+    return tostring(n.msg):match('historical approval delivered')
   end, notifications)[1], 'historical notice')
-  assert(vim.tbl_filter(function(n)
-    return tostring(n.msg):match('does not authorize Builder')
-  end, notifications)[1], 'non-authorizing notice')
 end)
 
 print(('\ntests: %d passed, %d failed'):format(passed, failed))
