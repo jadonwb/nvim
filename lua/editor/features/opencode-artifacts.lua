@@ -1433,11 +1433,11 @@ end
 
 -- stylua: ignore
 function M.keymaps()
-  K.map { '<leader>ap', 'Show OpenCode plans', function() M.open_picker('plans') end, mode = { 'n', 'v', 't' } }
-  K.map { '<leader>ae', 'Show OpenCode evidence', function() M.open_picker('evidence') end, mode = { 'n', 'v', 't' } }
-  K.map { '<leader>ar', 'Show OpenCode reviews', function() M.open_picker('reviews') end, mode = { 'n', 'v', 't' } }
-  K.map { '<leader>aa', 'Show all OpenCode artifacts', function() M.open_picker('all') end, mode = { 'n', 'v', 't' } }
-  K.map { '<leader>as', 'Attach OpenCode session', function() M.open_session_picker() end, mode = { 'n', 'v', 't' } }
+  K.map { '<leader>ap', 'Show OpenCode plans', function() M.open_picker('plans') end, mode = { 'n', 'v' } }
+  K.map { '<leader>ae', 'Show OpenCode evidence', function() M.open_picker('evidence') end, mode = { 'n', 'v' } }
+  K.map { '<leader>ar', 'Show OpenCode reviews', function() M.open_picker('reviews') end, mode = { 'n', 'v' } }
+  K.map { '<leader>aa', 'Show all OpenCode artifacts', function() M.open_picker('all') end, mode = { 'n', 'v' } }
+  K.map { '<leader>as', 'Attach OpenCode session', function() M.open_session_picker() end, mode = { 'n', 'v' } }
 end
 
 --- Test surface: internals used by tests/.
