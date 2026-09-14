@@ -59,7 +59,7 @@ end
 
 ---@param lines string[]
 ---@param title string
----@param opts? { modifiable?: boolean, min_width?: integer }
+---@param opts? { modifiable?: boolean, min_width?: integer, width?: integer, height?: integer }
 ---@return { buf: integer, win: integer }
 local function create_float(lines, title, opts)
   opts = opts or {}
@@ -82,6 +82,15 @@ local function create_float(lines, title, opts)
   local cap_h = config.max_height < 1 and math.floor(editor_h * config.max_height) or config.max_height
   local width = math.max(1, math.min(max_width + pad, cap_w))
   local height = math.max(1, math.min(#lines, cap_h))
+  -- Opt-in explicit size, still clamped to the screen (used by the multiline
+  -- artifact feedback input, which requests 74x6 regardless of its short
+  -- default text). Unset opts keep the computed sizing byte-identical.
+  if opts.width then
+    width = math.max(1, math.min(opts.width, cap_w))
+  end
+  if opts.height then
+    height = math.max(1, math.min(opts.height, cap_h))
+  end
 
   local row = math.floor((editor_h - height) / 2)
   local col = math.floor((editor_w - width) / 2)
@@ -380,10 +389,19 @@ function NVDialogs.select(opts, callback)
 end
 
 --- Text input dialog with a modifiable field.
----@param opts { prompt?: string, default?: string }
+---
+--- With `multiline`, Enter inserts a newline (natively in insert mode, and in
+--- normal mode by splitting the line at the cursor) while Alt+Enter submits
+--- from insert and normal mode. The explicit `width`/`height` opts size the
+--- float (clamped to the screen); without them the computed sizing applies.
+--- Cancellation (Escape, q, <M-w>, buffer leave, exactly-once callback) is
+--- identical in both modes, and the default single-line path is unchanged.
+---
+---@param opts { prompt?: string, default?: string, multiline?: boolean, width?: integer, height?: integer }
 ---@param callback fun(value: string?)
 function NVDialogs.input(opts, callback)
   opts = opts or {}
+  local multiline = opts.multiline == true
   local prompt = opts.prompt
   if type(prompt) ~= 'string' then
     prompt = 'Input'
@@ -403,7 +421,7 @@ function NVDialogs.input(opts, callback)
   local was_insert = is_insert()
   local restore_insert = make_restore_insert(was_insert)
 
-  local float = create_float(lines, prompt, { modifiable = true, min_width = 40 })
+  local float = create_float(lines, prompt, { modifiable = true, min_width = 40, width = opts.width, height = opts.height })
   local buf, win = float.buf, float.win
 
   -- Place cursor at end and enter insert mode
@@ -439,8 +457,23 @@ function NVDialogs.input(opts, callback)
     resolve(table.concat(buf_lines, '\n'))
   end
 
-  vim.keymap.set('n', '<CR>', submit, { buffer = buf, nowait = true })
-  vim.keymap.set('i', '<CR>', submit, { buffer = buf, nowait = true })
+  -- Multiline: Enter inserts a newline; only Alt+Enter submits (from insert
+  -- and normal mode). Insert mode keeps its native <CR> (no mapping), so the
+  -- newline lands exactly where the cursor is.
+  local function insert_newline_normal()
+    local row, col = unpack(vim.api.nvim_win_get_cursor(win)) -- row is 1-based
+    local line = vim.api.nvim_buf_get_lines(buf, row - 1, row, false)[1] or ''
+    vim.api.nvim_buf_set_lines(buf, row - 1, row, false, { line:sub(1, col), line:sub(col + 1) })
+    vim.api.nvim_win_set_cursor(win, { row + 1, 0 })
+  end
+
+  if multiline then
+    vim.keymap.set('n', '<CR>', insert_newline_normal, { buffer = buf, nowait = true })
+    vim.keymap.set({ 'i', 'n' }, '<A-CR>', submit, { buffer = buf, nowait = true })
+  else
+    vim.keymap.set('n', '<CR>', submit, { buffer = buf, nowait = true })
+    vim.keymap.set('i', '<CR>', submit, { buffer = buf, nowait = true })
+  end
   vim.keymap.set('n', '<Esc>', function()
     resolve(nil)
   end, { buffer = buf, nowait = true })

@@ -14,7 +14,7 @@ NVWhichKey = {
       { '<leader>f', group = 'find' },
       { '<leader>d', group = 'Delta', icon = '󰇂 ' },
       { '<leader>i', group = 'image', icon = ' ' },
-      { '<leader>a', group = 'pi', icon = 'π ' },
+      { '<leader>a', group = 'OpenCode', icon = 'π ' },
     },
   },
 }

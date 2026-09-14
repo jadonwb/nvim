@@ -34,6 +34,9 @@ return {
       require 'editor.features.git-commit'
       NVGitCommit.setup()
 
+      require 'editor.features.opencode-artifacts'
+      NVOpenCodeArtifacts.setup()
+
       require 'editor.class'
       require 'editor.features.lsp-popup'
       NVLspPopup.setup()
@@ -72,6 +75,7 @@ return {
         NVFocusMode.keymaps()
         NVGitCommit.keymaps()
         NVGitWorktrees.keymaps()
+        NVOpenCodeArtifacts.keymaps()
         NVSLazygit.keymaps()
         NVTabs.keymaps()
         NVWindows.keymaps()
