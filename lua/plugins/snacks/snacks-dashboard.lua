@@ -19,6 +19,21 @@ return {
   opts = {
     dashboard = {
       enabled = NVSnacksDashboard.should_show(),
+      sections = {
+        { section = 'header' },
+        function()
+          return {
+            {
+              title = '󰉋  ' .. vim.fn.fnamemodify(vim.fn.getcwd(-1, 0), ':~'),
+              align = 'center',
+              hl = 'SnacksDashboardDir',
+              padding = 1,
+            },
+          }
+        end,
+        { section = 'keys', gap = 1, padding = 1 },
+        { section = 'startup' },
+      },
       preset = {
         keys = function()
           local items = {}
