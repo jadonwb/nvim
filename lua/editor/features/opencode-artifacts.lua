@@ -25,6 +25,18 @@ local fn = {}
 -- fn.retry_from_record), so retryable submissions survive an editor restart.
 local retry_state = {}
 
+--- Record an undelivered submission so the in-buffer retry command can
+--- redeliver it verbatim (same request ID, same content); the server already
+--- recorded the submission. Same shape as the retry_state entries above.
+local function record_undelivered(requestID, kind, artifact_id, location)
+  retry_state[artifact_id] = {
+    requestID = requestID,
+    kind = kind,
+    artifact_id = artifact_id,
+    location = location,
+  }
+end
+
 local EXE = vim.fn.expand '~/.opencode/bin/opencode'
 local RPC_ID = 'personal.artifacts'
 local TIMEOUT_MS = 15000
@@ -99,26 +111,26 @@ local function decode(stdout)
   return decoded
 end
 
+local function cli_failure(subject, result)
+  local timed_out = (result.signal ~= nil and result.signal ~= 0)
+  local reason = vim.trim(result.stderr or '')
+  if reason == '' then
+    reason = vim.trim(result.stdout or '')
+  end
+  return ('opencode %s failed (exit %s%s): %s'):format(
+    subject,
+    tostring(result.code),
+    timed_out and ', timed out' or '',
+    reason ~= '' and reason or 'no output'
+  )
+end
+
 function fn.rpc_done(method, result, callback)
   if result.code ~= 0 then
     local raw = vim.trim((result.stdout or '') ~= '' and result.stdout or (result.stderr or ''))
     local decoded = decode(raw)
     local typed = rpc_error_from(decoded, method)
-    local reason = vim.trim(result.stderr or '')
-    if reason == '' then
-      reason = vim.trim(result.stdout or '')
-    end
-    local timed_out = (result.signal ~= nil and result.signal ~= 0)
-    callback(
-      nil,
-      typed
-        or ('opencode api %s failed (exit %s%s): %s'):format(
-          method,
-          tostring(result.code),
-          timed_out and ', timed out' or '',
-          vim.trim(reason) ~= '' and vim.trim(reason) or 'no output'
-        )
-    )
+    callback(nil, typed or cli_failure('api ' .. method, result))
     return
   end
   local decoded = decode(result.stdout)
@@ -281,20 +293,6 @@ function fn.clear_session(location)
   return fn.save_attachments(map)
 end
 
-local function cli_failure(subject, result)
-  local timed_out = (result.signal ~= nil and result.signal ~= 0)
-  local reason = vim.trim(result.stderr or '')
-  if reason == '' then
-    reason = vim.trim(result.stdout or '')
-  end
-  return ('opencode %s failed (exit %s%s): %s'):format(
-    subject,
-    tostring(result.code),
-    timed_out and ', timed out' or '',
-    reason ~= '' and reason or 'no output'
-  )
-end
-
 --- `opencode session list --format json -n 100` in `cwd`. The CLI is
 --- cwd-scoped (no directory argument), so the process cwd is the location.
 --- Callback receives the bare decoded array or an error message.
@@ -357,6 +355,20 @@ function fn.session_create(cwd, callback)
       callback(nil, ('opencode session create transport failed: %s'):format(tostring(err)))
     end)
   end
+end
+
+--- Shared "new session" tail for ensure_session and open_session_picker:
+--- notify a create failure, or attach the created session and continue with
+--- `on_success(session)`. The two flows differ only in what continuing means.
+local function with_created_session(location, on_success)
+  fn.session_create(location, function(session, create_err)
+    if create_err or type(session) ~= 'table' then
+      notify(create_err or 'Could not create an OpenCode session', vim.log.levels.ERROR)
+      return
+    end
+    fn.set_session(session.id)
+    on_success(session)
+  end)
 end
 
 --- Compact age from an epoch-ms timestamp (empty when unknown).
@@ -454,13 +466,7 @@ function fn.ensure_session(callback)
         callback { id = choice.id, title = choice.title }
         return
       end
-      fn.session_create(location, function(session, create_err)
-        if create_err or type(session) ~= 'table' then
-          notify(create_err or 'Could not create an OpenCode session', vim.log.levels.ERROR)
-          callback(nil)
-          return
-        end
-        fn.set_session(session.id)
+      with_created_session(location, function(session)
         callback(session)
       end)
     end)
@@ -493,12 +499,7 @@ function M.open_session_picker()
         notify(('Attached OpenCode session %s'):format(fn.session_item_label(choice.session)), vim.log.levels.INFO)
         return
       end
-      fn.session_create(location, function(session, create_err)
-        if create_err or type(session) ~= 'table' then
-          notify(create_err or 'Could not create an OpenCode session', vim.log.levels.ERROR)
-          return
-        end
-        fn.set_session(session.id)
+      with_created_session(location, function(session)
         notify(('Attached new OpenCode session %s'):format(session.id:sub(1, 12)), vim.log.levels.INFO)
       end)
     end)
@@ -926,16 +927,11 @@ function fn.retry_request(artifact_id, request_id)
     end
     local delivery = output.delivery or {}
     if delivery.state == 'delivered' then
-      retry_state[artifact_id] = nil
+      fn.clear_retry_state(artifact_id)
       notify('Recorded submission delivered', vim.log.levels.INFO)
       return
     end
-    retry_state[artifact_id] = {
-      requestID = output.requestID or request_id,
-      kind = output.kind or 'feedback',
-      artifact_id = artifact_id,
-      location = M.location(),
-    }
+    record_undelivered(output.requestID or request_id, output.kind or 'feedback', artifact_id, M.location())
     notify(('Retry failed (%s): %s'):format(tostring(delivery.state), tostring(delivery.error)), vim.log.levels.ERROR)
   end)
 end
@@ -1064,17 +1060,12 @@ function fn.feedback(buf, line_start, line_end)
       end
       local delivery = output.delivery or {}
       if delivery.state == 'delivered' then
-        retry_state[meta.artifact_id] = nil
+        fn.clear_retry_state(meta.artifact_id)
         notify('feedback delivered', vim.log.levels.INFO)
         return
       end
       -- Recorded server-side but not (yet) delivered; retry verbatim later.
-      retry_state[meta.artifact_id] = {
-        requestID = output.requestID,
-        kind = 'feedback',
-        artifact_id = meta.artifact_id,
-        location = meta.location,
-      }
+      record_undelivered(output.requestID, 'feedback', meta.artifact_id, meta.location)
       notify(('Feedback recorded but NOT delivered (%s): %s'):format(tostring(delivery.state), tostring(delivery.error)), vim.log.levels.ERROR)
     end)
   end)
@@ -1165,17 +1156,12 @@ function fn.approve(buf)
         end
         local delivery = output.delivery or {}
         if delivery.state == 'delivered' then
-          retry_state[meta.artifact_id] = nil
+          fn.clear_retry_state(meta.artifact_id)
           notify('approval delivered', vim.log.levels.INFO)
         else
           -- Recorded server-side, notification failed; the durable picker
           -- retry handles redelivery after this buffer closes.
-          retry_state[meta.artifact_id] = {
-            requestID = output.requestID,
-            kind = 'approval',
-            artifact_id = meta.artifact_id,
-            location = meta.location,
-          }
+          record_undelivered(output.requestID, 'approval', meta.artifact_id, meta.location)
           notify(('Approval recorded but NOT delivered (%s): %s'):format(tostring(delivery.state), tostring(delivery.error)), vim.log.levels.ERROR)
         end
         fn.close_after_approval(buf, meta)
