@@ -8,13 +8,9 @@
 -- Everything is callback-based with a bounded timeout and scheduled UI
 -- callbacks; nothing blocks or polls.
 --
--- Artifacts are read-only Markdown files in the plan-bridge registry, opened
--- only through explicit selection. The revision a buffer actually shows is
--- always recomputed from the displayed bytes (never taken from the server
--- latest), using the shared-markdown canonical revision (see ./format.lua).
--- Approval of a plan revision is what authorizes Builder.
-
-local Format = require 'editor.features.opencode-artifacts.format'
+-- Artifacts are read-only generated Markdown views in the plan-bridge registry,
+-- opened only through explicit selection and addressed by artifact ID. Approval
+-- of a plan is what authorizes Builder.
 
 NVOpenCodeArtifacts = {}
 local M = NVOpenCodeArtifacts
@@ -37,19 +33,12 @@ local TIMEOUT_MS = 15000
 local QUESTION_MAX_BYTES = 16384
 local SELECTION_MAX_BYTES = 65536
 
--- Approval label for a plan revision. Approval is the recorded decision that
--- authorizes Builder for the displayed revision.
-local APPROVE_LABEL = 'Approve this revision'
+-- Approval label for a plan. Approval is the recorded decision that authorizes
+-- Builder.
+local APPROVE_LABEL = 'Approve this plan'
 
 local function notify(msg, level)
   vim.notify(msg, level, { title = 'OpenCodeArtifacts' })
-end
-
-local function short_revision(revision)
-  if type(revision) ~= 'string' then
-    return '?'
-  end
-  return revision
 end
 
 function M.location()
@@ -517,8 +506,9 @@ function M.open_session_picker()
 end
 
 --------------------------------------------------------------------------------
--- Displayed-revision tracking: the revision an artifact buffer actually shows
--- is always derived from the displayed bytes, never taken from the server.
+-- Buffer content fingerprint: a full-document hash used only to tell whether an
+-- external reload actually changed the bytes; the server record is the source
+-- of artifact metadata.
 --------------------------------------------------------------------------------
 
 --- Exact UTF-8 bytes shown in the buffer (unix fileformat, optional eol).
@@ -531,39 +521,15 @@ function fn.buffer_bytes(buf)
   return text
 end
 
---- Displayed revision of a buffer for an explicit recorded format, or nil
---- when it cannot be established consistently (unexpected fileformat/encoding,
---- malformed shared document, or an unknown format, which is rejected rather
---- than hashed with the wrong algorithm).
-function fn.revision_for_buffer(buf, format)
-  if vim.bo[buf].fileformat ~= 'unix' then
-    return nil
-  end
-  local enc = vim.bo[buf].fileencoding
-  if enc ~= '' and enc ~= 'utf-8' then
-    return nil
-  end
-  local ok, revision = pcall(Format.revision_for_bytes, fn.buffer_bytes(buf), format)
-  if not ok then
-    return nil
-  end
-  return revision
-end
-
---- Displayed revision from the buffer's recorded artifact metadata format.
-function fn.displayed_revision(buf)
-  local meta = fn.artifact_meta(buf)
-  if not meta then
-    return nil
-  end
-  return fn.revision_for_buffer(buf, meta.format)
+--- Full-document fingerprint of the displayed bytes.
+function fn.buffer_fingerprint(buf)
+  return 'sha256:' .. vim.fn.sha256(fn.buffer_bytes(buf))
 end
 
 --- Buffer metadata namespace: vim.b[buf].opencode_artifact carries identity
---- (artifact_id, location), display (title, kind, status, description),
---- format (format), provenance (owner/author sessions,
---- created_at, updated_at) and revision tracking (listed_revision,
---- displayed_revision, full-document fingerprint).
+--- (artifact_id, location), display (title, kind, status, description) and the
+--- displayed-document fingerprint. Metadata comes from RPC/buffer state, never
+--- from parsing the generated view.
 function fn.artifact_meta(buf)
   local meta = vim.b[buf].opencode_artifact
   if type(meta) ~= 'table' or not meta.artifact_id or not meta.location then
@@ -571,6 +537,7 @@ function fn.artifact_meta(buf)
   end
   return meta
 end
+
 
 --------------------------------------------------------------------------------
 -- Artifact buffer
@@ -687,7 +654,6 @@ function fn.open_artifact_buffer(item)
   vim.bo[target].modeline = false
   vim.bo[target].filetype = 'markdown'
   vim.bo[target].buflisted = true
-  local bytes = fn.buffer_bytes(target)
   vim.b[target].opencode_artifact = {
     artifact_id = item.artifact_id,
     location = item.location or M.location(),
@@ -696,15 +662,7 @@ function fn.open_artifact_buffer(item)
     status = item.status,
     description = item.description,
     path = requested,
-    format = item.format,
-    owner_session_id = item.owner,
-    author_session_id = item.author,
-    created_at = item.created_at,
-    updated_at = item.updated_at,
-    listed_revision = item.revision,
-    -- The displayed revision and fingerprint come from the actual bytes.
-    displayed_revision = fn.revision_for_buffer(target, item.format),
-    fingerprint = 'sha256:' .. vim.fn.sha256(bytes),
+    fingerprint = fn.buffer_fingerprint(target),
   }
   fn.attach_artifact_commands(target, vim.b[target].opencode_artifact)
   vim.api.nvim_win_set_buf(current_win, target)
@@ -732,10 +690,10 @@ end
 --- All takes every kind.
 function fn.filter_for(entry, state)
   return function(item)
-    -- When a session is attached, only its own records (owner or author) are
-    -- visible. Absent session_id keeps the historical unfiltered behavior.
+    -- When a session is attached, only its own records (owner) are visible.
+    -- Absent session_id keeps the unfiltered behavior.
     if type(state.session_id) == 'string' then
-      if item.owner ~= state.session_id and item.author ~= state.session_id then
+      if item.owner ~= state.session_id then
         return false
       end
     end
@@ -787,12 +745,9 @@ function fn.picker_items(artifacts)
       kind = artifact.kind,
       status = artifact.status,
       description = artifact.description,
-      revision = artifact.revision,
       path = artifact.path,
       file = artifact.path,
-      format = artifact.format,
       owner = artifact.ownerSessionID,
-      author = artifact.authorSessionID,
       created_at = artifact.createdAt,
       updated_at = artifact.updatedAt,
       location = M.location(),
@@ -809,7 +764,7 @@ function fn.status_icon(status)
 end
 
 --- Row rendering: kind, title, status, and provenance (owner session, update
---- date, format).
+--- date).
 function fn.item_format(item)
   local provenance = {}
   if type(item.owner) == 'string' and item.owner ~= '' then
@@ -817,9 +772,6 @@ function fn.item_format(item)
   end
   if type(item.updated_at) == 'string' and item.updated_at ~= '' then
     provenance[#provenance + 1] = item.updated_at:sub(1, 10)
-  end
-  if type(item.format) == 'string' and item.format ~= '' then
-    provenance[#provenance + 1] = item.format
   end
   return {
     { fn.status_icon(item.status), item.status == 'approved' and 'DiagnosticInfo' or 'Comment' },
@@ -895,7 +847,6 @@ function fn.show_picker(artifacts, entry_key, session)
         'Kind: ' .. tostring(ctx.item.kind),
         'Status: ' .. tostring(ctx.item.status),
         'Owner: ' .. tostring(ctx.item.owner),
-        'Revision: ' .. tostring(ctx.item.revision),
         'Location: ' .. tostring(ctx.item.location),
         '',
         '(current Markdown file is not readable on disk)',
@@ -959,100 +910,8 @@ function M.open_picker(entry_key)
 end
 
 --------------------------------------------------------------------------------
--- Reload / feedback / approve / retry (buffer-local artifact actions)
+-- Feedback / approve / retry (buffer-local artifact actions)
 --------------------------------------------------------------------------------
-
---- Reload exactly `buf` — never the current buffer implicitly. When the buffer
---- is displayed in a window, reload through that window with its view
---- preserved and focus untouched; otherwise use a buffer-scoped reload.
-function fn.reload_buffer(buf)
-  for _, win in ipairs(vim.api.nvim_list_wins()) do
-    if vim.api.nvim_win_get_buf(win) == buf then
-      vim.api.nvim_win_call(win, function()
-        local view = vim.fn.winsaveview()
-        vim.cmd 'silent! edit'
-        vim.fn.winrestview(view)
-      end)
-      return true
-    end
-  end
-  vim.api.nvim_buf_call(buf, function()
-    vim.cmd 'silent! edit'
-  end)
-  return true
-end
-
---- Internal reconciliation: refresh one artifact buffer against the registry.
---- No user command is registered for it; external changes arrive through the
---- FileChangedShellPost hook instead.
-function fn.refresh(buf)
-  local meta = fn.artifact_meta(buf)
-  if not meta then
-    notify('Buffer is not an artifact buffer', vim.log.levels.WARN)
-    return
-  end
-  -- Capture the originating buffer and artifact identity now; the RPC returns
-  -- later, after the user may have switched, modified, or deleted it.
-  local artifact_id = meta.artifact_id
-  M.get(artifact_id, function(artifact, err)
-    -- Validate the callback target before touching anything.
-    if not vim.api.nvim_buf_is_valid(buf) then
-      return
-    end
-    local current_meta = fn.artifact_meta(buf)
-    if type(current_meta) ~= 'table' or current_meta.artifact_id ~= artifact_id then
-      notify('Refresh skipped: not this artifact', vim.log.levels.INFO)
-      return
-    end
-    if err then
-      notify(err, vim.log.levels.ERROR)
-      return
-    end
-    -- Re-check modification state at callback time; never overwrite local edits.
-    if vim.bo[buf].modified then
-      notify('Local modifications; refresh skipped', vim.log.levels.WARN)
-      return
-    end
-    local displayed = fn.displayed_revision(buf)
-    if not displayed then
-      notify('Cannot establish displayed revision; refresh refused', vim.log.levels.ERROR)
-      return
-    end
-    local known = false
-    for _, entry in ipairs(artifact.revisions or {}) do
-      if entry.revision == displayed then
-        known = true
-        break
-      end
-    end
-    if not known then
-      notify('Displayed content matches no revision; refresh refused', vim.log.levels.ERROR)
-      return
-    end
-    if displayed == artifact.revision then
-      -- Keep showing the stable file; preserve the view where possible.
-      fn.reload_buffer(buf)
-      notify('Artifact is up to date (' .. short_revision(artifact.revision) .. ')', vim.log.levels.INFO)
-      return
-    end
-    if type(artifact.path) ~= 'string' or vim.fn.filereadable(artifact.path) ~= 1 then
-      notify('Registry file not readable: ' .. tostring(artifact.path), vim.log.levels.ERROR)
-      return
-    end
-    fn.reload_buffer(buf)
-    local updated = fn.displayed_revision(buf)
-    if updated and updated == artifact.revision then
-      -- vim.b nested-table writes mutate a converted copy; reassign the whole
-      -- variable so the buffer variable actually updates.
-      local updated_meta = fn.artifact_meta(buf)
-      updated_meta.displayed_revision = updated
-      vim.b[buf].opencode_artifact = updated_meta
-      notify('Refreshed artifact to ' .. short_revision(artifact.revision), vim.log.levels.INFO)
-    else
-      notify('Refresh could not verify revision', vim.log.levels.ERROR)
-    end
-  end)
-end
 
 --- Redeliver one recorded submission: same request ID, same content, no new
 --- question, no new request ID.
@@ -1157,11 +1016,6 @@ function fn.feedback(buf, line_start, line_end)
     notify('Buffer is not an artifact buffer', vim.log.levels.WARN)
     return
   end
-  local displayed = fn.displayed_revision(buf)
-  if not displayed then
-    notify('Cannot establish displayed revision; feedback refused', vim.log.levels.ERROR)
-    return
-  end
   -- Capture the target and the selection before the input UI opens.
   local selected_text, selected_range
   if line_start and line_end and line_end >= line_start then
@@ -1198,7 +1052,6 @@ function fn.feedback(buf, line_start, line_end)
     local request_id = M.request_id()
     M.rpc('feedback', {
       artifactID = meta.artifact_id,
-      revision = displayed,
       requestID = request_id,
       question = question,
       selectedText = selected_text,
@@ -1275,11 +1128,6 @@ function fn.approve(buf)
     notify('Only draft plans can be approved', vim.log.levels.WARN)
     return
   end
-  local displayed = fn.displayed_revision(buf)
-  if not displayed then
-    notify('Cannot establish displayed revision; approval refused', vim.log.levels.ERROR)
-    return
-  end
   M.get(meta.artifact_id, function(artifact, err)
     if not vim.api.nvim_buf_is_valid(buf) then
       return
@@ -1292,7 +1140,7 @@ function fn.approve(buf)
     -- authorization wording so it cannot be clipped by a float border.
     local label = APPROVE_LABEL
     vim.ui.select({ label, 'Cancel' }, {
-      prompt = ('Approve "%s" at %s?'):format(tostring(artifact.title), short_revision(displayed)),
+      prompt = ('Approve "%s"?'):format(tostring(artifact.title)),
       format_item = function(item)
         return item
       end,
@@ -1307,7 +1155,6 @@ function fn.approve(buf)
       local request_id = M.request_id()
       M.rpc('approve', {
         artifactID = meta.artifact_id,
-        revision = displayed,
         requestID = request_id,
       }, function(output, err2)
         if err2 then
@@ -1343,9 +1190,9 @@ end
 
 --- FileChangedShellPost: an unmodified artifact buffer has just been reloaded
 --- by checktime (registered on the existing NVBuffers BufEnter/FocusGained/
---- CursorHold triggers with autoread). Recompute the revision from the actual
---- displayed bytes, reassign the entire metadata table, and — only when the
---- bytes changed — show a brief notice. The event never identifies the
+--- CursorHold triggers with autoread). Recompute the displayed-document
+--- fingerprint and, only when the bytes changed, refresh the buffer metadata
+--- from the record and show a brief notice. The event never identifies the
 --- writer, so nothing here attributes the change to an agent. No polling, no
 --- SSE, no extra checktime loop.
 function fn.on_file_changed(buf)
@@ -1359,35 +1206,39 @@ function fn.on_file_changed(buf)
   if vim.bo[buf].modified then
     return
   end
-  if vim.bo[buf].fileformat ~= 'unix' then
+
+  local fingerprint = fn.buffer_fingerprint(buf)
+  if meta.fingerprint == fingerprint then
     return
   end
-  local enc = vim.bo[buf].fileencoding
-  if enc ~= '' and enc ~= 'utf-8' then
-    return
-  end
+  local artifact_id = meta.artifact_id
+  notify(("artifact updated: '%s' (%s)"):format(tostring(meta.title), tostring(artifact_id)), vim.log.levels.INFO)
 
-  local bytes = fn.buffer_bytes(buf)
-  local fingerprint = 'sha256:' .. vim.fn.sha256(bytes)
-  local revision, status = Format.revision_and_status(bytes, meta.format)
-
-  -- Reassign the whole variable: nested writes into a vim.b-read table mutate
-  -- a converted copy, not the buffer variable.
-  local updated = vim.deepcopy(meta)
-  updated.displayed_revision = revision
-  updated.fingerprint = fingerprint
-  if status then
-    updated.status = status
-  end
-  vim.b[buf].opencode_artifact = updated
-
-  if meta.fingerprint and meta.fingerprint ~= fingerprint then
-    notify(("artifact updated: '%s' (%s)"):format(tostring(meta.title), tostring(meta.artifact_id)), vim.log.levels.INFO)
-  end
-  -- A buffer that no longer shows a draft plan must not keep approval UI.
-  if status and status ~= 'draft' then
-    fn.revoke_approval_ui(buf)
-  end
+  M.get(artifact_id, function(artifact, err)
+    if not vim.api.nvim_buf_is_valid(buf) then
+      return
+    end
+    local current = fn.artifact_meta(buf)
+    if not current or current.artifact_id ~= artifact_id then
+      return
+    end
+    -- Reassign the whole variable: nested writes into a vim.b-read table
+    -- mutate a converted copy, not the buffer variable.
+    local updated = vim.deepcopy(current)
+    updated.fingerprint = fingerprint
+    if not err and type(artifact) == 'table' then
+      updated.title = artifact.title or updated.title
+      updated.status = artifact.status or updated.status
+      updated.description = artifact.description or updated.description
+      updated.path = artifact.path or updated.path
+    end
+    vim.b[buf].opencode_artifact = updated
+    -- A buffer that no longer shows a draft plan must not keep approval UI.
+    if updated.status ~= 'draft' then
+      fn.revoke_approval_ui(buf)
+    end
+    fn.attach_artifact_commands(buf, updated)
+  end)
 end
 
 --------------------------------------------------------------------------------
