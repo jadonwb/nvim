@@ -1,5 +1,5 @@
 -- NVOpenCodeArtifactFormat: exact Lua implementation of the backend's
--- shared-markdown-v1 artifact format (format.mjs in the plan-bridge plugin)
+-- shared-markdown artifact format (format.mjs in the plan-bridge plugin)
 -- and its canonical revision algorithm, pinned by the cross-implementation
 -- fixtures in format-fixtures.json.
 --
@@ -12,11 +12,10 @@
 --   ---
 --   <body Markdown, exactly as supplied; no H1 is inserted>
 --
--- The content revision is "sha256:" over a canonical input that EXCLUDES the
--- bookkeeping fields (updated_at, status) so approval can flip the displayed
--- status without changing the content revision. Raw-markdown documents are
--- Markdown with no frontmatter; their revision is the SHA-256 of the exact raw
--- bytes.
+-- The content revision is the first 8 lowercase hex characters of the SHA-256
+-- of a canonical input that EXCLUDES the bookkeeping fields (updated_at,
+-- status) so approval can flip the displayed status without changing the
+-- content revision.
 --
 -- JSON-string serialization matches JSON.stringify byte for byte: only quote,
 -- backslash and C0 control characters are escaped (\b \t \n \f \r short
@@ -32,8 +31,7 @@
 local M = {}
 NVOpenCodeArtifactFormat = M
 
-M.FORMAT_NAME = 'shared-markdown-v1'
-M.FORMAT_VERSION = 1
+M.FORMAT_NAME = 'shared-markdown'
 
 M.OPEN_FENCE = '---'
 M.CLOSE_FENCE = '---'
@@ -480,9 +478,10 @@ function M.canonical_input(identity, body)
   return table.concat(lines, '\n') .. '\n' .. M.CLOSE_FENCE .. '\n' .. body
 end
 
---- Content revision of an identity header + body: "sha256:" + hex digest.
+--- Content revision of an identity header + body: the first 8 hex digits of
+--- the SHA-256 digest.
 function M.canonical_revision(identity, body)
-  return 'sha256:' .. vim.fn.sha256(M.canonical_input(identity, body))
+  return vim.fn.sha256(M.canonical_input(identity, body)):sub(1, 8)
 end
 
 --- Content revision of a displayed document. Rejects the same document
@@ -494,36 +493,26 @@ function M.document_revision(text)
 end
 
 --------------------------------------------------------------------------------
--- Raw-markdown and format-branched helpers
+-- Format-branched helpers
 --------------------------------------------------------------------------------
-
---- Raw-markdown document revision = SHA-256 of the exact raw bytes.
-function M.raw_revision(bytes)
-  return 'sha256:' .. vim.fn.sha256(bytes)
-end
 
 --- Revision of displayed bytes for a recorded artifact format. Unknown
 --- formats are rejected rather than hashed with the wrong algorithm.
 function M.revision_for_bytes(bytes, format)
-  if format == 'shared-markdown-v1' then
+  if format == 'shared-markdown' then
     return M.document_revision(bytes)
-  elseif format == 'raw-markdown' then
-    return M.raw_revision(bytes)
   end
   fail('unknown_format', ('unknown artifact format %s'):format(M.serialize_header_value(tostring(format))))
 end
 
---- Revision plus the lifecycle status visible in the displayed bytes
---- (nil status for raw-markdown documents, whose bytes carry no frontmatter).
+--- Revision plus the lifecycle status visible in the displayed bytes.
 function M.revision_and_status(bytes, format)
-  if format == 'shared-markdown-v1' then
+  if format == 'shared-markdown' then
     local ok, doc = pcall(M.parse_document, bytes)
     if not ok then
       return nil, nil
     end
     return M.canonical_revision(doc.header, doc.body), doc.header.status
-  elseif format == 'raw-markdown' then
-    return M.raw_revision(bytes), nil
   end
   return nil, nil
 end

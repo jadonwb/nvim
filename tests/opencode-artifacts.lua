@@ -129,7 +129,7 @@ local function write_bytes(path, text)
   fh:close()
 end
 
---- A shared-markdown-v1 document for test artifacts (built with the fixture-
+--- A shared-markdown document for test artifacts (built with the fixture-
 --- pinned format module).
 local function shared_doc(fields, body)
   local header = {
@@ -154,14 +154,13 @@ local function summary(over)
     title = 'Test artifact',
     description = 'Test description.',
     status = 'draft',
-    revision = 'sha256:' .. string.rep('a', 64),
+    revision = string.rep('a', 8),
     path = '/tmp/opencode/artifacts-main.md',
     ownerSessionID = 'ses_owner0000000000000000',
     authorSessionID = 'ses_author000000000000000',
     createdAt = '2026-09-13T10:00:00.000Z',
     updatedAt = '2026-09-13T10:00:00.000Z',
-    format = 'shared-markdown-v1',
-    schemaVersion = 2,
+    format = 'shared-markdown',
     authority = 'implementation',
   }, over or {})
 end
@@ -208,6 +207,64 @@ vim.fn.mkdir('/tmp/opencode', 'p')
 M.setup()
 M.keymaps()
 
+-- Session attachment harness: temp store plus a stubbed CLI, so tests never
+-- touch the real binary or the user's persisted attachments.
+M.attachments_path = '/tmp/opencode/opencode-artifacts-attachments.json'
+
+local function write_attachments(map)
+  local payload = next(map) == nil and vim.empty_dict() or map
+  vim.fn.writefile({ vim.json.encode(payload) }, M.attachments_path)
+  fn.reload_attachments()
+end
+
+--- Answer session list/create without spawning the real binary; records argv.
+local function make_cli(sessions, created_id)
+  local calls = {}
+  local cli = function(argv, opts, on_exit)
+    calls[#calls + 1] = { argv = argv, opts = opts }
+    local result
+    if argv[2] == 'session' and argv[3] == 'list' then
+      result = { code = 0, stdout = vim.json.encode(sessions or {}), stderr = '' }
+    elseif argv[2] == 'api' and argv[4] == '/api/session' then
+      result = {
+        code = 0,
+        stdout = vim.json.encode({ data = { id = created_id or 'ses_created0000000000001', title = 'New session' } }),
+        stderr = '',
+      }
+    else
+      result = { code = 1, stdout = '', stderr = 'unexpected argv: ' .. table.concat(argv, ' ') }
+    end
+    on_exit(result)
+  end
+  return cli, calls
+end
+
+local attached_session = { id = 'ses_testattached', title = 'Attached session', updated = os.time() * 1000 }
+local boot_cli = make_cli({ attached_session })
+M.cli = boot_cli
+
+--- Install a per-test CLI stub; restored when the test finishes.
+local function stub_cli(sessions, created_id)
+  local cli, calls = make_cli(sessions, created_id)
+  M.cli = cli
+  restore_hooks[#restore_hooks + 1] = function()
+    M.cli = boot_cli
+  end
+  return calls
+end
+
+--- Point the store at a temp file for this test; restored when it finishes.
+local function use_attachments_file(path)
+  M.attachments_path = path
+  fn.reload_attachments()
+  restore_hooks[#restore_hooks + 1] = function()
+    M.attachments_path = '/tmp/opencode/opencode-artifacts-attachments.json'
+    fn.reload_attachments()
+  end
+end
+
+write_attachments({ [vim.fs.normalize(M.location())] = 'ses_testattached' })
+
 --------------------------------------------------------------------------------
 -- Transport / RPC regressions (moved from the replaced plan-only tests)
 --------------------------------------------------------------------------------
@@ -230,7 +287,7 @@ test('build_argv normalizes empty inputs while preserving nonempty object inputs
   eq(fn.build_argv('list', {})[6], '{"input":{}}', 'empty input envelope')
   local body = fn.build_argv('feedback', {
     artifactID = 'art_x000000000000000000',
-    revision = 'sha256:' .. string.rep('7', 64),
+    revision = string.rep('7', 8),
     question = 'q with "quotes"\nand newline',
   })[6]
   assert(body:match('"input":%s*{'), 'nonempty input stays an object')
@@ -278,7 +335,7 @@ test('list resolves output.artifacts and get resolves output.artifact', function
 
   done, result = false, nil
   script_transport(M, function()
-    return { code = 0, stdout = vim.json.encode { output = { artifact = summary { revision = 'sha256:' .. string.rep('b', 64) } } } }
+    return { code = 0, stdout = vim.json.encode { output = { artifact = summary { revision = string.rep('b', 8) } } } }
   end)
   M.get('art_test0000000000000000', function(artifact, err)
     done = true
@@ -286,7 +343,7 @@ test('list resolves output.artifacts and get resolves output.artifact', function
   end)
   wait_for(function() return done end)
   eq(result.err, nil, 'no error')
-  eq(result.artifact.revision, 'sha256:' .. string.rep('b', 64), 'artifact view')
+  eq(result.artifact.revision, string.rep('b', 8), 'artifact view')
 end)
 
 test('list completion opens no window before explicit selection', function()
@@ -484,8 +541,7 @@ test('open attaches options, metadata, and canonical commands only to the verifi
   assert(type(meta) == 'table' and meta.artifact_id == 'art_test0000000000000000', 'metadata on target')
   eq(meta.displayed_revision, Format.document_revision(doc), 'displayed revision from bytes')
   eq(meta.fingerprint, 'sha256:' .. vim.fn.sha256(doc), 'full-document fingerprint')
-  eq(meta.format, 'shared-markdown-v1', 'format recorded')
-  eq(meta.schema_version, 2, 'schema version recorded')
+  eq(meta.format, 'shared-markdown', 'format recorded')
   eq(meta.kind, 'plan', 'kind recorded')
   eq(meta.status, 'draft', 'status recorded')
   eq(meta.owner_session_id, 'ses_owner0000000000000000', 'provenance owner')
@@ -583,12 +639,12 @@ test('refresh never overwrites a locally modified buffer', function()
   local lines = { '# Locally modified', 'my own note' }
   local buf = file_buffer('/tmp/opencode/artifacts-refresh1.md', table.concat(lines, '\n') .. '\n')
   vim.b[buf].opencode_artifact = {
-    artifact_id = 'art_refresh000000000001', location = '/tmp', title = 'T', path = vim.api.nvim_buf_get_name(buf), format = 'shared-markdown-v1',
+    artifact_id = 'art_refresh000000000001', location = '/tmp', title = 'T', path = vim.api.nvim_buf_get_name(buf), format = 'shared-markdown',
   }
   vim.bo[buf].modified = true
 
   local captured = script_transport(M, function()
-    return { code = 0, stdout = vim.json.encode { output = { artifact = artifact_view { revision = 'sha256:' .. string.rep('a', 64) } } } }
+    return { code = 0, stdout = vim.json.encode { output = { artifact = artifact_view { revision = string.rep('a', 8) } } } }
   end)
 
   fn.refresh(buf)
@@ -610,7 +666,7 @@ test('refresh reloads the originating buffer even after switching buffers while 
   local new_rev = Format.document_revision(new_doc)
   local artifact = 'art_refresh000000000002'
   local buf_a = file_buffer(f, old_doc)
-  vim.b[buf_a].opencode_artifact = { artifact_id = artifact, location = '/tmp', title = 'T', path = f, format = 'shared-markdown-v1', displayed_revision = old_rev }
+  vim.b[buf_a].opencode_artifact = { artifact_id = artifact, location = '/tmp', title = 'T', path = f, format = 'shared-markdown', displayed_revision = old_rev }
   local buf_b = scratch_buffer()
   vim.api.nvim_set_current_buf(buf_b)
 
@@ -638,7 +694,7 @@ test('refresh skips a buffer that became modified while the RPC was pending', fu
   local old_doc = shared_doc({ id = 'art_refresh000000000003' }, '# plan two\n')
   local artifact = 'art_refresh000000000003'
   local buf_a = file_buffer(f, old_doc)
-  vim.b[buf_a].opencode_artifact = { artifact_id = artifact, location = '/tmp', title = 'T', path = f, format = 'shared-markdown-v1' }
+  vim.b[buf_a].opencode_artifact = { artifact_id = artifact, location = '/tmp', title = 'T', path = f, format = 'shared-markdown' }
 
   local captured, pending = deferred_transport(M)
   fn.refresh(buf_a)
@@ -663,11 +719,11 @@ test('refresh aborts quietly on deleted targets and visibly on stale identities'
   local doc = shared_doc({ id = 'art_refresh000000000004' }, '# three\n')
   local artifact = 'art_refresh000000000004'
   local buf_a = file_buffer(f, doc)
-  vim.b[buf_a].opencode_artifact = { artifact_id = artifact, location = '/tmp', title = 'T', path = f, format = 'shared-markdown-v1' }
+  vim.b[buf_a].opencode_artifact = { artifact_id = artifact, location = '/tmp', title = 'T', path = f, format = 'shared-markdown' }
   local _, pending = deferred_transport(M)
   fn.refresh(buf_a)
   vim.api.nvim_buf_delete(buf_a, { force = true })
-  pending[1]({ code = 0, stdout = vim.json.encode { output = { artifact = artifact_view { id = artifact, revision = 'sha256:' .. string.rep('5', 64), path = f, revisions = {} } } } })
+  pending[1]({ code = 0, stdout = vim.json.encode { output = { artifact = artifact_view { id = artifact, revision = string.rep('5', 8), path = f, revisions = {} } } } })
   vim.wait(200, function() return false end)
 
   -- Stale identity while pending: abort with a notice, content untouched.
@@ -675,12 +731,12 @@ test('refresh aborts quietly on deleted targets and visibly on stale identities'
   local doc2 = shared_doc({ id = 'art_refresh000000000005' }, '# four\n')
   local artifact2 = 'art_refresh000000000005'
   local buf_b = file_buffer(f2, doc2)
-  vim.b[buf_b].opencode_artifact = { artifact_id = artifact2, location = '/tmp', title = 'T', path = f2, format = 'shared-markdown-v1' }
+  vim.b[buf_b].opencode_artifact = { artifact_id = artifact2, location = '/tmp', title = 'T', path = f2, format = 'shared-markdown' }
   fn.refresh(buf_b)
   -- Assign the whole variable: nested writes into a vim.b-read table mutate a
   -- converted copy, not the buffer variable.
-  vim.b[buf_b].opencode_artifact = { artifact_id = 'art_reused0000000000001', location = '/tmp', title = 'Other', path = f2, format = 'shared-markdown-v1' }
-  pending[2]({ code = 0, stdout = vim.json.encode { output = { artifact = artifact_view { id = artifact2, revision = 'sha256:' .. string.rep('6', 64), path = f2, revisions = {} } } } })
+  vim.b[buf_b].opencode_artifact = { artifact_id = 'art_reused0000000000001', location = '/tmp', title = 'Other', path = f2, format = 'shared-markdown' }
+  pending[2]({ code = 0, stdout = vim.json.encode { output = { artifact = artifact_view { id = artifact2, revision = string.rep('6', 8), path = f2, revisions = {} } } } })
   wait_for(function() return #notifications >= 1 end)
   restore_notify()
 
@@ -785,7 +841,7 @@ test('persisted retry from server records survives a module reset', function()
             artifact = {
               id = artifact,
               feedback = {
-                { requestID = 'req_server_recorded1', revision = 'sha256:' .. string.rep('a', 64), question = 'why?', delivery = { state = 'failed', error = 'owner unavailable' }, createdAt = '2026-09-13T10:00:00.000Z' },
+                { requestID = 'req_server_recorded1', revision = string.rep('a', 8), question = 'why?', delivery = { state = 'failed', error = 'owner unavailable' }, createdAt = '2026-09-13T10:00:00.000Z' },
               },
             },
           },
@@ -838,8 +894,7 @@ test('picker records populate file and path plus generic metadata', function()
   eq(item.artifact_id, 'art_test0000000000000000', 'artifact id')
   eq(item.kind, 'plan', 'kind')
   eq(item.status, 'draft', 'status')
-  eq(item.format, 'shared-markdown-v1', 'format')
-  eq(item.schema_version, 2, 'schema version')
+  eq(item.format, 'shared-markdown', 'format')
   eq(item.owner, 'ses_owner0000000000000000', 'provenance')
   eq(item.updated_at, '2026-09-13T10:00:00.000Z', 'updated at')
 end)
@@ -855,7 +910,7 @@ test('row rendering shows kind, title, status and provenance', function()
   assert(line:find('Test artifact', 1, true), 'title shown: ' .. line)
   assert(line:find('draft', 1, true), 'status shown: ' .. line)
   assert(line:find('ses_owne', 1, true), 'owner provenance shown: ' .. line)
-  assert(line:find('shared%-markdown%-v1', 1, false), 'format provenance shown: ' .. line)
+  assert(line:find('shared%-markdown', 1, false), 'format provenance shown: ' .. line)
 end)
 
 local filter_artifacts = {
@@ -946,7 +1001,7 @@ test('open_picker opens the picker whenever records exist so approved entries st
   restore_snacks()
 
   eq(#opened, 1, 'picker opened despite an empty default view')
-  eq(opened[1].title, 'OpenCode Plans (approved hidden)', 'labeled default filter')
+  eq(opened[1].title, 'OpenCode Plans · Attached session (approved hidden)', 'labeled default filter with the attached session')
   assert(type(opened[1].finder) == 'function', 'custom finder installed (not a default items finder)')
 end)
 
@@ -966,17 +1021,153 @@ test('open_picker notifies only when the registry has no records at all', functi
 end)
 
 --------------------------------------------------------------------------------
+-- Session attachment
+--------------------------------------------------------------------------------
+
+test('attachments persist a normalized-cwd map and invalid files load empty', function()
+  use_attachments_file('/tmp/opencode/attachments-roundtrip.json')
+  local path = M.attachments_path
+  os.remove(path)
+  fn.reload_attachments()
+
+  eq(next(fn.load_attachments()), nil, 'missing file loads as an empty map')
+
+  local key = vim.fs.normalize(M.location())
+  fn.set_session('ses_roundtrip000000000001')
+  eq(fn.load_attachments()[key], 'ses_roundtrip000000000001', 'stored under the normalized cwd key')
+
+  local decoded = vim.json.decode(table.concat(vim.fn.readfile(path), '\n'))
+  eq(decoded[key], 'ses_roundtrip000000000001', 'file content keyed by the normalized cwd')
+
+  vim.fn.writefile({ 'not json at all' }, path)
+  fn.reload_attachments()
+  eq(next(fn.load_attachments()), nil, 'invalid file loads as an empty map')
+end)
+
+test('session list decodes the bare CLI array with epoch-ms updated and the tab cwd', function()
+  local calls = stub_cli({ { id = 'ses_list0000000000000001', title = 'Listed', updated = 1789355302278 } })
+  local result
+  fn.session_list(M.location(), function(sessions, err)
+    result = { sessions = sessions, err = err }
+  end)
+  wait_for(function() return result ~= nil end)
+
+  eq(result.err, nil, 'no error')
+  eq(result.sessions[1].id, 'ses_list0000000000000001', 'bare array id')
+  eq(result.sessions[1].updated, 1789355302278, 'epoch-ms updated kept as a number')
+  eq(calls[1].argv[1], '/home/jadon/.opencode/bin/opencode', 'literal executable')
+  eq(calls[1].argv[2], 'session', 'session subcommand')
+  eq(calls[1].argv[3], 'list', 'list subcommand')
+  eq(calls[1].opts.cwd, M.location(), 'process cwd is the tab directory')
+end)
+
+test('session filter keeps owner-or-author matches and treats a null author as non-matching', function()
+  local entry = fn.entry_for('all')
+  local state = { show_approved = false, session_id = 'ses_attached0000000000001' }
+  local items = {
+    { id = 'owner', kind = 'plan', status = 'draft', owner = 'ses_attached0000000000001', author = 'ses_other00000000000001' },
+    { id = 'author', kind = 'evidence', status = 'published', owner = 'ses_other00000000000002', author = 'ses_attached0000000000001' },
+    { id = 'owner-null-author', kind = 'plan', status = 'draft', owner = 'ses_attached0000000000001', author = nil },
+    { id = 'other', kind = 'review', status = 'draft', owner = 'ses_other00000000000003', author = 'ses_other00000000000004' },
+    { id = 'null-author', kind = 'plan', status = 'draft', owner = 'ses_other00000000000005', author = nil },
+  }
+  local kept = vim.tbl_map(function(item)
+    return item.id
+  end, vim.tbl_filter(fn.filter_for(entry, state), items))
+  eq(kept, { 'owner', 'author', 'owner-null-author' }, 'only owner/author matches survive')
+end)
+
+test('a stored session absent from the cwd list prompts instead of erroring', function()
+  local restore_notify = capture_notify()
+  use_attachments_file('/tmp/opencode/attachments-absent.json')
+  write_attachments({ [vim.fs.normalize(M.location())] = 'ses_gone00000000000000001' })
+  stub_cli({ { id = 'ses_present0000000000001', title = 'Present', updated = 1789355302278 } })
+
+  local selected_items, chosen
+  vim.ui.select = function(items, _, cb)
+    selected_items = items
+    cb(items[1])
+  end
+  fn.ensure_session(function(session)
+    chosen = session
+  end)
+  wait_for(function() return chosen ~= nil end)
+  restore_notify()
+
+  eq(#selected_items, 2, 'listed session plus a New session row')
+  eq(selected_items[1].kind, 'session', 'first row is the listed session')
+  eq(selected_items[#selected_items].kind, 'new', 'final row is New session')
+  eq(chosen.id, 'ses_present0000000000001', 'chosen session returned')
+  eq(fn.stored_session_id(), 'ses_present0000000000001', 'choice persisted for the cwd')
+  eq(#error_notices(), 0, 'a list miss is not an error')
+end)
+
+test('cancelling the session prompt notifies, opens no picker, and leaves the map unchanged', function()
+  local restore_notify = capture_notify()
+  use_attachments_file('/tmp/opencode/attachments-cancel.json')
+  write_attachments({ [vim.fs.normalize(M.location())] = 'ses_gone00000000000000002' })
+  stub_cli({ { id = 'ses_present0000000000002', title = 'Present', updated = 1789355302278 } })
+  local opened, restore_snacks = stub_snacks()
+
+  vim.ui.select = function(_, _, cb)
+    cb(nil)
+  end
+  M.open_picker('plans')
+  wait_for(function() return #notifications >= 1 end)
+  restore_notify()
+  restore_snacks()
+
+  eq(#opened, 0, 'artifact picker never opened')
+  assert(notifications[1].msg:match('No OpenCode session attached'), 'cancel notice: ' .. notifications[1].msg)
+  eq(fn.stored_session_id(), 'ses_gone00000000000000002', 'stored map unchanged')
+end)
+
+test('New session creates with location.directory and stores the returned data.id', function()
+  local restore_notify = capture_notify()
+  use_attachments_file('/tmp/opencode/attachments-new.json')
+  write_attachments({})
+  local calls = stub_cli({}, 'ses_created000000000000001')
+
+  vim.ui.select = function(items, _, cb)
+    local last = items[#items]
+    eq(last.kind, 'new', 'final row is New session')
+    cb(last)
+  end
+  local created
+  fn.ensure_session(function(session)
+    created = session
+  end)
+  wait_for(function() return created ~= nil end)
+  restore_notify()
+
+  local create_call
+  for _, call in ipairs(calls) do
+    if call.argv[2] == 'api' then create_call = call end
+  end
+  assert(create_call, 'session create CLI call')
+  eq(create_call.argv[1], '/home/jadon/.opencode/bin/opencode', 'literal executable')
+  eq(create_call.argv[2], 'api', 'api subcommand')
+  eq(create_call.argv[3], 'post', 'POST method')
+  eq(create_call.argv[4], '/api/session', 'session create path')
+  eq(create_call.argv[5], '--data', 'data flag')
+  local body = vim.json.decode(create_call.argv[6])
+  eq(body.location.directory, M.location(), 'location.directory is the tab cwd, not the server cwd')
+  eq(created.id, 'ses_created000000000000001', 'returned data.id')
+  eq(fn.stored_session_id(), 'ses_created000000000000001', 'new session stored for the cwd')
+end)
+
+--------------------------------------------------------------------------------
 -- Canonical global commands and keymaps
 --------------------------------------------------------------------------------
 
 test('canonical entrypoint commands are registered', function()
-  for _, name in ipairs { 'OpenCodePlans', 'OpenCodeEvidence', 'OpenCodeReviews', 'OpenCodeArtifacts' } do
+  for _, name in ipairs { 'OpenCodePlans', 'OpenCodeEvidence', 'OpenCodeReviews', 'OpenCodeArtifacts', 'OpenCodeSession' } do
     eq(vim.fn.exists(':' .. name), 2, name .. ' global command registered')
   end
 end)
 
-test('global keymaps bind the four entrypoints', function()
-  for _, key in ipairs { '<leader>ap', '<leader>ae', '<leader>ar', '<leader>aa' } do
+test('global keymaps bind the artifact and session entrypoints', function()
+  for _, key in ipairs { '<leader>ap', '<leader>ae', '<leader>ar', '<leader>aa', '<leader>as' } do
     local map = vim.fn.maparg(key, 'n', false, true)
     assert(type(map) == 'table' and next(map) ~= nil, key .. ' bound')
   end
@@ -1136,7 +1327,7 @@ test('recorded and delivered approval closes only the originating buffer', funct
   vim.ui.select = function(items, opts, cb)
     assert(#opts.prompt:gsub('\n', '') == #opts.prompt, 'prompt is single-line')
     assert(opts.prompt:match('Test artifact'), 'prompt shows title')
-    assert(opts.prompt:match('sha256:'), 'prompt shows displayed revision')
+    assert(opts.prompt:match('at %x%x%x%x%x%x%x%x%?'), 'prompt shows displayed revision')
     cb(items[1])
   end
   fn.approve(target)
@@ -1147,7 +1338,7 @@ test('recorded and delivered approval closes only the originating buffer', funct
   eq(method_of(captured[2]), 'approve', 'approve RPC ran')
   local input = output_of(captured[2])
   eq(input.artifactID, 'art_approve000000000001', 'artifact binding')
-  assert(tostring(input.revision):match('^sha256:'), 'displayed revision sent')
+  assert(tostring(input.revision):match('^%x%x%x%x%x%x%x%x$'), 'displayed revision sent')
   assert(notifications[#notifications].msg:match('authority: implementation'), 'implementation authority notice')
 end)
 
@@ -1313,7 +1504,7 @@ test('approval carries the displayed revision, never the server latest', functio
   local other = scratch_buffer('other8')
   vim.api.nvim_set_current_buf(other)
 
-  local server_latest = 'sha256:' .. string.rep('9', 64)
+  local server_latest = string.rep('9', 8)
   local captured = script_transport(M, function(argv)
     if method_of(argv) == 'get' then
       return {
@@ -1334,7 +1525,7 @@ test('approval carries the displayed revision, never the server latest', functio
     select_opts = opts
     assert(#opts.prompt:gsub('\n', '') == #opts.prompt, 'prompt is single-line')
     assert(opts.prompt:match('Test artifact'), 'prompt shows title')
-    assert(opts.prompt:match('sha256:'), 'prompt shows displayed revision')
+    assert(opts.prompt:match('at %x%x%x%x%x%x%x%x%?'), 'prompt shows displayed revision')
     cb(items[1])
   end
   fn.approve(target)
@@ -1348,7 +1539,7 @@ test('approval carries the displayed revision, never the server latest', functio
   local input = output_of(approve_argv)
   eq(input.revision, Format.document_revision(doc), 'approval carries displayed revision')
   assert(input.revision ~= server_latest, 'server latest must not be substituted')
-  assert(select_opts.prompt:match('sha256:'), 'prompt revision prefix')
+  assert(select_opts.prompt:match('at %x%x%x%x%x%x%x%x%?'), 'prompt revision shown')
 end)
 
 test('historical authority approval records a freeze without Builder authorization', function()

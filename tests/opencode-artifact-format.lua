@@ -54,7 +54,6 @@ end
 
 test('fixture file describes this format and module', function()
   eq(fixtures.name, Format.FORMAT_NAME, 'format name')
-  eq(fixtures.formatVersion, Format.FORMAT_VERSION, 'format version')
   eq(fixtures.specification.frontmatterKeys, Format.FRONTMATTER_KEYS, 'frontmatter keys')
   eq(fixtures.specification.revisionKeys, Format.REVISION_KEYS, 'revision keys')
   eq(fixtures.specification.revisionExcludedKeys, { 'updated_at', 'status' }, 'excluded keys')
@@ -84,7 +83,7 @@ test('canonical revision fixtures (identity + body)', function()
   for _, case in ipairs(fixtures.revisionCases) do
     eq(Format.canonical_input(case.identity, case.body), case.canonicalInput, case.name .. ' canonical input')
     eq(Format.canonical_revision(case.identity, case.body), case.revision, case.name .. ' revision')
-    assert(case.revision:match('^sha256:[a-f0-9]+$') and #case.revision == 71, 'revision shape: ' .. case.revision)
+    assert(case.revision:match('^[a-f0-9]+$') and #case.revision == 8, 'revision shape: ' .. case.revision)
     if case.sameRevisionAs then
       eq(case.revision, by_name[case.sameRevisionAs].revision, case.name .. ' same revision')
     end
@@ -128,21 +127,14 @@ test('status-only re-serialization keeps the content revision', function()
   eq(Format.document_revision(approved_doc), Format.document_revision(base.document), 'content revision stable')
 end)
 
-test('raw-markdown documents hash the exact raw bytes', function()
-  local bytes = '# Saved plan\n\nwith two lines\n'
-  eq(Format.raw_revision(bytes), 'sha256:' .. vim.fn.sha256(bytes), 'raw-byte digest')
-  -- The final-newline distinction is significant for raw bytes too.
-  assert(Format.raw_revision(bytes) ~= Format.raw_revision(bytes:sub(1, -2)), 'trailing newline matters')
-  eq(Format.revision_for_bytes(bytes, 'raw-markdown'), Format.raw_revision(bytes), 'format branch')
-end)
-
 test('unknown formats are rejected, never hashed with the wrong algorithm', function()
-  local ok, err = pcall(Format.revision_for_bytes, 'bytes', 'shared-markdown-v2')
+  local ok, err = pcall(Format.revision_for_bytes, 'bytes', 'shared-markdown-v1')
   eq(ok, false, 'unknown format rejected')
   eq(err.problem, 'unknown_format', 'problem tag')
-  local ok2, revision = pcall(Format.revision_for_bytes, 'bytes', 'raw-markdown')
-  eq(ok2, true, 'raw-markdown accepted')
-  assert(revision:match('^sha256:'), 'digest returned')
+  local document = fixtures.serializationCases[1].document
+  local ok2, revision = pcall(Format.revision_for_bytes, document, 'shared-markdown')
+  eq(ok2, true, 'shared-markdown accepted')
+  eq(revision, Format.document_revision(document), 'canonical revision returned')
 end)
 
 test('header serialization rejects non-strings, unknown and missing fields', function()

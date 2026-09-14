@@ -78,14 +78,13 @@ local function summary(over)
     title = 'Draft plan',
     description = 'Smoke artifact.',
     status = 'draft',
-    revision = 'sha256:' .. string.rep('a', 64),
+    revision = string.rep('a', 8),
     path = temp_artifact_file 'draft-plan',
     ownerSessionID = 'ses_owner0000000000000000',
     authorSessionID = 'ses_author000000000000000',
     createdAt = '2026-09-13T10:00:00.000Z',
     updatedAt = '2026-09-13T10:00:00.000Z',
-    format = 'raw-markdown',
-    schemaVersion = 1,
+    format = 'shared-markdown',
   }, over or {})
 end
 
