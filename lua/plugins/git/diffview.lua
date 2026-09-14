@@ -6,11 +6,17 @@ local cleanup_scheduled = {}
 -- diffview-diff ($NVIM path): the wrapper copies Git's temporary difftool
 -- files into a private directory with left/ and right/ subdirectories and
 -- invokes NVDiffview.open_difftool remotely. The copies are view-only and
--- must outlive that call, so the only lifecycle state is the pending
--- directory during the synchronous open and a view-to-directory cleanup
--- association afterwards.
+-- must outlive that call, so lifecycle state is the pending directory during
+-- the synchronous open plus per-view associations kept until the view closes:
+-- the copies' directory, and the historical buffers it produced.
 local difftool_dirs = setmetatable({}, { __mode = 'k' })
 local pending_difftool_dir
+
+-- Historical buffers opened in a difftool view, recorded per view so they can
+-- be wiped when that view closes. Diffview deliberately retains LOCAL buffers
+-- (their backing copies are temporary), so without this the deleted-file
+-- entries would stay listed and loaded in the buffer picker forever.
+local difftool_bufs = setmetatable({}, { __mode = 'k' })
 
 function NVDiffview.is_diffview_tab(tabid)
   local ok, dv = pcall(require, 'diffview.lib')
@@ -297,6 +303,19 @@ return {
           NVTabs.set_label { icon = '', name = 'diff' }
         end,
         view_closed = function(view)
+          -- Wipe the historical buffers only together with the view that
+          -- opened them. The tab is already closed here, so no window displays
+          -- them and forced deletion is safe even though the copies on disk may
+          -- already be gone.
+          local bufs = view and difftool_bufs[view] or nil
+          if bufs then
+            difftool_bufs[view] = nil
+            for bufnr in pairs(bufs) do
+              if vim.api.nvim_buf_is_valid(bufnr) then
+                vim.api.nvim_buf_delete(bufnr, { force = true })
+              end
+            end
+          end
           -- Delete the copies only together with the view that owns them.
           local dir = view and difftool_dirs[view] or nil
           if dir then
@@ -316,6 +335,16 @@ return {
           if historical then
             vim.bo[bufnr].readonly = true
             vim.bo[bufnr].modifiable = false
+            -- Record exactly the buffers this guard classified as historical
+            -- so view_closed can wipe them without traversing Diffview state.
+            if view then
+              local bufs = difftool_bufs[view]
+              if not bufs then
+                bufs = {}
+                difftool_bufs[view] = bufs
+              end
+              bufs[bufnr] = true
+            end
           end
         end,
         diff_buf_win_enter = function(_bufnr, _winid, ctx)
