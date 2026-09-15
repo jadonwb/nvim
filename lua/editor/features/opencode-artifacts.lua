@@ -550,7 +550,6 @@ function fn.artifact_meta(buf)
   return meta
 end
 
-
 --------------------------------------------------------------------------------
 -- Artifact buffer
 --------------------------------------------------------------------------------
@@ -752,7 +751,7 @@ function fn.picker_title(entry, label, show_finished)
   if label then
     title = title .. ' · ' .. label
   end
-  return title .. (show_finished and ' (finished included)' or ' (finished hidden)')
+  return title .. (show_finished and ' (read included)' or ' (read hidden)')
 end
 
 --- Flat picker records for artifact summaries; both `file` and `path` are set
@@ -828,7 +827,7 @@ function fn.toggle_finished(picker, state, entry)
     end
     picker:find()
   end
-  notify(state.show_finished and 'Including finished artifacts' or 'Hiding finished artifacts', vim.log.levels.INFO)
+  notify(state.show_finished and 'Including read artifacts' or 'Hiding read artifacts', vim.log.levels.INFO)
   return state.show_finished
 end
 
@@ -858,7 +857,7 @@ function fn.show_picker(artifacts, entry_key, session)
       end, items)
     end,
     matcher = { fuzzy = false, regex = true },
-    layout = NVSPickerVerticalLayout.build(),
+    layout = NVSPickerHorizontalLayout.build(),
     filter = { filter = fn.filter_for(entry, state) },
     format = function(item)
       return fn.item_format(item)
@@ -925,7 +924,7 @@ function M.open_picker(entry_key)
       end
       artifacts = artifacts or {}
       if #artifacts == 0 then
-        notify(entry.empty .. M.location(), vim.log.levels.INFO)
+        vim.api.nvim_echo({ { entry.empty .. M.location() } }, true, {})
         return
       end
       -- Records exist: open the picker even when the default filter hides every
@@ -982,7 +981,11 @@ function fn.retry_from_record(artifact_id)
         candidates[#candidates + 1] = {
           requestID = artifact.approval.requestID,
           kind = 'approval',
-          label = ('approval %s — %s%s'):format(tostring(artifact.approval.requestID), tostring(delivery.state), delivery.error and (': ' .. delivery.error) or ''),
+          label = ('approval %s — %s%s'):format(
+            tostring(artifact.approval.requestID),
+            tostring(delivery.state),
+            delivery.error and (': ' .. delivery.error) or ''
+          ),
           detail = '',
         }
       end
