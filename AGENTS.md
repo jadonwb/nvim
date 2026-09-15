@@ -1,11 +1,8 @@
 # Neovim Config Repository
 
 This is `jadonwb/nvim`, a git submodule at
-`~/.local/share/chezmoi/.repos/nvim`; `~/.config/nvim` is a symlink to this
-directory.
-
-The OpenCode artifact UI lives in
-`lua/editor/features/opencode-artifacts.lua`.
+`~/.local/share/chezmoi/dot_config/external_nvim`. Chezmoi deploys
+`~/.config/nvim` as a regular directory.
 
 ## Procedure
 
