@@ -124,7 +124,7 @@ local function parse_hex_rgb(color)
   if type(color) ~= 'string' then
     return nil
   end
-  local hex = color:match '^#(%x+)$'
+  local hex = color:match('^#(%x+)$')
   if not hex then
     return nil
   end
@@ -189,7 +189,7 @@ local function format_progress_hl(p)
   -- > 1), it becomes the inner label and the fill ratio; the plain message is
   -- consumed (no duplicate). A useless denominator (d <= 1, e.g. clangd "0/1")
   -- draws the bar with no inner digits.
-  local n, d = msg_text:match '(%d+)%s*/%s*(%d+)'
+  local n, d = msg_text:match('(%d+)%s*/%s*(%d+)')
   local inner -- 16-char inner label; nil when the bar should carry no digits
   local ratio -- fill fraction 0..1
   local has_basis -- whether the bar can be drawn
@@ -227,7 +227,11 @@ local function format_progress_hl(p)
     local right = PROGRESS_BAR_WIDTH - #visible - left
     local bar = string.rep(' ', left) .. visible .. string.rep(' ', right)
     local filled = math.max(0, math.min(PROGRESS_BAR_WIDTH, math.floor(ratio * PROGRESS_BAR_WIDTH)))
-    table.insert(parts, '%#NVMessagesProgressFill#' .. string.sub(bar, 1, filled) .. '%#NVMessagesProgressEmpty#' .. string.sub(bar, filled + 1))
+    table.insert(
+      parts,
+      '%#NVMessagesProgressFill#' .. string.sub(bar, 1, filled)
+        .. '%#NVMessagesProgressEmpty#' .. string.sub(bar, filled + 1)
+    )
   else
     -- no fraction and no percent: fall back to the plain message text
     if msg and tostring(msg) ~= '' then
@@ -305,9 +309,7 @@ local function refresh_statusline()
   pcall(function()
     require('lualine').refresh()
   end)
-  pcall(function()
-    vim.cmd 'redrawstatus'
-  end)
+  pcall(vim.cmd, 'redrawstatus')
 end
 
 local function start_progress_timer()
