@@ -22,10 +22,11 @@ and never parses it back into runtime state.
 | `:OpenCodeArtifacts` | `<leader>aa` | Every kind |
 | `:OpenCodeSession` | `<leader>as` | Attach or switch session |
 
-Evidence, Reviews and All hide approved rows until `<M-a>` (include-approved
-toggle) flips the filter; the toggle re-runs the finder and relabels the filter.
-`:OpenCodePlans` is an intentional kind-filtered view of draft plans (approved
-plans only appear with the toggle), not an alias. Rows show kind, title, status
+Evidence, Reviews and All hide resolved rows — `approved` plans and `read`
+evidence/reviews — until `<M-a>` (include-finished toggle) flips the filter; the
+toggle re-runs the finder and relabels the filter. `:OpenCodePlans` is an
+intentional kind-filtered view of draft plans (approved plans only appear with
+the toggle), not an alias. Rows show kind, title, status
 and owner/update provenance. Confirming an
 entry opens the artifact's generated Markdown view read-only in the current
 window; preview uses the real file. Nothing is ever deleted and there is no
@@ -44,11 +45,15 @@ Buffer-local commands and keymaps:
 
 - `OpenCodeArtifactFeedback` and `<leader>af` (normal/visual): feedback on the
   artifact; a visual range becomes the selected excerpt/range.
-- `OpenCodeArtifactRetryDelivery`: redeliver the recorded-but-undelivered
-  submission for this artifact (same request ID, no new prompt).
-- `OpenCodeArtifactApprove` and `<leader>ay` (normal): approve the artifact;
-  attached to every non-approved artifact (draft plan, published
-  evidence/review).
+- `OpenCodeArtifactRetryDelivery`: redeliver the recorded-but-undelivered plan
+  approval for this artifact (same request ID, no new prompt).
+- `OpenCodeArtifactApprove` and `<leader>ay` (normal): approve a draft plan;
+  attached to plan buffers only (plans never approve from `approved`).
+- `OpenCodeArtifactMarkRead` and the same `<leader>ay` (normal): mark a
+  published evidence/review read; attached to evidence/review buffers that are
+  not yet `read`. A plan buffer and an evidence buffer never share a key: the
+  key is buffer-local, so `<leader>ay` is Approve on a plan and Mark read on an
+  evidence/review.
 
 ## Feedback submission
 
@@ -57,31 +62,37 @@ screen, wrapping enabled). Enter inserts a newline; Alt+Enter submits from
 insert and normal mode; Escape/q/`<M-w>`/leaving the dialog cancels. The
 question is limited to 16384 UTF-8 bytes and the selected excerpt to 65536.
 Delivery notices state transport facts only: delivered means handed to the
-Planner session, not that the Planner has processed or acted on it. When a
-submission is recorded but not delivered, the exact request ID stays retryable.
+Planner session, not that the Planner has processed or acted on it. Feedback is
+send-once: a recorded-but-undelivered feedback submission is never retried
+(retry is plan-approval-only).
 
-## Approval
+## Plan approval and Mark read
 
-`OpenCodeArtifactApprove`/`<leader>ay` exist on every non-approved artifact
-buffer: a draft plan, a published evidence, or a published review. The confirm
-step shows an explicitly selectable per-kind label (`Approve this plan`,
-`Approve this evidence`, `Approve this review`) and the title. A recorded plan
-approval authorizes Builder; approving evidence/review marks the artifact
-user-reviewed, and the picker hides approved rows for every kind until the
-include-approved toggle (`<M-a>`) includes them. After an approval is recorded —
-including when its notification fails — only the originating buffer is closed
-(revalidating buffer, identity and modified state; nothing is force-deleted, and
-transport failures or unknown admission keep the buffer open). If the approved
-buffer stays open (displayed elsewhere), its approval UI is removed. A
-recorded-but-undelivered approval is redeliverable from the picker after the
-close. Patching an approved evidence/review returns it to `published`
-(un-approved), so it reappears in pickers and its approval UI returns.
+`OpenCodeArtifactApprove`/`<leader>ay` exist only on draft plan buffers. The
+confirm step shows the explicit label `Approve this plan` and the title. A
+recorded plan approval authorizes Builder (the plan freezes; the picker hides
+`approved` rows until the include-finished toggle `<M-a>` includes them). After
+an approval is recorded — including when its notification fails — only the
+originating buffer is closed (revalidating buffer, identity and modified state;
+nothing is force-deleted, and transport failures or unknown admission keep the
+buffer open). If the approved buffer stays open (displayed elsewhere), its
+approval UI is removed. A recorded-but-undelivered approval is redeliverable
+from the picker after the close. Non-plans are never approved.
+
+`OpenCodeArtifactMarkRead`/`<leader>ay` exist only on published evidence/review
+buffers. The confirm step shows `Mark this evidence read` / `Mark this review
+read`. Mark read records the dismissal on the server (`status: read`) with NO
+owner notification and NO delivery handling, then closes the originating
+buffer. The picker hides `read` rows until the include-finished toggle includes
+them. Patching a `read` evidence/review returns it to `published` (un-read), so
+it reappears in pickers and its mark-read UI returns.
 
 ## Retry from the picker
 
-`<M-r>` on a picker row fetches that artifact's record, lists its persisted
-pending/failed feedback/approval submissions, and retries the selected original
-request ID. The records live server-side, so recovery works after closing the
+`<M-r>` on a picker row fetches that artifact's record, lists its
+recorded-but-undelivered plan approval, and retries that original request ID.
+Retry is plan-approval-only: feedback and evidence/review submissions are never
+retryable. The records live server-side, so recovery works after closing the
 buffer and after restarting Neovim; list rendering never fetches full records.
 
 ## External changes

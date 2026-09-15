@@ -10,7 +10,8 @@
 --
 -- Artifacts are read-only generated Markdown views in the plan-bridge registry,
 -- opened only through explicit selection and addressed by artifact ID. Approval
--- of a plan is what authorizes Builder.
+-- of a plan is what authorizes Builder; evidence/reviews are dismissed with
+-- Mark read (status `read`) and never emit a notification.
 
 NVOpenCodeArtifacts = {}
 local M = NVOpenCodeArtifacts
@@ -20,9 +21,10 @@ local fn = {}
 -- Recorded-but-undelivered submissions that can be retried verbatim, keyed by
 -- artifact ID: { requestID, kind, artifact_id, location }. A retry re-sends
 -- the exact recorded request; it never asks a new question or mints a new
--- request ID. This is editor-local bookkeeping for the live buffer command
--- only; the durable recovery path is the server record (see
--- fn.retry_from_record), so retryable submissions survive an editor restart.
+-- request ID. Retry is PLAN-APPROVAL-ONLY: only fn.approve records retry state
+-- here. This is editor-local bookkeeping for the live buffer command only; the
+-- durable recovery path is the server record (see fn.retry_from_record), so
+-- retryable submissions survive an editor restart.
 local retry_state = {}
 
 --- Record an undelivered submission so the in-buffer retry command can
@@ -45,14 +47,15 @@ local TIMEOUT_MS = 15000
 local QUESTION_MAX_BYTES = 16384
 local SELECTION_MAX_BYTES = 65536
 
--- Approval label per kind. Approval is the recorded decision; for plans it
--- also authorizes Builder.
+-- Context-sensitive action label per kind. `<leader>ay` approves a plan (the
+-- Builder authorization, with an owner notification) and marks evidence/reviews
+-- read (a dismissal with no notification).
 function fn.approval_label(kind)
   if kind == 'evidence' then
-    return 'Approve this evidence'
+    return 'Mark this evidence read'
   end
   if kind == 'review' then
-    return 'Approve this review'
+    return 'Mark this review read'
   end
   return 'Approve this plan'
 end
@@ -583,28 +586,31 @@ function fn.attach_buffer_keymaps(buf)
   end, { buffer = buf, nowait = true, silent = true, desc = 'Ask about the selected lines of this artifact' })
 end
 
---- Approval keymap (every non-approved artifact).
-function fn.attach_approval_keymap(buf, kind)
+--- Context-sensitive `<leader>ay`: Approve for plans, Mark read for
+--- evidence/reviews. The action depends on the buffer's kind.
+function fn.attach_approval_keymap(buf, meta)
+  local action = meta.kind == 'plan' and fn.approve or fn.mark_read
   vim.keymap.set('n', '<leader>ay', function()
-    fn.approve(buf)
-  end, { buffer = buf, nowait = true, silent = true, desc = fn.approval_label(kind) })
+    action(buf)
+  end, { buffer = buf, nowait = true, silent = true, desc = fn.approval_label(meta.kind) })
 end
 
---- Approval UI (command + keymap) exists only while the buffer shows a
---- non-approved artifact; it is removed whenever the buffer is known to show an
---- approved one.
+--- Action UI (commands + keymap) exists only while the buffer shows a
+--- non-resolved artifact; it is removed whenever the buffer is known to show an
+--- approved plan or a read evidence/review.
 function fn.revoke_approval_ui(buf)
   if not vim.api.nvim_buf_is_valid(buf) then
     return
   end
   pcall(vim.api.nvim_buf_del_user_command, buf, 'OpenCodeArtifactApprove')
+  pcall(vim.api.nvim_buf_del_user_command, buf, 'OpenCodeArtifactMarkRead')
   pcall(vim.keymap.del, 'n', '<leader>ay', { buffer = buf })
 end
 
 function fn.attach_artifact_commands(buf, meta)
   -- In-place reload over already-managed buffers: drop the canonical
   -- registrations first so only the current ones can exist.
-  for _, name in ipairs { 'OpenCodeArtifactFeedback', 'OpenCodeArtifactRetryDelivery', 'OpenCodeArtifactApprove' } do
+  for _, name in ipairs { 'OpenCodeArtifactFeedback', 'OpenCodeArtifactRetryDelivery', 'OpenCodeArtifactApprove', 'OpenCodeArtifactMarkRead' } do
     pcall(vim.api.nvim_buf_del_user_command, buf, name)
   end
 
@@ -613,13 +619,18 @@ function fn.attach_artifact_commands(buf, meta)
     desc = 'Ask about this artifact',
   })
   vim.api.nvim_buf_create_user_command(buf, 'OpenCodeArtifactRetryDelivery', retry_command(buf), {
-    desc = 'Redeliver recorded request',
+    desc = 'Redeliver recorded plan approval',
   })
-  if meta.status ~= 'approved' then
+  if meta.kind == 'plan' and meta.status ~= 'approved' then
     vim.api.nvim_buf_create_user_command(buf, 'OpenCodeArtifactApprove', function()
       fn.approve(buf)
     end, { desc = fn.approval_label(meta.kind) })
-    fn.attach_approval_keymap(buf, meta.kind)
+    fn.attach_approval_keymap(buf, meta)
+  elseif meta.kind ~= 'plan' and meta.status == 'published' then
+    vim.api.nvim_buf_create_user_command(buf, 'OpenCodeArtifactMarkRead', function()
+      fn.mark_read(buf)
+    end, { desc = fn.approval_label(meta.kind) })
+    fn.attach_approval_keymap(buf, meta)
   end
 
   fn.attach_buffer_keymaps(buf)
@@ -694,10 +705,11 @@ function fn.entry_for(entry_key)
   return ENTRY_POINTS[entry_key] or ENTRY_POINTS.all
 end
 
---- Entry-point filter. Approved artifacts are hidden in every entry until the
---- <M-a> toggle includes them; the Plans entry is an intentional kind-filtered
---- view defaulting to draft plans only. Evidence and Reviews filter by kind;
---- All takes every kind.
+--- Entry-point filter. Resolved artifacts — approved plans and read
+--- evidence/reviews — are hidden in every entry until the <M-a>
+--- include-finished toggle includes them. The Plans entry is an intentional
+--- kind-filtered view defaulting to draft plans only. Evidence and Reviews
+--- filter by kind; All takes every kind.
 function fn.filter_for(entry, state)
   return function(item)
     -- When a session is attached, only its own records (owner) are visible.
@@ -710,8 +722,8 @@ function fn.filter_for(entry, state)
     if entry.kinds and not entry.kinds[item.kind] then
       return false
     end
-    if item.status == 'approved' then
-      return state.show_approved == true
+    if item.status == 'approved' or item.status == 'read' then
+      return state.show_finished == true
     end
     if entry.plans_only then
       return item.status == 'draft'
@@ -734,13 +746,13 @@ function fn.session_label(session)
   return nil
 end
 
---- Picker title: "<entry> · <session label> (approved hidden|included)".
-function fn.picker_title(entry, label, show_approved)
+--- Picker title: "<entry> · <session label> (finished hidden|included)".
+function fn.picker_title(entry, label, show_finished)
   local title = entry.title
   if label then
     title = title .. ' · ' .. label
   end
-  return title .. (show_approved and ' (approved included)' or ' (approved hidden)')
+  return title .. (show_finished and ' (finished included)' or ' (finished hidden)')
 end
 
 --- Flat picker records for artifact summaries; both `file` and `path` are set
@@ -770,6 +782,9 @@ function fn.status_icon(status)
   if status == 'approved' then
     return '󰗡'
   end
+  if status == 'read' then
+    return '󰷈'
+  end
   return '󰤙'
 end
 
@@ -783,8 +798,9 @@ function fn.item_format(item)
   if type(item.updated_at) == 'string' and item.updated_at ~= '' then
     provenance[#provenance + 1] = item.updated_at:sub(1, 10)
   end
+  local highlight = item.status == 'approved' and 'DiagnosticInfo' or (item.status == 'read' and 'DiagnosticOk' or 'Comment')
   return {
-    { fn.status_icon(item.status), item.status == 'approved' and 'DiagnosticInfo' or 'Comment' },
+    { fn.status_icon(item.status), highlight },
     { ' ' },
     { '[' .. tostring(item.kind or '?') .. '] ', 'Comment' },
     { item.title or item.artifact_id },
@@ -793,16 +809,16 @@ function fn.item_format(item)
   }
 end
 
---- <M-a>: include/leave out approved artifacts. Flips the captured filter
---- state, relabels the picker title, and re-runs the finder so the rows are
---- recomputed.
-function fn.toggle_approved(picker, state, entry)
-  state.show_approved = not state.show_approved
+--- <M-a>: include/leave out finished artifacts (approved plans, read
+--- evidence/reviews). Flips the captured filter state, relabels the picker
+--- title, and re-runs the finder so the rows are recomputed.
+function fn.toggle_finished(picker, state, entry)
+  state.show_finished = not state.show_finished
   if picker then
     -- The picker copies the title at construction; opts.title is never read
     -- again, so the rendered title must be set (and re-rendered) directly.
     -- Keep the same " · <session>" prefix while flipping included/hidden.
-    picker.title = fn.picker_title(entry, state.session_label, state.show_approved)
+    picker.title = fn.picker_title(entry, state.session_label, state.show_finished)
     if picker.update_titles then
       picker:update_titles()
     end
@@ -812,8 +828,8 @@ function fn.toggle_approved(picker, state, entry)
     end
     picker:find()
   end
-  notify(state.show_approved and 'Including approved artifacts' or 'Hiding approved artifacts', vim.log.levels.INFO)
-  return state.show_approved
+  notify(state.show_finished and 'Including finished artifacts' or 'Hiding finished artifacts', vim.log.levels.INFO)
+  return state.show_finished
 end
 
 function fn.show_picker(artifacts, entry_key, session)
@@ -825,11 +841,11 @@ function fn.show_picker(artifacts, entry_key, session)
   if type(session) == 'table' and type(session.id) == 'string' and session.id ~= '' then
     session_id = session.id
   end
-  local state = { show_approved = false, session_id = session_id, session_label = label }
+  local state = { show_finished = false, session_id = session_id, session_label = label }
   Snacks.picker {
     title = fn.picker_title(entry, label, false),
     -- Keep the picker open when the default filter hides every row (e.g. all
-    -- existing plans are approved): the <M-a> include-approved toggle must be
+    -- existing plans are approved): the <M-a> include-finished toggle must be
     -- able to reach those records from the empty default view.
     show_empty = true,
     -- Custom finder: the default items finder returns opts.items verbatim and
@@ -870,8 +886,8 @@ function fn.show_picker(artifacts, entry_key, session)
       fn.open_artifact_buffer(item)
     end,
     actions = {
-      opencode_toggle_approved = function(picker)
-        fn.toggle_approved(picker, state, entry)
+      opencode_toggle_finished = function(picker)
+        fn.toggle_finished(picker, state, entry)
       end,
       opencode_retry = function(_, item)
         if item and item.artifact_id then
@@ -882,13 +898,13 @@ function fn.show_picker(artifacts, entry_key, session)
     win = {
       input = {
         keys = {
-          ['<M-a>'] = { 'opencode_toggle_approved', mode = { 'n', 'i' } },
+          ['<M-a>'] = { 'opencode_toggle_finished', mode = { 'n', 'i' } },
           ['<M-r>'] = { 'opencode_retry', mode = { 'n', 'i' } },
         },
       },
       list = {
         keys = {
-          ['<M-a>'] = { 'opencode_toggle_approved', mode = { 'n', 'i' } },
+          ['<M-a>'] = { 'opencode_toggle_finished', mode = { 'n', 'i' } },
           ['<M-r>'] = { 'opencode_retry', mode = { 'n', 'i' } },
         },
       },
@@ -913,7 +929,7 @@ function M.open_picker(entry_key)
         return
       end
       -- Records exist: open the picker even when the default filter hides every
-      -- row, so the <M-a> include-approved toggle can reach those records.
+      -- row, so the <M-a> include-finished toggle can reach those records.
       fn.show_picker(artifacts, entry_key, session)
     end)
   end)
@@ -923,10 +939,10 @@ end
 -- Feedback / approve / retry (buffer-local artifact actions)
 --------------------------------------------------------------------------------
 
---- Redeliver one recorded submission: same request ID, same content, no new
---- question, no new request ID.
+--- Redeliver one recorded plan-approval submission: same request ID, same
+--- content, no new question, no new request ID. Retry is plan-approval-only.
 function fn.retry_request(artifact_id, request_id)
-  M.rpc('retry_delivery', {
+  M.rpc('retry_plan_delivery', {
     artifactID = artifact_id,
     requestID = request_id,
   }, function(output, err)
@@ -940,16 +956,17 @@ function fn.retry_request(artifact_id, request_id)
       notify('Recorded submission delivered', vim.log.levels.INFO)
       return
     end
-    record_undelivered(output.requestID or request_id, output.kind or 'feedback', artifact_id, M.location())
+    record_undelivered(output.requestID or request_id, output.kind or 'approval', artifact_id, M.location())
     notify(('Retry failed (%s): %s'):format(tostring(delivery.state), tostring(delivery.error)), vim.log.levels.ERROR)
   end)
 end
 
 --- Retry from the persisted server record (picker <M-r>): fetch only the
---- selected artifact, list its pending/failed feedback/approval submissions,
---- and retry the selected original request ID. The records live server-side,
---- so recovery works after closing the buffer and after restarting Neovim;
---- no full record is fetched for mere list rendering.
+--- selected artifact, list its pending/failed plan-approval submission, and
+--- retry the selected original request ID. The records live server-side, so
+--- recovery works after closing the buffer and after restarting Neovim; no
+--- full record is fetched for mere list rendering. Evidence/review mark-read
+--- and feedback are never retryable.
 function fn.retry_from_record(artifact_id)
   M.get(artifact_id, function(artifact, err)
     if err then
@@ -957,35 +974,25 @@ function fn.retry_from_record(artifact_id)
       return
     end
     local candidates = {}
-    for _, entry in ipairs(artifact.feedback or {}) do
-      local delivery = entry.delivery or {}
+    -- Plan-approval delivery only: the artifact must be a plan and its
+    -- approval submission must be undelivered.
+    if artifact.kind == 'plan' and type(artifact.approval) == 'table' then
+      local delivery = artifact.approval.delivery or {}
       if delivery.state ~= 'delivered' then
         candidates[#candidates + 1] = {
-          requestID = entry.requestID,
-          kind = 'feedback',
-          label = ('feedback %s — %s%s'):format(tostring(entry.requestID), tostring(delivery.state), delivery.error and (': ' .. delivery.error) or ''),
-          detail = entry.question or entry.selectedText or '',
-        }
-      end
-    end
-    local approval = artifact.approval
-    if type(approval) == 'table' then
-      local delivery = approval.delivery or {}
-      if delivery.state ~= 'delivered' then
-        candidates[#candidates + 1] = {
-          requestID = approval.requestID,
+          requestID = artifact.approval.requestID,
           kind = 'approval',
-          label = ('approval %s — %s%s'):format(tostring(approval.requestID), tostring(delivery.state), delivery.error and (': ' .. delivery.error) or ''),
+          label = ('approval %s — %s%s'):format(tostring(artifact.approval.requestID), tostring(delivery.state), delivery.error and (': ' .. delivery.error) or ''),
           detail = '',
         }
       end
     end
     if #candidates == 0 then
-      notify('No failed submissions recorded', vim.log.levels.INFO)
+      notify('No undelivered plan approval recorded', vim.log.levels.INFO)
       return
     end
     vim.ui.select(candidates, {
-      prompt = 'Retry which recorded submission?',
+      prompt = 'Retry which plan approval?',
       format_item = function(candidate)
         return candidate.label
       end,
@@ -1009,7 +1016,7 @@ function fn.retry_delivery(buf)
   end
   local state = retry_state[meta.artifact_id]
   if not state or not state.requestID then
-    notify('No recorded submission to retry', vim.log.levels.WARN)
+    notify('No recorded plan approval to retry', vim.log.levels.WARN)
     return
   end
   fn.retry_request(meta.artifact_id, state.requestID)
@@ -1073,8 +1080,8 @@ function fn.feedback(buf, line_start, line_end)
         notify('feedback delivered', vim.log.levels.INFO)
         return
       end
-      -- Recorded server-side but not (yet) delivered; retry verbatim later.
-      record_undelivered(output.requestID, 'feedback', meta.artifact_id, meta.location)
+      -- Feedback is send-once under the plan-only retry contract: it is
+      -- recorded server-side but never becomes a retryable submission.
       notify(('Feedback recorded but NOT delivered (%s): %s'):format(tostring(delivery.state), tostring(delivery.error)), vim.log.levels.ERROR)
     end)
   end)
@@ -1089,11 +1096,11 @@ function fn.clear_retry_state(artifact_id)
   retry_state[artifact_id] = nil
 end
 
---- Close only the captured originating buffer after a recorded approval. The
---- close revalidates buffer/identity/modified state; it never force-deletes
---- and never touches unrelated buffers. If the buffer remains open (displayed
---- elsewhere, or undeletable), it now shows an approved artifact and its
---- approval UI is removed. Delivery failures stay recoverable through the
+--- Close only the captured originating buffer after a recorded plan approval or
+--- mark-read. The close revalidates buffer/identity/modified state; it never
+--- force-deletes and never touches unrelated buffers. If the buffer remains open
+--- (displayed elsewhere, or undeletable), it now shows a resolved artifact and
+--- its action UI is removed. Plan delivery failures stay recoverable through the
 --- durable picker retry.
 function fn.close_after_approval(buf, meta)
   if not vim.api.nvim_buf_is_valid(buf) then
@@ -1114,14 +1121,26 @@ function fn.close_after_approval(buf, meta)
   end)
 end
 
+--- Plan approval: the Builder authorization. Plan-only and only from a draft
+--- plan; a successful approval delivers a notification to the owner session.
+--- Undelivered approvals stay retryable through retry_state and the durable
+--- picker retry. Evidence/reviews use fn.mark_read instead.
 function fn.approve(buf)
   local meta = fn.artifact_meta(buf)
   if not meta then
     notify('Buffer is not an artifact buffer', vim.log.levels.WARN)
     return
   end
+  if meta.kind ~= 'plan' then
+    notify('Approve applies to plans only; use Mark read for ' .. tostring(meta.kind), vim.log.levels.WARN)
+    return
+  end
   if meta.status == 'approved' then
-    notify('This artifact is already approved', vim.log.levels.WARN)
+    notify('This plan is already approved', vim.log.levels.WARN)
+    return
+  end
+  if meta.status ~= 'draft' then
+    notify('Only draft plans can be approved (status ' .. tostring(meta.status) .. ')', vim.log.levels.WARN)
     return
   end
   M.get(meta.artifact_id, function(artifact, err)
@@ -1145,11 +1164,11 @@ function fn.approve(buf)
         return
       end
       if choice ~= label then
-        notify('Artifact approval cancelled', vim.log.levels.INFO)
+        notify('Plan approval cancelled', vim.log.levels.INFO)
         return
       end
       local request_id = M.request_id()
-      M.rpc('approve', {
+      M.rpc('approve_plan', {
         artifactID = meta.artifact_id,
         requestID = request_id,
       }, function(output, err2)
@@ -1169,6 +1188,67 @@ function fn.approve(buf)
           record_undelivered(output.requestID, 'approval', meta.artifact_id, meta.location)
           notify(('Approval recorded but NOT delivered (%s): %s'):format(tostring(delivery.state), tostring(delivery.error)), vim.log.levels.ERROR)
         end
+        fn.close_after_approval(buf, meta)
+      end)
+    end)
+  end)
+end
+
+--- Mark read: evidence/review dismissal with NO notification and NO delivery
+--- handling. The RPC records status=read and closes the originating buffer;
+--- a patched read artifact returns to published and regains this UI.
+function fn.mark_read(buf)
+  local meta = fn.artifact_meta(buf)
+  if not meta then
+    notify('Buffer is not an artifact buffer', vim.log.levels.WARN)
+    return
+  end
+  if meta.kind == 'plan' then
+    notify('Mark read applies to evidence and reviews only; approve plans instead', vim.log.levels.WARN)
+    return
+  end
+  if meta.status == 'read' then
+    notify('This artifact is already marked read', vim.log.levels.WARN)
+    return
+  end
+  if meta.status ~= 'published' then
+    notify(('Only published evidence/reviews can be marked read (status %s)'):format(tostring(meta.status)), vim.log.levels.WARN)
+    return
+  end
+  M.get(meta.artifact_id, function(artifact, err)
+    if not vim.api.nvim_buf_is_valid(buf) then
+      return
+    end
+    if err then
+      notify(err, vim.log.levels.ERROR)
+      return
+    end
+    local label = fn.approval_label(meta.kind)
+    vim.ui.select({ label, 'Cancel' }, {
+      prompt = ('Mark read "%s"?'):format(tostring(artifact.title)),
+      format_item = function(item)
+        return item
+      end,
+    }, function(choice)
+      if not vim.api.nvim_buf_is_valid(buf) then
+        return
+      end
+      if choice ~= label then
+        notify('Mark read cancelled', vim.log.levels.INFO)
+        return
+      end
+      local request_id = M.request_id()
+      M.rpc('mark_read', {
+        artifactID = meta.artifact_id,
+        requestID = request_id,
+      }, function(output, err2)
+        if err2 then
+          notify(err2, vim.log.levels.ERROR)
+          return
+        end
+        -- No delivery branch, no retry state, no owner notification.
+        fn.clear_retry_state(meta.artifact_id)
+        notify('marked read', vim.log.levels.INFO)
         fn.close_after_approval(buf, meta)
       end)
     end)
@@ -1224,10 +1304,10 @@ function fn.on_file_changed(buf)
       updated.path = artifact.path or updated.path
     end
     vim.b[buf].opencode_artifact = updated
-    -- An approved buffer must not keep approval UI; a previously approved
-    -- evidence/review that returns to `published` (after a patch) regains it
-    -- through attach_artifact_commands below.
-    if updated.status == 'approved' then
+    -- A resolved buffer (approved plan or read evidence/review) must not keep
+    -- action UI; a previously resolved artifact that returns to `published`
+    -- (after a backend patch) regains it through attach_artifact_commands.
+    if updated.status == 'approved' or updated.status == 'read' then
       fn.revoke_approval_ui(buf)
     end
     fn.attach_artifact_commands(buf, updated)

@@ -79,7 +79,7 @@ test('RPC decoding unwraps {output} and surfaces RpcError payloads', function()
     eq(out.artifacts[1].id, 'art_x', 'unwrapped output')
   end)
 
-  fn.rpc_done('approve', { code = 0, stdout = '{"_tag":"RpcError","type":"validation","message":"no"}' }, function(out, err)
+  fn.rpc_done('approve_plan', { code = 0, stdout = '{"_tag":"RpcError","type":"validation","message":"no"}' }, function(out, err)
     eq(out, nil, 'no output on RPC error')
     assert(err:match('validation'), 'typed error surfaced: ' .. tostring(err))
     assert(err:match('no'), 'error message surfaced')
@@ -120,6 +120,162 @@ test('list resolves output.artifacts and get resolves output.artifact', function
   wait_for(function() return done end)
   eq(result.err, nil, 'no error')
   eq(result.artifact.id, 'art_get1', 'artifact view')
+end)
+
+test('approval_label is context-sensitive: plan approve vs evidence/review mark read', function()
+  eq(fn.approval_label('plan'), 'Approve this plan', 'plan label')
+  eq(fn.approval_label('evidence'), 'Mark this evidence read', 'evidence label')
+  eq(fn.approval_label('review'), 'Mark this review read', 'review label')
+end)
+
+test('filter_for hides approved and read unless the finished toggle is on', function()
+  local all = fn.entry_for('all')
+  local hidden = fn.filter_for(all, { show_finished = false })
+  eq(hidden({ status = 'approved', kind = 'plan' }), false, 'approved plan hidden by default')
+  eq(hidden({ status = 'read', kind = 'evidence' }), false, 'read evidence hidden by default')
+  eq(hidden({ status = 'draft', kind = 'plan' }), true, 'draft plan visible')
+  eq(hidden({ status = 'published', kind = 'review' }), true, 'published review visible')
+
+  local shown = fn.filter_for(all, { show_finished = true })
+  eq(shown({ status = 'approved', kind = 'plan' }), true, 'approved plan included by toggle')
+  eq(shown({ status = 'read', kind = 'evidence' }), true, 'read evidence included by toggle')
+
+  local plans = fn.filter_for(fn.entry_for('plans'), { show_finished = false })
+  eq(plans({ status = 'draft', kind = 'plan' }), true, 'plans entry defaults to drafts')
+  eq(plans({ status = 'approved', kind = 'plan' }), false, 'approved plans hidden in plans entry')
+
+  eq(fn.picker_title(all, nil, false):match('%([^)]*%)'), '(finished hidden)', 'title hides finished')
+  eq(fn.picker_title(all, nil, true):match('%([^)]*%)'), '(finished included)', 'title includes finished')
+end)
+
+test('approve is plan-only and never fires for evidence buffers', function()
+  local captured = {}
+  M.transport = function(argv, on_exit)
+    captured[#captured + 1] = argv
+    on_exit { code = 0, stdout = '{}' }
+  end
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.b[buf].opencode_artifact = {
+    artifact_id = 'art_evidence01',
+    location = M.location(),
+    title = 'Note',
+    kind = 'evidence',
+    status = 'published',
+    description = '',
+    path = '/tmp/opencode/note.md',
+    fingerprint = 'sha256:none',
+  }
+  fn.approve(buf)
+  eq(#captured, 0, 'approve on an evidence buffer sends no RPC call')
+  vim.api.nvim_buf_delete(buf, { force = true })
+  M.transport = nil
+end)
+
+test('mark_read records no delivery and no retry state for evidence/review', function()
+  local captured = {}
+  local selected = nil
+  local orig_select = vim.ui.select
+  vim.ui.select = function(items, opts, cb)
+    selected = items
+    cb(items[1])
+  end
+  NVBuffers = { delete_buf = function(_, _, cb) cb(true) end }
+  M.transport = function(argv, on_exit)
+    captured[#captured + 1] = argv
+    local method = argv[4]:match('/personal%.artifacts/([^?]+)')
+    if method == 'get' then
+      on_exit { code = 0, stdout = vim.json.encode { output = { artifact = { title = 'Note', kind = 'evidence', status = 'published' } } } }
+    elseif method == 'mark_read' then
+      on_exit { code = 0, stdout = vim.json.encode { output = { requestID = 'req_mark1', kind = 'read', deduplicated = false, artifact = { status = 'read' } } } }
+    else
+      on_exit { code = 0, stdout = '{}' }
+    end
+  end
+
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.b[buf].opencode_artifact = {
+    artifact_id = 'art_evidence02',
+    location = M.location(),
+    title = 'Note',
+    kind = 'evidence',
+    status = 'published',
+    description = '',
+    path = '/tmp/opencode/note2.md',
+    fingerprint = 'sha256:none',
+  }
+
+  local done = false
+  vim.schedule(function() fn.mark_read(buf) end)
+  wait_for(function()
+    return done or #captured >= 2
+  end)
+  -- Let the async callback finish delivering its notify/close.
+  vim.wait(200, function() return #captured >= 2 end)
+
+  eq(fn.retry_state_for('art_evidence02'), nil, 'mark_read records no retry state')
+  local methods = vim.tbl_map(function(argv) return argv[4]:match('/personal%.artifacts/([^?]+)') end, captured)
+  eq(methods[1], 'get', 'mark_read fetches the record first')
+  eq(methods[2], 'mark_read', 'mark_read calls the mark_read RPC method')
+  eq(selected[1], 'Mark this evidence read', 'confirm label is the mark-read label')
+  vim.api.nvim_buf_delete(buf, { force = true })
+  vim.ui.select = orig_select
+  NVBuffers = nil
+  M.transport = nil
+end)
+
+test('retry_from_record offers only undelivered plan approvals', function()
+  local chosen_items = nil
+  local orig_select = vim.ui.select
+  vim.ui.select = function(items, opts, cb)
+    chosen_items = items
+    cb(nil)
+  end
+  M.transport = function(argv, on_exit)
+    local method = argv[4]:match('/personal%.artifacts/([^?]+)')
+    if method == 'get' then
+      local artifact
+      if argv[6]:match('art_plan01') then
+        artifact = { kind = 'plan', feedback = { { requestID = 'req_fb1', delivery = { state = 'failed', error = 'down' } } }, approval = { requestID = 'req_ap1', delivery = { state = 'failed', error = 'down' } } }
+      else
+        artifact = { kind = 'evidence', feedback = { { requestID = 'req_fb2', delivery = { state = 'failed', error = 'down' } } }, approval = { requestID = 'req_ap2', delivery = { state = 'failed', error = 'down' } } }
+      end
+      on_exit { code = 0, stdout = vim.json.encode { output = { artifact = artifact } } }
+    else
+      on_exit { code = 0, stdout = '{}' }
+    end
+  end
+
+  local done = false
+  M.get('art_plan01', function()
+    fn.retry_from_record('art_plan01')
+    vim.schedule(function() done = true end)
+  end)
+
+  wait_for(function()
+    return done or chosen_items ~= nil
+  end)
+  vim.wait(300, function() return chosen_items ~= nil end)
+
+  assert(chosen_items ~= nil and #chosen_items == 1, 'only the undelivered plan approval is a candidate; got ' .. vim.inspect(chosen_items))
+  eq(chosen_items[1].kind, 'approval', 'candidate kind is approval')
+  eq(chosen_items[1].requestID, 'req_ap1', 'candidate request ID is the plan approval')
+
+  -- Evidence artifacts contribute no retry candidates even with undelivered
+  -- feedback/approval records.
+  chosen_items = nil
+  done = false
+  M.get('art_evidence99', function()
+    fn.retry_from_record('art_evidence99')
+    vim.schedule(function() done = true end)
+  end)
+  wait_for(function()
+    return done or chosen_items ~= nil
+  end)
+  vim.wait(300, function() return chosen_items ~= nil or done end)
+  eq(chosen_items, nil, 'evidence artifacts have no retry candidates')
+
+  vim.ui.select = orig_select
+  M.transport = nil
 end)
 
 print(('opencode-artifacts: %d passed, %d failed'):format(passed, failed))
