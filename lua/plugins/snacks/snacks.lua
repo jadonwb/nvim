@@ -20,17 +20,16 @@ return {
         timeout = 3000,
         level = vim.log.levels.DEBUG,
         date_format = '%T',
-        filter = function(n)
-          -- TODO: match via cleaner method?
-          local tab_label = vim.t.tab_label
-          if tab_label and tab_label.name and tab_label.name:find 'diff' then
-            -- TODO: enhance filtering?
-            if string.find(n.msg, '^Client %S+ quit with exit code %d+ and signal %d+%.') then
-              return false
-            end
-          end
-          return true
-        end,
+        -- TODO: revisit if still needed
+        -- filter = function(n)
+        --   local tab_label = vim.t.tab_label
+        --   if tab_label and tab_label.name and tab_label.name:find 'diff' then
+        --     if string.find(n.msg, '^Client %S+ quit with exit code %d+ and signal %d+%.') then
+        --       return false
+        --     end
+        --   end
+        --   return true
+        -- end,
       },
       indent = {
         indent = { enabled = false },
