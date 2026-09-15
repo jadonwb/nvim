@@ -524,15 +524,15 @@ function DiagnosticPopup.jump(opts)
   elseif opts.target == 'previous' then
     pos = vim.diagnostic.get_prev(get_pos_opts)
   else
-    log.error('Unexpected diagnostics target: ' .. vim.inspect(opts.target))
+    NVMessages.error('Unexpected diagnostics target: ' .. vim.inspect(opts.target))
     return false
   end
 
   if not pos then
     if opts.severity then
-      log.info('No ' .. vim.diagnostic.severity[opts.severity] .. ' diagnostics found')
+      NVMessages.info('No ' .. vim.diagnostic.severity[opts.severity] .. ' diagnostics found')
     else
-      log.info 'No diagnostics found'
+      NVMessages.info 'No diagnostics found'
     end
 
     return false
@@ -696,7 +696,7 @@ function HoverPopup.show()
       return
     end
     if not result or not result.contents then
-      log.info 'No information available'
+      NVMessages.info 'No information available'
       return
     end
 
@@ -1010,7 +1010,7 @@ function NVLspPopup.ensure_hidden()
     if popup then
       popup:unmount()
     else
-      log.warn "Popup parent ID is set, but it's not found in the state"
+      NVMessages.warn "Popup parent ID is set, but it's not found in the state"
     end
 
     return true

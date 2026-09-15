@@ -192,10 +192,10 @@ function NVGitWorktrees.close_tab(info)
       vim.cmd 'tabclose'
       vim.defer_fn(function()
         if not NVGit.remove_worktree(info.path, has_changes) then
-          log.error 'Failed to remove worktree'
+          NVMessages.error 'Failed to remove worktree'
           return
         end
-        log.info('Removed worktree: ' .. info.path)
+        NVMessages.info('Removed worktree: ' .. info.path)
 
         -- Close buffers from the removed worktree path
         -- TODO: share logic with eventual close and delete all buffers type stuff
@@ -210,10 +210,10 @@ function NVGitWorktrees.close_tab(info)
 
         if choice == 'Delete branch and worktree' then
           if not NVGit.delete_branch(info.branch) then
-            log.error 'Failed to delete branch'
+            NVMessages.error 'Failed to delete branch'
             return
           end
-          log.info('Deleted branch: ' .. info.branch)
+          NVMessages.info('Deleted branch: ' .. info.branch)
         end
       end, 100)
     end

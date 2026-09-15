@@ -26,7 +26,7 @@ function NVFocusMode.autocmds()
 
         if not focus_tab_exists then
           NVFocusMode.tab = nil
-          log.trace 'Focus tab was closed, cleared focus state'
+          NVMessages.trace 'Focus tab was closed, cleared focus state'
         end
       end
     end,
@@ -51,25 +51,25 @@ function NVFocusMode.toggle()
     return vim.fn.winsaveview()
   end)
 
-  log.trace('Toggling focus — state: ' .. (NVFocusMode.tab and 'active' or 'inactive'))
+  NVMessages.trace('Toggling focus — state: ' .. (NVFocusMode.tab and 'active' or 'inactive'))
 
   if NVFocusMode.tab then
     local current_tab = vim.api.nvim_get_current_tabpage()
 
     if NVFocusMode.tab.id ~= current_tab then
-      log.trace 'Focus tab exists but is not active. Activating it.'
+      NVMessages.trace 'Focus tab exists but is not active. Activating it.'
       vim.api.nvim_set_current_tabpage(NVFocusMode.tab.id)
       local current_win = vim.api.nvim_get_current_win()
       vim.api.nvim_win_set_buf(current_win, current_buf)
       vim.api.nvim_win_set_cursor(current_win, current_cursor)
     else
-      log.trace 'Focus tab is active. Deactivating it.'
+      NVMessages.trace 'Focus tab is active. Deactivating it.'
       NVFocusMode.deactivate_active()
     end
     return
   end
 
-  log.trace 'No focus tab found. Creating one.'
+  NVMessages.trace 'No focus tab found. Creating one.'
 
   local current_tab = vim.api.nvim_get_current_tabpage()
   local current_win = target_win
@@ -103,11 +103,11 @@ function NVFocusMode.ensure_deactivated()
   local current_tab = vim.api.nvim_get_current_tabpage()
 
   if NVFocusMode.tab.id ~= current_tab then
-    log.trace 'Focus tab exists but is not active. Closing it.'
+    NVMessages.trace 'Focus tab exists but is not active. Closing it.'
     local tab_number = vim.api.nvim_tabpage_get_number(NVFocusMode.tab.id)
     vim.cmd('tabclose ' .. tab_number)
   else
-    log.trace 'Focus tab is active. Deactivating it.'
+    NVMessages.trace 'Focus tab is active. Deactivating it.'
     NVFocusMode.deactivate_active()
   end
 
@@ -125,7 +125,7 @@ function NVFocusMode.ensure_deactivated_if_active()
     return false
   end
 
-  log.trace 'Focus tab is active. Deactivating it.'
+  NVMessages.trace 'Focus tab is active. Deactivating it.'
   NVFocusMode.deactivate_active()
 
   return true

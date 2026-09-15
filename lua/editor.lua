@@ -1,7 +1,7 @@
 require 'types'
 
 require 'editor.keymap'
-require 'editor.log'
+require 'editor.messages'
 require 'editor.screen'
 require 'editor.borders'
 require 'editor.keys'

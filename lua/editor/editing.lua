@@ -56,7 +56,7 @@ function fn.paste()
       vim.o.formatoptions = fopts
     end, 10)
   else
-    log.error 'Unexpected mode'
+    NVMessages.error 'Unexpected mode'
   end
 end
 

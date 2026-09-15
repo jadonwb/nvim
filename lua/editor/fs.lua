@@ -54,7 +54,7 @@ function NVFS.format(loc, fmt)
   elseif fmt == 'filestem' then
     return NVFS.filestem(loc)
   else
-    log.error('Invalid path format: ' .. fmt)
+    NVMessages.error('Invalid path format: ' .. fmt)
     return nil
   end
 end

@@ -58,7 +58,7 @@ function fn.scroll_horizontal(direction)
   elseif direction == 'right' then
     vim.cmd 'normal! 7zl'
   else
-    log.error 'Unexpected scroll direction'
+    NVMessages.error 'Unexpected scroll direction'
     return
   end
 

@@ -169,7 +169,7 @@ end
 function NVGit.get_repo_info()
   local git_root = vim.fn.systemlist('git rev-parse --show-toplevel')[1]
   if vim.v.shell_error ~= 0 then
-    log.error 'Failed to get repo root'
+    NVMessages.error 'Failed to get repo root'
     return nil
   end
 

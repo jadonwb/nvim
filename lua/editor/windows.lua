@@ -135,10 +135,10 @@ function fn.reposition_windows(opts)
     elseif action == 'move_down' then
       NVWinshift.move_down()
     else
-      log.error 'Unexpected windows action'
+      NVMessages.error 'Unexpected windows action'
     end
   else
-    log.info 'No windows to rotate'
+    NVMessages.info 'No windows to rotate'
     return
   end
 end
@@ -150,7 +150,7 @@ function fn.change_window_width(direction)
   elseif direction == 'down' then
     NVLayoutManager.decrease_width()
   else
-    log.error('Window Width Change: Unexpected direction: ' .. direction)
+    NVMessages.error('Window Width Change: Unexpected direction: ' .. direction)
   end
 end
 
@@ -161,7 +161,7 @@ function fn.change_window_height(direction)
   elseif direction == 'down' then
     vim.cmd 'resize -3'
   else
-    log.error('Window Height Change: Unexpected direction: ' .. direction)
+    NVMessages.error('Window Height Change: Unexpected direction: ' .. direction)
   end
 end
 

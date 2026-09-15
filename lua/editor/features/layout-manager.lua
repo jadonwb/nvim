@@ -476,6 +476,8 @@ function NVLayoutManager.autocmds()
     snacks_picker_input = true,
     snacks_picker_list = true,
     snacks_picker_preview = true,
+    pager = true,
+    msg = true,
   }
 
   local dashboard_setup = {}

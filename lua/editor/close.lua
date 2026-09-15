@@ -41,7 +41,7 @@ function NVClose.register(name, fn)
     table.insert(NVClose._extra, name)
     if not warned[name] then
       warned[name] = true
-      vim.notify('NVClose: "' .. name .. '" is not in NVClose.priority', vim.log.levels.WARN)
+      NVMessages.warn('NVClose: "' .. name .. '" is not in NVClose.priority')
     end
   end
 end
@@ -101,5 +101,8 @@ vim.api.nvim_create_user_command('NVClose', function()
   for i, name in ipairs(NVClose.order()) do
     lines[#lines + 1] = string.format('%2d. %s', i, name)
   end
-  vim.notify(table.concat(lines, '\n'), vim.log.levels.INFO, { title = 'NVClose order' })
+  NVMessages.pager {
+    { 'NVClose order', 'Title' },
+    { table.concat(lines, '\n') },
+  }
 end, { desc = 'Show NVClose handler order' })

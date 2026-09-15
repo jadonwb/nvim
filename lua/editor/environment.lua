@@ -247,5 +247,8 @@ vim.api.nvim_create_autocmd({ 'BufReadPost', 'BufNewFile', 'BufEnter' }, {
 })
 
 vim.api.nvim_create_user_command('NVEnv', function()
-  vim.notify(vim.inspect { startup = NVEnv.startup, pending_files = NVEnv.pending_files() }, vim.log.levels.INFO, { title = 'NVEnv startup' })
+  NVMessages.pager {
+    { 'NVEnv startup', 'Title' },
+    { vim.inspect { startup = NVEnv.startup, pending_files = NVEnv.pending_files() } },
+  }
 end, { desc = 'Show startup facts, policy, and remaining targets' })

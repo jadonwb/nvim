@@ -84,7 +84,7 @@ function fn.toggle_flag(flag)
 
   local state = unpack(instance:toggle_flags { flag })
 
-  log.trace('grug-far: ' .. flag .. ' is set to ' .. (state and 'ON' or 'OFF'))
+  NVMessages.trace('grug-far: ' .. flag .. ' is set to ' .. (state and 'ON' or 'OFF'))
 end
 
 function NVGrugFar.autocmds()

@@ -75,10 +75,10 @@ return {
       },
       {
         function()
-          return (NVUi2 and NVUi2.progress_hl) or ''
+          return (NVMessages and NVMessages.progress_hl) or ''
         end,
         cond = function()
-          return NVUi2 and type(NVUi2.progress_hl) == 'string' and NVUi2.progress_hl ~= ''
+          return NVMessages and type(NVMessages.progress_hl) == 'string' and NVMessages.progress_hl ~= ''
         end,
       },
       {

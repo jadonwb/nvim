@@ -121,7 +121,7 @@ function NVBuffers.delete_buf(buf, win, on_closed)
   local buf_info = fn.get_buf_info(buf)
 
   if buf_info == nil then
-    log.error "Can't get buffer info"
+    NVMessages.error "Can't get buffer info"
     return
   end
 
@@ -198,7 +198,7 @@ function NVBuffers.delete_buf(buf, win, on_closed)
       local empty_buf = vim.api.nvim_create_buf(true, false)
 
       if empty_buf == 0 then
-        log.error 'Failed to create empty buffer'
+        NVMessages.error 'Failed to create empty buffer'
       else
         vim.api.nvim_win_set_buf(win, empty_buf)
       end

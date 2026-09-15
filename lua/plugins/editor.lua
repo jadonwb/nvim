@@ -67,8 +67,6 @@ return {
         require 'editor.disabled'
         NVDisabled.disable_keymaps()
 
-        log.keymaps()
-
         require 'editor.editing'
         NVEditing.keymaps()
 
@@ -85,9 +83,6 @@ return {
         NVNavigation.keymaps()
 
         NVTerminal.keymaps()
-
-        require 'editor.debug'
-        NVDebug.keymaps()
 
         NVGrugFar.autocmds()
       end)
