@@ -44,7 +44,7 @@ local function script_transport(module, handler)
   return captured
 end
 
-local EXE = vim.fn.expand '~/.opencode/bin/opencode'
+local EXE = (vim.fn.exepath('opencode') ~= '' and vim.fn.exepath('opencode')) or 'opencode'
 
 test('rpc_path percent-encodes the location deepObject query on personal.artifacts', function()
   eq(
@@ -144,8 +144,8 @@ test('filter_for hides approved and read unless the finished toggle is on', func
   eq(plans({ status = 'draft', kind = 'plan' }), true, 'plans entry defaults to drafts')
   eq(plans({ status = 'approved', kind = 'plan' }), false, 'approved plans hidden in plans entry')
 
-  eq(fn.picker_title(all, nil, false):match('%([^)]*%)'), '(finished hidden)', 'title hides finished')
-  eq(fn.picker_title(all, nil, true):match('%([^)]*%)'), '(finished included)', 'title includes finished')
+  eq(fn.picker_title(all, nil, false):match('%([^)]*%)'), '(read hidden)', 'title hides finished')
+  eq(fn.picker_title(all, nil, true):match('%([^)]*%)'), '(read included)', 'title includes finished')
 end)
 
 test('approve is plan-only and never fires for evidence buffers', function()

@@ -39,7 +39,10 @@ local function record_undelivered(requestID, kind, artifact_id, location)
   }
 end
 
-local EXE = vim.fn.expand '~/.opencode/bin/opencode'
+-- Resolve `opencode` through $PATH (mise shim -> npm:@opencode/cli backend)
+-- instead of a hardcoded install path, so the editor follows whichever
+-- package manager provides the CLI.
+local EXE = (vim.fn.exepath('opencode') ~= '' and vim.fn.exepath('opencode')) or 'opencode'
 local RPC_ID = 'personal.artifacts'
 local TIMEOUT_MS = 15000
 
