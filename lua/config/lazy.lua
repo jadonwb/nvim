@@ -35,6 +35,13 @@ require('lazy').setup {
     version = false, -- always use the latest git commit
     -- version = "*", -- try installing the latest stable version for plugins that support semver
   },
+  dev = {
+    -- Use local checkouts beneath ~/c when present (plugins with
+    -- `dev = true` in their spec), e.g. ~/c/arrowlake.nvim.
+    path = vim.fn.expand '~/c',
+    -- Fall back to normal remote installation when the local checkout is absent.
+    fallback = true,
+  },
   install = {
     missing = false,
     colorscheme = { 'habamax' },

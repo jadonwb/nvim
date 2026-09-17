@@ -1,6 +1,7 @@
 return {
   {
     'jadonwb/arrowlake.nvim',
+    dev = true,
     opts = {
       transparent = false,
       styles = {
