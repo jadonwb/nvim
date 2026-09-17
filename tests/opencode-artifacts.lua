@@ -122,10 +122,11 @@ test('list resolves output.artifacts and get resolves output.artifact', function
   eq(result.artifact.id, 'art_get1', 'artifact view')
 end)
 
-test('approval_label is context-sensitive: plan approve vs evidence/review mark read', function()
+test('approval_label is context-sensitive: plan approve vs evidence/review/report mark read', function()
   eq(fn.approval_label('plan'), 'Approve this plan', 'plan label')
   eq(fn.approval_label('evidence'), 'Mark this evidence read', 'evidence label')
   eq(fn.approval_label('review'), 'Mark this review read', 'review label')
+  eq(fn.approval_label('report'), 'Mark this report read', 'report label')
 end)
 
 test('filter_for hides approved and read unless the finished toggle is on', function()
@@ -139,10 +140,16 @@ test('filter_for hides approved and read unless the finished toggle is on', func
   local shown = fn.filter_for(all, { show_finished = true })
   eq(shown({ status = 'approved', kind = 'plan' }), true, 'approved plan included by toggle')
   eq(shown({ status = 'read', kind = 'evidence' }), true, 'read evidence included by toggle')
+  eq(shown({ status = 'read', kind = 'report' }), true, 'read report included by toggle')
 
   local plans = fn.filter_for(fn.entry_for('plans'), { show_finished = false })
   eq(plans({ status = 'draft', kind = 'plan' }), true, 'plans entry defaults to drafts')
   eq(plans({ status = 'approved', kind = 'plan' }), false, 'approved plans hidden in plans entry')
+
+  local reports = fn.filter_for(fn.entry_for('reports'), { show_finished = false })
+  eq(reports({ status = 'draft', kind = 'report' }), true, 'draft report visible by default')
+  eq(reports({ status = 'read', kind = 'report' }), false, 'read report hidden by default')
+  eq(reports({ status = 'published', kind = 'report' }), true, 'published report visible')
 
   eq(fn.picker_title(all, nil, false):match('%([^)]*%)'), '(read hidden)', 'title hides finished')
   eq(fn.picker_title(all, nil, true):match('%([^)]*%)'), '(read included)', 'title includes finished')
@@ -237,7 +244,7 @@ test('retry_from_record offers only undelivered plan approvals', function()
       if argv[6]:match('art_plan01') then
         artifact = { kind = 'plan', feedback = { { requestID = 'req_fb1', delivery = { state = 'failed', error = 'down' } } }, approval = { requestID = 'req_ap1', delivery = { state = 'failed', error = 'down' } } }
       else
-        artifact = { kind = 'evidence', feedback = { { requestID = 'req_fb2', delivery = { state = 'failed', error = 'down' } } }, approval = { requestID = 'req_ap2', delivery = { state = 'failed', error = 'down' } } }
+        artifact = { kind = 'report', feedback = { { requestID = 'req_fb2', delivery = { state = 'failed', error = 'down' } } }, approval = { requestID = 'req_ap2', delivery = { state = 'failed', error = 'down' } } }
       end
       on_exit { code = 0, stdout = vim.json.encode { output = { artifact = artifact } } }
     else
@@ -260,8 +267,8 @@ test('retry_from_record offers only undelivered plan approvals', function()
   eq(chosen_items[1].kind, 'approval', 'candidate kind is approval')
   eq(chosen_items[1].requestID, 'req_ap1', 'candidate request ID is the plan approval')
 
-  -- Evidence artifacts contribute no retry candidates even with undelivered
-  -- feedback/approval records.
+  -- Evidence and report artifacts contribute no retry candidates even with
+  -- undelivered feedback/approval records.
   chosen_items = nil
   done = false
   M.get('art_evidence99', function()
@@ -274,7 +281,331 @@ test('retry_from_record offers only undelivered plan approvals', function()
   vim.wait(300, function() return chosen_items ~= nil or done end)
   eq(chosen_items, nil, 'evidence artifacts have no retry candidates')
 
+  chosen_items = nil
+  done = false
+  M.get('art_report01', function()
+    fn.retry_from_record('art_report01')
+    vim.schedule(function() done = true end)
+  end)
+  wait_for(function()
+    return done or chosen_items ~= nil
+  end)
+  vim.wait(300, function() return chosen_items ~= nil or done end)
+  eq(chosen_items, nil, 'report artifacts have no retry candidates')
+
   vim.ui.select = orig_select
+  M.transport = nil
+end)
+
+test('draft evidence/review rows are visible and untouched by the finished toggle', function()
+  local evidence = fn.entry_for('evidence')
+  local hidden = fn.filter_for(evidence, { show_finished = false })
+  eq(hidden({ status = 'draft', kind = 'evidence' }), true, 'draft evidence visible by default')
+  local shown = fn.filter_for(evidence, { show_finished = true })
+  eq(shown({ status = 'draft', kind = 'evidence' }), true, 'draft evidence stays visible when finished are included')
+  local reviews = fn.filter_for(fn.entry_for('reviews'), { show_finished = false })
+  eq(reviews({ status = 'draft', kind = 'review' }), true, 'draft review visible by default')
+end)
+
+local function with_artifact_buf(meta_overrides)
+  local buf = vim.api.nvim_create_buf(false, true)
+  local meta = vim.tbl_extend('force', {
+    artifact_id = 'art_draft01',
+    location = M.location(),
+    title = 'Draft artifact',
+    kind = 'evidence',
+    status = 'draft',
+    description = '',
+    finalized = false,
+    path = '/tmp/opencode/draft.md',
+    fingerprint = 'sha256:none',
+  }, meta_overrides or {})
+  vim.b[buf].opencode_artifact = meta
+  return buf, meta
+end
+
+local function buf_has_command(buf, name)
+  local commands = vim.api.nvim_buf_get_commands(buf, {})
+  return commands[name] ~= nil
+end
+
+local function buf_has_keymap(buf, lhs)
+  -- Neovim expands the <leader> prefix when keymaps are retrieved, so the
+  -- buffer map table stores e.g. "\ay" for '<leader>ay'.
+  local target = lhs:gsub('^<leader>', '\\')
+  for _, map in ipairs(vim.api.nvim_buf_get_keymap(buf, 'n')) do
+    if map.lhs == target then
+      return true
+    end
+  end
+  return false
+end
+
+test('draft evidence buffer exposes Feedback/Retry only: no approve, no mark-read, no leader-ay', function()
+  local buf, meta = with_artifact_buf({ kind = 'evidence', status = 'draft' })
+  fn.attach_artifact_commands(buf, meta)
+  assert(buf_has_command(buf, 'OpenCodeArtifactFeedback'), 'feedback attached')
+  assert(buf_has_command(buf, 'OpenCodeArtifactRetryDelivery'), 'retry attached')
+  eq(buf_has_command(buf, 'OpenCodeArtifactApprove'), false, 'no approve on evidence')
+  eq(buf_has_command(buf, 'OpenCodeArtifactMarkRead'), false, 'no mark-read on a draft evidence')
+  eq(buf_has_keymap(buf, '<leader>ay'), false, 'no mark-read keymap on a draft evidence')
+  vim.api.nvim_buf_delete(buf, { force = true })
+end)
+
+test('published evidence buffer exposes Mark read and the leader-ay keymap', function()
+  local buf, meta = with_artifact_buf({ kind = 'evidence', status = 'published' })
+  fn.attach_artifact_commands(buf, meta)
+  assert(buf_has_command(buf, 'OpenCodeArtifactMarkRead'), 'mark-read attached on published evidence')
+  assert(buf_has_keymap(buf, '<leader>ay'), 'mark-read keymap attached on published evidence')
+  vim.api.nvim_buf_delete(buf, { force = true })
+end)
+
+test('report buffers reuse the generic non-plan gates: draft hides mark-read, published exposes it', function()
+  local draft, draft_meta = with_artifact_buf({ kind = 'report', status = 'draft' })
+  fn.attach_artifact_commands(draft, draft_meta)
+  assert(buf_has_command(draft, 'OpenCodeArtifactFeedback'), 'feedback attached on draft report')
+  assert(buf_has_command(draft, 'OpenCodeArtifactRetryDelivery'), 'retry attached on draft report')
+  eq(buf_has_command(draft, 'OpenCodeArtifactApprove'), false, 'no approve on a report')
+  eq(buf_has_command(draft, 'OpenCodeArtifactMarkRead'), false, 'no mark-read on a draft report')
+  eq(buf_has_keymap(draft, '<leader>ay'), false, 'no mark-read keymap on a draft report')
+  vim.api.nvim_buf_delete(draft, { force = true })
+
+  local published, published_meta = with_artifact_buf({ artifact_id = 'art_report02', kind = 'report', status = 'published' })
+  fn.attach_artifact_commands(published, published_meta)
+  assert(buf_has_command(published, 'OpenCodeArtifactMarkRead'), 'mark-read attached on a published report')
+  assert(buf_has_keymap(published, '<leader>ay'), 'mark-read keymap attached on a published report')
+  vim.api.nvim_buf_delete(published, { force = true })
+end)
+
+test('mark_read guards drafts for reports: a draft report sends no mark_read RPC', function()
+  local captured = {}
+  M.transport = function(argv, on_exit)
+    captured[#captured + 1] = argv
+    on_exit { code = 0, stdout = '{}' }
+  end
+  local buf, meta = with_artifact_buf({ kind = 'report', status = 'draft' })
+  fn.mark_read(buf)
+  eq(#captured, 0, 'draft report cannot be marked read; no RPC is sent')
+  vim.api.nvim_buf_delete(buf, { force = true })
+  M.transport = nil
+end)
+
+test('feedback on a published report sends an explicit owner recipient', function()
+  local captured = {}
+  local selected
+  local orig_select = vim.ui.select
+  vim.ui.select = function(items, opts, cb)
+    selected = items
+    cb(items[1])
+  end
+  NVBuffers = { delete_buf = function(_, _, cb) cb(true) end }
+  M.transport = function(argv, on_exit)
+    captured[#captured + 1] = argv
+    local method = argv[4]:match('/personal%.artifacts/([^?]+)')
+    if method == 'get' then
+      on_exit { code = 0, stdout = vim.json.encode { output = { artifact = { title = 'Report', kind = 'report', status = 'published' } } } }
+    elseif method == 'mark_read' then
+      on_exit { code = 0, stdout = vim.json.encode { output = { requestID = 'req_mark_report', kind = 'read', deduplicated = false, artifact = { status = 'read' } } } }
+    else
+      on_exit { code = 0, stdout = '{}' }
+    end
+  end
+  local buf, meta = with_artifact_buf({ kind = 'report', status = 'published' })
+  vim.schedule(function() fn.mark_read(buf) end)
+  wait_for(function() return #captured >= 2 end)
+  vim.wait(200, function() return #captured >= 2 end)
+  eq(selected[1], 'Mark this report read', 'the confirm label is the report mark-read label')
+  eq(fn.retry_state_for(meta.artifact_id), nil, 'report mark_read records no retry state')
+  vim.api.nvim_buf_delete(buf, { force = true })
+  vim.ui.select = orig_select
+  NVBuffers = nil
+  M.transport = nil
+
+  -- Feedback on a report (unrelated to mark-read) targets the owner.
+  local captured_fb = {}
+  M.transport = function(argv, on_exit)
+    captured_fb[#captured_fb + 1] = argv
+    on_exit { code = 0, stdout = vim.json.encode { output = { delivery = { state = 'delivered', error = nil } } } }
+  end
+  local orig_input = vim.ui.input
+  vim.ui.input = function(_opts, cb)
+    cb 'About the report?'
+  end
+  local buf2, meta2 = with_artifact_buf({ artifact_id = 'art_report03', kind = 'report', status = 'published' })
+  vim.schedule(function()
+    fn.feedback(buf2)
+  end)
+  wait_for(function() return #captured_fb >= 1 end)
+  vim.wait(200, function() return #captured_fb >= 1 end)
+  local decoded = vim.json.decode(captured_fb[1][6])
+  eq(decoded.input.artifactID, meta2.artifact_id, 'report artifact id passed')
+  eq(decoded.input.recipient, 'owner', 'report feedback explicitly targets the owner')
+  eq(decoded.input.question, 'About the report?', 'question passed')
+  vim.api.nvim_buf_delete(buf2, { force = true })
+  vim.ui.input = orig_input
+  M.transport = nil
+end)
+
+test('picker_items carries the primary author label and item_format renders it instead of the owner session', function()
+  local items = fn.picker_items({
+    {
+      id = 'art_picker1',
+      title = 'Shared plan',
+      kind = 'plan',
+      status = 'draft',
+      description = 'D',
+      primaryAuthor = 'Planner',
+      finalized = false,
+      path = '/tmp/opencode/plan.md',
+      ownerSessionID = 'ses_planner00000000000000000',
+      createdAt = '2026-09-16T00:00:00.000Z',
+      updatedAt = '2026-09-16T00:00:00.000Z',
+    },
+  })
+  eq(items[1].primary_author, 'Planner', 'picker item carries the primary author label')
+  eq(items[1].owner, 'ses_planner00000000000000000', 'owner-scoping metadata stays for the attached-session filter only')
+  local rendered = fn.item_format(items[1])
+  local flat = vim.iter(rendered):map(function(part) return part[1] end):totable()
+  assert(table.concat(flat, ''):match('Planner'), 'row provenance renders the primary author label')
+  assert(not table.concat(flat, ''):match('ses_planner'), 'row provenance never renders the owner session id')
+end)
+
+test('plan approval is readiness-gated: only finalized drafts expose the action and send RPC', function()
+  local captured = {}
+  M.transport = function(argv, on_exit)
+    captured[#captured + 1] = argv
+    on_exit { code = 0, stdout = '{}' }
+  end
+
+  -- Not finalized: no approve command, no keymap, and fn.approve sends nothing.
+  local buf, meta = with_artifact_buf({ kind = 'plan', status = 'draft', finalized = false })
+  fn.attach_artifact_commands(buf, meta)
+  eq(buf_has_command(buf, 'OpenCodeArtifactApprove'), false, 'no approve on an unfinalized draft')
+  eq(buf_has_keymap(buf, '<leader>ay'), false, 'no approval keymap on an unfinalized draft')
+  fn.approve(buf)
+  eq(#captured, 0, 'approve on an unfinalized plan sends no RPC call')
+  vim.api.nvim_buf_delete(buf, { force = true })
+
+  -- Finalized draft: the approve action is exposed.
+  local buf2, meta2 = with_artifact_buf({ artifact_id = 'art_draft02', kind = 'plan', status = 'draft', finalized = true })
+  fn.attach_artifact_commands(buf2, meta2)
+  assert(buf_has_command(buf2, 'OpenCodeArtifactApprove'), 'approve attached on a finalized draft')
+  assert(buf_has_keymap(buf2, '<leader>ay'), 'approval keymap attached on a finalized draft')
+  vim.api.nvim_buf_delete(buf2, { force = true })
+  M.transport = nil
+end)
+
+test('mark_read guards drafts: a draft evidence sends no mark_read RPC', function()
+  local captured = {}
+  M.transport = function(argv, on_exit)
+    captured[#captured + 1] = argv
+    on_exit { code = 0, stdout = '{}' }
+  end
+  local buf, meta = with_artifact_buf({ kind = 'evidence', status = 'draft' })
+  fn.mark_read(buf)
+  eq(#captured, 0, 'draft evidence cannot be marked read; no RPC is sent')
+  vim.api.nvim_buf_delete(buf, { force = true })
+  M.transport = nil
+end)
+
+test('feedback sends an explicit owner recipient from the Neovim UI', function()
+  local captured = {}
+  M.transport = function(argv, on_exit)
+    captured[#captured + 1] = argv
+    on_exit { code = 0, stdout = vim.json.encode { output = { delivery = { state = 'delivered', error = nil } } } }
+  end
+  local orig_input = vim.ui.input
+  vim.ui.input = function(_opts, cb)
+    cb 'Is this complete?'
+  end
+  local buf, meta = with_artifact_buf({ kind = 'plan', status = 'draft', finalized = true })
+  vim.schedule(function()
+    fn.feedback(buf)
+  end)
+  wait_for(function() return #captured >= 1 end)
+  vim.wait(200, function() return #captured >= 1 end)
+
+  eq(#captured, 1, 'one feedback RPC call')
+  local decoded = vim.json.decode(captured[1][6])
+  eq(decoded.input.artifactID, meta.artifact_id, 'artifact id passed')
+  eq(decoded.input.recipient, 'owner', 'Neovim feedback explicitly targets the owner')
+  eq(decoded.input.question, 'Is this complete?', 'question passed')
+
+  vim.api.nvim_buf_delete(buf, { force = true })
+  vim.ui.input = orig_input
+  M.transport = nil
+end)
+
+test('on_file_changed refreshes metadata and readiness, then re-attaches actions', function()
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.bo[buf].modifiable = true
+  vim.bo[buf].eol = true
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { '---', 'old: view', '---' })
+  local fingerprint = fn.buffer_fingerprint(buf)
+  vim.b[buf].opencode_artifact = {
+    artifact_id = 'art_autoreload01',
+    location = M.location(),
+    title = 'Old title',
+    kind = 'plan',
+    status = 'draft',
+    description = 'Old description',
+    finalized = false,
+    path = '/tmp/opencode/autoreload.md',
+    fingerprint = fingerprint,
+  }
+
+  -- The on-disk artifact changed: the buffer bytes now differ from the
+  -- captured fingerprint.
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { '---', 'new: view', '---' })
+  vim.bo[buf].modified = false
+  local changed_fingerprint = fn.buffer_fingerprint(buf)
+  assert(changed_fingerprint ~= fingerprint, 'the mutated buffer fingerprint differs')
+
+  local get_calls = 0
+  M.transport = function(argv, on_exit)
+    local method = argv[4]:match('/personal%.artifacts/([^?]+)')
+    if method == 'get' then
+      get_calls = get_calls + 1
+      on_exit {
+        code = 0,
+        stdout = vim.json.encode {
+          output = {
+            artifact = {
+              title = 'New title',
+              kind = 'plan',
+              status = 'draft',
+              description = 'New description',
+              primaryAuthor = 'Builder',
+              finalized = true,
+              path = '/tmp/opencode/autoreload.md',
+            },
+          },
+        },
+      }
+    else
+      on_exit { code = 0, stdout = '{}' }
+    end
+  end
+
+  vim.schedule(function()
+    fn.on_file_changed(buf)
+  end)
+  wait_for(function()
+    return get_calls >= 1
+  end)
+  vim.wait(400, function()
+    local current = vim.b[buf].opencode_artifact
+    return current ~= nil and current.finalized == true
+  end)
+
+  local current = vim.b[buf].opencode_artifact
+  eq(current.title, 'New title', 'title refreshed from get metadata')
+  eq(current.description, 'New description', 'description refreshed')
+  eq(current.primary_author, 'Builder', 'primary author refreshed from get metadata')
+  eq(current.finalized, true, 'readiness refreshed')
+  assert(buf_has_command(buf, 'OpenCodeArtifactApprove'), 'actions re-attached for the newly finalized draft')
+
+  vim.api.nvim_buf_delete(buf, { force = true })
   M.transport = nil
 end)
 

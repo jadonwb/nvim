@@ -1,5 +1,5 @@
--- NVOpenCodeArtifacts: one Neovim interface for OpenCode plans, evidence and
--- reviews (plugin personal.artifacts).
+-- NVOpenCodeArtifacts: one Neovim interface for OpenCode plans, evidence,
+-- reviews and reports (plugin personal.artifacts).
 --
 -- All OpenCode calls go through the `opencode api` CLI (which owns discovery
 -- and authentication) as nonblocking vim.system jobs with an argv list and a
@@ -10,8 +10,11 @@
 --
 -- Artifacts are read-only generated Markdown views in the plan-bridge registry,
 -- opened only through explicit selection and addressed by artifact ID. Approval
--- of a plan is what authorizes Builder; evidence/reviews are dismissed with
--- Mark read (status `read`) and never emit a notification.
+-- of a plan is what authorizes Builder; evidence/reviews/reports are dismissed
+-- with Mark read (status `read`) and never emit a notification. Metadata comes
+-- from RPC/buffer state, never from parsing the generated view: rows show the
+-- frontend primary author label, and the owner session id is used only for the
+-- internal attached-session filter, never rendered as user-facing provenance.
 
 NVOpenCodeArtifacts = {}
 local M = NVOpenCodeArtifacts
@@ -56,6 +59,9 @@ function fn.approval_label(kind)
   end
   if kind == 'review' then
     return 'Mark this review read'
+  end
+  if kind == 'report' then
+    return 'Mark this report read'
   end
   return 'Approve this plan'
 end
@@ -186,7 +192,7 @@ function M.list(callback)
     end
     local artifacts = type(output) == 'table' and output.artifacts or nil
     if type(artifacts) ~= 'table' then
-      callback(nil, 'Unexpected list response from plan-bridge')
+      callback(nil, 'Unexpected list response from the artifact service')
       return
     end
     callback(artifacts, nil)
@@ -201,7 +207,7 @@ function M.get(artifact_id, callback)
     end
     local artifact = type(output) == 'table' and output.artifact or nil
     if type(artifact) ~= 'table' then
-      callback(nil, 'Unexpected get response from plan-bridge')
+      callback(nil, 'Unexpected get response from the artifact service')
       return
     end
     callback(artifact, nil)
@@ -212,12 +218,9 @@ end
 -- Session attachment (client-side, per tab directory)
 --
 -- The OpenCode session a tab attaches to is editor-local state persisted as a
--- JSON map keyed by the normalized tab directory (multiple tabs sharing a cwd
--- share the entry; keys are not tab handles). Sessions are listed through the
--- OpenCode CLI, which is cwd-scoped, and a new session is created through the
--- HTTP API with an explicit location.directory because the server process cwd
--- is not the tab cwd. No plugin/RPC changes and no frontmatter changes: the
--- attachment never travels through the artifact contract.
+-- JSON map keyed by the normalized tab directory (tabs sharing a cwd share the
+-- entry). Sessions are listed through the cwd-scoped OpenCode CLI; a new
+-- session is created through the HTTP API with an explicit location.directory.
 --------------------------------------------------------------------------------
 
 M.attachments_path = vim.fn.stdpath 'state' .. '/opencode-artifacts/attachments.json'
@@ -540,8 +543,7 @@ end
 
 --- Buffer metadata namespace: vim.b[buf].opencode_artifact carries identity
 --- (artifact_id, location), display (title, kind, status, description) and the
---- displayed-document fingerprint. Metadata comes from RPC/buffer state, never
---- from parsing the generated view.
+--- displayed-document fingerprint.
 function fn.artifact_meta(buf)
   local meta = vim.b[buf].opencode_artifact
   if type(meta) ~= 'table' or not meta.artifact_id or not meta.location then
@@ -587,7 +589,7 @@ end
 
 --- Context-sensitive `<leader>ay`: Approve for plans, Mark read for
 --- evidence/reviews. The action depends on the buffer's kind.
-function fn.attach_approval_keymap(buf, meta)
+function fn.attach_action_keymap(buf, meta)
   local action = meta.kind == 'plan' and fn.approve or fn.mark_read
   vim.keymap.set('n', '<leader>ay', function()
     action(buf)
@@ -596,8 +598,8 @@ end
 
 --- Action UI (commands + keymap) exists only while the buffer shows a
 --- non-resolved artifact; it is removed whenever the buffer is known to show an
---- approved plan or a read evidence/review.
-function fn.revoke_approval_ui(buf)
+--- approved plan or a read evidence/review/report.
+function fn.revoke_action_ui(buf)
   if not vim.api.nvim_buf_is_valid(buf) then
     return
   end
@@ -620,16 +622,19 @@ function fn.attach_artifact_commands(buf, meta)
   vim.api.nvim_buf_create_user_command(buf, 'OpenCodeArtifactRetryDelivery', retry_command(buf), {
     desc = 'Redeliver recorded plan approval',
   })
-  if meta.kind == 'plan' and meta.status ~= 'approved' then
+  -- Readiness gate: a plan must be finalized before the approval action is
+  -- offered. Incomplete drafts stay visible (Feedback/Retry only) but never
+  -- expose the approve affordance.
+  if meta.kind == 'plan' and meta.status ~= 'approved' and meta.finalized == true then
     vim.api.nvim_buf_create_user_command(buf, 'OpenCodeArtifactApprove', function()
       fn.approve(buf)
     end, { desc = fn.approval_label(meta.kind) })
-    fn.attach_approval_keymap(buf, meta)
+    fn.attach_action_keymap(buf, meta)
   elseif meta.kind ~= 'plan' and meta.status == 'published' then
     vim.api.nvim_buf_create_user_command(buf, 'OpenCodeArtifactMarkRead', function()
       fn.mark_read(buf)
     end, { desc = fn.approval_label(meta.kind) })
-    fn.attach_approval_keymap(buf, meta)
+    fn.attach_action_keymap(buf, meta)
   end
 
   fn.attach_buffer_keymaps(buf)
@@ -681,6 +686,8 @@ function fn.open_artifact_buffer(item)
     kind = item.kind,
     status = item.status,
     description = item.description,
+    primary_author = item.primary_author,
+    finalized = item.finalized == true,
     path = requested,
     fingerprint = fn.buffer_fingerprint(target),
   }
@@ -696,6 +703,7 @@ local ENTRY_POINTS = {
   plans = { title = 'OpenCode Plans', kinds = { plan = true }, plans_only = true, empty = 'No draft plans for ' },
   evidence = { title = 'OpenCode Evidence', kinds = { evidence = true }, empty = 'No evidence for ' },
   reviews = { title = 'OpenCode Reviews', kinds = { review = true }, empty = 'No reviews for ' },
+  reports = { title = 'OpenCode Reports', kinds = { report = true }, empty = 'No reports for ' },
   all = { title = 'OpenCode Artifacts', empty = 'No artifacts for ' },
 }
 
@@ -766,8 +774,11 @@ function fn.picker_items(artifacts)
       kind = artifact.kind,
       status = artifact.status,
       description = artifact.description,
+      primary_author = artifact.primaryAuthor,
+      finalized = artifact.finalized == true,
       path = artifact.path,
       file = artifact.path,
+      -- Owner-scoping metadata for the attached-session filter (filter_for).
       owner = artifact.ownerSessionID,
       created_at = artifact.createdAt,
       updated_at = artifact.updatedAt,
@@ -787,12 +798,12 @@ function fn.status_icon(status)
   return '󰤙'
 end
 
---- Row rendering: kind, title, status, and provenance (owner session, update
---- date).
+--- Row rendering: kind, title, status, and provenance (primary author label and
+--- update date).
 function fn.item_format(item)
   local provenance = {}
-  if type(item.owner) == 'string' and item.owner ~= '' then
-    provenance[#provenance + 1] = item.owner:sub(1, 8)
+  if type(item.primary_author) == 'string' and item.primary_author ~= '' then
+    provenance[#provenance + 1] = item.primary_author
   end
   if type(item.updated_at) == 'string' and item.updated_at ~= '' then
     provenance[#provenance + 1] = item.updated_at:sub(1, 10)
@@ -871,7 +882,7 @@ function fn.show_picker(artifacts, entry_key, session)
         'Title: ' .. tostring(ctx.item.title),
         'Kind: ' .. tostring(ctx.item.kind),
         'Status: ' .. tostring(ctx.item.status),
-        'Owner: ' .. tostring(ctx.item.owner),
+        'Author: ' .. tostring(ctx.item.primary_author),
         'Location: ' .. tostring(ctx.item.location),
         '',
         '(current Markdown file is not readable on disk)',
@@ -938,8 +949,7 @@ end
 -- Feedback / approve / retry (buffer-local artifact actions)
 --------------------------------------------------------------------------------
 
---- Redeliver one recorded plan-approval submission: same request ID, same
---- content, no new question, no new request ID. Retry is plan-approval-only.
+--- Redeliver one recorded plan-approval submission by its request ID.
 function fn.retry_request(artifact_id, request_id)
   M.rpc('retry_plan_delivery', {
     artifactID = artifact_id,
@@ -964,8 +974,7 @@ end
 --- selected artifact, list its pending/failed plan-approval submission, and
 --- retry the selected original request ID. The records live server-side, so
 --- recovery works after closing the buffer and after restarting Neovim; no
---- full record is fetched for mere list rendering. Evidence/review mark-read
---- and feedback are never retryable.
+--- full record is fetched for mere list rendering.
 function fn.retry_from_record(artifact_id)
   M.get(artifact_id, function(artifact, err)
     if err then
@@ -1009,8 +1018,7 @@ function fn.retry_from_record(artifact_id)
   end)
 end
 
---- Redeliver the exact recorded submission for this buffer's artifact: same
---- request ID, same content, no new question, no new request ID.
+--- Redeliver the exact recorded submission for this buffer's artifact.
 function fn.retry_delivery(buf)
   local meta = fn.artifact_meta(buf)
   if not meta then
@@ -1068,6 +1076,10 @@ function fn.feedback(buf, line_start, line_end)
     M.rpc('feedback', {
       artifactID = meta.artifact_id,
       requestID = request_id,
+      -- Neovim feedback targets the Planner owner; writer-directed feedback is
+      -- a backend-only extension for future headless clients and is not
+      -- exposed in this UI.
+      recipient = 'owner',
       question = question,
       selectedText = selected_text,
       selectedRange = selected_range,
@@ -1105,7 +1117,7 @@ end
 --- (displayed elsewhere, or undeletable), it now shows a resolved artifact and
 --- its action UI is removed. Plan delivery failures stay recoverable through the
 --- durable picker retry.
-function fn.close_after_approval(buf, meta)
+function fn.close_after_action(buf, meta)
   if not vim.api.nvim_buf_is_valid(buf) then
     return
   end
@@ -1119,7 +1131,7 @@ function fn.close_after_approval(buf, meta)
   end
   NVBuffers.delete_buf(buf, nil, function(closed)
     if not closed then
-      fn.revoke_approval_ui(buf)
+      fn.revoke_action_ui(buf)
     end
   end)
 end
@@ -1146,12 +1158,20 @@ function fn.approve(buf)
     notify('Only draft plans can be approved (status ' .. tostring(meta.status) .. ')', vim.log.levels.WARN)
     return
   end
+  if meta.finalized ~= true then
+    notify('This plan is not finalized yet; the writer must finalize it before approval', vim.log.levels.WARN)
+    return
+  end
   M.get(meta.artifact_id, function(artifact, err)
     if not vim.api.nvim_buf_is_valid(buf) then
       return
     end
     if err then
       notify(err, vim.log.levels.ERROR)
+      return
+    end
+    if artifact.finalized ~= true then
+      notify('This plan is no longer finalized; approval is not available', vim.log.levels.WARN)
       return
     end
     -- Single-line prompt; the selectable approval item carries the
@@ -1191,15 +1211,16 @@ function fn.approve(buf)
           record_undelivered(output.requestID, 'approval', meta.artifact_id, meta.location)
           notify(('Approval recorded but NOT delivered (%s): %s'):format(tostring(delivery.state), tostring(delivery.error)), vim.log.levels.ERROR)
         end
-        fn.close_after_approval(buf, meta)
+        fn.close_after_action(buf, meta)
       end)
     end)
   end)
 end
 
---- Mark read: evidence/review dismissal with NO notification and NO delivery
---- handling. The RPC records status=read and closes the originating buffer;
---- a patched read artifact returns to published and regains this UI.
+--- Mark read: evidence/review/report dismissal with NO notification and NO
+--- delivery handling. The RPC records status=read and closes the originating
+--- buffer; a later content patch returns the artifact to the draft until it is
+--- finalized again.
 function fn.mark_read(buf)
   local meta = fn.artifact_meta(buf)
   if not meta then
@@ -1207,7 +1228,7 @@ function fn.mark_read(buf)
     return
   end
   if meta.kind == 'plan' then
-    notify('Mark read applies to evidence and reviews only; approve plans instead', vim.log.levels.WARN)
+    notify('Mark read applies to evidence, reviews, and reports only; approve plans instead', vim.log.levels.WARN)
     return
   end
   if meta.status == 'read' then
@@ -1215,7 +1236,7 @@ function fn.mark_read(buf)
     return
   end
   if meta.status ~= 'published' then
-    notify(('Only published evidence/reviews can be marked read (status %s)'):format(tostring(meta.status)), vim.log.levels.WARN)
+    notify(('Only published evidence/reviews/reports can be marked read (status %s)'):format(tostring(meta.status)), vim.log.levels.WARN)
     return
   end
   M.get(meta.artifact_id, function(artifact, err)
@@ -1252,7 +1273,7 @@ function fn.mark_read(buf)
         -- No delivery branch, no retry state, no owner notification.
         fn.clear_retry_state(meta.artifact_id)
         notify('marked read', vim.log.levels.INFO)
-        fn.close_after_approval(buf, meta)
+        fn.close_after_action(buf, meta)
       end)
     end)
   end)
@@ -1304,6 +1325,8 @@ function fn.on_file_changed(buf)
       updated.title = artifact.title or updated.title
       updated.status = artifact.status or updated.status
       updated.description = artifact.description or updated.description
+      updated.primary_author = artifact.primaryAuthor or updated.primary_author
+      updated.finalized = artifact.finalized == true
       updated.path = artifact.path or updated.path
     end
     vim.b[buf].opencode_artifact = updated
@@ -1311,7 +1334,7 @@ function fn.on_file_changed(buf)
     -- action UI; a previously resolved artifact that returns to `published`
     -- (after a backend patch) regains it through attach_artifact_commands.
     if updated.status == 'approved' or updated.status == 'read' then
-      fn.revoke_approval_ui(buf)
+      fn.revoke_action_ui(buf)
     end
     fn.attach_artifact_commands(buf, updated)
   end)
@@ -1336,7 +1359,7 @@ end
 function M.setup()
   -- Idempotent setup: drop any previous registrations before re-creating
   -- (module reload safety).
-  for _, name in ipairs { 'OpenCodePlans', 'OpenCodeEvidence', 'OpenCodeReviews', 'OpenCodeArtifacts', 'OpenCodeSession' } do
+  for _, name in ipairs { 'OpenCodePlans', 'OpenCodeEvidence', 'OpenCodeReviews', 'OpenCodeReports', 'OpenCodeArtifacts', 'OpenCodeSession' } do
     pcall(vim.api.nvim_del_user_command, name)
   end
 
@@ -1349,6 +1372,9 @@ function M.setup()
   vim.api.nvim_create_user_command('OpenCodeReviews', function()
     M.open_picker 'reviews'
   end, { desc = 'List reviews' })
+  vim.api.nvim_create_user_command('OpenCodeReports', function()
+    M.open_picker 'reports'
+  end, { desc = 'List reports' })
   vim.api.nvim_create_user_command('OpenCodeArtifacts', function()
     M.open_picker 'all'
   end, { desc = 'List all artifacts' })
@@ -1363,6 +1389,7 @@ function M.keymaps()
   K.map { '<leader>ap', 'Show OpenCode plans', function() M.open_picker('plans') end, mode = { 'n', 'v' } }
   K.map { '<leader>ae', 'Show OpenCode evidence', function() M.open_picker('evidence') end, mode = { 'n', 'v' } }
   K.map { '<leader>ar', 'Show OpenCode reviews', function() M.open_picker('reviews') end, mode = { 'n', 'v' } }
+  K.map { '<leader>aq', 'Show OpenCode reports', function() M.open_picker('reports') end, mode = { 'n', 'v' } }
   K.map { '<leader>aa', 'Show all OpenCode artifacts', function() M.open_picker('all') end, mode = { 'n', 'v' } }
   K.map { '<leader>as', 'Attach OpenCode session', function() M.open_session_picker() end, mode = { 'n', 'v' } }
 end

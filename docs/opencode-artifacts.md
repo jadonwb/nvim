@@ -1,12 +1,12 @@
-# OpenCode artifacts (plans, evidence, reviews)
+# OpenCode artifacts (plans, evidence, reviews, reports)
 
 `lua/editor/features/opencode-artifacts.lua` exposes the global
-`NVOpenCodeArtifacts`: one Neovim interface over the OpenCode plan-bridge
-registry (`personal.artifacts` RPC) for plans, evidence and reviews. All calls
-run through the `opencode api` CLI as nonblocking `vim.system` jobs with argv
-lists and JSON-encoded bodies — selected text is never interpolated into a
-shell string — with an explicit location (the current tab directory), a bounded
-timeout, and scheduled callbacks. Nothing blocks or polls.
+`NVOpenCodeArtifacts`: one Neovim interface over the OpenCode artifact registry
+(`personal.artifacts` RPC) for plans, evidence, reviews, and reports.
+All calls run through the `opencode api` CLI as nonblocking `vim.system` jobs
+with argv lists and JSON-encoded bodies — selected text is never interpolated
+into a shell string — with an explicit location (the current tab directory), a
+bounded timeout, and scheduled callbacks. Nothing blocks or polls.
 
 Artifacts are addressed by ID only. Each artifact has one authoritative server
 record and one generated `current.md` view; the editor opens that view read-only
@@ -19,41 +19,42 @@ and never parses it back into runtime state.
 | `:OpenCodePlans` | `<leader>ap` | Draft plans only |
 | `:OpenCodeEvidence` | `<leader>ae` | Evidence |
 | `:OpenCodeReviews` | `<leader>ar` | Reviews |
+| `:OpenCodeReports` | `<leader>aq` | Reports |
 | `:OpenCodeArtifacts` | `<leader>aa` | Every kind |
 | `:OpenCodeSession` | `<leader>as` | Attach or switch session |
 
-Evidence, Reviews and All hide resolved rows — `approved` plans and `read`
-evidence/reviews — until `<M-a>` (include-finished toggle) flips the filter; the
-toggle re-runs the finder and relabels the filter. `:OpenCodePlans` is an
-intentional kind-filtered view of draft plans (approved plans only appear with
-the toggle), not an alias. Rows show kind, title, status
-and owner/update provenance. Confirming an
-entry opens the artifact's generated Markdown view read-only in the current
-window; preview uses the real file. Nothing is ever deleted and there is no
-time-based retention.
+Evidence, Reviews, Reports and All hide resolved rows — `approved` plans and
+`read` evidence/reviews/reports — until `<M-a>` (include-finished toggle) flips
+the filter; the toggle re-runs the finder and relabels the filter.
+`:OpenCodePlans` is a kind-filtered view defaulting to draft plans (approved
+plans only appear with the toggle). Rows show kind, title, status
+and provenance (primary author label and update date; the owner session id is
+used only for the internal attached-session filter and is never rendered).
+Confirming an entry opens the artifact's generated Markdown view read-only in
+the current window; preview uses the real file. Nothing is ever deleted and
+there is no time-based retention.
 
 ## Artifact buffers
 
 Opened buffers are verified by path before options, metadata or commands are
 attached; opening refuses when the current buffer has unsaved changes. Buffer
 metadata (`vim.b[buf].opencode_artifact`) records the artifact ID, location,
-display fields (title, kind, status, description), path, and a full-document
-fingerprint of the displayed bytes used only to detect external changes. Status
-and other metadata come from RPC/buffer state, never from parsing the view.
+display fields (title, kind, status, description, primary author), path, and a
+full-document fingerprint of the displayed bytes used only to detect external
+changes.
 
 Buffer-local commands and keymaps:
 
 - `OpenCodeArtifactFeedback` and `<leader>af` (normal/visual): feedback on the
   artifact; a visual range becomes the selected excerpt/range.
 - `OpenCodeArtifactRetryDelivery`: redeliver the recorded-but-undelivered plan
-  approval for this artifact (same request ID, no new prompt).
+  approval for this artifact.
 - `OpenCodeArtifactApprove` and `<leader>ay` (normal): approve a draft plan;
   attached to plan buffers only (plans never approve from `approved`).
 - `OpenCodeArtifactMarkRead` and the same `<leader>ay` (normal): mark a
-  published evidence/review read; attached to evidence/review buffers that are
-  not yet `read`. A plan buffer and an evidence buffer never share a key: the
-  key is buffer-local, so `<leader>ay` is Approve on a plan and Mark read on an
-  evidence/review.
+  published evidence/review/report read; attached to evidence/review/report
+  buffers that are not yet `read`. The key is buffer-local, so `<leader>ay` is
+  Approve on a plan buffer and Mark read on an evidence/review/report buffer.
 
 ## Feedback submission
 
@@ -79,21 +80,25 @@ buffer open). If the approved buffer stays open (displayed elsewhere), its
 approval UI is removed. A recorded-but-undelivered approval is redeliverable
 from the picker after the close. Non-plans are never approved.
 
-`OpenCodeArtifactMarkRead`/`<leader>ay` exist only on published evidence/review
-buffers. The confirm step shows `Mark this evidence read` / `Mark this review
-read`. Mark read records the dismissal on the server (`status: read`) with NO
-owner notification and NO delivery handling, then closes the originating
-buffer. The picker hides `read` rows until the include-finished toggle includes
-them. Patching a `read` evidence/review returns it to `published` (un-read), so
-it reappears in pickers and its mark-read UI returns.
+`OpenCodeArtifactMarkRead`/`<leader>ay` exist only on published
+evidence/review/report buffers. The confirm step shows `Mark this evidence
+read` / `Mark this review read` / `Mark this report read`. Mark read records the
+dismissal on the server (`status: read`) with NO owner notification and NO
+delivery handling, then closes the originating buffer. The picker hides `read`
+rows until the include-finished toggle includes them. A content patch (or
+finding mutation) returns a `read` evidence/review/report to the visible
+`draft` (the read marker is cleared and readiness resets), so it reappears in
+pickers as a draft and regains its mark-read UI only after the author finalizes
+it again (`published`).
 
 ## Retry from the picker
 
 `<M-r>` on a picker row fetches that artifact's record, lists its
 recorded-but-undelivered plan approval, and retries that original request ID.
-Retry is plan-approval-only: feedback and evidence/review submissions are never
-retryable. The records live server-side, so recovery works after closing the
-buffer and after restarting Neovim; list rendering never fetches full records.
+Retry is plan-approval-only: feedback and evidence/review/report submissions are
+never retryable. The records live server-side, so recovery works after closing
+the buffer and after restarting Neovim; list rendering never fetches full
+records.
 
 ## External changes
 
@@ -101,12 +106,13 @@ Artifact buffers rely on `autoread` plus the existing checktime triggers
 (`BufEnter`/`FocusGained`/`CursorHold`/`CursorHoldI`). On
 `FileChangedShellPost`, an unmodified artifact buffer has its displayed-document
 fingerprint recomputed; when the bytes changed, its metadata is refreshed from
-the record and a brief "Artifact updated" notice appears. The event says nothing
+the record (including title, status, description, primary author, readiness and
+path) and a brief "Artifact updated" notice appears. The event says nothing
 about who wrote the file. Locally modified buffers are never touched. There is
 no polling, SSE, or extra checktime loop, and no manual refresh command.
 
 ## Module layout and reload
 
-`NVOpenCodeArtifacts` lives in `lua/editor/features/opencode-artifacts.lua`;
-there is no separate view parser. `setup()` is idempotent (commands, keymaps and
+`NVOpenCodeArtifacts` lives in `lua/editor/features/opencode-artifacts.lua`.
+`setup()` is idempotent (commands, keymaps and
 the autocmd group can be re-created on module reload).
