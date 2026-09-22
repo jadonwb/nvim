@@ -1,14 +1,5 @@
-tags
-test.sh
 .luarc.json
-nvim
-fff
-
-spell/
-main.c
-*.o
-colorscheme.txt
 lazy-lock.json
 lua/plugins/theme.lua
 lazy-lock.json
-/lazyvim.json
+lazyvim.json
