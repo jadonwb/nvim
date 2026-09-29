@@ -18,9 +18,13 @@ return {
             '██████' .. ' ',
           },
         },
-        checkbox = {
-          enabled = false,
+        indent = {
+          enabled = true,
+          skip_level = 2,
         },
+        -- checkbox = {
+        --   enabled = false,
+        -- },
         code = {
           sign = false,
           width = 'block',
