@@ -472,7 +472,7 @@ test('picker_items carries the primary author label and item_format renders it i
     },
   })
   eq(items[1].primary_author, 'Planner', 'picker item carries the primary author label')
-  eq(items[1].owner, 'ses_planner00000000000000000', 'owner-scoping metadata stays for feedback routing only')
+  eq(items[1].owner, 'ses_planner00000000000000000', 'feedback-routing metadata stays in the picker item')
   local rendered = fn.item_format(items[1])
   local flat = vim.iter(rendered):map(function(part) return part[1] end):totable()
   assert(table.concat(flat, ''):match('Planner'), 'row provenance renders the primary author label')

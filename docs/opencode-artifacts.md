@@ -74,10 +74,10 @@ confirm step shows the explicit label `Approve this plan` and the title. A
 recorded plan approval is the user's review marker; editing the plan returns it
 to draft and clears the marker. The plan stays editable until `plan_complete`
 records the outcome. The picker hides `approved` rows until the include-finished
-toggle `<M-a>` includes them. After an approval is recorded — including when its
-notification fails — only the originating buffer is closed (revalidating
-buffer, identity and modified state; the buffer stays in place, and transport
-failures or unknown admission keep it open). If the approved buffer
+toggle `<M-a>` includes them. After an approval is recorded, close the
+originating buffer after revalidating its identity and modified state. Other
+buffers stay in place. Transport failures or unknown admission leave the
+originating buffer open. The close never force-deletes. If the approved buffer
 stays open (displayed elsewhere), its approval UI is removed. A
 recorded-but-undelivered approval is redeliverable from the picker after the
 close. Approval applies to plans.
@@ -107,7 +107,7 @@ Artifact buffers rely on `autoread` plus the existing checktime triggers
 fingerprint recomputed; when the bytes changed, its metadata is refreshed from
 the record (including title, status, description, primary author, readiness and
 path) and a brief "Artifact updated" notice appears. The event reports the
-change, keeping the author out of it. Locally modified buffers stay untouched.
+change only. Locally modified buffers stay untouched.
 Refresh relies on those triggers.
 
 ## Layers
@@ -125,7 +125,7 @@ The RPC layer takes a namespace and a method, so a future frontend domain
 OpenCode side mirrors this: `plugins/bridge/` serves `personal.bridge`, which
 describes the registered domains, and an adapter plugin
 (`plugins/artifacts-rpc/`) registers the artifact domain through it. The
-artifact tools stay independent of bridge code.
+Only the RPC adapter imports bridge code.
 
 ## Module layout and reload
 

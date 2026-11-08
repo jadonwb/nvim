@@ -357,7 +357,8 @@ function fn.picker_items(artifacts)
       finalized = artifact.finalized == true,
       path = artifact.path,
       file = artifact.path,
-      -- Owner-scoping metadata for the attached-session filter (filter_for).
+      -- Owner session id for feedback routing; kept in the picker item for the
+      -- RPC summary shape.
       owner = artifact.ownerSessionID,
       created_at = artifact.createdAt,
       updated_at = artifact.updatedAt,
