@@ -225,7 +225,7 @@ function fn.attach_artifact_commands(buf, meta)
   -- Readiness gate: a plan must be finalized before the approval action is
   -- offered. Incomplete drafts stay visible (Feedback/Retry only) but never
   -- expose the approve affordance. Only evidence/reviews are dismissible;
-  -- memory and checkpoints are live documents.
+  -- memory and session memory are live documents.
   if meta.kind == 'plan' and meta.status ~= 'approved' and meta.finalized == true then
     vim.api.nvim_buf_create_user_command(buf, 'OpenCodeArtifactApprove', function()
       fn.approve(buf)
@@ -304,9 +304,9 @@ local ENTRY_POINTS = {
   plans = { title = 'OpenCode Plans', kinds = { plan = true }, plans_only = true, empty = 'No draft plans for ' },
   evidence = { title = 'OpenCode Evidence', kinds = { evidence = true }, empty = 'No evidence for ' },
   reviews = { title = 'OpenCode Reviews', kinds = { review = true }, empty = 'No reviews for ' },
-  memory = { title = 'OpenCode Memory', kinds = { memory = true, checkpoint = true }, empty = 'No memory for ' },
-  -- Memory and checkpoints are live session state, not in the All view.
-  all = { title = 'OpenCode Artifacts', exclude = { memory = true, checkpoint = true }, empty = 'No artifacts for ' },
+  memory = { title = 'OpenCode Memory', kinds = { memory = true, session_memory = true }, empty = 'No memory for ' },
+  -- Memory and session memory are live session state, not in the All view.
+  all = { title = 'OpenCode Artifacts', exclude = { memory = true, session_memory = true }, empty = 'No artifacts for ' },
 }
 
 --- Entry-point configuration (picker filter closure input).
@@ -323,8 +323,8 @@ end
 function fn.filter_for(entry, state)
   return function(item)
     -- When a session is attached, only its own records (owner) are visible.
-    -- Project memory is shared across sessions, so it is exempt; checkpoints
-    -- remain session-owned. Absent session_id keeps the unfiltered behavior.
+    -- Project memory is shared across sessions, so it is exempt; session memory
+    -- remains session-owned. Absent session_id keeps the unfiltered behavior.
     if type(state.session_id) == 'string' and item.kind ~= 'memory' then
       if item.owner ~= state.session_id then
         return false
@@ -967,7 +967,7 @@ function M.setup()
   end, { desc = 'List reviews' })
   vim.api.nvim_create_user_command('OpenCodeMemory', function()
     M.open_picker 'memory'
-  end, { desc = 'List project memory and checkpoints' })
+  end, { desc = 'List project memory and session memory' })
   vim.api.nvim_create_user_command('OpenCodeArtifacts', function()
     M.open_picker 'all'
   end, { desc = 'List all artifacts' })

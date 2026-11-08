@@ -147,7 +147,7 @@ test('filter_for hides approved and read unless the finished toggle is on', func
 
   local memory = fn.filter_for(fn.entry_for('memory'), { show_finished = false })
   eq(memory({ status = 'published', kind = 'memory' }), true, 'project memory is visible')
-  eq(memory({ status = 'published', kind = 'checkpoint' }), true, 'session checkpoints are visible')
+  eq(memory({ status = 'published', kind = 'session_memory' }), true, 'session memory is visible')
   eq(memory({ status = 'published', kind = 'evidence' }), false, 'memory entry excludes evidence')
 
   local memorySession = fn.filter_for(
@@ -160,20 +160,20 @@ test('filter_for hides approved and read unless the finished toggle is on', func
     'shared project memory is visible across sessions'
   )
   eq(
-    memorySession({ status = 'published', kind = 'checkpoint', owner = 'ses_other' }),
+    memorySession({ status = 'published', kind = 'session_memory', owner = 'ses_other' }),
     false,
-    'another session checkpoint stays hidden'
+    "another session's memory stays hidden"
   )
   eq(
-    memorySession({ status = 'published', kind = 'checkpoint', owner = 'ses_current' }),
+    memorySession({ status = 'published', kind = 'session_memory', owner = 'ses_current' }),
     true,
-    'the attached session checkpoint is visible'
+    'the attached session memory is visible'
   )
 
-  -- Memory and checkpoints stay out of the All view even when finished
+  -- Memory and session memory stay out of the All view even when finished
   -- artifacts are included.
   eq(shown({ status = 'published', kind = 'memory' }), false, 'project memory stays out of the picker')
-  eq(shown({ status = 'published', kind = 'checkpoint' }), false, 'session checkpoint stays out of the picker')
+  eq(shown({ status = 'published', kind = 'session_memory' }), false, 'session memory stays out of the picker')
 
   eq(fn.picker_title(all, nil, false):match('%([^)]*%)'), '(read hidden)', 'title hides finished')
   eq(fn.picker_title(all, nil, true):match('%([^)]*%)'), '(read included)', 'title includes finished')
