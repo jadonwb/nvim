@@ -8,12 +8,10 @@
 --
 -- Artifacts are read-only generated Markdown views in the artifact registry,
 -- opened only through explicit selection and addressed by artifact ID. Feedback
--- and approval are the only editor writes; evidence and reviews are dismissed
--- with Mark read (status `read`) and never emit a notification.
--- Metadata comes from RPC/buffer state, never from parsing the generated view:
--- rows show the frontend primary author label, and the owner session id is used
--- only for the internal attached-session filter, never rendered as user-facing
--- provenance.
+-- and approval are the editor writes; Mark read records a dismissal (status
+-- `read`). Metadata comes from RPC and buffer state; the generated view stays
+-- read-only: rows show the frontend primary author label, and the owner session
+-- id is kept internal for feedback routing.
 NVOpenCodeArtifacts = {}
 local M = NVOpenCodeArtifacts
 
@@ -24,8 +22,7 @@ local fn = {}
 
 -- Recorded-but-undelivered submissions that can be retried verbatim, keyed by
 -- artifact ID: { requestID, kind, artifact_id, location }. A retry re-sends
--- the exact recorded request; it never asks a new question or mints a new
--- request ID. Retry is PLAN-APPROVAL-ONLY: only fn.approve records retry state
+-- the exact recorded request with its original request ID. Retry is PLAN-APPROVAL-ONLY: only fn.approve records retry state
 -- here. This is editor-local bookkeeping for the live buffer command only; the
 -- durable recovery path is the server record (see fn.retry_from_record), so
 -- retryable submissions survive an editor restart.
@@ -51,7 +48,7 @@ local SELECTION_MAX_BYTES = 65536
 
 -- Context-sensitive action label per kind. `<leader>ay` approves a plan (the
 -- Builder authorization, with an owner notification) and marks evidence/reviews
--- read (a dismissal with no notification).
+-- read (a record-only dismissal).
 function fn.approval_label(kind)
   if kind == 'plan' then
     return 'Approve this plan'
@@ -223,8 +220,8 @@ function fn.attach_artifact_commands(buf, meta)
     desc = 'Redeliver recorded plan approval',
   })
   -- Readiness gate: a plan must be finalized before the approval action is
-  -- offered. Incomplete drafts stay visible (Feedback/Retry only) but never
-  -- expose the approve affordance. Only evidence/reviews are dismissible.
+  -- offered. Incomplete drafts stay visible (Feedback/Retry only) and keep the
+  -- approve affordance hidden. Only evidence/reviews are dismissible.
   if meta.kind == 'plan' and meta.status ~= 'approved' and meta.finalized == true then
     vim.api.nvim_buf_create_user_command(buf, 'OpenCodeArtifactApprove', function()
       fn.approve(buf)
@@ -241,10 +238,10 @@ function fn.attach_artifact_commands(buf, meta)
 end
 
 --- Open an artifact's stable Markdown file read-only in the current window
---- (explicit selection only; no automatic focus changes). The target buffer is
+--- (explicit selection only). The target buffer is
 --- resolved and verified by path before any options are attached, and no
---- :edit runs through the window, so a cancelled or failed open can never
---- swap buffers or touch the buffer the user came from.
+--- :edit runs through the window, so a cancelled or failed open leaves the
+--- current buffer in place.
 function fn.open_artifact_buffer(item)
   if type(item.path) ~= 'string' or vim.fn.filereadable(item.path) ~= 1 then
     notify('Artifact file is not readable: ' .. tostring(item.path), vim.log.levels.ERROR)
