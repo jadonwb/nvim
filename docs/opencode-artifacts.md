@@ -19,20 +19,19 @@ and never parses it back into runtime state.
 | `:OpenCodePlans` | `<leader>ap` | Draft plans only |
 | `:OpenCodeEvidence` | `<leader>ae` | Evidence |
 | `:OpenCodeReviews` | `<leader>ar` | Reviews |
-| `:OpenCodeMemory` | `<leader>am` | Project memory and session memory |
 | `:OpenCodeArtifacts` | `<leader>aa` | Plan/evidence/review artifacts |
 | `:OpenCodeSession` | `<leader>as` | Attach or switch session |
 
 Evidence, Reviews and All hide resolved rows — `approved` plans and `read`
 evidence/reviews — until `<M-a>` (include-finished toggle) flips the filter; the
-toggle re-runs the finder and relabels the filter. All excludes memory and
-session memory; `:OpenCodeMemory` is their explicit view.
+toggle re-runs the finder and relabels the filter.
 `:OpenCodePlans` is a kind-filtered view defaulting to draft plans (approved
 plans only appear with the toggle). Rows show kind, title, status
 and provenance (primary author label and update date; the owner session id is
-used only for the internal attached-session filter and is never rendered).
-Project memory is shared across sessions and exempt from that filter;
-session memory remains session-scoped.
+used only for feedback routing and is never rendered).
+Artifacts are project-scoped: every worktree of the same checkout lists the
+same plans, evidence, and reviews. The owner session is used only for feedback
+routing and is never rendered.
 Confirming an entry opens the artifact's generated Markdown view read-only in
 the current window; preview uses the real file. Nothing is ever deleted and
 there is no time-based retention.
@@ -58,8 +57,6 @@ Buffer-local commands and keymaps:
   published evidence/review read; attached to evidence/review buffers that are
   not yet `read`. The key is buffer-local, so `<leader>ay` is Approve on a plan
   buffer and Mark read on an evidence/review buffer.
-- Memory and session memory buffers are read-only live views. They expose feedback
-  but no approve or mark-read action.
 
 ## Feedback submission
 

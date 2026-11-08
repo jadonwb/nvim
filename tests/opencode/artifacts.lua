@@ -145,36 +145,6 @@ test('filter_for hides approved and read unless the finished toggle is on', func
   eq(plans({ status = 'draft', kind = 'plan' }), true, 'plans entry defaults to drafts')
   eq(plans({ status = 'approved', kind = 'plan' }), false, 'approved plans hidden in plans entry')
 
-  local memory = fn.filter_for(fn.entry_for('memory'), { show_finished = false })
-  eq(memory({ status = 'published', kind = 'memory' }), true, 'project memory is visible')
-  eq(memory({ status = 'published', kind = 'session_memory' }), true, 'session memory is visible')
-  eq(memory({ status = 'published', kind = 'evidence' }), false, 'memory entry excludes evidence')
-
-  local memorySession = fn.filter_for(
-    fn.entry_for('memory'),
-    { show_finished = false, session_id = 'ses_current' }
-  )
-  eq(
-    memorySession({ status = 'published', kind = 'memory', owner = 'ses_other' }),
-    true,
-    'shared project memory is visible across sessions'
-  )
-  eq(
-    memorySession({ status = 'published', kind = 'session_memory', owner = 'ses_other' }),
-    false,
-    "another session's memory stays hidden"
-  )
-  eq(
-    memorySession({ status = 'published', kind = 'session_memory', owner = 'ses_current' }),
-    true,
-    'the attached session memory is visible'
-  )
-
-  -- Memory and session memory stay out of the All view even when finished
-  -- artifacts are included.
-  eq(shown({ status = 'published', kind = 'memory' }), false, 'project memory stays out of the picker')
-  eq(shown({ status = 'published', kind = 'session_memory' }), false, 'session memory stays out of the picker')
-
   eq(fn.picker_title(all, nil, false):match('%([^)]*%)'), '(read hidden)', 'title hides finished')
   eq(fn.picker_title(all, nil, true):match('%([^)]*%)'), '(read included)', 'title includes finished')
 end)
@@ -384,17 +354,6 @@ test('published evidence buffer exposes Mark read and the leader-ay keymap', fun
   vim.api.nvim_buf_delete(buf, { force = true })
 end)
 
-test('memory buffers are read-only views with feedback but no approve or mark-read', function()
-  local buf, meta = with_artifact_buf({ kind = 'memory', status = 'published' })
-  fn.attach_artifact_commands(buf, meta)
-  assert(buf_has_command(buf, 'OpenCodeArtifactFeedback'), 'feedback attached on memory')
-  assert(buf_has_command(buf, 'OpenCodeArtifactRetryDelivery'), 'retry command attached on memory')
-  eq(buf_has_command(buf, 'OpenCodeArtifactApprove'), false, 'no approve on memory')
-  eq(buf_has_command(buf, 'OpenCodeArtifactMarkRead'), false, 'no mark-read on memory')
-  eq(buf_has_keymap(buf, '<leader>ay'), false, 'no action keymap on memory')
-  vim.api.nvim_buf_delete(buf, { force = true })
-end)
-
 test('review buffers reuse the generic non-plan gates: draft hides mark-read, published exposes it', function()
   local draft, draft_meta = with_artifact_buf({ kind = 'review', status = 'draft' })
   fn.attach_artifact_commands(draft, draft_meta)
@@ -513,7 +472,7 @@ test('picker_items carries the primary author label and item_format renders it i
     },
   })
   eq(items[1].primary_author, 'Planner', 'picker item carries the primary author label')
-  eq(items[1].owner, 'ses_planner00000000000000000', 'owner-scoping metadata stays for the attached-session filter only')
+  eq(items[1].owner, 'ses_planner00000000000000000', 'owner-scoping metadata stays for feedback routing only')
   local rendered = fn.item_format(items[1])
   local flat = vim.iter(rendered):map(function(part) return part[1] end):totable()
   assert(table.concat(flat, ''):match('Planner'), 'row provenance renders the primary author label')

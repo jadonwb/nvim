@@ -224,8 +224,7 @@ function fn.attach_artifact_commands(buf, meta)
   })
   -- Readiness gate: a plan must be finalized before the approval action is
   -- offered. Incomplete drafts stay visible (Feedback/Retry only) but never
-  -- expose the approve affordance. Only evidence/reviews are dismissible;
-  -- memory and session memory are live documents.
+  -- expose the approve affordance. Only evidence/reviews are dismissible.
   if meta.kind == 'plan' and meta.status ~= 'approved' and meta.finalized == true then
     vim.api.nvim_buf_create_user_command(buf, 'OpenCodeArtifactApprove', function()
       fn.approve(buf)
@@ -304,9 +303,7 @@ local ENTRY_POINTS = {
   plans = { title = 'OpenCode Plans', kinds = { plan = true }, plans_only = true, empty = 'No draft plans for ' },
   evidence = { title = 'OpenCode Evidence', kinds = { evidence = true }, empty = 'No evidence for ' },
   reviews = { title = 'OpenCode Reviews', kinds = { review = true }, empty = 'No reviews for ' },
-  memory = { title = 'OpenCode Memory', kinds = { memory = true, session_memory = true }, empty = 'No memory for ' },
-  -- Memory and session memory are live session state, not in the All view.
-  all = { title = 'OpenCode Artifacts', exclude = { memory = true, session_memory = true }, empty = 'No artifacts for ' },
+  all = { title = 'OpenCode Artifacts', empty = 'No artifacts for ' },
 }
 
 --- Entry-point configuration (picker filter closure input).
@@ -322,14 +319,6 @@ end
 --- state.
 function fn.filter_for(entry, state)
   return function(item)
-    -- When a session is attached, only its own records (owner) are visible.
-    -- Project memory is shared across sessions, so it is exempt; session memory
-    -- remains session-owned. Absent session_id keeps the unfiltered behavior.
-    if type(state.session_id) == 'string' and item.kind ~= 'memory' then
-      if item.owner ~= state.session_id then
-        return false
-      end
-    end
     if entry.kinds and not entry.kinds[item.kind] then
       return false
     end
@@ -952,7 +941,7 @@ end
 function M.setup()
   -- Idempotent setup: drop any previous registrations before re-creating
   -- (module reload safety).
-  for _, name in ipairs { 'OpenCodePlans', 'OpenCodeEvidence', 'OpenCodeReviews', 'OpenCodeMemory', 'OpenCodeArtifacts' } do
+  for _, name in ipairs { 'OpenCodePlans', 'OpenCodeEvidence', 'OpenCodeReviews', 'OpenCodeArtifacts' } do
     pcall(vim.api.nvim_del_user_command, name)
   end
 
@@ -965,9 +954,6 @@ function M.setup()
   vim.api.nvim_create_user_command('OpenCodeReviews', function()
     M.open_picker 'reviews'
   end, { desc = 'List reviews' })
-  vim.api.nvim_create_user_command('OpenCodeMemory', function()
-    M.open_picker 'memory'
-  end, { desc = 'List project memory and session memory' })
   vim.api.nvim_create_user_command('OpenCodeArtifacts', function()
     M.open_picker 'all'
   end, { desc = 'List all artifacts' })
@@ -979,7 +965,6 @@ function M.keymaps()
   K.map { '<leader>ap', 'Show OpenCode plans', function() M.open_picker('plans') end, mode = { 'n', 'v' } }
   K.map { '<leader>ae', 'Show OpenCode evidence', function() M.open_picker('evidence') end, mode = { 'n', 'v' } }
   K.map { '<leader>ar', 'Show OpenCode reviews', function() M.open_picker('reviews') end, mode = { 'n', 'v' } }
-  K.map { '<leader>am', 'Show OpenCode memory', function() M.open_picker('memory') end, mode = { 'n', 'v' } }
   K.map { '<leader>aa', 'Show all OpenCode artifacts', function() M.open_picker('all') end, mode = { 'n', 'v' } }
 end
 
