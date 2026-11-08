@@ -1,23 +1,24 @@
 -- NVOpenCodeArtifacts: one Neovim interface for OpenCode plans, evidence,
 -- reviews and reports (plugin personal.artifacts).
 --
--- All OpenCode calls go through the `opencode api` CLI (which owns discovery
--- and authentication) as nonblocking vim.system jobs with an argv list and a
--- JSON-encoded body; selected text is never interpolated into a shell string.
--- RPC requests carry the current tab directory as the explicit location.
--- Everything is callback-based with a bounded timeout and scheduled UI
--- callbacks; nothing blocks or polls.
+-- Transport mechanics (argv envelope, location scoping, request IDs, typed
+-- errors) live in editor.features.opencode-rpc; session attachment lives in
+-- editor.features.opencode-session. This module owns only artifact behavior:
+-- the picker, read-only buffers, feedback, approval, mark-read, and retry.
 --
--- Artifacts are read-only generated Markdown views in the plan-bridge registry,
--- opened only through explicit selection and addressed by artifact ID. Approval
--- of a plan is what authorizes Builder; evidence/reviews/reports are dismissed
--- with Mark read (status `read`) and never emit a notification. Metadata comes
--- from RPC/buffer state, never from parsing the generated view: rows show the
--- frontend primary author label, and the owner session id is used only for the
--- internal attached-session filter, never rendered as user-facing provenance.
-
+-- Artifacts are read-only generated Markdown views in the artifact registry,
+-- opened only through explicit selection and addressed by artifact ID. Feedback
+-- and approval are the only editor writes; evidence/reviews/reports are
+-- dismissed with Mark read (status `read`) and never emit a notification.
+-- Metadata comes from RPC/buffer state, never from parsing the generated view:
+-- rows show the frontend primary author label, and the owner session id is used
+-- only for the internal attached-session filter, never rendered as user-facing
+-- provenance.
 NVOpenCodeArtifacts = {}
 local M = NVOpenCodeArtifacts
+
+local rpc = require 'editor.features.opencode-rpc'
+local session = require 'editor.features.opencode-session'
 
 local fn = {}
 
@@ -42,9 +43,7 @@ local function record_undelivered(requestID, kind, artifact_id, location)
   }
 end
 
-local EXE = (vim.fn.exepath 'opencode' ~= '' and vim.fn.exepath 'opencode') or 'opencode'
 local RPC_ID = 'personal.artifacts'
-local TIMEOUT_MS = 15000
 
 -- Contract limits (UTF-8 bytes).
 local QUESTION_MAX_BYTES = 16384
@@ -71,117 +70,30 @@ local function notify(msg, level)
 end
 
 function M.location()
-  -- Current tab directory, matching the picker/worktree convention.
-  return vim.fn.getcwd(-1, 0)
+  return rpc.location()
 end
 
 function M.rpc_path(method, location)
-  local encoded = (location:gsub('[^A-Za-z0-9%-%._~]', function(c)
-    return string.format('%%%02X', c:byte())
-  end))
-  return ('/api/rpc/%s/%s?location%%5Bdirectory%%5D=%s'):format(RPC_ID, method, encoded)
+  return rpc.rpc_path(RPC_ID, method, location)
 end
 
 function M.request_id()
-  return 'req_' .. vim.fn.sha256(tostring(vim.uv.hrtime()) .. tostring(math.random(1, 1e9))):sub(1, 24)
+  return rpc.request_id()
 end
 
---- Default transport: one `opencode api` process per call (nonblocking).
-function fn.default_transport(argv, on_exit)
-  return vim.system(argv, { text = true, timeout = TIMEOUT_MS }, on_exit)
+--- Artifact RPC call. `M.transport` overrides the bridge transport (tests); the
+--- bridge owns path building, decoding, and typed-error handling.
+function M.rpc(method, input, callback)
+  return rpc.call(RPC_ID, method, input, callback, M.transport)
 end
 
---- Build the argv list for an RPC call (argv list, never a shell string).
+-- Artifact-scoped wrappers kept for the test surface.
 function fn.build_argv(method, input)
-  -- Neovim encodes a plain empty Lua table as a JSON array, so an empty
-  -- object input must be normalized to vim.empty_dict() before encoding
-  -- (e.g. list sends {"input":{}}; without this the server rejects
-  -- {"input":[]} with rpc.invalid_input: Expected object). All RPC method
-  -- inputs are objects; nonempty inputs already encode as objects.
-  local payload = input
-  if type(payload) == 'table' and next(payload) == nil then
-    payload = vim.empty_dict()
-  end
-  return {
-    EXE,
-    'api',
-    'post',
-    M.rpc_path(method, M.location()),
-    '--data',
-    vim.json.encode { input = payload },
-  }
-end
-
---- typed RPC error from a failure payload, if present
-local function rpc_error_from(body, method)
-  if type(body) == 'table' and body._tag == 'RpcError' then
-    return ('RPC %s error %s: %s'):format(method, tostring(body.type), tostring(body.message))
-  end
-  return nil
-end
-
-local function decode(stdout)
-  local ok, decoded = pcall(vim.json.decode, stdout or '')
-  if not ok then
-    return nil
-  end
-  return decoded
-end
-
-local function cli_failure(subject, result)
-  local timed_out = (result.signal ~= nil and result.signal ~= 0)
-  local reason = vim.trim(result.stderr or '')
-  if reason == '' then
-    reason = vim.trim(result.stdout or '')
-  end
-  return ('opencode %s failed (exit %s%s): %s'):format(
-    subject,
-    tostring(result.code),
-    timed_out and ', timed out' or '',
-    reason ~= '' and reason or 'no output'
-  )
+  return rpc._internal.build_argv(RPC_ID, method, input)
 end
 
 function fn.rpc_done(method, result, callback)
-  if result.code ~= 0 then
-    local raw = vim.trim((result.stdout or '') ~= '' and result.stdout or (result.stderr or ''))
-    local decoded = decode(raw)
-    local typed = rpc_error_from(decoded, method)
-    callback(nil, typed or cli_failure('api ' .. method, result))
-    return
-  end
-  local decoded = decode(result.stdout)
-  if decoded == nil then
-    callback(nil, ('opencode api %s returned non-JSON output'):format(method))
-    return
-  end
-  local typed = rpc_error_from(decoded, method)
-  if typed then
-    callback(nil, typed)
-    return
-  end
-  if type(decoded) == 'table' and decoded.output ~= nil then
-    callback(decoded.output, nil)
-    return
-  end
-  callback(decoded, nil)
-end
-
---- RPC call: `opencode api post /api/rpc/<id>/<method>?location[directory]=... --data '{"input":...}'`.
---- Callback receives (output, nil) or (nil, error message), always scheduled.
-function M.rpc(method, input, callback)
-  local argv = fn.build_argv(method, input)
-  local transport = M.transport or fn.default_transport
-  local ok, err = pcall(transport, argv, function(result)
-    vim.schedule(function()
-      fn.rpc_done(method, result, callback)
-    end)
-  end)
-  if not ok then
-    vim.schedule(function()
-      callback(nil, ('opencode transport failed: %s'):format(err))
-    end)
-  end
+  return rpc._internal.rpc_done(RPC_ID, method, result, callback)
 end
 
 function M.list(callback)
@@ -211,312 +123,6 @@ function M.get(artifact_id, callback)
       return
     end
     callback(artifact, nil)
-  end)
-end
-
---------------------------------------------------------------------------------
--- Session attachment (client-side, per tab directory)
---
--- The OpenCode session a tab attaches to is editor-local state persisted as a
--- JSON map keyed by the normalized tab directory (tabs sharing a cwd share the
--- entry). Sessions are listed through the cwd-scoped OpenCode CLI; a new
--- session is created through the HTTP API with an explicit location.directory.
---------------------------------------------------------------------------------
-
-M.attachments_path = vim.fn.stdpath 'state' .. '/opencode-artifacts/attachments.json'
-
-local attachments = { path = nil, map = nil }
-
---- Default CLI runner for `opencode` subcommands. Kept separate from
---- M.transport (the artifact-RPC seam, whose tests return artifact JSON): the
---- session flow talks to `opencode session`/`opencode api` directly. Tests
---- replace M.cli. `opts` must support `cwd`.
-function M.cli(argv, opts, on_exit)
-  local system_opts = vim.tbl_extend('force', { text = true, timeout = TIMEOUT_MS }, opts or {})
-  return vim.system(argv, system_opts, on_exit)
-end
-
---- Read the persisted attachments map, tolerating a missing or invalid file.
-function fn.read_attachments()
-  local ok, lines = pcall(vim.fn.readfile, M.attachments_path)
-  if not ok or type(lines) ~= 'table' or #lines == 0 then
-    return {}
-  end
-  local decoded = decode(table.concat(lines, '\n'))
-  if type(decoded) ~= 'table' then
-    return {}
-  end
-  return decoded
-end
-
---- In-memory cache of the attachments map; reloaded when the path changes.
-function fn.load_attachments()
-  if attachments.path ~= M.attachments_path or attachments.map == nil then
-    attachments = { path = M.attachments_path, map = fn.read_attachments() }
-  end
-  return attachments.map
-end
-
---- Test/reload seam: drop the cache so the next read hits disk.
-function fn.reload_attachments()
-  attachments = { path = nil, map = nil }
-end
-
---- Atomically persist the map: `mkdir -p`, write `.tmp`, rename into place.
-function fn.save_attachments(map)
-  vim.fn.mkdir(vim.fn.fnamemodify(M.attachments_path, ':h'), 'p')
-  local tmp = M.attachments_path .. '.tmp'
-  -- An empty Lua table encodes as an object only through vim.empty_dict().
-  local payload = next(map) == nil and vim.empty_dict() or map
-  local ok, write_err = pcall(vim.fn.writefile, { vim.json.encode(payload) }, tmp)
-  if not ok then
-    attachments = { path = M.attachments_path, map = map }
-    return nil, write_err
-  end
-  local moved, rename_err = vim.uv.fs_rename(tmp, M.attachments_path)
-  attachments = { path = M.attachments_path, map = map }
-  if not moved then
-    return nil, rename_err
-  end
-  return true
-end
-
---- Normalized cwd key for this tab.
-function fn.attachment_key(location)
-  return vim.fs.normalize(location or M.location())
-end
-
---- Stored session id for a directory, or nil.
-function fn.stored_session_id(location)
-  local id = fn.load_attachments()[fn.attachment_key(location)]
-  if type(id) == 'string' and id ~= '' then
-    return id
-  end
-  return nil
-end
-
-function fn.set_session(session_id, location)
-  local map = fn.load_attachments()
-  map[fn.attachment_key(location)] = session_id
-  return fn.save_attachments(map)
-end
-
-function fn.clear_session(location)
-  local map = fn.load_attachments()
-  map[fn.attachment_key(location)] = nil
-  return fn.save_attachments(map)
-end
-
---- `opencode session list --format json -n 100` in `cwd`. The CLI is
---- cwd-scoped (no directory argument), so the process cwd is the location.
---- Callback receives the bare decoded array or an error message.
-function fn.session_list(cwd, callback)
-  local argv = { EXE, 'session', 'list', '--format', 'json', '-n', '100' }
-  local ok, err = pcall(M.cli, argv, { cwd = cwd }, function(result)
-    vim.schedule(function()
-      if result.code ~= 0 then
-        callback(nil, cli_failure('session list', result))
-        return
-      end
-      local decoded = decode(result.stdout)
-      if type(decoded) ~= 'table' then
-        callback(nil, 'opencode session list returned non-JSON output')
-        return
-      end
-      callback(decoded, nil)
-    end)
-  end)
-  if not ok then
-    vim.schedule(function()
-      callback(nil, ('opencode session list transport failed: %s'):format(tostring(err)))
-    end)
-  end
-end
-
---- Create a session for `cwd` through `POST /api/session` with an explicit
---- location.directory. Callback receives { id, title } or an error message.
-function fn.session_create(cwd, callback)
-  local argv = {
-    EXE,
-    'api',
-    'post',
-    '/api/session',
-    '--data',
-    vim.json.encode { location = { directory = cwd } },
-  }
-  local ok, err = pcall(M.cli, argv, { cwd = cwd }, function(result)
-    vim.schedule(function()
-      if result.code ~= 0 then
-        callback(nil, cli_failure('session create', result))
-        return
-      end
-      local decoded = decode(result.stdout)
-      -- The API CLI wraps the payload as { data: ... } and some responses
-      -- arrive unwrapped as { output: { data: ... } }; unwrap `.output` the
-      -- same way fn.rpc_done does.
-      local payload = type(decoded) == 'table' and decoded.output or decoded
-      local data = type(payload) == 'table' and payload.data or nil
-      local id = type(data) == 'table' and data.id or nil
-      if type(id) ~= 'string' or id == '' then
-        callback(nil, 'opencode session create returned no session id')
-        return
-      end
-      callback({ id = id, title = data.title }, nil)
-    end)
-  end)
-  if not ok then
-    vim.schedule(function()
-      callback(nil, ('opencode session create transport failed: %s'):format(tostring(err)))
-    end)
-  end
-end
-
---- Shared "new session" tail for ensure_session and open_session_picker:
---- notify a create failure, or attach the created session and continue with
---- `on_success(session)`. The two flows differ only in what continuing means.
-local function with_created_session(location, on_success)
-  fn.session_create(location, function(session, create_err)
-    if create_err or type(session) ~= 'table' then
-      notify(create_err or 'Could not create an OpenCode session', vim.log.levels.ERROR)
-      return
-    end
-    fn.set_session(session.id)
-    on_success(session)
-  end)
-end
-
---- Compact age from an epoch-ms timestamp (empty when unknown).
-function fn.session_age(updated)
-  if type(updated) ~= 'number' then
-    return ''
-  end
-  local secs = os.time() - math.floor(updated / 1000)
-  if secs < 0 then
-    secs = 0
-  end
-  if secs < 60 then
-    return ('%ds'):format(secs)
-  end
-  if secs < 3600 then
-    return ('%dm'):format(math.floor(secs / 60))
-  end
-  if secs < 86400 then
-    return ('%dh'):format(math.floor(secs / 3600))
-  end
-  return ('%dd'):format(math.floor(secs / 86400))
-end
-
---- One human label: title (or "(untitled)"), short id, compact age.
-function fn.session_item_label(session)
-  local parts = {}
-  local title = type(session) == 'table' and session.title or nil
-  parts[#parts + 1] = (type(title) == 'string' and title ~= '') and title or '(untitled)'
-  if type(session) == 'table' and type(session.id) == 'string' and session.id ~= '' then
-    parts[#parts + 1] = session.id:sub(1, 12)
-  end
-  local age = fn.session_age(type(session) == 'table' and session.updated or nil)
-  if age ~= '' then
-    parts[#parts + 1] = age
-  end
-  return table.concat(parts, ' · ')
-end
-
---- One prompt shared by the attach flow and the session command: the listed
---- sessions in server order (newest first), optionally a Detach row, and a
---- final New session row. on_choice receives the row table, or nil on cancel.
-function fn.session_select(sessions, stored_id, allow_detach, on_choice)
-  local items = {}
-  for _, session in ipairs(sessions or {}) do
-    items[#items + 1] = { kind = 'session', session = session, id = session.id, title = session.title }
-  end
-  if allow_detach and type(stored_id) == 'string' and stored_id ~= '' then
-    items[#items + 1] = { kind = 'detach', id = stored_id }
-  end
-  items[#items + 1] = { kind = 'new' }
-  vim.ui.select(items, {
-    prompt = 'OpenCode session for ' .. M.location() .. ':',
-    format_item = function(item)
-      if item.kind == 'session' then
-        return fn.session_item_label(item.session)
-      end
-      if item.kind == 'detach' then
-        return ('Detach session %s'):format(tostring(item.id):sub(1, 12))
-      end
-      return 'New session'
-    end,
-  }, on_choice)
-end
-
---- Attach flow shared by every artifact entrypoint. The stored id is reused
---- without a prompt when it is still listed for this cwd; otherwise the select
---- runs (missing key, id not in this cwd's list, or an empty store). callback
---- receives { id, title } or nil when no session is attached.
-function fn.ensure_session(callback)
-  local location = M.location()
-  local stored = fn.stored_session_id(location)
-  fn.session_list(location, function(sessions, err)
-    if err then
-      notify(err, vim.log.levels.ERROR)
-      callback(nil)
-      return
-    end
-    sessions = type(sessions) == 'table' and sessions or {}
-    if stored then
-      for _, session in ipairs(sessions) do
-        if session.id == stored then
-          callback { id = session.id, title = session.title }
-          return
-        end
-      end
-    end
-    fn.session_select(sessions, stored, false, function(choice)
-      if not choice then
-        notify('No OpenCode session attached', vim.log.levels.INFO)
-        callback(nil)
-        return
-      end
-      if choice.kind == 'session' then
-        fn.set_session(choice.id)
-        callback { id = choice.id, title = choice.title }
-        return
-      end
-      with_created_session(location, function(session)
-        callback(session)
-      end)
-    end)
-  end)
-end
-
---- Attach, switch, or detach the session for this tab directory. Never opens
---- an artifact picker; the artifact entrypoints do that themselves.
-function M.open_session_picker()
-  local location = M.location()
-  local stored = fn.stored_session_id(location)
-  fn.session_list(location, function(sessions, err)
-    if err then
-      notify(err, vim.log.levels.ERROR)
-      return
-    end
-    sessions = type(sessions) == 'table' and sessions or {}
-    fn.session_select(sessions, stored, true, function(choice)
-      if not choice then
-        notify('No OpenCode session attached', vim.log.levels.INFO)
-        return
-      end
-      if choice.kind == 'detach' then
-        fn.clear_session(location)
-        notify(('Detached OpenCode session %s'):format(tostring(choice.id):sub(1, 12)), vim.log.levels.INFO)
-        return
-      end
-      if choice.kind == 'session' then
-        fn.set_session(choice.id)
-        notify(('Attached OpenCode session %s'):format(fn.session_item_label(choice.session)), vim.log.levels.INFO)
-        return
-      end
-      with_created_session(location, function(session)
-        notify(('Attached new OpenCode session %s'):format(session.id:sub(1, 12)), vim.log.levels.INFO)
-      end)
-    end)
   end)
 end
 
@@ -704,7 +310,8 @@ local ENTRY_POINTS = {
   evidence = { title = 'OpenCode Evidence', kinds = { evidence = true }, empty = 'No evidence for ' },
   reviews = { title = 'OpenCode Reviews', kinds = { review = true }, empty = 'No reviews for ' },
   reports = { title = 'OpenCode Reports', kinds = { report = true }, empty = 'No reports for ' },
-  all = { title = 'OpenCode Artifacts', empty = 'No artifacts for ' },
+  -- Memory and checkpoints are live session state, not reviewable artifacts.
+  all = { title = 'OpenCode Artifacts', exclude = { memory = true, checkpoint = true }, empty = 'No artifacts for ' },
 }
 
 --- Entry-point configuration (picker filter closure input).
@@ -729,6 +336,9 @@ function fn.filter_for(entry, state)
     if entry.kinds and not entry.kinds[item.kind] then
       return false
     end
+    if entry.exclude and entry.exclude[item.kind] then
+      return false
+    end
     if item.status == 'approved' or item.status == 'read' then
       return state.show_finished == true
     end
@@ -737,20 +347,6 @@ function fn.filter_for(entry, state)
     end
     return true
   end
-end
-
---- Non-empty short label for an attached session, or nil without one.
-function fn.session_label(session)
-  if type(session) ~= 'table' then
-    return nil
-  end
-  if type(session.title) == 'string' and session.title ~= '' then
-    return session.title
-  end
-  if type(session.id) == 'string' and session.id ~= '' then
-    return session.id:sub(1, 12)
-  end
-  return nil
 end
 
 --- Picker title: "<entry> · <session label> (finished hidden|included)".
@@ -846,7 +442,7 @@ function fn.show_picker(artifacts, entry_key, session)
   local Snacks = require 'snacks'
   local entry = fn.entry_for(entry_key)
   local items = fn.picker_items(artifacts)
-  local label = fn.session_label(session)
+  local label = session.label(session)
   local session_id = nil
   if type(session) == 'table' and type(session.id) == 'string' and session.id ~= '' then
     session_id = session.id
@@ -924,7 +520,7 @@ end
 
 function M.open_picker(entry_key)
   local entry = fn.entry_for(entry_key)
-  fn.ensure_session(function(session)
+  session.ensure(function(session)
     if not session then
       return
     end
@@ -1359,7 +955,7 @@ end
 function M.setup()
   -- Idempotent setup: drop any previous registrations before re-creating
   -- (module reload safety).
-  for _, name in ipairs { 'OpenCodePlans', 'OpenCodeEvidence', 'OpenCodeReviews', 'OpenCodeReports', 'OpenCodeArtifacts', 'OpenCodeSession' } do
+  for _, name in ipairs { 'OpenCodePlans', 'OpenCodeEvidence', 'OpenCodeReviews', 'OpenCodeReports', 'OpenCodeArtifacts' } do
     pcall(vim.api.nvim_del_user_command, name)
   end
 
@@ -1378,9 +974,6 @@ function M.setup()
   vim.api.nvim_create_user_command('OpenCodeArtifacts', function()
     M.open_picker 'all'
   end, { desc = 'List all artifacts' })
-  vim.api.nvim_create_user_command('OpenCodeSession', function()
-    M.open_session_picker()
-  end, { desc = 'Attach or switch session' })
   fn.autocmds()
 end
 
@@ -1391,7 +984,6 @@ function M.keymaps()
   K.map { '<leader>ar', 'Show OpenCode reviews', function() M.open_picker('reviews') end, mode = { 'n', 'v' } }
   K.map { '<leader>aq', 'Show OpenCode reports', function() M.open_picker('reports') end, mode = { 'n', 'v' } }
   K.map { '<leader>aa', 'Show all OpenCode artifacts', function() M.open_picker('all') end, mode = { 'n', 'v' } }
-  K.map { '<leader>as', 'Attach OpenCode session', function() M.open_session_picker() end, mode = { 'n', 'v' } }
 end
 
 --- Test surface: internals used by tests/.

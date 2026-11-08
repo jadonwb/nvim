@@ -111,8 +111,35 @@ path) and a brief "Artifact updated" notice appears. The event says nothing
 about who wrote the file. Locally modified buffers are never touched. There is
 no polling, SSE, or extra checktime loop, and no manual refresh command.
 
+## Layers
+
+Three modules, each with one job:
+
+| Module | Owns | Knows nothing about |
+|---|---|---|
+| `lua/editor/features/opencode-rpc.lua` | argv envelope, location-scoped RPC path, request IDs, timeouts, typed `RpcError` decoding, injectable transport | artifacts, sessions, buffers |
+| `lua/editor/features/opencode-session.lua` | per-directory attachment map, session list/create/attach/detach picker | artifacts |
+| `lua/editor/features/opencode-artifacts.lua` | artifact picker, read-only buffers, feedback, approval, mark read, retry | transport details, session storage |
+
+The RPC layer takes a namespace and a method, so a future frontend domain
+(session control, UI commands) reuses it without touching artifacts. The
+OpenCode side mirrors this: `plugins/bridge/` serves `personal.bridge`, which
+describes the registered domains, and an adapter plugin
+(`plugins/artifacts-rpc/`) registers the artifact domain through it. The
+artifact tools themselves never import bridge code.
+
 ## Module layout and reload
 
-`NVOpenCodeArtifacts` lives in `lua/editor/features/opencode-artifacts.lua`.
-`setup()` is idempotent (commands, keymaps and
-the autocmd group can be re-created on module reload).
+`NVOpenCodeRpc` lives in `lua/editor/features/opencode-rpc.lua`,
+`NVOpenCodeSession` in `lua/editor/features/opencode-session.lua`, and
+`NVOpenCodeArtifacts` in `lua/editor/features/opencode-artifacts.lua`.
+`setup()` is idempotent (commands, keymaps and the autocmd group can be
+re-created on module reload). `NVOpenCodeSession.setup()` owns
+`:OpenCodeSession` and `<leader>as`.
+
+Tests live in `tests/opencode/`:
+
+```sh
+nvim --headless -u NONE -l tests/opencode/bridge.lua
+nvim --headless -u NONE -l tests/opencode/artifacts.lua
+```

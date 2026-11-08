@@ -1,11 +1,12 @@
 -- Minimal transport contract tests for
 -- lua/editor/features/opencode-artifacts.lua (NVOpenCodeArtifacts).
--- Run: nvim --headless -u NONE -l /path/to/nvim/tests/opencode-artifacts.lua
+-- Run: nvim --headless -u NONE -l /path/to/nvim/tests/opencode/artifacts.lua
 -- No user config, no service call, no model request, no UI.
 
-local script = (arg and arg[0]) and vim.fn.fnamemodify(arg[0], ':p') or vim.uv.cwd() .. '/tests/opencode-artifacts.lua'
-local base = vim.fs.dirname(vim.fs.dirname(vim.fs.normalize(script)))
+local script = (arg and arg[0]) and vim.fn.fnamemodify(arg[0], ':p') or vim.uv.cwd() .. '/tests/opencode/artifacts.lua'
+local base = vim.fs.dirname(vim.fs.dirname(vim.fs.dirname(vim.fs.normalize(script))))
 package.path = base .. '/lua/?.lua;' .. base .. '/lua/?/init.lua;' .. package.path
+vim.opt.runtimepath:prepend(base)
 
 local M = require 'editor.features.opencode-artifacts'
 local fn = M._internal
@@ -150,6 +151,11 @@ test('filter_for hides approved and read unless the finished toggle is on', func
   eq(reports({ status = 'draft', kind = 'report' }), true, 'draft report visible by default')
   eq(reports({ status = 'read', kind = 'report' }), false, 'read report hidden by default')
   eq(reports({ status = 'published', kind = 'report' }), true, 'published report visible')
+
+  -- Memory and checkpoints are live session state; the All view excludes them
+  -- even when finished artifacts are included.
+  eq(shown({ status = 'published', kind = 'memory' }), false, 'project memory stays out of the picker')
+  eq(shown({ status = 'published', kind = 'checkpoint' }), false, 'session checkpoint stays out of the picker')
 
   eq(fn.picker_title(all, nil, false):match('%([^)]*%)'), '(read hidden)', 'title hides finished')
   eq(fn.picker_title(all, nil, true):match('%([^)]*%)'), '(read included)', 'title includes finished')
