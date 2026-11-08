@@ -123,11 +123,10 @@ test('list resolves output.artifacts and get resolves output.artifact', function
   eq(result.artifact.id, 'art_get1', 'artifact view')
 end)
 
-test('approval_label is context-sensitive: plan approve vs evidence/review/report mark read', function()
+test('approval_label is context-sensitive: plan approve vs evidence/review mark read', function()
   eq(fn.approval_label('plan'), 'Approve this plan', 'plan label')
   eq(fn.approval_label('evidence'), 'Mark this evidence read', 'evidence label')
   eq(fn.approval_label('review'), 'Mark this review read', 'review label')
-  eq(fn.approval_label('report'), 'Mark this report read', 'report label')
 end)
 
 test('filter_for hides approved and read unless the finished toggle is on', function()
@@ -141,19 +140,38 @@ test('filter_for hides approved and read unless the finished toggle is on', func
   local shown = fn.filter_for(all, { show_finished = true })
   eq(shown({ status = 'approved', kind = 'plan' }), true, 'approved plan included by toggle')
   eq(shown({ status = 'read', kind = 'evidence' }), true, 'read evidence included by toggle')
-  eq(shown({ status = 'read', kind = 'report' }), true, 'read report included by toggle')
 
   local plans = fn.filter_for(fn.entry_for('plans'), { show_finished = false })
   eq(plans({ status = 'draft', kind = 'plan' }), true, 'plans entry defaults to drafts')
   eq(plans({ status = 'approved', kind = 'plan' }), false, 'approved plans hidden in plans entry')
 
-  local reports = fn.filter_for(fn.entry_for('reports'), { show_finished = false })
-  eq(reports({ status = 'draft', kind = 'report' }), true, 'draft report visible by default')
-  eq(reports({ status = 'read', kind = 'report' }), false, 'read report hidden by default')
-  eq(reports({ status = 'published', kind = 'report' }), true, 'published report visible')
+  local memory = fn.filter_for(fn.entry_for('memory'), { show_finished = false })
+  eq(memory({ status = 'published', kind = 'memory' }), true, 'project memory is visible')
+  eq(memory({ status = 'published', kind = 'checkpoint' }), true, 'session checkpoints are visible')
+  eq(memory({ status = 'published', kind = 'evidence' }), false, 'memory entry excludes evidence')
 
-  -- Memory and checkpoints are live session state; the All view excludes them
-  -- even when finished artifacts are included.
+  local memorySession = fn.filter_for(
+    fn.entry_for('memory'),
+    { show_finished = false, session_id = 'ses_current' }
+  )
+  eq(
+    memorySession({ status = 'published', kind = 'memory', owner = 'ses_other' }),
+    true,
+    'shared project memory is visible across sessions'
+  )
+  eq(
+    memorySession({ status = 'published', kind = 'checkpoint', owner = 'ses_other' }),
+    false,
+    'another session checkpoint stays hidden'
+  )
+  eq(
+    memorySession({ status = 'published', kind = 'checkpoint', owner = 'ses_current' }),
+    true,
+    'the attached session checkpoint is visible'
+  )
+
+  -- Memory and checkpoints stay out of the All view even when finished
+  -- artifacts are included.
   eq(shown({ status = 'published', kind = 'memory' }), false, 'project memory stays out of the picker')
   eq(shown({ status = 'published', kind = 'checkpoint' }), false, 'session checkpoint stays out of the picker')
 
@@ -250,7 +268,7 @@ test('retry_from_record offers only undelivered plan approvals', function()
       if argv[6]:match('art_plan01') then
         artifact = { kind = 'plan', feedback = { { requestID = 'req_fb1', delivery = { state = 'failed', error = 'down' } } }, approval = { requestID = 'req_ap1', delivery = { state = 'failed', error = 'down' } } }
       else
-        artifact = { kind = 'report', feedback = { { requestID = 'req_fb2', delivery = { state = 'failed', error = 'down' } } }, approval = { requestID = 'req_ap2', delivery = { state = 'failed', error = 'down' } } }
+        artifact = { kind = 'review', feedback = { { requestID = 'req_fb2', delivery = { state = 'failed', error = 'down' } } }, approval = { requestID = 'req_ap2', delivery = { state = 'failed', error = 'down' } } }
       end
       on_exit { code = 0, stdout = vim.json.encode { output = { artifact = artifact } } }
     else
@@ -273,7 +291,7 @@ test('retry_from_record offers only undelivered plan approvals', function()
   eq(chosen_items[1].kind, 'approval', 'candidate kind is approval')
   eq(chosen_items[1].requestID, 'req_ap1', 'candidate request ID is the plan approval')
 
-  -- Evidence and report artifacts contribute no retry candidates even with
+  -- Evidence and review artifacts contribute no retry candidates even with
   -- undelivered feedback/approval records.
   chosen_items = nil
   done = false
@@ -289,15 +307,15 @@ test('retry_from_record offers only undelivered plan approvals', function()
 
   chosen_items = nil
   done = false
-  M.get('art_report01', function()
-    fn.retry_from_record('art_report01')
+  M.get('art_review01', function()
+    fn.retry_from_record('art_review01')
     vim.schedule(function() done = true end)
   end)
   wait_for(function()
     return done or chosen_items ~= nil
   end)
   vim.wait(300, function() return chosen_items ~= nil or done end)
-  eq(chosen_items, nil, 'report artifacts have no retry candidates')
+  eq(chosen_items, nil, 'review artifacts have no retry candidates')
 
   vim.ui.select = orig_select
   M.transport = nil
@@ -366,37 +384,48 @@ test('published evidence buffer exposes Mark read and the leader-ay keymap', fun
   vim.api.nvim_buf_delete(buf, { force = true })
 end)
 
-test('report buffers reuse the generic non-plan gates: draft hides mark-read, published exposes it', function()
-  local draft, draft_meta = with_artifact_buf({ kind = 'report', status = 'draft' })
+test('memory buffers are read-only views with feedback but no approve or mark-read', function()
+  local buf, meta = with_artifact_buf({ kind = 'memory', status = 'published' })
+  fn.attach_artifact_commands(buf, meta)
+  assert(buf_has_command(buf, 'OpenCodeArtifactFeedback'), 'feedback attached on memory')
+  assert(buf_has_command(buf, 'OpenCodeArtifactRetryDelivery'), 'retry command attached on memory')
+  eq(buf_has_command(buf, 'OpenCodeArtifactApprove'), false, 'no approve on memory')
+  eq(buf_has_command(buf, 'OpenCodeArtifactMarkRead'), false, 'no mark-read on memory')
+  eq(buf_has_keymap(buf, '<leader>ay'), false, 'no action keymap on memory')
+  vim.api.nvim_buf_delete(buf, { force = true })
+end)
+
+test('review buffers reuse the generic non-plan gates: draft hides mark-read, published exposes it', function()
+  local draft, draft_meta = with_artifact_buf({ kind = 'review', status = 'draft' })
   fn.attach_artifact_commands(draft, draft_meta)
-  assert(buf_has_command(draft, 'OpenCodeArtifactFeedback'), 'feedback attached on draft report')
-  assert(buf_has_command(draft, 'OpenCodeArtifactRetryDelivery'), 'retry attached on draft report')
-  eq(buf_has_command(draft, 'OpenCodeArtifactApprove'), false, 'no approve on a report')
-  eq(buf_has_command(draft, 'OpenCodeArtifactMarkRead'), false, 'no mark-read on a draft report')
-  eq(buf_has_keymap(draft, '<leader>ay'), false, 'no mark-read keymap on a draft report')
+  assert(buf_has_command(draft, 'OpenCodeArtifactFeedback'), 'feedback attached on draft review')
+  assert(buf_has_command(draft, 'OpenCodeArtifactRetryDelivery'), 'retry attached on draft review')
+  eq(buf_has_command(draft, 'OpenCodeArtifactApprove'), false, 'no approve on a review')
+  eq(buf_has_command(draft, 'OpenCodeArtifactMarkRead'), false, 'no mark-read on a draft review')
+  eq(buf_has_keymap(draft, '<leader>ay'), false, 'no mark-read keymap on a draft review')
   vim.api.nvim_buf_delete(draft, { force = true })
 
-  local published, published_meta = with_artifact_buf({ artifact_id = 'art_report02', kind = 'report', status = 'published' })
+  local published, published_meta = with_artifact_buf({ artifact_id = 'art_review02', kind = 'review', status = 'published' })
   fn.attach_artifact_commands(published, published_meta)
-  assert(buf_has_command(published, 'OpenCodeArtifactMarkRead'), 'mark-read attached on a published report')
-  assert(buf_has_keymap(published, '<leader>ay'), 'mark-read keymap attached on a published report')
+  assert(buf_has_command(published, 'OpenCodeArtifactMarkRead'), 'mark-read attached on a published review')
+  assert(buf_has_keymap(published, '<leader>ay'), 'mark-read keymap attached on a published review')
   vim.api.nvim_buf_delete(published, { force = true })
 end)
 
-test('mark_read guards drafts for reports: a draft report sends no mark_read RPC', function()
+test('mark_read guards drafts for reviews: a draft review sends no mark_read RPC', function()
   local captured = {}
   M.transport = function(argv, on_exit)
     captured[#captured + 1] = argv
     on_exit { code = 0, stdout = '{}' }
   end
-  local buf, meta = with_artifact_buf({ kind = 'report', status = 'draft' })
+  local buf, meta = with_artifact_buf({ kind = 'review', status = 'draft' })
   fn.mark_read(buf)
-  eq(#captured, 0, 'draft report cannot be marked read; no RPC is sent')
+  eq(#captured, 0, 'draft review cannot be marked read; no RPC is sent')
   vim.api.nvim_buf_delete(buf, { force = true })
   M.transport = nil
 end)
 
-test('feedback on a published report sends an explicit owner recipient', function()
+test('feedback on a published review sends an explicit owner recipient', function()
   local captured = {}
   local selected
   local orig_select = vim.ui.select
@@ -409,25 +438,25 @@ test('feedback on a published report sends an explicit owner recipient', functio
     captured[#captured + 1] = argv
     local method = argv[4]:match('/personal%.artifacts/([^?]+)')
     if method == 'get' then
-      on_exit { code = 0, stdout = vim.json.encode { output = { artifact = { title = 'Report', kind = 'report', status = 'published' } } } }
+      on_exit { code = 0, stdout = vim.json.encode { output = { artifact = { title = 'Review', kind = 'review', status = 'published' } } } }
     elseif method == 'mark_read' then
-      on_exit { code = 0, stdout = vim.json.encode { output = { requestID = 'req_mark_report', kind = 'read', deduplicated = false, artifact = { status = 'read' } } } }
+      on_exit { code = 0, stdout = vim.json.encode { output = { requestID = 'req_mark_review', kind = 'read', deduplicated = false, artifact = { status = 'read' } } } }
     else
       on_exit { code = 0, stdout = '{}' }
     end
   end
-  local buf, meta = with_artifact_buf({ kind = 'report', status = 'published' })
+  local buf, meta = with_artifact_buf({ kind = 'review', status = 'published' })
   vim.schedule(function() fn.mark_read(buf) end)
   wait_for(function() return #captured >= 2 end)
   vim.wait(200, function() return #captured >= 2 end)
-  eq(selected[1], 'Mark this report read', 'the confirm label is the report mark-read label')
-  eq(fn.retry_state_for(meta.artifact_id), nil, 'report mark_read records no retry state')
+  eq(selected[1], 'Mark this review read', 'the confirm label is the review mark-read label')
+  eq(fn.retry_state_for(meta.artifact_id), nil, 'review mark_read records no retry state')
   vim.api.nvim_buf_delete(buf, { force = true })
   vim.ui.select = orig_select
   NVBuffers = nil
   M.transport = nil
 
-  -- Feedback on a report (unrelated to mark-read) targets the owner.
+  -- Feedback on a review (unrelated to mark-read) targets the owner.
   local captured_fb = {}
   M.transport = function(argv, on_exit)
     captured_fb[#captured_fb + 1] = argv
@@ -435,21 +464,36 @@ test('feedback on a published report sends an explicit owner recipient', functio
   end
   local orig_input = vim.ui.input
   vim.ui.input = function(_opts, cb)
-    cb 'About the report?'
+    cb 'About the review?'
   end
-  local buf2, meta2 = with_artifact_buf({ artifact_id = 'art_report03', kind = 'report', status = 'published' })
+  local buf2, meta2 = with_artifact_buf({ artifact_id = 'art_review03', kind = 'review', status = 'published' })
   vim.schedule(function()
     fn.feedback(buf2)
   end)
   wait_for(function() return #captured_fb >= 1 end)
   vim.wait(200, function() return #captured_fb >= 1 end)
   local decoded = vim.json.decode(captured_fb[1][6])
-  eq(decoded.input.artifactID, meta2.artifact_id, 'report artifact id passed')
-  eq(decoded.input.recipient, 'owner', 'report feedback explicitly targets the owner')
-  eq(decoded.input.question, 'About the report?', 'question passed')
+  eq(decoded.input.artifactID, meta2.artifact_id, 'review artifact id passed')
+  eq(decoded.input.recipient, 'owner', 'review feedback explicitly targets the owner')
+  eq(decoded.input.question, 'About the review?', 'question passed')
   vim.api.nvim_buf_delete(buf2, { force = true })
   vim.ui.input = orig_input
   M.transport = nil
+end)
+
+test('show_picker resolves the session label module instead of the session parameter', function()
+  local picker_opts
+  local old_snacks = package.loaded.snacks
+  local old_layout = NVSPickerHorizontalLayout
+  package.loaded.snacks = { picker = function(opts) picker_opts = opts end }
+  NVSPickerHorizontalLayout = { build = function() return {} end }
+
+  local ok, err = pcall(fn.show_picker, {}, 'all', { id = 'ses_test123456', title = 'Test session' })
+  package.loaded.snacks = old_snacks
+  NVSPickerHorizontalLayout = old_layout
+
+  assert(ok, tostring(err))
+  eq(picker_opts.title, 'OpenCode Artifacts · Test session (read hidden)', 'title uses the session label')
 end)
 
 test('picker_items carries the primary author label and item_format renders it instead of the owner session', function()

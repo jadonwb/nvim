@@ -1,5 +1,5 @@
--- NVOpenCodeArtifacts: one Neovim interface for OpenCode plans, evidence,
--- reviews and reports (plugin personal.artifacts).
+-- NVOpenCodeArtifacts: one Neovim interface for OpenCode plans, evidence, and
+-- reviews (plugin personal.artifacts).
 --
 -- Transport mechanics (argv envelope, location scoping, request IDs, typed
 -- errors) live in editor.features.opencode-rpc; session attachment lives in
@@ -8,8 +8,8 @@
 --
 -- Artifacts are read-only generated Markdown views in the artifact registry,
 -- opened only through explicit selection and addressed by artifact ID. Feedback
--- and approval are the only editor writes; evidence/reviews/reports are
--- dismissed with Mark read (status `read`) and never emit a notification.
+-- and approval are the only editor writes; evidence and reviews are dismissed
+-- with Mark read (status `read`) and never emit a notification.
 -- Metadata comes from RPC/buffer state, never from parsing the generated view:
 -- rows show the frontend primary author label, and the owner session id is used
 -- only for the internal attached-session filter, never rendered as user-facing
@@ -53,16 +53,10 @@ local SELECTION_MAX_BYTES = 65536
 -- Builder authorization, with an owner notification) and marks evidence/reviews
 -- read (a dismissal with no notification).
 function fn.approval_label(kind)
-  if kind == 'evidence' then
-    return 'Mark this evidence read'
+  if kind == 'plan' then
+    return 'Approve this plan'
   end
-  if kind == 'review' then
-    return 'Mark this review read'
-  end
-  if kind == 'report' then
-    return 'Mark this report read'
-  end
-  return 'Approve this plan'
+  return 'Mark this ' .. tostring(kind) .. ' read'
 end
 
 local function notify(msg, level)
@@ -204,7 +198,7 @@ end
 
 --- Action UI (commands + keymap) exists only while the buffer shows a
 --- non-resolved artifact; it is removed whenever the buffer is known to show an
---- approved plan or a read evidence/review/report.
+--- approved plan or a read evidence/review.
 function fn.revoke_action_ui(buf)
   if not vim.api.nvim_buf_is_valid(buf) then
     return
@@ -230,13 +224,14 @@ function fn.attach_artifact_commands(buf, meta)
   })
   -- Readiness gate: a plan must be finalized before the approval action is
   -- offered. Incomplete drafts stay visible (Feedback/Retry only) but never
-  -- expose the approve affordance.
+  -- expose the approve affordance. Only evidence/reviews are dismissible;
+  -- memory and checkpoints are live documents.
   if meta.kind == 'plan' and meta.status ~= 'approved' and meta.finalized == true then
     vim.api.nvim_buf_create_user_command(buf, 'OpenCodeArtifactApprove', function()
       fn.approve(buf)
     end, { desc = fn.approval_label(meta.kind) })
     fn.attach_action_keymap(buf, meta)
-  elseif meta.kind ~= 'plan' and meta.status == 'published' then
+  elseif (meta.kind == 'evidence' or meta.kind == 'review') and meta.status == 'published' then
     vim.api.nvim_buf_create_user_command(buf, 'OpenCodeArtifactMarkRead', function()
       fn.mark_read(buf)
     end, { desc = fn.approval_label(meta.kind) })
@@ -309,8 +304,8 @@ local ENTRY_POINTS = {
   plans = { title = 'OpenCode Plans', kinds = { plan = true }, plans_only = true, empty = 'No draft plans for ' },
   evidence = { title = 'OpenCode Evidence', kinds = { evidence = true }, empty = 'No evidence for ' },
   reviews = { title = 'OpenCode Reviews', kinds = { review = true }, empty = 'No reviews for ' },
-  reports = { title = 'OpenCode Reports', kinds = { report = true }, empty = 'No reports for ' },
-  -- Memory and checkpoints are live session state, not reviewable artifacts.
+  memory = { title = 'OpenCode Memory', kinds = { memory = true, checkpoint = true }, empty = 'No memory for ' },
+  -- Memory and checkpoints are live session state, not in the All view.
   all = { title = 'OpenCode Artifacts', exclude = { memory = true, checkpoint = true }, empty = 'No artifacts for ' },
 }
 
@@ -323,12 +318,14 @@ end
 --- evidence/reviews — are hidden in every entry until the <M-a>
 --- include-finished toggle includes them. The Plans entry is an intentional
 --- kind-filtered view defaulting to draft plans only. Evidence and Reviews
---- filter by kind; All takes every kind.
+--- filter by kind; All takes plan/evidence/review and excludes live session
+--- state.
 function fn.filter_for(entry, state)
   return function(item)
     -- When a session is attached, only its own records (owner) are visible.
-    -- Absent session_id keeps the unfiltered behavior.
-    if type(state.session_id) == 'string' then
+    -- Project memory is shared across sessions, so it is exempt; checkpoints
+    -- remain session-owned. Absent session_id keeps the unfiltered behavior.
+    if type(state.session_id) == 'string' and item.kind ~= 'memory' then
       if item.owner ~= state.session_id then
         return false
       end
@@ -438,14 +435,14 @@ function fn.toggle_finished(picker, state, entry)
   return state.show_finished
 end
 
-function fn.show_picker(artifacts, entry_key, session)
+function fn.show_picker(artifacts, entry_key, session_info)
   local Snacks = require 'snacks'
   local entry = fn.entry_for(entry_key)
   local items = fn.picker_items(artifacts)
-  local label = session.label(session)
+  local label = session.label(session_info)
   local session_id = nil
-  if type(session) == 'table' and type(session.id) == 'string' and session.id ~= '' then
-    session_id = session.id
+  if type(session_info) == 'table' and type(session_info.id) == 'string' and session_info.id ~= '' then
+    session_id = session_info.id
   end
   local state = { show_finished = false, session_id = session_id, session_label = label }
   Snacks.picker {
@@ -813,18 +810,18 @@ function fn.approve(buf)
   end)
 end
 
---- Mark read: evidence/review/report dismissal with NO notification and NO
---- delivery handling. The RPC records status=read and closes the originating
---- buffer; a later content patch returns the artifact to the draft until it is
---- finalized again.
+--- Mark read: evidence/review dismissal with NO notification and NO delivery
+--- handling. The RPC records status=read and closes the originating buffer; a
+--- later content patch returns the artifact to the draft until it is finalized
+--- again.
 function fn.mark_read(buf)
   local meta = fn.artifact_meta(buf)
   if not meta then
     notify('Buffer is not an artifact buffer', vim.log.levels.WARN)
     return
   end
-  if meta.kind == 'plan' then
-    notify('Mark read applies to evidence, reviews, and reports only; approve plans instead', vim.log.levels.WARN)
+  if meta.kind ~= 'evidence' and meta.kind ~= 'review' then
+    notify('Mark read applies to evidence and reviews only', vim.log.levels.WARN)
     return
   end
   if meta.status == 'read' then
@@ -832,7 +829,7 @@ function fn.mark_read(buf)
     return
   end
   if meta.status ~= 'published' then
-    notify(('Only published evidence/reviews/reports can be marked read (status %s)'):format(tostring(meta.status)), vim.log.levels.WARN)
+    notify(('Only published evidence/reviews can be marked read (status %s)'):format(tostring(meta.status)), vim.log.levels.WARN)
     return
   end
   M.get(meta.artifact_id, function(artifact, err)
@@ -955,7 +952,7 @@ end
 function M.setup()
   -- Idempotent setup: drop any previous registrations before re-creating
   -- (module reload safety).
-  for _, name in ipairs { 'OpenCodePlans', 'OpenCodeEvidence', 'OpenCodeReviews', 'OpenCodeReports', 'OpenCodeArtifacts' } do
+  for _, name in ipairs { 'OpenCodePlans', 'OpenCodeEvidence', 'OpenCodeReviews', 'OpenCodeMemory', 'OpenCodeArtifacts' } do
     pcall(vim.api.nvim_del_user_command, name)
   end
 
@@ -968,9 +965,9 @@ function M.setup()
   vim.api.nvim_create_user_command('OpenCodeReviews', function()
     M.open_picker 'reviews'
   end, { desc = 'List reviews' })
-  vim.api.nvim_create_user_command('OpenCodeReports', function()
-    M.open_picker 'reports'
-  end, { desc = 'List reports' })
+  vim.api.nvim_create_user_command('OpenCodeMemory', function()
+    M.open_picker 'memory'
+  end, { desc = 'List project memory and checkpoints' })
   vim.api.nvim_create_user_command('OpenCodeArtifacts', function()
     M.open_picker 'all'
   end, { desc = 'List all artifacts' })
@@ -982,7 +979,7 @@ function M.keymaps()
   K.map { '<leader>ap', 'Show OpenCode plans', function() M.open_picker('plans') end, mode = { 'n', 'v' } }
   K.map { '<leader>ae', 'Show OpenCode evidence', function() M.open_picker('evidence') end, mode = { 'n', 'v' } }
   K.map { '<leader>ar', 'Show OpenCode reviews', function() M.open_picker('reviews') end, mode = { 'n', 'v' } }
-  K.map { '<leader>aq', 'Show OpenCode reports', function() M.open_picker('reports') end, mode = { 'n', 'v' } }
+  K.map { '<leader>am', 'Show OpenCode memory', function() M.open_picker('memory') end, mode = { 'n', 'v' } }
   K.map { '<leader>aa', 'Show all OpenCode artifacts', function() M.open_picker('all') end, mode = { 'n', 'v' } }
 end
 
