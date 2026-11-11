@@ -144,9 +144,29 @@ n	<leader>gw              	Show worktree picker
 n	<leader>sH              	Search Highlights
 n	<leader>sz              	Chezmoi files
 n	<leader>u<Tab>          	Toggle tab characters
+n	<leader>uA              	Toggle Tabline
+n	<leader>uC              	Colorschemes
+n	<leader>uD              	Toggle Dimming
+n	<leader>uF              	Toggle Auto Format (Buffer)
 n	<leader>uH              	Toggle Transparency
+n	<leader>uI              	Inspect Tree
+n	<leader>uL              	Toggle Relative Number
+n	<leader>uS              	Toggle Smooth Scroll
+n	<leader>uT              	Toggle Treesitter Highlight
+n	<leader>ua              	Toggle Animations
+n	<leader>ub              	Toggle Dark Background
+n	<leader>uc              	Toggle Conceal Level
+n	<leader>ud              	Toggle Diagnostics
+n	<leader>uf              	Toggle Auto Format (Global)
+n	<leader>ug              	Toggle Indent Guides
+n	<leader>uh              	Toggle Inlay Hints
+n	<leader>ui              	Inspect Pos
+n	<leader>ul              	Toggle Line Numbers
 n	<leader>un              	Dismiss notifications
+n	<leader>ur              	Redraw / Clear hlsearch / Diff Update
+n	<leader>us              	Toggle Spelling
 n	<leader>ut              	Toggle Treesitter Context
+n	<leader>uw              	Toggle Wrap
 n	<leader>xE              	Diagnostics: ERROR [workspace]
 n	<leader>xW              	Diagnostics: WARN [workspace]
 n	<leader>xe              	Diagnostics: ERROR [current buffer]

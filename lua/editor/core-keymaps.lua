@@ -16,10 +16,6 @@ function NVKeymaps.core()
     vim.diagnostic.jump { count = -1, float = true }
   end, { desc = 'Previous diagnostic' })
 
-  map('n', '<leader>un', function()
-    Snacks.notifier.hide()
-  end, { desc = 'Dismiss notifications' })
-
   map('n', '<leader>bd', function()
     NVBuffers.delete_buf(vim.api.nvim_get_current_buf())
   end, { desc = 'Delete buffer' })

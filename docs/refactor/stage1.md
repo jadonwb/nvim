@@ -57,7 +57,7 @@ old config only loaded the theme after startup and the new one loads it during.
 ## Keymaps
 
 `keymaps-before.txt` is a dump from the live config on `master`;
-`keymaps-after.txt` is the same dump on this branch. 112 mappings dropped, 14
+`keymaps-after.txt` is the same dump on this branch. 92 mappings dropped, 14
 added (10 blink.cmp cmdline keys and 3 core LSP defaults).
 
 Dropped, by group:
@@ -73,10 +73,24 @@ Dropped, by group:
   `<C-W>` hydra, `<leader>-` and `<leader>|` splits.
 
 Re-added in `lua/editor/core-keymaps.lua`: `<leader>cf` (format), `<leader>cd`
-(diagnostics), `<leader>bd` (delete buffer), `<leader>un` (dismiss
-notifications), `[e`/`]e` (diagnostic jumps).
+(diagnostics), `<leader>bd` (delete buffer), `[e`/`]e` (diagnostic jumps).
 
-Everything else in the dropped list needs a decision: restore it, or accept it.
+The whole `<leader>u` group is back, in `lua/editor/ui-toggles.lua`, built on
+snacks' toggle API so each entry reports its state. `<leader>uz`/`uZ` (zen,
+zoom) stay removed: the old config deleted them on purpose. `<leader>uH`
+(transparency), `<leader>ut` (treesitter context) and `<leader>u<tab>`
+(tab characters) already lived in their own modules.
+
+`<leader>uf`/`uF` needed something to toggle, so `lua/editor/format.lua` now
+implements format-on-save with conform, a global `vim.g.autoformat` switch and a
+per-buffer `vim.b.autoformat` override. Format-on-save had stopped working when
+LazyVim left, because nothing implemented it.
+
+Still dropped, needs a decision: LazyVim's picker group (`<leader>s*`), the
+buffer and tab groups (`<leader>b*`, `<leader><Tab>*`), quickfix
+(`<leader>x*`), and its movement polish (`j`/`k` display lines, `n`/`N`
+centring, `[i`/`]i` and `ai`/`ii` scope, `[w`/`]w`, `gco`/`gcO`, insert-mode
+`,`/`.`/`;`, `<C-W>` hydra, `<leader>-`, `<leader>|`).
 
 ## Follow-ups
 

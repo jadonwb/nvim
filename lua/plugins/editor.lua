@@ -23,6 +23,9 @@ return {
       require 'editor.terminal'
       NVTerminal.setup()
 
+      require 'editor.format'
+      NVFormat.setup()
+
       require 'editor.features.focus-mode'
       NVFocusMode.setup()
       NVFocusMode.autocmds()
@@ -70,6 +73,9 @@ return {
         require 'editor.editing'
         require 'editor.core-keymaps'
         NVKeymaps.core()
+
+        require 'editor.ui-toggles'
+        NVUIToggles.keymaps()
         NVEditing.keymaps()
 
         NVFocusMode.keymaps()
