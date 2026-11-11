@@ -39,10 +39,16 @@ snapshots, lualine's label rendering), the `<C-S-Left/Right>` reorder mappings,
 `<C-t>` is a plain `tabnew`, `<C-w>` closes a tab through the registry, and
 `<C-Left/Right>` step between tabs.
 
+The close key now means the same thing everywhere in a diff view. `<M-w>` had
+a buffer-local mapping in the diff panel that closed the panel while leaving the
+view open; it now calls `NVDiffview.close`, and `diffview` is registered with
+`NVClose` so the key also works from a diff window, where no buffer-local map
+applies.
+
 Verified in the harness: `<C-t>` opens a second tab; `<C-w>` closes it;
-`:DiffviewOpen` opens a temporary tab that a single `<C-w>` tears down
-completely; a restart snapshot is written with no tab labels and restores
-without error.
+`:DiffviewOpen` opens a temporary tab that one `<C-w>` or `<M-w>` tears down
+completely, from the file panel and from a diff window alike; a restart
+snapshot is written with no tab labels and restores without error.
 
 ## Next
 

@@ -175,6 +175,15 @@ function NVDiffview.close_other_tabs(view)
 end
 
 function NVDiffview.setup()
+  -- The close key (<M-w>) runs through NVClose before any buffer is deleted, so
+  -- a diff view is torn down rather than replaced by the next buffer.
+  NVClose.register('diffview', function()
+    if not NVDiffview.is_diffview_tab(vim.api.nvim_get_current_tabpage()) then
+      return false
+    end
+    return NVDiffview.close()
+  end)
+
   NVTabs.register_type {
     name = 'diffview',
     is_temporary = true,
@@ -270,9 +279,9 @@ return {
         -- file_panel: whole-file conflict resolution only
         -- stylua: ignore
         file_panel = {
-          -- Preserve Diffview's contextual action: in the file panel this
-          -- closes the panel; pressing close again from a view closes the view.
-          { 'n', NVKeymaps.close, actions.close, { desc = 'Close Diffview panel' } },
+          -- The close key means "close the diff view" everywhere, in the panel
+          -- and in a diff window alike; the panel is not a separate surface.
+          { 'n', NVKeymaps.close, NVDiffview.close, { desc = 'Close Diffview' } },
           { 'n', '<leader>cO', false },
           { 'n', '<leader>cT', false },
           { 'n', '<leader>cB', false },
@@ -285,7 +294,7 @@ return {
 
         -- stylua: ignore
         file_history_panel = {
-          { 'n', NVKeymaps.close, actions.close, { desc = 'Close Diffview' } },
+          { 'n', NVKeymaps.close, NVDiffview.close, { desc = 'Close Diffview' } },
         },
       },
 

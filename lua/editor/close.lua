@@ -2,6 +2,7 @@ NVClose = {}
 
 ---@type string[]
 NVClose.priority = {
+  'diffview',
   'lsp_popup',
   'lsp_signature',
   'nvlazy',
