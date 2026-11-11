@@ -95,7 +95,8 @@ location/quickfix lists, marks, man, plugin spec, resume, LSP symbols, todo,
 undotree). The entries the old `plugins/disabled.lua` deleted stay deleted:
 `sb`, `sB`, `sg`, `sG`, `sw`, `sW` and `sr`.
 
-Still dropped, needs a decision: the buffer and tab groups (`<leader>b*`,
+Still dropped, needs a decision — each entry is listed with LazyVim's own
+description in `docs/refactor/dropped-keymaps.md`: the buffer and tab groups (`<leader>b*`,
 `<leader><Tab>*`), `<leader>?`, `<leader>K`, `<leader>l`, `<leader>cF`,
 `<leader>xl`/`xq`, and LazyVim's movement polish (`j`/`k` display lines,
 `n`/`N` centring, `[i`/`]i` and `ai`/`ii` scope, `[w`/`]w`, `gco`/`gcO`,
