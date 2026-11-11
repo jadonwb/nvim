@@ -62,19 +62,19 @@ local keys = {
   { lhs = 'gD', rhs = false, method = 'textDocument/declaration' },
   { lhs = 'gra', rhs = false, method = 'textDocument/codeAction' },
   { lhs = 'grn', rhs = false, method = 'textDocument/rename' },
-  { lhs = 'K', rhs = function() NVLspPopup.show_hover() end, desc = 'Hover', method = 'textDocument/hover' },
+  { lhs = 'K', rhs = function() NVLspUi.show_at_cursor() end, desc = 'Hover', method = 'textDocument/hover' },
   { lhs = 'grd', rhs = function() NVSPickers.lsp_definitions() end, desc = 'Goto Definition', method = 'textDocument/definition' },
   { lhs = 'grr', rhs = function() NVSPickers.lsp_references() end, desc = 'References', method = 'textDocument/references' },
   { lhs = 'gri', rhs = function() NVSPickers.lsp_implementations() end, desc = 'Implementation', method = 'textDocument/implementation' },
   { lhs = 'grt', rhs = function() NVSPickers.lsp_type_definitions() end, desc = 'Type Definition', method = 'textDocument/typeDefinition' },
   { lhs = 'grD', rhs = function() NVSPickers.lsp_declarations() end, desc = 'Declaration', method = 'textDocument/declaration' },
   { lhs = '<leader>ca', rhs = function() require('actions-preview').code_actions() end, desc = 'Code Action', mode = { 'n', 'x' }, method = 'textDocument/codeAction' },
-  { lhs = '<leader>cd', rhs = function() NVLspPopup.show_diagnostics() end, desc = 'Diagnostics' },
+  { lhs = '<leader>cd', rhs = function() NVLspUi.show_diagnostics() end, desc = 'Diagnostics' },
   {
     lhs = ']d',
     rhs = function()
       vim.diagnostic.jump { count = 1, float = false }
-      vim.schedule(function() NVLspPopup.show_diagnostics() end)
+      vim.schedule(function() NVLspUi.show_diagnostics() end)
     end,
     desc = 'Next Diagnostic',
   },
@@ -82,7 +82,7 @@ local keys = {
     lhs = '[d',
     rhs = function()
       vim.diagnostic.jump { count = -1, float = false }
-      vim.schedule(function() NVLspPopup.show_diagnostics() end)
+      vim.schedule(function() NVLspUi.show_diagnostics() end)
     end,
     desc = 'Previous Diagnostic',
   },

@@ -1001,6 +1001,10 @@ end
 --- Exports ---
 
 function NVLspPopup.ensure_hidden()
+  if NVLspUi and NVLspUi.is_open() then
+    NVLspUi.close()
+    return true
+  end
   -- Let's check first if we're inside a diagnostic popup
   local parent_winid = Popup.get_lsp_popup_parent_winid()
 

@@ -39,6 +39,8 @@ return {
       require 'features.lsp.popup'
       NVLspPopup.setup()
 
+      require 'features.lsp.ui'
+
       require 'features.lsp.signature'
       NVLspSignature.setup()
       NVLspSignature.autocmds()
