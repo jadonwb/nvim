@@ -28,6 +28,40 @@ Two facts worth remembering:
   backdrop are ours.
 - **Session panel** (`right_bottom` slot) — cwd, branch, opencode attachment,
   launch profile, and the LSP progress bar when a server is working.
+- **Changed files** (`right_top` slot) — `git status --short` as a volt table:
+  count in the title, status code coloured (red delete, green add, yellow
+  modify/rename, grey untracked), path truncated to the panel width.
+
+## Deliberately not volt
+
+- **Preview** (`bottom_left`): a read-only view of a real file. It needs the
+  filetype, syntax highlighting, wrapping and the buffer semantics that come
+  with a real buffer; volt would draw a copy as virtual text and lose all of it.
+- **Prompt** (`bottom`): volt draws into a non-modifiable buffer, so it cannot
+  host a text input. It is a good fit for a command *palette* (a list of
+  actions), which is a separate surface; the prompt line stays editable.
+
+## Notification centre
+
+`features/ui/notify.lua` is the single owner of user-facing notifications:
+`install()` replaces `vim.notify`, entries land in an in-memory store, and
+`open()` renders them with volt — tabs for `all` / `errors`, newest first, with
+the level colour-coded and long messages split over lines. `q` closes, `C`
+clears, `<Tab>` switches the filter.
+
+- `NVMessages` and every plugin that calls `vim.notify` feed it automatically.
+- ui2 mirrors `wmsg`, `emsg`, `lua_error` and `echoerr` into it as well, so
+  warnings and errors are not lost when the message area scrolls.
+- The snacks notifier is disabled (`enabled = false`) so there is exactly one
+  owner. `<leader>,` opens the centre, `<leader>un` clears it.
+
+Keeping command output in ui2 and notifications here is deliberate: `:commands`,
+search counts and pager output stay where they belong, and notifications get a
+history with levels.
+
+Found while wiring this: `lualine.nvim`'s config had been erroring since the
+de-LazyVim stage because LazyVim used to supply `opts.sections`. It now
+initialises the section tables itself.
 
 ## LSP progress
 

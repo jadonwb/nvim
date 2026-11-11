@@ -34,16 +34,56 @@ local function system_lines(cmd)
   return out
 end
 
---- Changed files in the repository root.
+--- Changed files in the repository root, drawn with volt.
 ---@param win WinID
 ---@return boolean
 function M.changes(win)
-  _ = win
-  local lines = system_lines { 'git', 'status', '--short', '--untracked-files=normal' }
-  if #lines == 0 then
-    lines = { '(no changes)' }
+  local handle = require('features.ui.window').panel(win)
+  local width = math.max(10, vim.api.nvim_win_get_width(win) - (handle.xpad * 2))
+
+  local out = system_lines { 'git', 'status', '--short', '--untracked-files=normal' }
+
+  local function status_hl(code)
+    if code:find 'D' then
+      return 'ExRed'
+    elseif code:find 'A' then
+      return 'ExGreen'
+    elseif code:find 'M' or code:find 'R' then
+      return 'ExYellow'
+    elseif code:find '%?' then
+      return 'CommentFg'
+    end
+    return 'Normal'
   end
-  NVSlots.set_buffer('right_top', panel('right_top', lines, 'nvchanges'))
+
+  local rows = {}
+  for _, line in ipairs(out) do
+    local code, path = line:match '^%s*(%S+)%s+(.*)$'
+    if code then
+      rows[#rows + 1] = {
+        { (' %-2s '):format(code), status_hl(code) },
+        { path:sub(1, math.max(1, width - 5)) },
+      }
+    end
+  end
+
+  if #rows == 0 then
+    rows[1] = { { ' clean', 'CommentFg' } }
+  end
+
+  local title = ' Changes ' .. (#out > 0 and ('(' .. #out .. ')') or '')
+  if #title > width then
+    title = title:sub(1, width)
+  end
+
+  local layout = {
+    { name = 'title', lines = function() return { { { title, 'ExLightGrey' } } } end },
+    { name = 'rule', lines = function() return { { { string.rep('─', width), 'CommentFg' } } } end },
+    { name = 'body', lines = function() return rows end },
+  }
+
+  require('features.ui.window').render(handle, layout, width)
+  vim.bo[handle.buf].filetype = 'nvchanges'
   return true
 end
 

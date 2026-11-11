@@ -66,6 +66,10 @@ NVMessages.progress['test.1'] = {
 }
 NVSlots.providers.session(NVSlots.win 'right_bottom')
 add('progress=' .. tostring(visible('right_bottom'):find('LuaLS', 1, true) ~= nil))
+
+-- The changed-files panel is a volt table: title plus at least one status row.
+local changes = visible 'right_top'
+add('changes=' .. tostring(changes:find('Changes', 1, true) ~= nil))
 NVMessages.progress = {}
 vim.cmd 'NVLayout close'
 add('close wins=' .. wins() .. ' applied=' .. tostring(NVSlots.is_applied()))
@@ -120,6 +124,7 @@ check 'providers=nvchanges,nvsession,nvprompt'
 check 'left=oil'
 check 'session=true'
 check 'progress=true'
+check 'changes=true'
 check 'close wins=1 applied=false'
 check 'reopen wins=6'
 check 'final wins=1'

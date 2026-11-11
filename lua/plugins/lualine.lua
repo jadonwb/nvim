@@ -65,6 +65,13 @@ return {
     },
   },
   opts = function(_, opts)
+    -- LazyVim used to supply these tables; a spec without them has to start
+    -- from empty sections rather than indexing nil.
+    opts.sections = opts.sections or {}
+    for _, name in ipairs { 'lualine_a', 'lualine_b', 'lualine_c', 'lualine_x', 'lualine_y', 'lualine_z' } do
+      opts.sections[name] = opts.sections[name] or {}
+    end
+
     -- Single letter mode indicator
     opts.sections.lualine_a = {
       {

@@ -70,6 +70,8 @@ return {
 
         require 'editor.ui-toggles'
         NVUIToggles.keymaps()
+
+        require('features.ui.notify').install()
         NVEditing.keymaps()
 
         NVOpenCodeArtifacts.keymaps()

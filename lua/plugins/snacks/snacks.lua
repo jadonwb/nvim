@@ -16,7 +16,7 @@ return {
       explorer = { enabled = false },
       scroll = { enabled = false },
       notifier = {
-        enabled = true,
+        enabled = false,
         timeout = 3000,
         level = vim.log.levels.DEBUG,
         date_format = '%T',
@@ -51,7 +51,14 @@ return {
       },
     },
     keys = {
-      { '<leader>,', NVSNotifier.log, mode = { 'n', 'i', 'v' }, desc = 'Notification history' },
+      {
+        '<leader>,',
+        function()
+          require('features.ui.notify').open()
+        end,
+        mode = { 'n', 'i', 'v' },
+        desc = 'Notification centre',
+      },
     },
   },
 }

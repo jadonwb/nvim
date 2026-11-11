@@ -86,9 +86,28 @@ local function setup()
 
   -- Filter live messages before ui2 routes or renders them.
   local orig_msg_show = messages.msg_show
+  -- Warnings and errors are mirrored into the notification centre; command
+  -- output and search counts stay in the message area.
+  local mirrored = {
+    wmsg = vim.log.levels.WARN,
+    emsg = vim.log.levels.ERROR,
+    lua_error = vim.log.levels.ERROR,
+    echoerr = vim.log.levels.ERROR,
+  }
+
   messages.msg_show = function(kind, content, replace_last, history, append, id, trigger)
     if should_filter_message(kind, content, id) then
       return
+    end
+    local level = mirrored[kind]
+    if level then
+      local text = {}
+      for _, chunk in ipairs(content or {}) do
+        text[#text + 1] = chunk[2] or ''
+      end
+      pcall(function()
+        require('features.ui.notify').add(level, table.concat(text))
+      end)
     end
     return orig_msg_show(kind, content, replace_last, history, append, id, trigger)
   end
