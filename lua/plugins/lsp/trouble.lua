@@ -3,7 +3,7 @@ local fn = {}
 local DIAGNOSTICS_SOURCE = 'diagnostics_per_ft'
 
 NVTrouble = {
-  'folke/trouble.nvim',
+  'folke/trouble.nvim', cond = function() return require('config.profile').wants 'lsp' end,
   keys = function()
     return {
       { '<leader>xx', false },

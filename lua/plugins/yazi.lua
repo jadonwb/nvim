@@ -1,6 +1,6 @@
 return {
   {
-    'mikavilpas/yazi.nvim',
+    'mikavilpas/yazi.nvim', cond = function() return require('config.profile').wants 'picker' end,
     event = 'VeryLazy',
     dependencies = {
       'folke/snacks.nvim',

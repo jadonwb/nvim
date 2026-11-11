@@ -59,5 +59,17 @@ run 'mergetool|mergetool|view' '' +DiffviewMergeFiles "$tmp/one" "$tmp/one" "$tm
 # Diff mode is a difftool invocation even without a Diffview command.
 run 'difftool|difftool|view' '' -d "$tmp/one" "$tmp/two"
 
+# Profile gating: a difftool launch must not resolve editor-only plugins.
+got=$(nvim --headless "+DiffviewDiffFiles" "$tmp/one" "$tmp/two" \
+  "+lua local p = require('lazy.core.config').plugins; io.write(tostring(p['nvim-ufo'] ~= nil) .. '|' .. tostring(p['blink.cmp'] ~= nil))" \
+  +qa 2>/dev/null)
+if [ "$got" = "false|false" ]; then
+  pass=$((pass + 1))
+  printf 'ok   - profile gating: difftool excludes ufo and blink -> %s\n' "$got"
+else
+  fail=$((fail + 1))
+  printf 'FAIL - profile gating: difftool -> %s (want false|false)\n' "$got"
+fi
+
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

@@ -1,5 +1,5 @@
 NVBlink = {
-  'saghen/blink.cmp',
+  'saghen/blink.cmp', cond = function() return require('config.profile').wants 'completion' end,
   dependencies = {
     { 'xzbdmw/colorful-menu.nvim', opts = {} },
   },

@@ -3,7 +3,7 @@ local filetype = 'grug-far'
 local fn = {}
 
 NVGrugFar = {
-  'MagicDuck/grug-far.nvim',
+  'MagicDuck/grug-far.nvim', cond = function() return require('config.profile').wants 'picker' end,
   opts = {
     headerMaxWidth = 80,
     engines = {

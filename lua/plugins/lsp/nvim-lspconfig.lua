@@ -1,7 +1,7 @@
 -- nvim-lspconfig is the transport; the server list and the keymaps live in
 -- config/lsp.lua so they are readable as data instead of a plugin `opts` table.
 return {
-  'neovim/nvim-lspconfig',
+  'neovim/nvim-lspconfig', cond = function() return require('config.profile').wants 'lsp' end,
   event = { 'BufReadPre', 'BufNewFile' },
   dependencies = {
     { 'aznhe21/actions-preview.nvim', opts = { backend = { 'snacks', 'nui' } } },
