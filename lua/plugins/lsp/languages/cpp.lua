@@ -1,7 +1,7 @@
 return {
   {
     'madskjeldgaard/cppman.nvim',
-    requires = {
+    dependencies = {
       { 'MunifTanjim/nui.nvim' },
     },
     opts = {},

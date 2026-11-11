@@ -1,3 +1,16 @@
+-- Leader keys were previously set by LazyVim's config/options.lua. They must be
+-- set before any plugin spec is evaluated, so they live here, first.
+vim.g.mapleader = ' '
+vim.g.maplocalleader = '\\'
+
+-- Keep deprecation notices out of the message area; they are read when the
+-- config is updated, not while editing.
+vim.g.deprecation_warnings = false
+
+-- Global settings that snacks and trouble read on load.
+vim.g.snacks_animate = true
+vim.g.trouble_lualine = true
+
 require('config.remote_clipboard').setup()
 
 -- FIXME: make sure now that I match reference config with layout manager, these options don't break anything / revisit these
@@ -52,7 +65,23 @@ vim.opt.listchars = {
 vim.opt.fillchars:append {
   eob = ' ',
   diff = '',
+  foldopen = '',
+  foldclose = '',
+  fold = ' ',
+  foldsep = ' ',
 }
+
+-- Sync with the system clipboard, except over SSH where OSC 52 must be left to
+-- the terminal.
+vim.opt.clipboard = vim.env.SSH_CONNECTION and '' or 'unnamedplus'
+
+-- Indent folds as the default, with a blank fold text so the first line shows.
+vim.opt.foldmethod = 'indent'
+vim.opt.foldtext = ''
+
+-- No comment leader, no auto-wrap, no insert-mode auto-comment. This replaces a
+-- FileType autocmd that stripped 'c', 'r' and 'o' from every buffer.
+vim.opt.formatoptions = 'jqlnt'
 
 vim.opt.conceallevel = 2
 

@@ -14,9 +14,13 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
+-- omarchy's theme file is a lazy spec that also injects LazyVim; lazy imports
+-- plugin modules with loadfile, so it cannot be intercepted from package.path.
+-- core.lua disables that fragment explicitly, and the colorscheme is read here.
+local theme = require 'config.theme'
+
 require('lazy').setup {
   spec = {
-    { 'LazyVim/LazyVim', import = 'lazyvim.plugins' },
     { import = 'plugins' },
     { import = 'plugins/snacks' },
     { import = 'plugins/git' },
@@ -44,7 +48,7 @@ require('lazy').setup {
   },
   install = {
     missing = false,
-    colorscheme = { 'habamax' },
+    colorscheme = { theme.colorscheme, 'habamax' },
   },
   checker = {
     enabled = true, -- check for plugin updates periodically
@@ -70,3 +74,7 @@ require('lazy').setup {
     },
   },
 }
+
+-- The theme is applied by us rather than by a distro plugin. lazy.nvim has
+-- loaded the startup plugins by now, so the colorscheme exists.
+theme.apply()

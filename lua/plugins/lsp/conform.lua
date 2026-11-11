@@ -1,7 +1,19 @@
+-- Formatting. LazyVim used to declare conform and map <leader>cf; without a
+-- distro both belong here.
 return {
   {
     'stevearc/conform.nvim',
-    optional = true,
+    event = { 'BufWritePre' },
+    keys = {
+      {
+        '<leader>cf',
+        function()
+          require('conform').format { async = true, lsp_format = 'fallback' }
+        end,
+        mode = { 'n', 'v' },
+        desc = 'Format buffer',
+      },
+    },
     opts = {
       default_format_opts = {
         lsp_format = 'fallback',

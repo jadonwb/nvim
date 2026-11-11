@@ -1,0 +1,47 @@
+LazyVim                      core/virtual
+SchemaStore.nvim             INHERITED
+actions-preview.nvim         lua/plugins/lsp/nvim-lspconfig.lua
+arrowlake.nvim               lua/config/lazy.lua, lua/plugins/arrowlake.lua
+blink.cmp                    lua/plugins/blink.lua
+chezmoi.nvim                 INHERITED
+chezmoi.vim                  INHERITED
+colorful-menu.nvim           lua/plugins/blink.lua
+conform.nvim                 lua/plugins/lsp/conform.lua
+cppman.nvim                  lua/plugins/lsp/languages/cpp.lua
+diffview-plus.nvim           lua/plugins/git/diffview.lua
+editor-init                  core/virtual
+editor-lazy                  core/virtual
+fff.nvim                     lua/plugins/fff.lua
+friendly-snippets            INHERITED
+gitsigns.nvim                lua/plugins/git/gitsigns.lua
+grug-far.nvim                lua/plugins/disabled.lua, lua/plugins/grug-far.lua
+guess-indent.nvim            lua/plugins/guess-indent.lua
+lazy.nvim                    core/virtual
+lazydev.nvim                 INHERITED
+lualine.nvim                 lua/plugins/lualine.lua
+mason-lspconfig.nvim         INHERITED
+mason.nvim                   lua/plugins/lsp/mason.lua
+mini.ai                      lua/plugins/mini.lua
+mini.hipatterns              INHERITED
+mini.icons                   lua/editor/dialogs.lua, lua/editor/quit.lua
+mini.surround                lua/plugins/mini.lua
+nui.nvim                     lua/plugins/lsp/languages/cpp.lua
+nvim-lint                    lua/plugins/lsp/nvim-lint.lua
+nvim-lspconfig               lua/plugins/lsp/nvim-lspconfig.lua
+nvim-spider                  lua/plugins/nvim-spider.lua
+nvim-treesitter              lua/plugins/lsp/languages/git.lua, lua/plugins/lsp/nvim-treesitter.lua
+nvim-treesitter-context      lua/plugins/lsp/nvim-treesitter.lua
+nvim-treesitter-textobjects  INHERITED
+nvim-ts-autotag              INHERITED
+nvim-ufo                     lua/plugins/ufo.lua
+plenary.nvim                 INHERITED
+promise-async                lua/plugins/ufo.lua
+render-markdown.nvim         lua/plugins/lsp/languages/markdown.lua
+snacks.nvim                  lua/editor/icons.lua, lua/plugins/disabled.lua, lua/plugins/snacks/snacks-dashboard.lua, lua/plugins/snacks/snacks-lazygit.lua, lua/plugins/snacks/snacks-picker.lua, lua/plugins/snacks/snacks.lua, lua/plugins/yazi.lua
+todo-comments.nvim           lua/plugins/todo-comments.lua
+treesj                       lua/plugins/lsp/nvim-treesitter.lua
+trouble.nvim                 lua/plugins/lsp/trouble.lua
+ts-comments.nvim             INHERITED
+which-key.nvim               lua/plugins/disabled.lua, lua/plugins/which-key.lua
+winshift.nvim                lua/editor/windows.lua, lua/plugins/winshift.lua
+yazi.nvim                    lua/plugins/yazi.lua

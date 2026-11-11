@@ -67,10 +67,9 @@ return {
 
     config = function()
       vim.schedule(function()
-        require 'editor.disabled'
-        NVDisabled.disable_keymaps()
-
         require 'editor.editing'
+        require 'editor.core-keymaps'
+        NVKeymaps.core()
         NVEditing.keymaps()
 
         NVFocusMode.keymaps()

@@ -28,6 +28,29 @@ end
 
 local tabline_mode = 'filepath'
 
+--- Root directory of the current project, for the statusline.
+local function root_dir()
+  return {
+    function()
+      local root = vim.fs.root(0, { '.git', 'lua' }) or vim.fn.getcwd()
+      return ' ' .. vim.fn.fnamemodify(root, ':t') .. ' '
+    end,
+    color = { fg = 'DiagnosticHint' },
+  }
+end
+
+--- File path relative to the working directory, with a modified marker.
+---@param opts? { modified_sign?: string }
+local function pretty_path(opts)
+  return {
+    'filename',
+    path = 1,
+    shorting_target = 40,
+    symbols = { modified = (opts and opts.modified_sign) or ' ●' },
+  }
+end
+
+
 return {
   'nvim-lualine/lualine.nvim',
   event = 'VeryLazy',
@@ -42,8 +65,6 @@ return {
     },
   },
   opts = function(_, opts)
-    local icons = LazyVim.config.icons
-
     -- Single letter mode indicator
     opts.sections.lualine_a = {
       {
@@ -100,9 +121,9 @@ return {
       },
     }
     opts.sections.lualine_c = {
-      LazyVim.lualine.root_dir(),
+      root_dir(),
       {
-  'diagnostics',
+        'diagnostics',
   symbols = {
     error = NVIcons.lsp.full.error .. ' ',
     warn = NVIcons.lsp.full.warn .. ' ',
@@ -111,7 +132,7 @@ return {
   },
       },
       { 'filetype', icon_only = true, separator = '', padding = { left = 1, right = 0 } },
-      { LazyVim.lualine.pretty_path { modified_sign = ' ●' } },
+      pretty_path { modified_sign = ' ●' },
     }
 
     -- Tabline: project name | filepath / LSP symbol | tab list

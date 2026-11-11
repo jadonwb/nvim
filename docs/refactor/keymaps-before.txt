@@ -1,0 +1,624 @@
+c	<C-S-V>                 	Paste text
+c	<M-W>                   	Delete current buffer and close current window if there are multiple
+c	<M-w>                   	Delete current buffer, but do not close current window if there are multiple
+i	,                       	
+i	.                       	
+i	;                       	
+i	<C-/>                   	Toggle vsplit terminal
+i	<C-D>                   	Scroll down
+i	<C-H>                   	Move to window on the left
+i	<C-J>                   	Move to window on the right
+i	<C-K>                   	Move to window above
+i	<C-Left>                	Previous tab
+i	<C-Right>               	Next tab
+i	<C-S-Left>              	Move tab to the left
+i	<C-S-Right>             	Move tab to the right
+i	<C-S-S>                 	Save all files
+i	<C-S-T>                 	Create new tab with git worktree
+i	<C-S-V>                 	Paste text
+i	<C-S>                   	Save file
+i	<C-T>                   	Create new tab
+i	<C-U>                   	Scroll up
+i	<C-W>                   	Close tab
+i	<C-_>                   	Toggle vsplit terminal
+i	<Esc>                   	Escape and Clear hlsearch
+i	<M-=>                   	Equalize layout
+i	<M-CR>                  	Insert new line above
+i	<M-Down>                	Move line down
+i	<M-Left>                	Jump one word to the left
+i	<M-Right>               	Jump one word to the right
+i	<M-S-Down>              	Move window to the right
+i	<M-S-Left>              	Move window up
+i	<M-S-Right>             	Move window down
+i	<M-S-Up>                	Move window to the left
+i	<M-Space>               	Insert Space
+i	<M-Tab>                 	Swap windows
+i	<M-Up>                  	Move line up
+i	<M-W>                   	Delete current buffer and close current window if there are multiple
+i	<M-g>                   	Lazygit
+i	<M-j>                   	Scroll down a bit
+i	<M-k>                   	Scroll up a bit
+i	<M-w>                   	Delete current buffer, but do not close current window if there are multiple
+i	<M-z>                   	Toggle focus mode
+i	<S-CR>                  	Insert new line below
+i	<S-Down>                	Decrease window height
+i	<S-Left>                	Increase window width
+i	<S-Right>               	Decrease window width
+i	<S-Tab>                 	vim.snippet.jump if active, otherwise <S-Tab>
+i	<S-Up>                  	Increase window height
+i	<Tab>                   	vim.snippet.jump if active, otherwise <Tab>
+i	<leader>,               	Notification history
+i	<leader>xE              	Diagnostics: ERROR [workspace]
+i	<leader>xW              	Diagnostics: WARN [workspace]
+i	<leader>xe              	Diagnostics: ERROR [current buffer]
+i	<leader>xw              	Diagnostics: WARN [current buffer]
+n	&                       	:help &-default
+n	<C-/>                   	Toggle vsplit terminal
+n	<C-D>                   	Scroll down
+n	<C-H>                   	Move to window on the left
+n	<C-J>                   	Move to window on the right
+n	<C-K>                   	Move to window above
+n	<C-L>                   	Go to Right Window
+n	<C-Left>                	Previous tab
+n	<C-Right>               	Next tab
+n	<C-S-Left>              	Move tab to the left
+n	<C-S-Right>             	Move tab to the right
+n	<C-S-S>                 	Save all files
+n	<C-S-T>                 	Create new tab with git worktree
+n	<C-S-V>                 	Paste text
+n	<C-S>                   	Save file
+n	<C-T>                   	Create new tab
+n	<C-U>                   	Scroll up
+n	<C-W>                   	Close tab
+n	<C-W>                   	Window Hydra Mode (which-key)
+n	<C-W><C-D>              	Show diagnostics under the cursor
+n	<C-W>d                  	Show diagnostics under the cursor
+n	<C-_>                   	Toggle vsplit terminal
+n	<Down>                  	Down
+n	<Esc>                   	Drop all the noise and Esc
+n	<M-=>                   	Equalize layout
+n	<M-CR>                  	Insert new line above
+n	<M-Down>                	Move line down
+n	<M-E>                   	which_key_ignore
+n	<M-Q>                   	Force quit all
+n	<M-S-Down>              	Move window to the right
+n	<M-S-Left>              	Move window up
+n	<M-S-Right>             	Move window down
+n	<M-S-Up>                	Move window to the left
+n	<M-Space>               	Insert Space
+n	<M-Tab>                 	Swap windows
+n	<M-Up>                  	Move line up
+n	<M-W>                   	Delete current buffer and close current window if there are multiple
+n	<M-b>                   	Toggle most recent buffer
+n	<M-e>                   	which_key_ignore
+n	<M-g>                   	Lazygit
+n	<M-h>                   	Scroll left
+n	<M-j>                   	Scroll down a bit
+n	<M-k>                   	Scroll up a bit
+n	<M-l>                   	Scroll right
+n	<M-q>                   	Save all and quit
+n	<M-r>                   	Save session and restart
+n	<M-t>                   	Create new buffer
+n	<M-w>                   	Delete current buffer, but do not close current window if there are multiple
+n	<M-z>                   	Toggle focus mode
+n	<S-CR>                  	Insert new line below
+n	<S-Down>                	Decrease window height
+n	<S-Left>                	Increase window width
+n	<S-Right>               	Decrease window width
+n	<S-Space>               	Insert Space
+n	<S-Up>                  	Increase window height
+n	<Up>                    	Up
+n	<leader>                	Buffers
+n	<leader>,               	Notification history
+n	<leader><Tab><Tab>      	New Tab
+n	<leader><Tab>[          	Previous Tab
+n	<leader><Tab>]          	Next Tab
+n	<leader><Tab>d          	Close Tab
+n	<leader><Tab>f          	First Tab
+n	<leader><Tab>l          	Last Tab
+n	<leader><Tab>o          	Close Other Tabs
+n	<leader><Tab>t          	Toggle Tabline (filepath / LSP symbols)
+n	<leader>?               	Buffer Keymaps (which-key)
+n	<leader>K               	Keywordprg
+n	<leader>aa              	Show all OpenCode artifacts
+n	<leader>ae              	Show OpenCode evidence
+n	<leader>ap              	Show OpenCode plans
+n	<leader>ar              	Show OpenCode reviews
+n	<leader>as              	Attach OpenCode session
+n	<leader>bD              	Delete Buffer and Window
+n	<leader>bb              	Switch to Other Buffer
+n	<leader>bd              	Delete Buffer
+n	<leader>bi              	Delete Invisible Buffers
+n	<leader>bo              	Delete Other Buffers
+n	<leader>cF              	Format Injected Langs
+n	<leader>cd              	Line Diagnostics
+n	<leader>cf              	Format
+n	<leader>cj              	Join or Split Code Block
+n	<leader>cm              	Mason
+n	<leader>dL              	Diffview Log (This File)
+n	<leader>dh              	File History (Pinned to Working Tree)
+n	<leader>dl              	Diffview Log
+n	<leader>dv              	Diffview
+n	<leader>fR              	Search and Replace in project
+n	<leader>ff              	Find Files (fff)
+n	<leader>fl              	Resume Last Picker
+n	<leader>fr              	Search and Replace in current buffer
+n	<leader>fs              	Live Grep (fff)
+n	<leader>fw              	Grep Word (fff)
+n	<leader>ga              	Git: Amend
+n	<leader>gc              	Git: Commit
+n	<leader>gl              	Lazygit Log
+n	<leader>gr              	Git: Rename commit message
+n	<leader>gs              	Lazygit Status
+n	<leader>gt              	Lazygit Stash
+n	<leader>gw              	Show worktree picker
+n	<leader>l               	Lazy
+n	<leader>s"              	Registers
+n	<leader>s/              	Search History
+n	<leader>sC              	Commands
+n	<leader>sD              	Buffer Diagnostics
+n	<leader>sH              	Search Highlights
+n	<leader>sM              	Man Pages
+n	<leader>sR              	Resume
+n	<leader>sa              	Autocmds
+n	<leader>sc              	Command History
+n	<leader>sd              	Diagnostics
+n	<leader>sh              	Help Pages
+n	<leader>si              	Icons
+n	<leader>sj              	Jumps
+n	<leader>sk              	Keymaps
+n	<leader>sl              	Location List
+n	<leader>sm              	Marks
+n	<leader>sp              	Search for Plugin Spec
+n	<leader>sq              	Quickfix List
+n	<leader>su              	Undotree
+n	<leader>sz              	Chezmoi
+n	<leader>u<Tab>          	Toggle tab characters
+n	<leader>uA              	Toggle Tabline
+n	<leader>uC              	Colorschemes
+n	<leader>uD              	Toggle Dimming
+n	<leader>uF              	Toggle Auto Format (Buffer)
+n	<leader>uH              	Toggle Transparency
+n	<leader>uI              	Inspect Tree
+n	<leader>uL              	Toggle Relative Number
+n	<leader>uS              	Toggle Smooth Scroll
+n	<leader>uT              	Toggle Treesitter Highlight
+n	<leader>ua              	Toggle Animations
+n	<leader>ub              	Toggle Dark Background
+n	<leader>uc              	Toggle Conceal Level
+n	<leader>ud              	Toggle Diagnostics
+n	<leader>uf              	Toggle Auto Format (Global)
+n	<leader>ug              	Toggle Indent Guides
+n	<leader>uh              	Toggle Inlay Hints
+n	<leader>ui              	Inspect Pos
+n	<leader>ul              	Toggle Line Numbers
+n	<leader>un              	Dismiss All Notifications
+n	<leader>ur              	Redraw / Clear hlsearch / Diff Update
+n	<leader>us              	Toggle Spelling
+n	<leader>ut              	Toggle Treesitter Context
+n	<leader>uw              	Toggle Wrap
+n	<leader>xE              	Diagnostics: ERROR [workspace]
+n	<leader>xW              	Diagnostics: WARN [workspace]
+n	<leader>xe              	Diagnostics: ERROR [current buffer]
+n	<leader>xl              	Location List
+n	<leader>xq              	Quickfix List
+n	<leader>xt              	Show TODOs
+n	<leader>xw              	Diagnostics: WARN [current buffer]
+n	<leader>yF              	Yank filename without extension
+n	<leader>ya              	Yank absolute file path
+n	<leader>yc              	Yank working directory
+n	<leader>yf              	Yank filename
+n	<leader>yr              	Yank file path relative to cwd
+n	J                       	Join lines and keep cursor position
+n	N                       	Prev Search Result
+n	U                       	Redo
+n	X                       	Don't replace clipboard content when deleting
+n	Y                       	:help Y-default
+n	[                       	Add empty line above cursor
+n	[<C-L>                  	:lpfile
+n	[<C-Q>                  	:cpfile
+n	[<C-T>                  	:ptprevious
+n	[A                      	:rewind
+n	[B                      	:brewind
+n	[D                      	Jump to the first diagnostic in the current buffer
+n	[L                      	:lrewind
+n	[Q                      	:crewind
+n	[T                      	:trewind
+n	[a                      	:previous
+n	[b                      	Prev Buffer
+n	[d                      	Prev Diagnostic
+n	[e                      	Prev Error
+n	[i                      	jump to top edge of scope
+n	[l                      	:lprevious
+n	[q                      	Previous Quickfix
+n	[t                      	:tprevious
+n	[w                      	Prev Warning
+n	]                       	Add empty line below cursor
+n	]<C-L>                  	:lnfile
+n	]<C-Q>                  	:cnfile
+n	]<C-T>                  	:ptnext
+n	]A                      	:last
+n	]B                      	:blast
+n	]D                      	Jump to the last diagnostic in the current buffer
+n	]L                      	:llast
+n	]Q                      	:clast
+n	]T                      	:tlast
+n	]a                      	:next
+n	]b                      	Next Buffer
+n	]d                      	Next Diagnostic
+n	]e                      	Next Error
+n	]i                      	jump to bottom edge of scope
+n	]l                      	:lnext
+n	]q                      	Next Quickfix
+n	]t                      	:tnext
+n	]w                      	Next Warning
+n	b                       	
+n	c                       	Don't replace clipboard content when changing
+n	e                       	
+n	gO                      	vim.lsp.buf.document_symbol()
+n	g[                      	Move to left "around"
+n	g]                      	Move to right "around"
+n	gc                      	Toggle comment
+n	gcO                     	Add Comment Above
+n	gcc                     	Toggle comment line
+n	gco                     	Add Comment Below
+n	ge                      	
+n	gri                     	vim.lsp.buf.implementation()
+n	grr                     	vim.lsp.buf.references()
+n	grt                     	vim.lsp.buf.type_definition()
+n	gx                      	Opens filepath or URI under cursor with the system handler (file explorer, web browser, …)
+n	j                       	Down
+n	k                       	Up
+n	n                       	Next Search Result
+n	s                       	
+n	sF                      	Find left surrounding
+n	sFl                     	Find previous left surrounding
+n	sFn                     	Find next left surrounding
+n	sa                      	Add surrounding
+n	sd                      	Delete surrounding
+n	sdl                     	Delete previous surrounding
+n	sdn                     	Delete next surrounding
+n	sf                      	Find right surrounding
+n	sfl                     	Find previous right surrounding
+n	sfn                     	Find next right surrounding
+n	sh                      	Highlight surrounding
+n	shl                     	Highlight previous surrounding
+n	shn                     	Highlight next surrounding
+n	sr                      	Replace surrounding
+n	srl                     	Replace previous surrounding
+n	srn                     	Replace next surrounding
+n	w                       	
+n	x                       	Don't replace clipboard content when deleting
+o	N                       	Prev Search Result
+o	[i                      	jump to top edge of scope
+o	]i                      	jump to bottom edge of scope
+o	a                       	Around textobject
+o	ai                      	full scope
+o	al                      	Around last textobject
+o	an                      	Around next textobject
+o	b                       	
+o	e                       	
+o	g[                      	Move to left "around"
+o	g]                      	Move to right "around"
+o	gc                      	Comment textobject
+o	ge                      	
+o	i                       	Inside textobject
+o	ii                      	inner scope
+o	il                      	Inside last textobject
+o	in                      	Inside next textobject
+o	n                       	Next Search Result
+o	s                       	
+o	sF                      	Find left surrounding
+o	sFl                     	Find previous left surrounding
+o	sFn                     	Find next left surrounding
+o	sf                      	Find right surrounding
+o	sfl                     	Find previous right surrounding
+o	sfn                     	Find next right surrounding
+o	w                       	
+s	<C-/>                   	Toggle vsplit terminal
+s	<C-D>                   	Scroll down
+s	<C-H>                   	Move to window on the left
+s	<C-J>                   	Move to window on the right
+s	<C-K>                   	Move to window above
+s	<C-Left>                	Previous tab
+s	<C-Right>               	Next tab
+s	<C-S-C>                 	Copy selected text
+s	<C-S-Left>              	Move tab to the left
+s	<C-S-Right>             	Move tab to the right
+s	<C-S-S>                 	Save all files
+s	<C-S-T>                 	Create new tab with git worktree
+s	<C-S-V>                 	Paste text
+s	<C-S>                   	Save file
+s	<C-T>                   	Create new tab
+s	<C-U>                   	Scroll up
+s	<C-W>                   	Close tab
+s	<C-_>                   	Toggle vsplit terminal
+s	<Esc>                   	Escape and Clear hlsearch
+s	<M-=>                   	Equalize layout
+s	<M-Down>                	Move selected lines down
+s	<M-E>                   	which_key_ignore
+s	<M-S-Down>              	Move window to the right
+s	<M-S-Left>              	Move window up
+s	<M-S-Right>             	Move window down
+s	<M-S-Up>                	Move window to the left
+s	<M-Tab>                 	Swap windows
+s	<M-Up>                  	Move selected lines up
+s	<M-W>                   	Delete current buffer and close current window if there are multiple
+s	<M-e>                   	which_key_ignore
+s	<M-g>                   	Lazygit
+s	<M-h>                   	Scroll left
+s	<M-j>                   	Scroll down a bit
+s	<M-k>                   	Scroll up a bit
+s	<M-l>                   	Scroll right
+s	<M-w>                   	Delete current buffer, but do not close current window if there are multiple
+s	<M-z>                   	Toggle focus mode
+s	<S-Down>                	Decrease window height
+s	<S-Left>                	Increase window width
+s	<S-Right>               	Decrease window width
+s	<S-Tab>                 	Unindent
+s	<S-Up>                  	Increase window height
+s	<Tab>                   	Indent
+s	<leader>,               	Notification history
+s	<leader>aa              	Show all OpenCode artifacts
+s	<leader>ae              	Show OpenCode evidence
+s	<leader>ap              	Show OpenCode plans
+s	<leader>ar              	Show OpenCode reviews
+s	<leader>as              	Attach OpenCode session
+s	<leader>fR              	Search and Replace in project
+s	<leader>fr              	Search and Replace in current buffer
+s	<leader>ga              	Git: Amend
+s	<leader>gc              	Git: Commit
+s	<leader>gr              	Git: Rename commit message
+s	<leader>gw              	Show worktree picker
+s	<leader>xE              	Diagnostics: ERROR [workspace]
+s	<leader>xW              	Diagnostics: WARN [workspace]
+s	<leader>xe              	Diagnostics: ERROR [current buffer]
+s	<leader>xw              	Diagnostics: WARN [current buffer]
+s	X                       	Don't replace clipboard content when deleting
+s	c                       	Don't replace clipboard content when changing
+s	p                       	Don't replace clipboard content when pasting
+s	s                       	Don't replace clipboard content when inserting
+s	x                       	Don't replace clipboard content when deleting
+t	<C-/>                   	Toggle vsplit terminal
+t	<C-B>                   	Exit terminal mode
+t	<C-H>                   	Move to window on the left
+t	<C-J>                   	Move to window on the right
+t	<C-K>                   	Move to window above
+t	<C-Left>                	Previous tab
+t	<C-Right>               	Next tab
+t	<C-S-Left>              	Move tab to the left
+t	<C-S-Right>             	Move tab to the right
+t	<C-S-T>                 	Create new tab with git worktree
+t	<C-T>                   	Create new tab
+t	<C-U>                   	Exit terminal mode
+t	<C-W>                   	Close tab
+t	<C-_>                   	Toggle vsplit terminal
+t	<M-W>                   	Delete current buffer and close current window if there are multiple
+t	<M-w>                   	Delete current buffer, but do not close current window if there are multiple
+t	<M-z>                   	Toggle focus mode
+t	<S-Left>                	Increase window width
+t	<S-Right>               	Decrease window width
+t	<leader>gw              	Show worktree picker
+v	#                       	:help v_#-default
+v	*                       	:help v_star-default
+v	<C-/>                   	Toggle vsplit terminal
+v	<C-D>                   	Scroll down
+v	<C-H>                   	Move to window on the left
+v	<C-J>                   	Move to window on the right
+v	<C-K>                   	Move to window above
+v	<C-Left>                	Previous tab
+v	<C-Right>               	Next tab
+v	<C-S-C>                 	Copy selected text
+v	<C-S-Left>              	Move tab to the left
+v	<C-S-Right>             	Move tab to the right
+v	<C-S-S>                 	Save all files
+v	<C-S-T>                 	Create new tab with git worktree
+v	<C-S-V>                 	Paste text
+v	<C-S>                   	Save file
+v	<C-T>                   	Create new tab
+v	<C-U>                   	Scroll up
+v	<C-W>                   	Close tab
+v	<C-_>                   	Toggle vsplit terminal
+v	<Down>                  	Down
+v	<Esc>                   	Escape and Clear hlsearch
+v	<M-=>                   	Equalize layout
+v	<M-Down>                	Move selected lines down
+v	<M-E>                   	which_key_ignore
+v	<M-S-Down>              	Move window to the right
+v	<M-S-Left>              	Move window up
+v	<M-S-Right>             	Move window down
+v	<M-S-Up>                	Move window to the left
+v	<M-Tab>                 	Swap windows
+v	<M-Up>                  	Move selected lines up
+v	<M-W>                   	Delete current buffer and close current window if there are multiple
+v	<M-e>                   	which_key_ignore
+v	<M-g>                   	Lazygit
+v	<M-h>                   	Scroll left
+v	<M-j>                   	Scroll down a bit
+v	<M-k>                   	Scroll up a bit
+v	<M-l>                   	Scroll right
+v	<M-w>                   	Delete current buffer, but do not close current window if there are multiple
+v	<M-z>                   	Toggle focus mode
+v	<S-Down>                	Decrease window height
+v	<S-Left>                	Increase window width
+v	<S-Right>               	Decrease window width
+v	<S-Tab>                 	Unindent
+v	<S-Up>                  	Increase window height
+v	<Tab>                   	Indent
+v	<Up>                    	Up
+v	<leader>,               	Notification history
+v	<leader>aa              	Show all OpenCode artifacts
+v	<leader>ae              	Show OpenCode evidence
+v	<leader>ap              	Show OpenCode plans
+v	<leader>ar              	Show OpenCode reviews
+v	<leader>as              	Attach OpenCode session
+v	<leader>cF              	Format Injected Langs
+v	<leader>cf              	Format
+v	<leader>fR              	Search and Replace in project
+v	<leader>fr              	Search and Replace in current buffer
+v	<leader>fw              	Grep Word (fff)
+v	<leader>ga              	Git: Amend
+v	<leader>gc              	Git: Commit
+v	<leader>gr              	Git: Rename commit message
+v	<leader>gw              	Show worktree picker
+v	<leader>sW              	Visual selection or word (cwd)
+v	<leader>sr              	Search and Replace
+v	<leader>sw              	Visual selection or word (Root Dir)
+v	<leader>xE              	Diagnostics: ERROR [workspace]
+v	<leader>xW              	Diagnostics: WARN [workspace]
+v	<leader>xe              	Diagnostics: ERROR [current buffer]
+v	<leader>xw              	Diagnostics: WARN [current buffer]
+v	<lt>                    	
+v	>                       	
+v	@                       	:help v_@-default
+v	N                       	Prev Search Result
+v	Q                       	:help v_Q-default
+v	X                       	Don't replace clipboard content when deleting
+v	[N                      	Select previous sibling node
+v	[i                      	jump to top edge of scope
+v	[n                      	Select previous node
+v	]N                      	Select next sibling node
+v	]i                      	jump to bottom edge of scope
+v	]n                      	Select next node
+v	a                       	Around textobject
+v	ai                      	full scope
+v	al                      	Around last textobject
+v	an                      	Around next textobject
+v	b                       	
+v	c                       	Don't replace clipboard content when changing
+v	e                       	
+v	g[                      	Move to left "around"
+v	g]                      	Move to right "around"
+v	gc                      	Toggle comment
+v	ge                      	
+v	gra                     	vim.lsp.buf.code_action()
+v	gx                      	Opens filepath or URI under cursor with the system handler (file explorer, web browser, …)
+v	i                       	Inside textobject
+v	ii                      	inner scope
+v	il                      	Inside last textobject
+v	in                      	Inside next textobject
+v	j                       	Down
+v	k                       	Up
+v	n                       	Next Search Result
+v	p                       	Don't replace clipboard content when pasting
+v	s                       	Don't replace clipboard content when inserting
+v	sF                      	Find left surrounding
+v	sFl                     	Find previous left surrounding
+v	sFn                     	Find next left surrounding
+v	sa                      	Add surrounding to selection
+v	sf                      	Find right surrounding
+v	sfl                     	Find previous right surrounding
+v	sfn                     	Find next right surrounding
+v	w                       	
+v	x                       	Don't replace clipboard content when deleting
+x	#                       	:help v_#-default
+x	*                       	:help v_star-default
+x	<C-/>                   	Toggle vsplit terminal
+x	<C-D>                   	Scroll down
+x	<C-H>                   	Move to window on the left
+x	<C-J>                   	Move to window on the right
+x	<C-K>                   	Move to window above
+x	<C-Left>                	Previous tab
+x	<C-Right>               	Next tab
+x	<C-S-C>                 	Copy selected text
+x	<C-S-Left>              	Move tab to the left
+x	<C-S-Right>             	Move tab to the right
+x	<C-S-S>                 	Save all files
+x	<C-S-T>                 	Create new tab with git worktree
+x	<C-S-V>                 	Paste text
+x	<C-S>                   	Save file
+x	<C-T>                   	Create new tab
+x	<C-U>                   	Scroll up
+x	<C-W>                   	Close tab
+x	<C-_>                   	Toggle vsplit terminal
+x	<Down>                  	Down
+x	<M-=>                   	Equalize layout
+x	<M-Down>                	Move selected lines down
+x	<M-E>                   	which_key_ignore
+x	<M-S-Down>              	Move window to the right
+x	<M-S-Left>              	Move window up
+x	<M-S-Right>             	Move window down
+x	<M-S-Up>                	Move window to the left
+x	<M-Tab>                 	Swap windows
+x	<M-Up>                  	Move selected lines up
+x	<M-W>                   	Delete current buffer and close current window if there are multiple
+x	<M-e>                   	which_key_ignore
+x	<M-g>                   	Lazygit
+x	<M-h>                   	Scroll left
+x	<M-j>                   	Scroll down a bit
+x	<M-k>                   	Scroll up a bit
+x	<M-l>                   	Scroll right
+x	<M-w>                   	Delete current buffer, but do not close current window if there are multiple
+x	<M-z>                   	Toggle focus mode
+x	<S-Down>                	Decrease window height
+x	<S-Left>                	Increase window width
+x	<S-Right>               	Decrease window width
+x	<S-Tab>                 	Unindent
+x	<S-Up>                  	Increase window height
+x	<Tab>                   	Indent
+x	<Up>                    	Up
+x	<leader>,               	Notification history
+x	<leader>aa              	Show all OpenCode artifacts
+x	<leader>ae              	Show OpenCode evidence
+x	<leader>ap              	Show OpenCode plans
+x	<leader>ar              	Show OpenCode reviews
+x	<leader>as              	Attach OpenCode session
+x	<leader>cF              	Format Injected Langs
+x	<leader>cf              	Format
+x	<leader>fR              	Search and Replace in project
+x	<leader>fr              	Search and Replace in current buffer
+x	<leader>fw              	Grep Word (fff)
+x	<leader>ga              	Git: Amend
+x	<leader>gc              	Git: Commit
+x	<leader>gr              	Git: Rename commit message
+x	<leader>gw              	Show worktree picker
+x	<leader>sW              	Visual selection or word (cwd)
+x	<leader>sr              	Search and Replace
+x	<leader>sw              	Visual selection or word (Root Dir)
+x	<leader>xE              	Diagnostics: ERROR [workspace]
+x	<leader>xW              	Diagnostics: WARN [workspace]
+x	<leader>xe              	Diagnostics: ERROR [current buffer]
+x	<leader>xw              	Diagnostics: WARN [current buffer]
+x	<lt>                    	
+x	>                       	
+x	@                       	:help v_@-default
+x	N                       	Prev Search Result
+x	Q                       	:help v_Q-default
+x	X                       	Don't replace clipboard content when deleting
+x	[N                      	Select previous sibling node
+x	[i                      	jump to top edge of scope
+x	[n                      	Select previous node
+x	]N                      	Select next sibling node
+x	]i                      	jump to bottom edge of scope
+x	]n                      	Select next node
+x	a                       	Around textobject
+x	ai                      	full scope
+x	al                      	Around last textobject
+x	an                      	Around next textobject
+x	b                       	
+x	c                       	Don't replace clipboard content when changing
+x	e                       	
+x	g[                      	Move to left "around"
+x	g]                      	Move to right "around"
+x	gc                      	Toggle comment
+x	ge                      	
+x	gra                     	vim.lsp.buf.code_action()
+x	gx                      	Opens filepath or URI under cursor with the system handler (file explorer, web browser, …)
+x	i                       	Inside textobject
+x	ii                      	inner scope
+x	il                      	Inside last textobject
+x	in                      	Inside next textobject
+x	j                       	Down
+x	k                       	Up
+x	n                       	Next Search Result
+x	p                       	Don't replace clipboard content when pasting
+x	s                       	Don't replace clipboard content when inserting
+x	sF                      	Find left surrounding
+x	sFl                     	Find previous left surrounding
+x	sFn                     	Find next left surrounding
+x	sa                      	Add surrounding to selection
+x	sf                      	Find right surrounding
+x	sfl                     	Find previous right surrounding
+x	sfn                     	Find next right surrounding
+x	w                       	
+x	x                       	Don't replace clipboard content when deleting
