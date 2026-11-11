@@ -36,6 +36,7 @@ local function ft(name)
   return w and vim.bo[vim.api.nvim_win_get_buf(w)].filetype or 'none'
 end
 add('providers=' .. ft 'right_top' .. ',' .. ft 'right_bottom' .. ',' .. ft 'bottom')
+add('left=' .. ft 'left')
 vim.cmd 'NVLayout close'
 add('close wins=' .. wins() .. ' applied=' .. tostring(NVSlots.is_applied()))
 vim.cmd 'NVLayout open'
@@ -86,6 +87,7 @@ check 'start wins=1'
 check 'open wins=6 slots=5 applied=true'
 check 'right halves=true'
 check 'providers=nvchanges,nvsession,nvprompt'
+check 'left=oil'
 check 'close wins=1 applied=false'
 check 'reopen wins=6'
 check 'final wins=1'

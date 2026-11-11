@@ -10,10 +10,30 @@ the provider name it is showing, so a slot can be re-pointed at runtime.
 | `changes` | `right_top` | `git status --short`, refreshed whenever the slot refreshes |
 | `session` | `right_bottom` | cwd, branch, opencode attachment, launch profile |
 | `prompt` | `bottom` | an editable `nvprompt` scratch buffer |
+| `explorer` | `left` | oil.nvim, opened into the slot window |
+| `preview` | `bottom_left` | the file or directory under the explorer cursor |
 
-`left` and `bottom_left` keep their placeholder until the explorer and preview
-land. Every provider writes a `nofile` buffer through `NVSlots.set_buffer`, so
-the window is never replaced and its geometry is untouched.
+Every provider writes a `nofile` buffer through `NVSlots.set_buffer`, so the
+window is never replaced and its geometry is untouched — with one deliberate
+exception: oil owns its own buffer (`buftype=acwrite`), and the slot adopts it.
+
+### Why oil, not snacks.explorer
+
+snacks.explorer is a picker: it always creates its own left split, with no way
+to hand it an existing window, and its editing model is one action per entry.
+oil is a buffer-based filesystem editor — `oil.open()` is an `:edit` in the
+current window, so the slot keeps the window, and renaming/moving/deleting is
+text editing plus `:w`, with a confirmation list of the planned operations.
+
+Oil specifics worth knowing:
+
+- `oil.get_cursor_entry()` returns `{ name, type }` — its `id` is an adapter id,
+  not a path; the path is `dir .. '/' .. name`.
+- `oil.get_current_dir()` takes an optional `{bufnr}` table, not a window id.
+- Oil fills its buffer asynchronously, so the first preview polls until the
+  entry list exists; afterwards `CursorMoved` in the explorer refreshes it.
+- Oil re-applies `win_options` to the window, so the spec sets them to match
+  `NVSlots.decorate()`.
 
 ## Per-slot control
 

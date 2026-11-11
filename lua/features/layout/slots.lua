@@ -32,6 +32,8 @@ NVSlots = {
   providers = {},
   ---@type table<string, string> slot -> provider name, used when a slot opens
   defaults = {
+    left = 'explorer',
+    bottom_left = 'preview',
     right_top = 'changes',
     right_bottom = 'session',
     bottom = 'prompt',
@@ -349,8 +351,11 @@ end
 
 --- Update every open slot from its provider.
 function NVSlots.refresh_providers()
-  for _, slot in pairs(tab_state().slots) do
-    local fn = slot.provider and NVSlots.providers[slot.provider]
+  local slots = tab_state().slots
+  -- Deterministic order: the explorer must populate before the preview reads it.
+  for _, name in ipairs(NVSlots.order) do
+    local slot = slots[name]
+    local fn = slot and slot.provider and NVSlots.providers[slot.provider]
     if fn and vim.api.nvim_win_is_valid(slot.win) then
       pcall(fn, slot.win)
     end
