@@ -132,8 +132,20 @@ function M.setup()
     end
   end
 
+  -- mason only knows servers it has packages for; asking it to install an
+  -- unknown name is an error, so filter through its own mapping.
+  local ensure = M.enabled
+  local ok, map = pcall(function()
+    return require('mason-lspconfig.mappings').get_mason_map().lspconfig_to_package
+  end)
+  if ok and type(map) == 'table' then
+    ensure = vim.tbl_filter(function(name)
+      return map[name] ~= nil
+    end, M.enabled)
+  end
+
   require('mason-lspconfig').setup {
-    ensure_installed = M.enabled,
+    ensure_installed = ensure,
     automatic_enable = false,
   }
 

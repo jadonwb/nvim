@@ -11,14 +11,13 @@
 --   │ left   │     bottom       │          │
 --   └────────┴──────────────────┴──────────┘
 --
--- A slot owns one window and one buffer, carries a provider name, and can be
--- opened, closed and queried independently. Providers land in stage 5; until
--- then every slot shows a placeholder named after itself, which is enough to
--- verify geometry, per-tab state and the toggle.
+-- Each slot is one window with one buffer, can be opened, closed, toggled and
+-- swapped independently, and carries a provider name. Closing a slot returns
+-- its space to its neighbour: closing `bottom` gives the centre height back,
+-- closing `bottom_left` leaves `left` as a single panel.
 --
 -- This is separate from NVLayoutManager, which centres content with sidepad
--- windows in plain mode. Applying slots turns sidepads off; closing the layout
--- leaves plain mode as it was.
+-- windows in plain mode. Applying slots turns sidepads off.
 
 NVSlots = {
   defs = {
@@ -28,21 +27,41 @@ NVSlots = {
     bottom = { height = 0.30, min_height = 8 },
     bottom_left = { height = 0.40, min_height = 6 },
   },
-  ---@type table<TabID, { applied: boolean, slots: table<string, { win: WinID, buf: BufID }> }>
-  state = {},
+  order = { 'left', 'bottom_left', 'right_top', 'right_bottom', 'bottom' },
+  ---@type table<string, fun(win: WinID): boolean> provider registry
+  providers = {},
+  ---@type table<string, string> slot -> provider name, used when a slot opens
+  defaults = {
+    right_top = 'changes',
+    right_bottom = 'session',
+    bottom = 'prompt',
+  },
+  ---@type table<TabID, { slots: table<string, { win: WinID, buf: BufID, provider?: string }> }>
+  _tabs = {},
 }
 
 local function tab_state(tabid)
   tabid = tabid or vim.api.nvim_get_current_tabpage()
-  NVSlots.state[tabid] = NVSlots.state[tabid] or { applied = false, slots = {} }
-  return NVSlots.state[tabid]
+  NVSlots._tabs[tabid] = NVSlots._tabs[tabid] or { slots = {} }
+  return NVSlots._tabs[tabid]
 end
 
 local function is_slot_buf(buf)
   return vim.b[buf].nv_slot ~= nil
 end
 
---- A placeholder buffer for a slot: unlisted, nofile, named after the slot.
+--- The editing window: the first non-slot, non-floating window in this tab.
+---@return WinID|nil
+local function center_win()
+  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    local cfg = vim.api.nvim_win_get_config(win)
+    if cfg.relative == '' and not is_slot_buf(vim.api.nvim_win_get_buf(win)) then
+      return win
+    end
+  end
+  return nil
+end
+
 ---@param name string
 ---@return BufID
 local function placeholder(name)
@@ -68,148 +87,274 @@ local function decorate(win)
   vim.wo[win].winhighlight = 'Normal:Normal,NormalNC:NormalNC,WinBar:StatusLine'
 end
 
---- Freeze a slot's geometry once it has been sized: without this the widths and
---- heights set by `build()` would be undone by the next layout pass, and
---- setting the size while frozen silently does nothing.
 ---@param win WinID
 local function fix(win)
   vim.wo[win].winfixwidth = true
   vim.wo[win].winfixheight = true
 end
 
----@param win WinID
 ---@param name string
-local function set_buf(win, name)
-  vim.api.nvim_win_set_buf(win, placeholder(name))
+---@param win WinID
+local function register(name, win)
+  -- A `:split` window inherits the centre's buffer; it must not keep it, and the
+  -- centre buffer must never be marked as a slot.
+  local inherited = vim.api.nvim_win_get_buf(win)
+  local buf = placeholder(name)
+  vim.api.nvim_win_set_buf(win, buf)
+  -- A `:split` window inherits the centre's buffer, which is still displayed
+  -- there; deleting it would take the centre window with it. Only tidy up the
+  -- throwaway buffer `:vnew` created.
+  if inherited ~= buf and vim.api.nvim_buf_get_name(inherited) == '' and vim.bo[inherited].buftype == '' then
+    vim.bo[inherited].buflisted = false
+    vim.bo[inherited].bufhidden = 'wipe'
+  end
   decorate(win)
+  tab_state().slots[name] = { win = win, buf = buf, provider = NVSlots.defaults[name] }
 end
 
----@return integer
-local function columns()
-  return vim.o.columns
+---@param name string
+---@return WinID|nil
+local function existing(name)
+  local slot = tab_state().slots[name]
+  if slot and vim.api.nvim_win_is_valid(slot.win) then
+    return slot.win
+  end
 end
 
----@param ratio number
-local function width_of(ratio)
-  return math.max(NVSlots.defs.left.min_width, math.floor(columns() * ratio))
-end
+--- Open one slot. Returns its window.
+---@param name string
+---@return WinID|nil
+function NVSlots.ensure(name)
+  local win = existing(name)
+  if win then
+    return win
+  end
 
--- Build the slot windows around the current window, which becomes the centre.
-local function build()
-  local tab = tab_state()
-  local center = vim.api.nvim_get_current_win()
-  local center_buf = vim.api.nvim_win_get_buf(center)
-  -- Measure before splitting: afterwards the centre has already given up space.
+  local center = center_win()
+  if not center then
+    return
+  end
+
   local total_w = vim.api.nvim_win_get_width(center)
   local total_h = vim.api.nvim_win_get_height(center)
 
-  -- Left column, with bottom_left beneath it.
-  vim.cmd 'topleft vnew'
-  local left = vim.api.nvim_get_current_win()
-  set_buf(left, 'left')
-  vim.cmd 'split'
-  local bottom_left = vim.api.nvim_get_current_win()
-  set_buf(bottom_left, 'bottom_left')
-
-  -- Right column, split into top and bottom.
-  vim.api.nvim_set_current_win(center)
-  vim.cmd 'botright vnew'
-  local right_top = vim.api.nvim_get_current_win()
-  set_buf(right_top, 'right_top')
-  vim.cmd 'split'
-  local right_bottom = vim.api.nvim_get_current_win()
-  set_buf(right_bottom, 'right_bottom')
-
-  -- Bottom of the centre column. A plain split keeps it inside that column;
-  -- `botright split` would span the whole tab under every slot.
-  vim.api.nvim_set_current_win(center)
-  vim.cmd 'split'
-  local bottom = vim.api.nvim_get_current_win()
-  set_buf(bottom, 'bottom')
-
-  vim.api.nvim_win_set_buf(center, center_buf)
-  vim.api.nvim_set_current_win(center)
-
-  local left_w = math.max(NVSlots.defs.left.min_width, math.floor(total_w * NVSlots.defs.left.width))
-  vim.api.nvim_win_set_width(left, left_w)
-  vim.api.nvim_win_set_height(
-    bottom_left,
-    math.max(NVSlots.defs.bottom_left.min_height, math.floor(total_h * NVSlots.defs.bottom_left.height))
-  )
-
-  local right_w = math.max(NVSlots.defs.right_top.min_width, math.floor(total_w * NVSlots.defs.right_top.width))
-  vim.api.nvim_win_set_width(right_top, right_w)
-  vim.api.nvim_win_set_width(right_bottom, right_w)
-  vim.api.nvim_win_set_height(right_bottom, math.floor(total_h / 2))
-
-  vim.api.nvim_win_set_height(
-    bottom,
-    math.max(NVSlots.defs.bottom.min_height, math.floor(total_h * NVSlots.defs.bottom.height))
-  )
-
-  for _, win in ipairs { left, bottom_left, right_top, right_bottom, bottom } do
+  if name == 'left' then
+    vim.api.nvim_set_current_win(center)
+    vim.cmd 'topleft vnew'
+    win = vim.api.nvim_get_current_win()
+    register('left', win)
+    vim.api.nvim_win_set_width(win, math.max(NVSlots.defs.left.min_width, math.floor(total_w * NVSlots.defs.left.width)))
     fix(win)
+    vim.api.nvim_set_current_win(center)
+    return win
   end
 
-  tab.slots = {
-    left = { win = left, buf = vim.api.nvim_win_get_buf(left) },
-    bottom_left = { win = bottom_left, buf = vim.api.nvim_win_get_buf(bottom_left) },
-    right_top = { win = right_top, buf = vim.api.nvim_win_get_buf(right_top) },
-    right_bottom = { win = right_bottom, buf = vim.api.nvim_win_get_buf(right_bottom) },
-    bottom = { win = bottom, buf = vim.api.nvim_win_get_buf(bottom) },
-  }
-  _ = w
+  if name == 'bottom_left' then
+    local left = NVSlots.ensure 'left'
+    if not left then
+      return
+    end
+    local left_h = vim.api.nvim_win_get_height(left)
+    vim.api.nvim_set_current_win(left)
+    vim.cmd 'split'
+    win = vim.api.nvim_get_current_win()
+    register('bottom_left', win)
+    vim.api.nvim_win_set_height(
+      win,
+      math.max(NVSlots.defs.bottom_left.min_height, math.floor(left_h * NVSlots.defs.bottom_left.height))
+    )
+    fix(win)
+    vim.api.nvim_set_current_win(center)
+    return win
+  end
+
+  if name == 'right_top' then
+    vim.api.nvim_set_current_win(center)
+    vim.cmd 'botright vnew'
+    win = vim.api.nvim_get_current_win()
+    register('right_top', win)
+    vim.api.nvim_win_set_width(
+      win,
+      math.max(NVSlots.defs.right_top.min_width, math.floor(total_w * NVSlots.defs.right_top.width))
+    )
+    fix(win)
+    vim.api.nvim_set_current_win(center)
+    return win
+  end
+
+  if name == 'right_bottom' then
+    local top = NVSlots.ensure 'right_top'
+    if not top then
+      return
+    end
+    local column_h = vim.api.nvim_win_get_height(top)
+    vim.api.nvim_set_current_win(top)
+    vim.cmd 'split'
+    win = vim.api.nvim_get_current_win()
+    register('right_bottom', win)
+    vim.api.nvim_win_set_height(win, math.floor(column_h / 2))
+    fix(win)
+    vim.api.nvim_set_current_win(center)
+    return win
+  end
+
+  if name == 'bottom' then
+    vim.api.nvim_set_current_win(center)
+    vim.cmd 'split'
+    win = vim.api.nvim_get_current_win()
+    register('bottom', win)
+    vim.api.nvim_win_set_height(
+      win,
+      math.max(NVSlots.defs.bottom.min_height, math.floor(total_h * NVSlots.defs.bottom.height))
+    )
+    fix(win)
+    vim.api.nvim_set_current_win(center)
+    return win
+  end
+end
+
+--- Close one slot, returning its space to its neighbour.
+---@param name string
+---@return boolean
+function NVSlots.remove(name)
+  local win = existing(name)
+  local tab = tab_state()
+  tab.slots[name] = nil
+  if not win then
+    return false
+  end
+  pcall(vim.api.nvim_win_close, win, true)
+  return true
+end
+
+---@param name string
+---@return boolean
+function NVSlots.is_open(name)
+  return existing(name) ~= nil
+end
+
+--- Replace a slot's buffer, keeping the window.
+---@param name string
+---@param buf BufID
+function NVSlots.set_buffer(name, buf)
+  local win = existing(name)
+  if not win then
+    return
+  end
+  vim.api.nvim_win_set_buf(win, buf)
+  local slot = tab_state().slots[name]
+  slot.buf = buf
+  vim.b[buf].nv_slot = name
+  decorate(win)
+end
+
+--- Swap the contents of two slots. Windows stay where they are.
+---@param a string
+---@param b string
+---@return boolean
+function NVSlots.swap(a, b)
+  local wa, wb = existing(a), existing(b)
+  if not wa or not wb then
+    return false
+  end
+  local ba, bb = vim.api.nvim_win_get_buf(wa), vim.api.nvim_win_get_buf(wb)
+  -- Slot buffers are `bufhidden=wipe`: swapping naively wipes the buffer that
+  -- stops being displayed before it can be shown in the other window.
+  vim.bo[ba].bufhidden = 'hide'
+  vim.bo[bb].bufhidden = 'hide'
+  vim.api.nvim_win_set_buf(wa, bb)
+  vim.api.nvim_win_set_buf(wb, ba)
+  vim.bo[ba].bufhidden = 'wipe'
+  vim.bo[bb].bufhidden = 'wipe'
+  local slots = tab_state().slots
+  slots[a].buf, slots[b].buf = bb, ba
+  slots[a].provider, slots[b].provider = slots[b].provider, slots[a].provider
+  vim.b[bb].nv_slot, vim.b[ba].nv_slot = a, b
+  decorate(wa)
+  decorate(wb)
+  return true
 end
 
 local teardown
 
 ---@return boolean
 function NVSlots.is_applied()
-  return tab_state().applied == true
+  return next(tab_state().slots) ~= nil
 end
 
---- Open the full layout in the current tab.
-function NVSlots.open()
-  local tab = tab_state()
-  if tab.applied then
-    return
-  end
-
+--- Open the whole layout.
+---@param only? string[] Restrict to these slots.
+function NVSlots.open(only)
   if NVLayoutManager then
     NVLayoutManager.disable()
   end
-
-  -- Clear anything left over from an interrupted build before creating slots.
   teardown()
-  build()
-  tab.applied = true
+  for _, name in ipairs(only or NVSlots.order) do
+    NVSlots.ensure(name)
+  end
+  NVSlots.refresh_providers()
 end
 
--- Close every slot window, leaving the centre.
+--- Close every slot, leaving the centre.
 function teardown()
   local tab = tab_state()
-  for _, slot in pairs(tab.slots) do
-    if vim.api.nvim_win_is_valid(slot.win) then
-      pcall(vim.api.nvim_win_close, slot.win, true)
-    end
+  for name in pairs(tab.slots) do
+    NVSlots.remove(name)
   end
-  -- Orphans from an interrupted build (state lost, windows still there).
   for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
     local buf = vim.api.nvim_win_get_buf(win)
-    if vim.b[buf].nv_slot and #vim.api.nvim_tabpage_list_wins(0) > 1 then
-      pcall(vim.api.nvim_win_close, win, true)
+    if is_slot_buf(buf) then
+      if #vim.api.nvim_tabpage_list_wins(0) > 1 then
+        pcall(vim.api.nvim_win_close, win, true)
+      end
     end
   end
   tab.slots = {}
-  tab.applied = false
 end
 
---- Close the layout in the current tab.
 function NVSlots.close()
-  if not NVSlots.is_applied() then
-    return
-  end
   teardown()
+end
+
+--- Toggle one slot on or off.
+---@param name string
+function NVSlots.toggle_slot(name)
+  if NVSlots.is_open(name) then
+    NVSlots.remove(name)
+    NVMessages.info(('Slot %s closed'):format(name))
+  else
+    if not NVSlots.is_applied() then
+      NVSlots.open { name }
+    else
+      NVSlots.ensure(name)
+      NVSlots.refresh_providers()
+    end
+    NVMessages.info(('Slot %s open'):format(name))
+  end
+end
+
+--- Switch a slot to another registered provider and refresh it.
+---@param name string slot name
+---@param provider string provider name
+---@return boolean
+function NVSlots.set_provider(name, provider)
+  local fn = NVSlots.providers[provider]
+  local slot = tab_state().slots[name]
+  if not fn or not slot then
+    return false
+  end
+  slot.provider = provider
+  return (pcall(fn, slot.win))
+end
+
+--- Update every open slot from its provider.
+function NVSlots.refresh_providers()
+  for _, slot in pairs(tab_state().slots) do
+    local fn = slot.provider and NVSlots.providers[slot.provider]
+    if fn and vim.api.nvim_win_is_valid(slot.win) then
+      pcall(fn, slot.win)
+    end
+  end
 end
 
 function NVSlots.toggle()
@@ -225,13 +370,12 @@ end
 ---@param name string
 ---@return WinID|nil
 function NVSlots.win(name)
-  local slot = tab_state().slots[name]
-  if slot and vim.api.nvim_win_is_valid(slot.win) then
-    return slot.win
-  end
+  return existing(name)
 end
 
----@return table<string, {win: WinID, width: integer, height: integer}>
+--- Current slot state, keyed by slot name. Values are plain numbers and
+--- strings so an external caller can serialise them directly.
+---@return table<string, {win: integer, width: integer, height: integer, provider: string|nil}>
 function NVSlots.status()
   local out = {}
   for name, slot in pairs(tab_state().slots) do
@@ -240,49 +384,89 @@ function NVSlots.status()
         win = slot.win,
         width = vim.api.nvim_win_get_width(slot.win),
         height = vim.api.nvim_win_get_height(slot.win),
+        provider = slot.provider,
       }
     end
   end
   return out
 end
 
+--- Everything an external tool needs in one call: whether the layout is on, the
+--- slot names in layout order with their providers, and the live geometry.
+---@return { applied: boolean, order: string[], slots: table<string, {width: integer, height: integer, provider: string|nil}> }
+function NVSlots.state()
+  local slots = {}
+  for name, slot in pairs(NVSlots.status()) do
+    slots[name] = { width = slot.width, height = slot.height, provider = slot.provider }
+  end
+  return {
+    applied = NVSlots.is_applied(),
+    order = NVSlots.order,
+    slots = slots,
+  }
+end
+
 function NVSlots.setup()
+  local providers = require 'features.layout.providers'
+  for name, fn in pairs(providers.by_name) do
+    NVSlots.providers[name] = fn
+  end
+
   vim.api.nvim_create_user_command('NVLayout', function(args)
-    local arg = args.args ~= '' and args.args or 'toggle'
-    if arg == 'open' then
-      NVSlots.open()
-    elseif arg == 'close' then
-      NVSlots.close()
-    elseif arg == 'status' then
+    local parts = vim.split(args.args, '%s+', { trimempty = true })
+    local action = parts[1] or 'toggle'
+    local slot = parts[2]
+
+    if action == 'status' then
       NVMessages.pager { { vim.inspect(NVSlots.status()) } }
+    elseif action == 'open' then
+      NVSlots.open()
+    elseif action == 'close' then
+      NVSlots.close()
+    elseif action == 'slot' then
+      if not slot then
+        NVMessages.warn 'NVLayout slot <name> [toggle|open|close]'
+        return
+      end
+      local sub = parts[3] or 'toggle'
+      if sub == 'open' then
+        NVSlots.ensure(slot)
+      elseif sub == 'close' then
+        NVSlots.remove(slot)
+      else
+        NVSlots.toggle_slot(slot)
+      end
+    elseif action == 'swap' then
+      if not (slot and parts[3]) then
+        NVMessages.warn 'NVLayout swap <a> <b>'
+        return
+      end
+      if not NVSlots.swap(slot, parts[3]) then
+        NVMessages.warn 'NVLayout swap: both slots must be open'
+      end
     else
       NVSlots.toggle()
     end
-  end, { nargs = '?', desc = 'IDE layout slots' })
+  end, { nargs = '*', desc = 'IDE layout slots' })
 
   K.map { NVKeymaps.layout_toggle, 'Toggle IDE layout', NVSlots.toggle, mode = { 'n', 'i', 'v', 't' } }
 
-  -- Slot windows are not work buffers: entering one keeps the centre reachable
-  -- with <M-w> and the close stack.
-  -- A tab that was closed and reopened keeps no slot state.
   vim.api.nvim_create_autocmd('TabClosed', {
     group = vim.api.nvim_create_augroup('NV slots', { clear = true }),
     callback = function()
-      for tabid in pairs(NVSlots.state) do
+      for tabid in pairs(NVSlots._tabs) do
         if not vim.api.nvim_tabpage_is_valid(tabid) then
-          NVSlots.state[tabid] = nil
+          NVSlots._tabs[tabid] = nil
         end
       end
     end,
   })
 
   vim.api.nvim_create_autocmd('BufEnter', {
-    group = vim.api.nvim_create_augroup('NV slots', { clear = true }),
     callback = function(ev)
-      if not is_slot_buf(ev.buf) then
-        return
+      if is_slot_buf(ev.buf) then
+        vim.bo[ev.buf].buflisted = false
       end
-      vim.bo[ev.buf].buflisted = false
     end,
   })
 end
