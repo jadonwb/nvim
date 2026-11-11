@@ -70,7 +70,6 @@ local function capture(restart)
   local data = {
     version = 1,
     files = {},
-    tabs = {},
     active = {
       name = vim.api.nvim_buf_get_name(0),
       tab = vim.fn.tabpagenr(),
@@ -93,9 +92,6 @@ local function capture(restart)
         data.files[#data.files + 1] = { name = path, filetype = '', loaded = false }
       end
     end
-  end
-  for _, tab in ipairs(vim.api.nvim_list_tabpages()) do
-    data.tabs[#data.tabs + 1] = { label = vim.t[tab].tab_label }
   end
   if restart then
     data.context = {
@@ -186,11 +182,6 @@ end
 
 local function restore_ui(data)
   if data then
-    for i, tab in ipairs(vim.api.nvim_list_tabpages()) do
-      if data.tabs[i] and data.tabs[i].label then
-        vim.t[tab].tab_label = data.tabs[i].label
-      end
-    end
     local tab = vim.api.nvim_list_tabpages()[data.active.tab]
     if tab then
       vim.api.nvim_set_current_tabpage(tab)

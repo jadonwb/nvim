@@ -300,7 +300,6 @@ return {
             pending_difftool_dir = nil
           end
           NVDiffview.close_other_tabs(view)
-          NVTabs.set_label { icon = '', name = 'diff' }
         end,
         view_closed = function(view)
           -- Wipe the historical buffers only together with the view that

@@ -76,9 +76,6 @@ function NVFocusMode.toggle()
 
   vim.cmd 'tabnew'
 
-  -- Set tab label (inline version of NVTabs.set_label)
-  NVTabs.set_label { icon = '󰋱', name = 'focus' }
-
   local focus_tab = vim.api.nvim_get_current_tabpage()
   local focus_win = vim.api.nvim_get_current_win()
   local empty_buf = vim.api.nvim_get_current_buf()

@@ -497,7 +497,6 @@ function NVLayoutManager.autocmds()
             return
           end
           dashboard_setup[buf] = nil
-          NVTabs.set_label_if_empty { icon = NVTabs.editor_icon, name = 'main' }
           NVLualine.show_everything()
           NVLayoutManager.enable()
         end,

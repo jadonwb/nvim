@@ -20,11 +20,32 @@ Lost with them: persisted worktree labels, commit-form drafts, the recent-commit
 preview, and the one-tab-per-worktree model. lazygit covers worktrees itself;
 drafts and labels have no replacement yet.
 
-## Next: custom tabs
+## Done: custom tabs
 
-`lua/editor/tabs.lua` is still load-bearing, so it goes last and in pieces.
-`diffview-plus` registers a temporary tab type, focus mode registers a second,
-session restore saves and restores `tab_label`, and the layout manager labels
-new tabs. Only the tab keymaps, the named-tab dialog and the label rendering can
-be removed outright; the type registry and close dispatch have to survive in
-some form.
+`lua/editor/tabs.lua` went from 154 to 118 lines and keeps only what diffview
+and focus mode need:
+
+| Kept | Why |
+| --- | --- |
+| `register_type`, `get_tab_type`, `is_temporary` | diffview and focus mode mark their tabpages so panels, session restore and `<C-w>` treat them differently |
+| `close_all_temporary` | session save closes diffview/focus tabs before persisting a layout |
+| `NVTabs.close` | `<C-w>` runs a temporary tab's own teardown hook before closing |
+
+Removed: named tabs (the `<C-t>` input dialog), all labels (`set_label`,
+`set_label_if_empty`, `editor_icon`, `render_label`, `tab_label` in session
+snapshots, lualine's label rendering), the `<C-S-Left/Right>` reorder mappings,
+`get_non_temporary` (no callers) and the "Close Tab? Yes/No" confirmation.
+
+`<C-t>` is a plain `tabnew`, `<C-w>` closes a tab through the registry, and
+`<C-Left/Right>` step between tabs.
+
+Verified in the harness: `<C-t>` opens a second tab; `<C-w>` closes it;
+`:DiffviewOpen` opens a temporary tab that a single `<C-w>` tears down
+completely; `<M-z>` focus mode opens and closes its temporary tab; a restart
+snapshot is written with no tab labels and restores without error.
+
+## Next
+
+Stage 3 — launch profiles: one classifier for difftool, mergetool, pager,
+transient and embedded launches, driving which plugins, modules, keymaps,
+session and dashboard load.
