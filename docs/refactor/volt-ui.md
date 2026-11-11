@@ -45,6 +45,29 @@ The changed-files panel is interactive: `<CR>` opens the file under the cursor
 in the centre window, `<C-r>` refreshes, and it re-renders on `FocusGained` and
 `BufWritePost` so the list follows the working tree.
 
+## Bottom panel
+
+The bottom slot is the IDE-style panel, with a window-local winbar (not volt: the
+content is a real buffer):
+
+```
+ Prompt │ Terminal │ Quickfix │ Problems
+```
+
+- `:NVBottom <mode>` switches, `:NVBottom` cycles, `<M-n>` cycles from normal
+  mode. Each mode is a provider, so the slot keeps its geometry and any provider
+  can be moved there with `:NVLayout provider bottom changes`.
+- `terminal` keeps one shell per tab (`termopen`), started without the outer
+  terminal's `WEZTERM_*` environment so its shell integration does not print OSC
+  sequences into the buffer.
+- `quickfix` and `problems` reuse the real quickfix buffer (`:copen`, then the
+  buffer is moved into the slot and the temporary window closed) so `:cnext`,
+  `:cc` and the rest keep working. `problems` fills the list from diagnostics
+  first.
+- `prompt` is the editable scratch buffer.
+- The command line is not a mode: `NVCmdlinePin()` pins ui2's cmd float over the
+  slot whenever it is shown.
+
 ## Deliberately not volt
 
 - **Preview** (`bottom_left`): a read-only view of a real file. It needs the

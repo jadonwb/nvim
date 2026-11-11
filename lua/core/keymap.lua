@@ -28,6 +28,7 @@ NVKeymaps = {
   restart = '<A-r>',
 
   layout_toggle = '<M-i>',
+  bottom_cycle = '<M-n>',
 }
 
 local default_keymap_options = { noremap = true, silent = true }

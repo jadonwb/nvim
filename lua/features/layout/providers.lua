@@ -292,6 +292,86 @@ function M.preview(win, name)
   return true
 end
 
+--- A terminal in the panel. One shell per tab, reused across mode switches.
+---@param win WinID
+---@param name string
+---@return boolean
+function M.terminal(win, name)
+  local slot = name or 'bottom'
+  local buf = vim.w[win].nv_terminal_buf
+
+  if not (buf and vim.api.nvim_buf_is_valid(buf)) then
+    buf = vim.api.nvim_create_buf(false, true)
+    vim.w[win].nv_terminal_buf = buf
+    vim.bo[buf].bufhidden = 'hide'
+    -- The outer terminal's shell integration (WezTerm here) executes at shell
+    -- start and emits OSC sequences this terminal cannot answer, so they show up
+    -- as text. Start the shell without the WEZTERM_* environment.
+    local env = {}
+    for key, value in pairs(vim.fn.environ()) do
+      if not key:match '^WEZTERM' and key ~= 'TERM_PROGRAM' then
+        env[key] = value
+      end
+    end
+    env.TERM_PROGRAM = 'nvim'
+    vim.api.nvim_buf_call(buf, function()
+      vim.fn.termopen(vim.o.shell, { env = env })
+    end)
+  end
+
+  NVSlots.set_buffer(slot, buf)
+  return true
+end
+
+--- Show a quickfix/location list in the panel.
+---@param win WinID
+---@param name string
+---@return boolean
+local function show_qflist(win, name)
+  local slot = name or 'bottom'
+  local centre = vim.api.nvim_get_current_win()
+
+  local qf_win = vim.fn.getqflist({ winid = 0 }).winid
+  if qf_win == 0 then
+    vim.cmd 'copen'
+    qf_win = vim.fn.getqflist({ winid = 0 }).winid
+  end
+
+  if qf_win == 0 or not vim.api.nvim_win_is_valid(qf_win) then
+    vim.api.nvim_set_current_win(centre)
+    return false
+  end
+
+  local buf = vim.api.nvim_win_get_buf(qf_win)
+  if qf_win ~= win then
+    vim.api.nvim_win_set_buf(win, buf)
+    pcall(vim.api.nvim_win_close, qf_win, false)
+  end
+  vim.api.nvim_set_current_win(centre)
+
+  if buf ~= vim.api.nvim_win_get_buf(win) then
+    NVSlots.set_buffer(slot, buf)
+  end
+  return true
+end
+
+--- Quickfix list in the panel.
+---@param win WinID
+---@param name string
+---@return boolean
+function M.quickfix(win, name)
+  return show_qflist(win, name)
+end
+
+--- Diagnostics as a quickfix list in the panel.
+---@param win WinID
+---@param name string
+---@return boolean
+function M.problems(win, name)
+  vim.diagnostic.setqflist { open = false }
+  return show_qflist(win, name)
+end
+
 --- Prompt surface. Editable for now; the real prompt buffer arrives with the
 --- bridge work.
 ---@param win WinID
@@ -312,6 +392,9 @@ end
 -- Registry keyed by provider name, so a slot can be pointed at any provider at
 -- runtime (`NVSlots.set_provider(slot, provider)`).
 M.by_name = {
+  terminal = M.terminal,
+  quickfix = M.quickfix,
+  problems = M.problems,
   explorer = M.explorer,
   preview = M.preview,
   changes = M.changes,

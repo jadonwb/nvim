@@ -19,6 +19,9 @@ return {
       require 'features.layout.slots'
       NVSlots.setup()
 
+      require 'features.layout.bottom'
+      NVBottom.setup()
+
       require 'editor.help'
       NVHelp.setup()
       NVHelp.autocmds()

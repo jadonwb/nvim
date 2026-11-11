@@ -276,7 +276,7 @@ function NVSlots.set_buffer(name, buf)
   vim.b[buf].nv_slot = name
   -- The replaced buffer belongs to the caller again; only a buffer the slot
   -- layer created keeps marker state.
-  if previous and previous ~= buf then
+  if previous and previous ~= buf and vim.api.nvim_buf_is_valid(previous) then
     vim.b[previous].nv_slot = nil
   end
   decorate(win)
@@ -404,6 +404,14 @@ function NVSlots.toggle()
     NVSlots.open()
     NVMessages.info 'Layout on'
   end
+end
+
+--- Provider name currently shown in a slot.
+---@param name string
+---@return string|nil
+function NVSlots.provider_of(name)
+  local slot = tab_state().slots[name]
+  return slot and slot.provider or nil
 end
 
 ---@param name string

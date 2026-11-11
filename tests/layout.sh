@@ -70,6 +70,15 @@ local function visible(name)
 end
 add('session=' .. tostring(visible('right_bottom'):find('branch', 1, true) ~= nil))
 
+-- Bottom panel modes: each one swaps content in place and draws its winbar.
+for _, mode in ipairs { 'terminal', 'quickfix', 'problems', 'prompt' } do
+  NVBottom.set(mode)
+  local bw = NVSlots.win 'bottom'
+  add(('bottom %s=%s'):format(mode, tostring(NVSlots.provider_of('bottom') == mode and bw and vim.wo[bw].winbar ~= '')))
+end
+NVBottom.cycle(1)
+add('bottom cycle=' .. tostring(NVSlots.provider_of('bottom') ~= nil))
+
 -- LSP progress renders as a volt bar inside the session panel.
 NVMessages.progress['test.1'] = {
   client_id = 1,
@@ -167,6 +176,11 @@ check 'substituted=nvsession'
 check 'restored=nvchanges'
 check 'prompt moved=nvprompt'
 check 'changes slot=right_bottom'
+check 'bottom terminal=true'
+check 'bottom quickfix=true'
+check 'bottom problems=true'
+check 'bottom prompt=true'
+check 'bottom cycle=true'
 check 'close wins=1 applied=false'
 check 'reopen wins=6'
 check 'final wins=1'
