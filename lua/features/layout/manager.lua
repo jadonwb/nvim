@@ -514,6 +514,9 @@ function NVLayoutManager.autocmds()
       if layout_enabled then
         return true
       end
+      if NVSlots and NVSlots.is_applied() then
+        return
+      end
       if skip_enable[vim.bo.filetype] then
         return
       end
@@ -529,6 +532,21 @@ function NVLayoutManager.enable()
   local tab = get_tab_state()
   tab.on = true
   vim.schedule(update_layout)
+end
+
+--- Turn sidepad centring off for the whole session, closing any sidepads.
+--- Used when the IDE slot layout takes over the windows.
+function NVLayoutManager.disable()
+  State.on = false
+  local tab = get_tab_state()
+  tab.on = false
+  delete_sidepads()
+end
+
+--- Kept for the startup autocmd: sidepads are meaningless once slots own the
+--- layout, and would fight the fixed-width columns.
+function NVLayoutManager.is_enabled()
+  return State.on
 end
 
 ---@param buf BufID

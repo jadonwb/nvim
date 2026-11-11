@@ -26,6 +26,8 @@ NVKeymaps = {
   quit_save = '<A-q>',
   quit_force = '<A-Q>',
   restart = '<A-r>',
+
+  layout_toggle = '<M-i>',
 }
 
 local default_keymap_options = { noremap = true, silent = true }
