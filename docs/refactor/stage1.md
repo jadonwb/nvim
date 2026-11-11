@@ -57,8 +57,8 @@ old config only loaded the theme after startup and the new one loads it during.
 ## Keymaps
 
 `keymaps-before.txt` is a dump from the live config on `master`;
-`keymaps-after.txt` is the same dump on this branch. 92 mappings dropped, 14
-added (10 blink.cmp cmdline keys and 3 core LSP defaults).
+`keymaps-after.txt` is the same dump on this branch. 89 mappings dropped, 21
+added (blink.cmp's cmdline and dot-repeat maps, 3 core LSP defaults).
 
 Dropped, by group:
 
@@ -74,6 +74,9 @@ Dropped, by group:
 
 Re-added in `lua/editor/core-keymaps.lua`: `<leader>cf` (format), `<leader>cd`
 (diagnostics), `<leader>bd` (delete buffer), `[e`/`]e` (diagnostic jumps).
+
+Insert mode keeps undo break-points on `,`, `.` and `;` (`lua/editor/editing.lua`),
+so `u` rewinds one clause instead of the whole insertion.
 
 The whole `<leader>u` group is back, in `lua/editor/ui-toggles.lua`, built on
 snacks' toggle API so each entry reports its state. `<leader>uz`/`uZ` (zen,

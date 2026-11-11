@@ -220,6 +220,12 @@ function NVEditing.keymaps()
 
   K.map { '<leader>u<tab>', 'Toggle tab characters', fn.toggle_tabs, mode = 'n' }
 
+  -- Undo break-points: punctuation ends an undo block, so `u` after typing a
+  -- sentence rewinds one word instead of the whole insertion.
+  K.map { ',', 'Undo break after comma', ',<C-g>u', mode = 'i' }
+  K.map { '.', 'Undo break after period', '.<C-g>u', mode = 'i' }
+  K.map { ';', 'Undo break after semicolon', ';<C-g>u', mode = 'i' }
+
   K.map {
     '<leader>yc',
     'Yank working directory',

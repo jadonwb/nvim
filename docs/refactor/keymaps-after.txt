@@ -8,9 +8,13 @@ c	<End>                   	blink.cmp: Hide
 c	<Left>                  	blink.cmp: Select Prev
 c	<M-W>                   	Delete current buffer and close current window if there are multiple
 c	<M-w>                   	Delete current buffer, but do not close current window if there are multiple
+c	<Plug>BlinkCmpDotRepeatHack	
 c	<Right>                 	blink.cmp: Select Next
 c	<S-Tab>                 	blink.cmp: <Custom Fn>, Select Prev
 c	<Tab>                   	blink.cmp: Show And Insert Or Accept Single, Select Next
+i	,                       	Undo break after comma
+i	.                       	Undo break after period
+i	;                       	Undo break after semicolon
 i	<C-/>                   	Toggle vsplit terminal
 i	<C-D>                   	Scroll down
 i	<C-H>                   	Move to window on the left
@@ -46,6 +50,7 @@ i	<M-j>                   	Scroll down a bit
 i	<M-k>                   	Scroll up a bit
 i	<M-w>                   	Delete current buffer, but do not close current window if there are multiple
 i	<M-z>                   	Toggle focus mode
+i	<Plug>BlinkCmpDotRepeatHack	
 i	<S-CR>                  	Insert new line below
 i	<S-Down>                	Decrease window height
 i	<S-Left>                	Increase window width
@@ -105,6 +110,7 @@ n	<M-r>                   	Save session and restart
 n	<M-t>                   	Create new buffer
 n	<M-w>                   	Delete current buffer, but do not close current window if there are multiple
 n	<M-z>                   	Toggle focus mode
+n	<Plug>BlinkCmpDotRepeatHack	
 n	<S-CR>                  	Insert new line below
 n	<S-Down>                	Decrease window height
 n	<S-Left>                	Increase window width
@@ -306,6 +312,7 @@ s	<M-k>                   	Scroll up a bit
 s	<M-l>                   	Scroll right
 s	<M-w>                   	Delete current buffer, but do not close current window if there are multiple
 s	<M-z>                   	Toggle focus mode
+s	<Plug>BlinkCmpDotRepeatHack	
 s	<S-Down>                	Decrease window height
 s	<S-Left>                	Increase window width
 s	<S-Right>               	Decrease window width
@@ -351,6 +358,7 @@ t	<C-_>                   	Toggle vsplit terminal
 t	<M-W>                   	Delete current buffer and close current window if there are multiple
 t	<M-w>                   	Delete current buffer, but do not close current window if there are multiple
 t	<M-z>                   	Toggle focus mode
+t	<Plug>BlinkCmpDotRepeatHack	
 t	<S-Left>                	Increase window width
 t	<S-Right>               	Decrease window width
 t	<leader>gw              	Show worktree picker
@@ -392,6 +400,7 @@ v	<M-k>                   	Scroll up a bit
 v	<M-l>                   	Scroll right
 v	<M-w>                   	Delete current buffer, but do not close current window if there are multiple
 v	<M-z>                   	Toggle focus mode
+v	<Plug>BlinkCmpDotRepeatHack	
 v	<S-Down>                	Decrease window height
 v	<S-Left>                	Increase window width
 v	<S-Right>               	Decrease window width
@@ -487,6 +496,7 @@ x	<M-k>                   	Scroll up a bit
 x	<M-l>                   	Scroll right
 x	<M-w>                   	Delete current buffer, but do not close current window if there are multiple
 x	<M-z>                   	Toggle focus mode
+x	<Plug>BlinkCmpDotRepeatHack	
 x	<S-Down>                	Decrease window height
 x	<S-Left>                	Increase window width
 x	<S-Right>               	Decrease window width
