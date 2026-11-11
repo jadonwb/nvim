@@ -37,7 +37,8 @@ end
 --- Changed files in the repository root, drawn with volt.
 ---@param win WinID
 ---@return boolean
-function M.changes(win)
+function M.changes(win, name)
+  local slot_name = name or 'right_top'
   local handle = require('features.ui.window').panel(win)
   local width = math.max(10, vim.api.nvim_win_get_width(win) - (handle.xpad * 2))
 
@@ -87,12 +88,16 @@ function M.changes(win)
   require('features.ui.window').render(handle, layout, width)
   vim.bo[handle.buf].filetype = 'nvchanges'
 
-  -- Row n of the body corresponds to the same index in `paths`.
-  vim.b[handle.buf].nv_changes = { paths = paths }
+  -- Body rows start after the title and the rule, so map buffer lines to paths.
+  local by_line = {}
+  for i, path in ipairs(paths) do
+    by_line[i + 2] = path
+  end
+  vim.b[handle.buf].nv_changes = { paths = paths, by_line = by_line }
 
   local function open_under_cursor()
-    local row = vim.api.nvim_win_get_cursor(0)[1] - 1
-    local path = paths[row]
+    local line = vim.api.nvim_win_get_cursor(0)[1]
+    local path = by_line[line]
     if not path then
       return
     end
@@ -112,7 +117,7 @@ function M.changes(win)
 
   vim.keymap.set('n', '<CR>', open_under_cursor, { buffer = handle.buf, nowait = true, desc = 'Open file' })
   vim.keymap.set('n', '<C-r>', function()
-    M.changes(win)
+    M.changes(win, slot_name)
   end, { buffer = handle.buf, nowait = true, desc = 'Refresh changes' })
   return true
 end
@@ -120,7 +125,7 @@ end
 --- Session and bridge status, drawn with volt.
 ---@param win WinID
 ---@return boolean
-function M.session(win)
+function M.session(win, _)
   local handle = require('features.ui.window').panel(win)
   local width = math.max(10, vim.api.nvim_win_get_width(win) - (handle.xpad * 2))
 
@@ -182,7 +187,8 @@ end
 --- oil buffer refreshes the preview slot.
 ---@param win WinID
 ---@return boolean
-function M.explorer(win)
+function M.explorer(win, name)
+  local slot = name or 'left'
   local dir = vim.fn.getcwd()
   local ok = pcall(function()
     vim.api.nvim_win_call(win, function()
@@ -194,26 +200,32 @@ function M.explorer(win)
   end
 
   local buf = vim.api.nvim_win_get_buf(win)
-  NVSlots.set_buffer('left', buf)
+  NVSlots.set_buffer(slot, buf)
 
-  vim.api.nvim_create_autocmd('CursorMoved', {
-    buffer = buf,
-    callback = function()
-      if NVSlots.is_open 'bottom_left' then
-        M.preview(NVSlots.win 'bottom_left')
-      end
-    end,
-  })
+  -- Once per oil buffer, not once per refresh.
+  if not vim.b[buf].nv_oil_hooked then
+    vim.b[buf].nv_oil_hooked = true
+    vim.api.nvim_create_autocmd('CursorMoved', {
+      buffer = buf,
+      callback = function()
+        local preview_name, preview_slot = NVSlots.slot_with_provider 'preview'
+        if preview_name and preview_slot and vim.api.nvim_win_is_valid(preview_slot.win) then
+          M.preview(preview_slot.win, preview_name)
+        end
+      end,
+    })
+  end
 
   -- Oil fills the buffer asynchronously, so the first preview waits for the
   -- entry list to exist instead of firing on a timer.
   local tries = 0
   local function preview_when_ready()
-    if not NVSlots.is_open 'bottom_left' then
+    local preview_name, preview_slot = NVSlots.slot_with_provider 'preview'
+    if not (preview_name and preview_slot and vim.api.nvim_win_is_valid(preview_slot.win)) then
       return
     end
     if vim.api.nvim_buf_line_count(buf) > 1 or tries > 20 then
-      M.preview(NVSlots.win 'bottom_left')
+      M.preview(preview_slot.win, preview_name)
       return
     end
     tries = tries + 1
@@ -245,15 +257,15 @@ end
 --- Preview of whatever the explorer is pointing at, in the bottom-left slot.
 ---@param win WinID
 ---@return boolean
-function M.preview(win)
-  _ = win
+function M.preview(win, name)
+  local slot = name or 'bottom_left'
   local entry, dir = explorer_entry()
   if not entry then
     return false
   end
 
   if entry.type ~= 'file' then
-    NVSlots.set_buffer('bottom_left', panel('bottom_left', { (dir or '') .. entry.name .. '/' }, 'nvpreview'))
+    NVSlots.set_buffer(slot, panel(slot, { (dir or '') .. entry.name .. '/' }, 'nvpreview'))
     return true
   end
 
@@ -276,7 +288,7 @@ function M.preview(win)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   vim.bo[buf].modifiable = false
   vim.bo[buf].filetype = vim.filetype.match { filename = path } or 'text'
-  NVSlots.set_buffer('bottom_left', buf)
+  NVSlots.set_buffer(slot, buf)
   return true
 end
 
@@ -284,16 +296,16 @@ end
 --- bridge work.
 ---@param win WinID
 ---@return boolean
-function M.prompt(win)
-  _ = win
+function M.prompt(win, name)
+  local slot = name or 'bottom'
   local buf = vim.api.nvim_create_buf(false, true)
   vim.bo[buf].buftype = 'nofile'
   vim.bo[buf].bufhidden = 'wipe'
   vim.bo[buf].swapfile = false
   vim.bo[buf].filetype = 'nvprompt'
-  vim.b[buf].nv_slot = 'bottom'
+  vim.b[buf].nv_slot = slot
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, { '' })
-  NVSlots.set_buffer('bottom', buf)
+  NVSlots.set_buffer(slot, buf)
   return true
 end
 

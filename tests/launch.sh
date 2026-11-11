@@ -71,5 +71,19 @@ else
   printf 'FAIL - profile gating: difftool -> %s (want false|false)\n' "$got"
 fi
 
+# A difftool launch has no Snacks; the VeryLazy steps must still complete.
+got=$(NVIM_LAUNCH_MODE=difftool nvim --headless \
+  "+lua vim.api.nvim_exec_autocmds('User', { pattern = 'VeryLazy' })" \
+  "+lua vim.wait(300)" \
+  "+lua io.write(tostring(vim.g.nv_notify_installed == true) .. '|' .. tostring(vim.fn.maparg('<M-w>', 'n') ~= ''))" \
+  +qa! 2>/dev/null)
+if [ "$got" = "true|true" ]; then
+  pass=$((pass + 1))
+  printf 'ok   - VeryLazy in difftool profile -> %s\n' "$got"
+else
+  fail=$((fail + 1))
+  printf 'FAIL - VeryLazy in difftool profile -> %s (want true|true)\n' "$got"
+fi
+
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

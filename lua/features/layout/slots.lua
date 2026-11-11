@@ -55,9 +55,17 @@ end
 --- The editing window: the first non-slot, non-floating window in this tab.
 ---@return WinID|nil
 local function center_win()
+  local slots = tab_state().slots
   for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
     local cfg = vim.api.nvim_win_get_config(win)
-    if cfg.relative == '' and not is_slot_buf(vim.api.nvim_win_get_buf(win)) then
+    local is_slot = false
+    for _, slot in pairs(slots) do
+      if slot.win == win then
+        is_slot = true
+        break
+      end
+    end
+    if cfg.relative == '' and not is_slot then
       return win
     end
   end
@@ -104,14 +112,32 @@ local function register(name, win)
   local buf = placeholder(name)
   vim.api.nvim_win_set_buf(win, buf)
   -- A `:split` window inherits the centre's buffer, which is still displayed
-  -- there; deleting it would take the centre window with it. Only tidy up the
-  -- throwaway buffer `:vnew` created.
-  if inherited ~= buf and vim.api.nvim_buf_get_name(inherited) == '' and vim.bo[inherited].buftype == '' then
+  -- there. Never touch a buffer that another window still shows: the centre may
+  -- legitimately be an unnamed scratch buffer.
+  if
+    inherited ~= buf
+    and vim.api.nvim_buf_get_name(inherited) == ''
+    and vim.bo[inherited].buftype == ''
+    and #vim.fn.win_findbuf(inherited) == 0
+  then
     vim.bo[inherited].buflisted = false
     vim.bo[inherited].bufhidden = 'wipe'
   end
   decorate(win)
   tab_state().slots[name] = { win = win, buf = buf, provider = NVSlots.defaults[name] }
+end
+
+--- The slot currently showing a given provider.
+---@param provider string
+---@return string|nil name
+---@return table|nil slot
+function NVSlots.slot_with_provider(provider)
+  for name, slot in pairs(tab_state().slots) do
+    if slot.provider == provider then
+      return name, slot
+    end
+  end
+  return nil, nil
 end
 
 ---@param name string
@@ -243,10 +269,16 @@ function NVSlots.set_buffer(name, buf)
   if not win then
     return
   end
-  vim.api.nvim_win_set_buf(win, buf)
   local slot = tab_state().slots[name]
+  local previous = slot.buf
+  vim.api.nvim_win_set_buf(win, buf)
   slot.buf = buf
   vim.b[buf].nv_slot = name
+  -- The replaced buffer belongs to the caller again; only a buffer the slot
+  -- layer created keeps marker state.
+  if previous and previous ~= buf then
+    vim.b[previous].nv_slot = nil
+  end
   decorate(win)
 end
 
@@ -261,13 +293,15 @@ function NVSlots.swap(a, b)
   end
   local ba, bb = vim.api.nvim_win_get_buf(wa), vim.api.nvim_win_get_buf(wb)
   -- Slot buffers are `bufhidden=wipe`: swapping naively wipes the buffer that
-  -- stops being displayed before it can be shown in the other window.
+  -- stops being displayed before it can be shown in the other window. Restore
+  -- the previous value afterwards: the caller may own these buffers.
+  local hidden_a, hidden_b = vim.bo[ba].bufhidden, vim.bo[bb].bufhidden
   vim.bo[ba].bufhidden = 'hide'
   vim.bo[bb].bufhidden = 'hide'
   vim.api.nvim_win_set_buf(wa, bb)
   vim.api.nvim_win_set_buf(wb, ba)
-  vim.bo[ba].bufhidden = 'wipe'
-  vim.bo[bb].bufhidden = 'wipe'
+  vim.bo[ba].bufhidden = hidden_a
+  vim.bo[bb].bufhidden = hidden_b
   local slots = tab_state().slots
   slots[a].buf, slots[b].buf = bb, ba
   slots[a].provider, slots[b].provider = slots[b].provider, slots[a].provider
@@ -346,7 +380,7 @@ function NVSlots.set_provider(name, provider)
     return false
   end
   slot.provider = provider
-  return (pcall(fn, slot.win))
+  return (pcall(fn, slot.win, name))
 end
 
 --- Update every open slot from its provider.
@@ -357,7 +391,7 @@ function NVSlots.refresh_providers()
     local slot = slots[name]
     local fn = slot and slot.provider and NVSlots.providers[slot.provider]
     if fn and vim.api.nvim_win_is_valid(slot.win) then
-      pcall(fn, slot.win)
+      pcall(fn, slot.win, name)
     end
   end
 end
@@ -475,9 +509,9 @@ function NVSlots.setup()
       refresh_pending = true
       vim.schedule(function()
         refresh_pending = false
-        local win = NVSlots.win 'right_top'
-        if win and NVSlots.providers.changes then
-          pcall(NVSlots.providers.changes, win)
+        local name, slot = NVSlots.slot_with_provider 'changes'
+        if name and slot and vim.api.nvim_win_is_valid(slot.win) then
+          pcall(NVSlots.providers.changes, slot.win, name)
         end
       end)
     end,
@@ -487,9 +521,9 @@ function NVSlots.setup()
   vim.api.nvim_create_autocmd('User', {
     pattern = 'NVProgress',
     callback = function()
-      local win = NVSlots.win 'right_bottom'
-      if win and NVSlots.providers.session then
-        pcall(NVSlots.providers.session, win)
+      local name, slot = NVSlots.slot_with_provider 'session'
+      if name and slot and vim.api.nvim_win_is_valid(slot.win) then
+        pcall(NVSlots.providers.session, slot.win, name)
       end
     end,
   })

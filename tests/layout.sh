@@ -11,6 +11,21 @@ export XDG_CONFIG_HOME="$tmp/xdg"
 mkdir -p "$XDG_CONFIG_HOME"
 ln -sfn "$root" "$XDG_CONFIG_HOME/nvim"
 
+# A deterministic repository: the changed-files panel must not depend on the
+# caller's working tree having uncommitted edits.
+repo=$tmp/repo
+mkdir -p "$repo"
+git -C "$repo" init -q
+git -C "$repo" config user.email test@example.com
+git -C "$repo" config user.name test
+printf 'one\n' >"$repo/a.txt"
+printf 'one\n' >"$repo/b.txt"
+git -C "$repo" add -A
+git -C "$repo" commit -qm base
+printf 'two\n' >>"$repo/a.txt"
+printf 'two\n' >>"$repo/b.txt"
+cd "$repo" || exit 1
+
 probe=$(cat <<'LUA'
 local function wins() return #vim.api.nvim_tabpage_list_wins(0) end
 local function slot(name)
@@ -72,13 +87,25 @@ local changes = visible 'right_top'
 add('changes=' .. tostring(changes:find('Changes', 1, true) ~= nil))
 
 local top_buf = vim.api.nvim_win_get_buf(NVSlots.win 'right_top')
-add('rows=' .. tostring(#((vim.b[top_buf].nv_changes or {}).paths or {}) > 0))
+local changes_meta = vim.b[top_buf].nv_changes or {}
+add('rows=' .. tostring(#(changes_meta.paths or {}) > 0))
+-- Body rows start after the title and rule: line 3 is the first path.
+add('row map=' .. tostring(changes_meta.by_line and changes_meta.by_line[3] == (changes_meta.paths or {})[1]))
 
 -- Any slot can host any provider.
 NVSlots.set_provider('right_top', 'session')
 add('substituted=' .. vim.bo[top_buf].filetype)
 NVSlots.set_provider('right_top', 'changes')
 add('restored=' .. vim.bo[top_buf].filetype)
+
+-- A provider can move to a slot that is not its default.
+NVSlots.set_provider('right_bottom', 'prompt')
+add('prompt moved=' .. vim.bo[vim.api.nvim_win_get_buf(NVSlots.win 'right_bottom')].filetype)
+NVSlots.set_provider('right_bottom', 'session')
+
+-- After a swap, the periodic refresh must find changes by provider, not by slot.
+NVSlots.swap('right_top', 'right_bottom')
+add('changes slot=' .. tostring(NVSlots.slot_with_provider 'changes'))
 NVMessages.progress = {}
 vim.cmd 'NVLayout close'
 add('close wins=' .. wins() .. ' applied=' .. tostring(NVSlots.is_applied()))
@@ -135,8 +162,11 @@ check 'session=true'
 check 'progress=true'
 check 'changes=true'
 check 'rows=true'
+check 'row map=true'
 check 'substituted=nvsession'
 check 'restored=nvchanges'
+check 'prompt moved=nvprompt'
+check 'changes slot=right_bottom'
 check 'close wins=1 applied=false'
 check 'reopen wins=6'
 check 'final wins=1'

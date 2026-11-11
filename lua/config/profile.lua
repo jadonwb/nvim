@@ -23,12 +23,14 @@ M.is_workspace = M.kind == 'workspace'
 
 --- Features that only a workspace launch needs. Everything listed here is off
 --- for every other profile unless it is added to `allowed` below.
+-- `ui` stays available everywhere: the notification centre and the popup need
+-- it, and a difftool launch still has to report what went wrong.
 local allowed = {
-  difftool = {},
-  mergetool = {},
-  pager = {},
-  transient = {},
-  embedded = {},
+  difftool = { ui = true },
+  mergetool = { ui = true },
+  pager = { ui = true },
+  transient = { ui = true },
+  embedded = { ui = true },
 }
 
 ---@param feature string

@@ -345,6 +345,30 @@ local function refresh_statusline()
   pcall(vim.cmd, 'redrawstatus')
 end
 
+-- A server that stops mid-progress never sends `kind = 'end'`.
+vim.api.nvim_create_autocmd('LspDetach', {
+  callback = function(ev)
+    local changed = false
+    for id, entry in pairs(NVMessages.progress or {}) do
+      if entry.client_id == ev.data.client_id then
+        NVMessages.progress[id] = nil
+        changed = true
+      end
+    end
+    if changed then
+      rebuild_progress_hl()
+      if not has_running_progress() then
+        stop_progress_timer()
+      end
+      vim.schedule(function()
+        pcall(function()
+          require('lualine').refresh()
+        end)
+      end)
+    end
+  end,
+})
+
 local function start_progress_timer()
   if NVMessages._progress_timer then
     return

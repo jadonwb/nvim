@@ -55,12 +55,26 @@ function NVNotify.install()
 end
 
 function NVNotify.clear()
-  -- The confirmation itself goes through vim.notify, so mark read afterwards.
-  NVMessages.info 'Notifications cleared'
-  for _, entry in ipairs(NVNotify.store) do
-    entry.read = true
-  end
+  NVNotify.store = {}
   NVNotify.unread = 0
+  -- Re-fill with one read confirmation so the list visibly changed.
+  local entry = NVNotify.add(vim.log.levels.INFO, 'Notifications cleared')
+  entry.read = true
+  if NVNotify.handle and NVNotify.handle.win and vim.api.nvim_win_is_valid(NVNotify.handle.win) then
+    vim.api.nvim_buf_clear_namespace(NVNotify.handle.buf, NVNotify.handle.ns, 0, -1)
+    NVNotify.render()
+  end
+end
+
+--- Re-render the open centre (used after clearing).
+function NVNotify.render()
+  local handle = NVNotify.handle
+  if not (handle and handle.win and vim.api.nvim_win_is_valid(handle.win)) then
+    return
+  end
+  pcall(function()
+    require('features.ui.window').render(handle, NVNotify.layout, NVNotify.width)
+  end)
 end
 
 ---@param filter 'all'|'errors'
@@ -81,8 +95,19 @@ function level_info(level)
 end
 
 function NVNotify.open()
+  -- One centre at a time: repeated presses focus the existing one.
+  if NVNotify.handle and NVNotify.handle.win and vim.api.nvim_win_is_valid(NVNotify.handle.win) then
+    vim.api.nvim_set_current_win(NVNotify.handle.win)
+    return
+  end
+
   local ui = require 'features.ui.window'
-  local handle = ui.float { border = 'rounded', zindex = 70, enter = true }
+  local ok, handle = pcall(ui.float, { border = 'rounded', zindex = 70, enter = true })
+  if not ok then
+    NVMessages.warn 'Notification centre unavailable'
+    return
+  end
+  NVNotify.handle = handle
   local filter = 'all'
   local width = math.min(100, math.max(48, vim.o.columns - 20))
 
@@ -128,16 +153,26 @@ function NVNotify.open()
     },
   }
 
-  local height = ui.render(handle, layout, width)
+  NVNotify.layout = layout
+  NVNotify.width = width
+
+  local rendered, height = pcall(ui.render, handle, layout, width)
+  if not rendered then
+    ui.close(handle)
+    NVNotify.handle = nil
+    NVMessages.warn 'Notification centre unavailable'
+    return
+  end
   ui.resize(handle, width, height, { row = math.max(0, math.floor((vim.o.lines - height) / 2) - 2), col = math.floor((vim.o.columns - width) / 2) })
 
   local buf = handle.buf
-  vim.keymap.set('n', 'q', function()
+  local function close()
     ui.close(handle)
-  end, { buffer = buf, nowait = true, desc = 'Close notifications' })
-  vim.keymap.set('n', '<Esc>', function()
-    ui.close(handle)
-  end, { buffer = buf, nowait = true, desc = 'Close notifications' })
+    NVNotify.handle = nil
+  end
+
+  vim.keymap.set('n', 'q', close, { buffer = buf, nowait = true, desc = 'Close notifications' })
+  vim.keymap.set('n', '<Esc>', close, { buffer = buf, nowait = true, desc = 'Close notifications' })
   vim.keymap.set('n', 'C', function()
     NVNotify.clear()
     vim.api.nvim_buf_clear_namespace(buf, handle.ns, 0, -1)

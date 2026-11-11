@@ -53,6 +53,8 @@ function M.request_hover(cb)
   end
 
   local bufnr = vim.api.nvim_get_current_buf()
+  local win = vim.api.nvim_get_current_win()
+  local cursor = vim.api.nvim_win_get_cursor(win)
   local ft = vim.bo[bufnr].filetype
   local params = vim.lsp.util.make_position_params(0, 'utf-16')
 
@@ -63,6 +65,16 @@ function M.request_hover(cb)
     end
     done = true
     vim.schedule(function()
+      -- The request is async: drop it if the cursor or buffer moved away.
+      if
+        not vim.api.nvim_buf_is_valid(bufnr)
+        or vim.api.nvim_get_current_buf() ~= bufnr
+        or not vim.api.nvim_win_is_valid(win)
+        or vim.api.nvim_get_current_win() ~= win
+        or vim.api.nvim_win_get_cursor(win)[1] ~= cursor[1]
+      then
+        return cb(nil)
+      end
       local contents = result and result.contents
       if not contents then
         return cb(nil)

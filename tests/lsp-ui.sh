@@ -92,6 +92,20 @@ add('sig active=' .. active)
 
 NVLspUi.open { { name = 'signature', chunks = { sig } } }
 add('sig drawn=' .. tostring(text():find('function(', 1, true) ~= nil))
+
+-- Closing the float externally ( :q, <C-w>c ) must not leak the backdrop or the
+-- Tab mappings.
+local srcbuf = vim.api.nvim_get_current_buf()
+local popup = win()
+vim.api.nvim_win_close(popup, true)
+local backdrops = 0
+for _, w in ipairs(vim.api.nvim_list_wins()) do
+  if vim.api.nvim_win_get_config(w).zindex == 50 then
+    backdrops = backdrops + 1
+  end
+end
+add('external close=' .. tostring(NVLspUi.is_open() == false and backdrops == 0))
+add('tab released=' .. tostring(vim.fn.maparg('<Tab>', 'n', false, true).buffer ~= 1))
 NVLspUi.close()
 
 -- Diagnostics section: severity order, both entries present.
@@ -123,6 +137,8 @@ check 'diag order=true'
 check 'sig label=function(name: string, count: integer)'
 check 'sig active=name: string,'
 check 'sig drawn=true'
+check 'external close=true'
+check 'tab released=true'
 grep -q '^inside=true' <<<"$got" || { echo 'FAIL: popup wider than the window'; fail=1; }
 grep -q '^wrapped height=true' <<<"$got" || { echo 'FAIL: wrapped line did not grow the popup'; fail=1; }
 

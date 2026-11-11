@@ -44,6 +44,46 @@ local function is_open()
   return state.win ~= nil and vim.api.nvim_win_is_valid(state.win)
 end
 
+local closing = false
+
+--- Full teardown: window, backdrop, keymaps, autocmds and volt state. Safe to
+--- call from close() and from WinClosed (external `:q`, `<C-w>c`, …).
+local function teardown()
+  if closing then
+    return
+  end
+  closing = true
+
+  if state.src_buf and vim.api.nvim_buf_is_valid(state.src_buf) then
+    pcall(vim.keymap.del, 'n', '<Tab>', { buffer = state.src_buf })
+    pcall(vim.keymap.del, 'n', '<S-Tab>', { buffer = state.src_buf })
+  end
+  state.src_buf = nil
+
+  if state.buf then
+    pcall(function()
+      require('volt.state')[state.buf] = nil
+    end)
+  end
+
+  if state.win and vim.api.nvim_win_is_valid(state.win) then
+    pcall(vim.api.nvim_win_close, state.win, true)
+  end
+  if state.backdrop and vim.api.nvim_win_is_valid(state.backdrop) then
+    pcall(vim.api.nvim_win_close, state.backdrop, true)
+  end
+
+  pcall(vim.api.nvim_clear_autocmds, { group = state.group })
+
+  state.win = nil
+  state.buf = nil
+  state.backdrop = nil
+  state.sections = {}
+  state.chunks = {}
+  state.index = 1
+  closing = false
+end
+
 function NVLspUi.is_open()
   return is_open()
 end
@@ -176,25 +216,7 @@ function NVLspUi.refresh()
 end
 
 function NVLspUi.close()
-  if state.src_buf and vim.api.nvim_buf_is_valid(state.src_buf) then
-    pcall(vim.keymap.del, 'n', '<Tab>', { buffer = state.src_buf })
-    pcall(vim.keymap.del, 'n', '<S-Tab>', { buffer = state.src_buf })
-  end
-  state.src_buf = nil
-
-  if state.win and vim.api.nvim_win_is_valid(state.win) then
-    pcall(vim.api.nvim_win_close, state.win, true)
-  end
-  if state.backdrop and vim.api.nvim_win_is_valid(state.backdrop) then
-    pcall(vim.api.nvim_win_close, state.backdrop, true)
-  end
-
-  state.win = nil
-  state.buf = nil
-  state.backdrop = nil
-  state.sections = {}
-  state.chunks = {}
-  state.index = 1
+  teardown()
 end
 
 ---@param sections NVLspSection[]
@@ -254,6 +276,7 @@ function NVLspUi.open(sections)
   vim.keymap.set('n', '<Tab>', NVLspUi.next, { buffer = src_buf, nowait = true, desc = 'Next popup section' })
   vim.keymap.set('n', '<S-Tab>', NVLspUi.prev, { buffer = src_buf, nowait = true, desc = 'Previous popup section' })
 
+  pcall(vim.api.nvim_clear_autocmds, { group = state.group })
   vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI', 'InsertEnter' }, {
     group = state.group,
     callback = function()
@@ -266,7 +289,7 @@ function NVLspUi.open(sections)
     group = state.group,
     callback = function(ev)
       if tonumber(ev.match) == state.win then
-        state.win = nil
+        teardown()
       end
     end,
   })

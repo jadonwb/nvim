@@ -14,6 +14,10 @@ local function map_toggle(lhs, toggle)
 end
 
 function NVUIToggles.keymaps()
+  local ok, Snacks = pcall(require, 'snacks')
+  if not ok then
+    return
+  end
   local t = Snacks.toggle
 
   map_toggle('<leader>ud', t.diagnostics())

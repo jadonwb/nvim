@@ -93,3 +93,44 @@ component once the panel is always present.
 - Convert `right_top` (changed files) and `bottom_left` (preview) to volt.
 - Prompt surface and notification centre next; both are tab/table shaped, which
   is what volt is best at.
+
+
+## Review fixes
+
+An independent review of the branch found fourteen defects; these are fixed and
+the fixes are covered by tests where a test can reach them:
+
+- **Profiles.** `ui-toggles` no longer assumes `Snacks` is loaded (a difftool
+  launch has no snacks), and the VeryLazy startup steps are individually
+  `pcall`ed so one optional feature cannot skip notification installation and
+  every keymap after it. `ui` is now allowed in every profile so the
+  notification centre works outside a workspace.
+- **Changed files.** `<CR>` mapped buffer lines to paths off by two rows (title
+  and rule), so it opened the wrong file; it now uses a line→path map. The panel
+  also no longer depends on the caller's working tree: the layout test runs in a
+  temporary repo with two modified files.
+- **Providers.** `explorer`, `preview`, `prompt`, `changes` and `session` take
+  the slot name they were called for instead of hardcoding their default slot,
+  and the background refreshers resolve the slot by provider. `set_provider` and
+  `swap` therefore work, and a `BufWritePost`/`NVProgress` after a swap no
+  longer writes into the wrong panel.
+- **Buffers.** Opening the layout no longer unlists or re-wipes an unnamed
+  centre buffer (`win_findbuf` guard), `set_buffer` clears the slot marker from
+  the buffer it replaces, and `swap` restores each buffer's previous
+  `bufhidden`. `center_win()` consults the slot registry instead of a buffer
+  marker, so a caller buffer passed to `set_buffer` cannot make the layout
+  unopenable.
+- **Popup lifecycle.** One teardown path closes the popup, its backdrop, the
+  source-buffer `<Tab>` mappings, the autocmd group and the volt state entry; it
+  runs on `WinClosed` too, so `:q`/`<C-w>c` no longer leaves a dim overlay.
+  Opening clears the autocmd group first, so repeated hovers do not accumulate
+  callbacks.
+- **Explorer.** The preview hook is registered once per oil buffer instead of on
+  every refresh.
+- **Notifications.** One handle at a time (repeat presses focus the existing
+  centre), render failures close the float instead of leaking it, and clearing
+  empties the store so the list visibly changes.
+- **Progress.** `LspDetach` drops that client's entries and stops the timer, so
+  a crashed or stopped server cannot leave a stale bar refreshing at 10 Hz.
+- **Hover.** The async response is dropped when the buffer, window or cursor
+  line changed while it was in flight.

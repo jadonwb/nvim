@@ -159,6 +159,75 @@ local function setup()
   end
 end
 
+-- Command line in the bottom slot.
+--
+-- ui2's cmd window is a float; when the bottom slot is open it would otherwise
+-- hover over the editor. Re-anchor it to the slot's screen rectangle after every
+-- show. tiny-cmdline.nvim does the same kind of monkey-patching but only accepts
+-- editor-relative coordinates, so it cannot dock to a window.
+local function bottom_slot_rect()
+  if not (NVSlots and NVSlots.win) then
+    return nil
+  end
+  local slot = NVSlots.win 'bottom'
+  if not slot then
+    return nil
+  end
+  local pos = vim.fn.screenpos(slot, 1, 1)
+  if pos.row == 0 then
+    return nil
+  end
+  return {
+    row = pos.row - 1,
+    col = pos.col - 1,
+    width = vim.api.nvim_win_get_width(slot),
+    height = vim.api.nvim_win_get_height(slot),
+  }
+end
+
+--- Re-anchor the ui2 cmd window over the bottom slot. Returns true when pinned.
+function NVCmdlinePin()
+  local rect = bottom_slot_rect()
+  if not rect then
+    return false
+  end
+  local ui2 = require 'vim._core.ui2'
+  local cmd = ui2.wins and ui2.wins.cmd
+  if not (cmd and vim.api.nvim_win_is_valid(cmd)) then
+    return false
+  end
+
+  local ok, cfg = pcall(vim.api.nvim_win_get_config, cmd)
+  if not ok then
+    return false
+  end
+
+  cfg.relative = 'editor'
+  cfg.win = nil
+  cfg.row = rect.row
+  cfg.col = rect.col
+  cfg.width = rect.width
+  cfg.height = math.min(rect.height or 1, math.max(1, cfg.height or 1))
+  cfg.border = 'none'
+  pcall(vim.api.nvim_win_set_config, cmd, cfg)
+  return true
+end
+
+local function pin_cmdline()
+  local cmdline = require 'vim._core.ui2.cmdline'
+  if cmdline.__nv_pinned then
+    return
+  end
+  cmdline.__nv_pinned = true
+
+  local orig_show = cmdline.cmdline_show
+  cmdline.cmdline_show = function(...)
+    local result = orig_show(...)
+    NVCmdlinePin()
+    return result
+  end
+end
+
 -- Pager buffer keymaps for close (keep q from ui2; add <M-w> and <Esc> equiv)
 vim.api.nvim_create_autocmd('FileType', {
   pattern = 'pager',
@@ -173,8 +242,12 @@ vim.api.nvim_create_autocmd('FileType', {
 if #vim.api.nvim_list_uis() == 0 then
   vim.api.nvim_create_autocmd('UIEnter', {
     once = true,
-    callback = setup,
+    callback = function()
+      setup()
+      pin_cmdline()
+    end,
   })
 else
   setup()
+  pin_cmdline()
 end

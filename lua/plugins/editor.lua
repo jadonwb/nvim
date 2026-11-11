@@ -58,29 +58,55 @@ return {
 
     config = function()
       vim.schedule(function()
-        require 'editor.editing'
-        require 'editor.core-keymaps'
-        NVKeymaps.core()
+        -- Each step is independent: an optional feature failing (missing Snacks
+        -- in a difftool profile, a provider error) must not skip the rest.
+        local function step(fn)
+          local ok, err = pcall(fn)
+          if not ok and NVMessages then
+            NVMessages.warn('startup step failed: ' .. tostring(err))
+          end
+        end
 
-        require 'editor.ui-toggles'
-        NVUIToggles.keymaps()
+        step(function()
+          require 'editor.editing'
+          require 'editor.core-keymaps'
+          NVKeymaps.core()
+        end)
 
-        require('features.ui.notify').install()
-        NVEditing.keymaps()
+        step(function()
+          require 'editor.ui-toggles'
+          NVUIToggles.keymaps()
+        end)
 
-        NVOpenCodeArtifacts.keymaps()
-        NVOpenCodeSession.keymaps()
-        NVSLazygit.keymaps()
-        NVTabs.keymaps()
-        NVWindows.keymaps()
-        NVBuffers.keymaps()
+        step(function()
+          require('features.ui.notify').install()
+        end)
 
-        require 'editor.navigation'
-        NVNavigation.keymaps()
+        step(function()
+          NVEditing.keymaps()
+        end)
 
-        NVTerminal.keymaps()
+        step(function()
+          NVOpenCodeArtifacts.keymaps()
+          NVOpenCodeSession.keymaps()
+          NVSLazygit.keymaps()
+          NVTabs.keymaps()
+          NVWindows.keymaps()
+          NVBuffers.keymaps()
+        end)
 
-        NVGrugFar.autocmds()
+        step(function()
+          require 'editor.navigation'
+          NVNavigation.keymaps()
+        end)
+
+        step(function()
+          NVTerminal.keymaps()
+        end)
+
+        step(function()
+          NVGrugFar.autocmds()
+        end)
       end)
     end,
   },
