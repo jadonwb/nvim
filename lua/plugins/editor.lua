@@ -26,10 +26,6 @@ return {
       require 'editor.format'
       NVFormat.setup()
 
-      require 'editor.features.focus-mode'
-      NVFocusMode.setup()
-      NVFocusMode.autocmds()
-
       require 'editor.features.opencode-artifacts'
       NVOpenCodeArtifacts.setup()
 
@@ -71,7 +67,6 @@ return {
         NVUIToggles.keymaps()
         NVEditing.keymaps()
 
-        NVFocusMode.keymaps()
         NVOpenCodeArtifacts.keymaps()
         NVOpenCodeSession.keymaps()
         NVSLazygit.keymaps()

@@ -8,7 +8,6 @@ NVClose.priority = {
   'dashboard',
   'mason',
   'trouble',
-  'focus_mode',
   'snacks_lazygit',
   'grug-far',
   'help_docs',

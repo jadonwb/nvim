@@ -23,12 +23,12 @@ drafts and labels have no replacement yet.
 ## Done: custom tabs
 
 `lua/editor/tabs.lua` went from 154 to 118 lines and keeps only what diffview
-and focus mode need:
+needs:
 
 | Kept | Why |
 | --- | --- |
-| `register_type`, `get_tab_type`, `is_temporary` | diffview and focus mode mark their tabpages so panels, session restore and `<C-w>` treat them differently |
-| `close_all_temporary` | session save closes diffview/focus tabs before persisting a layout |
+| `register_type`, `get_tab_type`, `is_temporary` | diffview marks its tabpage so panels, session restore and `<C-w>` treat it differently |
+| `close_all_temporary` | session save closes diffview tabs before persisting a layout |
 | `NVTabs.close` | `<C-w>` runs a temporary tab's own teardown hook before closing |
 
 Removed: named tabs (the `<C-t>` input dialog), all labels (`set_label`,
@@ -41,8 +41,8 @@ snapshots, lualine's label rendering), the `<C-S-Left/Right>` reorder mappings,
 
 Verified in the harness: `<C-t>` opens a second tab; `<C-w>` closes it;
 `:DiffviewOpen` opens a temporary tab that a single `<C-w>` tears down
-completely; `<M-z>` focus mode opens and closes its temporary tab; a restart
-snapshot is written with no tab labels and restores without error.
+completely; a restart snapshot is written with no tab labels and restores
+without error.
 
 ## Next
 

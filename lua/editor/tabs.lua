@@ -1,9 +1,9 @@
 -- Tab helpers.
 --
 -- The custom tab layer is gone: no named tabs, no labels, no tab groups, no
--- reordering keymaps. What remains exists because diffview and focus mode open
--- their views in a separate tabpage and that tabpage has to be distinguishable
--- from a work tab: a type registry with a temporary flag and a close hook.
+-- reordering keymaps. What remains exists because diffview opens its views in a
+-- separate tabpage and that tabpage has to be distinguishable from a work tab:
+-- a type registry with a temporary flag and a close hook.
 --
 -- Tab navigation and creation use Neovim's own commands.
 
