@@ -278,7 +278,40 @@ local function rebuild_progress_hl()
   end
   if chosen then
     NVMessages.progress_hl = format_progress_hl(chosen)
+  NVMessages.notify_progress()
   end
+end
+
+--- The running progress worth showing, most recently updated first.
+---@return { title: string|nil, message: string|nil, percent: number }|nil
+function NVMessages.progress_current()
+  local chosen
+  for _, entry in pairs(NVMessages.progress or {}) do
+    if entry.kind ~= 'end' and (not chosen or (entry.updated or 0) > (chosen.updated or 0)) then
+      chosen = entry
+    end
+  end
+  if not chosen then
+    return nil
+  end
+  return {
+    title = chosen.title,
+    message = chosen.message,
+    percent = math.max(0, math.min(100, math.floor(chosen.percent or 0))),
+  }
+end
+
+--- Notify volt panels that progress changed (debounced to one redraw a tick).
+local progress_pending = false
+function NVMessages.notify_progress()
+  if progress_pending then
+    return
+  end
+  progress_pending = true
+  vim.schedule(function()
+    progress_pending = false
+    vim.api.nvim_exec_autocmds('User', { pattern = 'NVProgress' })
+  end)
 end
 
 local function has_running_progress()

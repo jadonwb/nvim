@@ -73,6 +73,45 @@ local function chunks_for(text, ranges)
   return chunks
 end
 
+--- Drop conceal markers and clean up emphasis delimiters.
+---
+--- The buffer renderer hides `**`, `_` and backticks with conceal, which virtual
+--- text cannot do, so those chunks are removed here. Prose lines then get any
+--- leftover delimiters trimmed from chunk edges.
+---@param chunks NvUiChunk[]
+---@return NvUiChunk[]
+local function clean(chunks)
+  local out = {}
+  local prose = false
+
+  for _, chunk in ipairs(chunks) do
+    local hl = chunk[2] or ''
+    if hl:find('@conceal', 1, true) then
+      -- marker character, hidden by conceal in a real buffer
+    else
+      out[#out + 1] = { chunk[1], chunk[2] }
+      if hl:find('markdown', 1, true) then
+        prose = true
+      end
+    end
+  end
+
+  if prose then
+    for _, chunk in ipairs(out) do
+      chunk[1] = chunk[1]:gsub('^[`*_~]+', ''):gsub('[`*_~]+$', '')
+    end
+  end
+
+  local trimmed = {}
+  for _, chunk in ipairs(out) do
+    if chunk[1] ~= '' then
+      trimmed[#trimmed + 1] = chunk
+    end
+  end
+
+  return #trimmed > 0 and trimmed or { { '' } }
+end
+
 --- Render markdown source into volt lines.
 ---@param raw string[]
 ---@param opts? { ft?: string }
@@ -97,7 +136,7 @@ function M.chunks(raw, opts)
 
   local out = {}
   for i, line in ipairs(rendered) do
-    out[i] = chunks_for(line, ranges[i - 1])
+    out[i] = clean(chunks_for(line, ranges[i - 1]))
   end
   return out
 end

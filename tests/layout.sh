@@ -37,6 +37,36 @@ local function ft(name)
 end
 add('providers=' .. ft 'right_top' .. ',' .. ft 'right_bottom' .. ',' .. ft 'bottom')
 add('left=' .. ft 'left')
+
+-- Volt panels draw with virtual text; read what is actually visible.
+local function visible(name)
+  local w = NVSlots.win(name)
+  if not w then
+    return ''
+  end
+  local b = vim.api.nvim_win_get_buf(w)
+  local t = {}
+  for _, m in ipairs(vim.api.nvim_buf_get_extmarks(b, -1, 0, -1, { details = true })) do
+    if m[4].virt_text then
+      t[#t + 1] = table.concat(vim.tbl_map(function(c) return c[1] end, m[4].virt_text))
+    end
+  end
+  return table.concat(t, ' ')
+end
+add('session=' .. tostring(visible('right_bottom'):find('branch', 1, true) ~= nil))
+
+-- LSP progress renders as a volt bar inside the session panel.
+NVMessages.progress['test.1'] = {
+  client_id = 1,
+  name = 'lua_ls',
+  kind = 'report',
+  title = 'LuaLS',
+  percent = 50,
+  updated = 1,
+}
+NVSlots.providers.session(NVSlots.win 'right_bottom')
+add('progress=' .. tostring(visible('right_bottom'):find('LuaLS', 1, true) ~= nil))
+NVMessages.progress = {}
 vim.cmd 'NVLayout close'
 add('close wins=' .. wins() .. ' applied=' .. tostring(NVSlots.is_applied()))
 vim.cmd 'NVLayout open'
@@ -88,6 +118,8 @@ check 'open wins=6 slots=5 applied=true'
 check 'right halves=true'
 check 'providers=nvchanges,nvsession,nvprompt'
 check 'left=oil'
+check 'session=true'
+check 'progress=true'
 check 'close wins=1 applied=false'
 check 'reopen wins=6'
 check 'final wins=1'

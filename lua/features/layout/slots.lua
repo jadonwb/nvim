@@ -456,6 +456,17 @@ function NVSlots.setup()
 
   K.map { NVKeymaps.layout_toggle, 'Toggle IDE layout', NVSlots.toggle, mode = { 'n', 'i', 'v', 't' } }
 
+  -- Progress changes come from the LSP handler through NVMessages.
+  vim.api.nvim_create_autocmd('User', {
+    pattern = 'NVProgress',
+    callback = function()
+      local win = NVSlots.win 'right_bottom'
+      if win and NVSlots.providers.session then
+        pcall(NVSlots.providers.session, win)
+      end
+    end,
+  })
+
   vim.api.nvim_create_autocmd('TabClosed', {
     group = vim.api.nvim_create_augroup('NV slots', { clear = true }),
     callback = function()

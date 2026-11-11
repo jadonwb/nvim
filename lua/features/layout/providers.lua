@@ -47,20 +47,61 @@ function M.changes(win)
   return true
 end
 
---- Session and bridge status.
+--- Session and bridge status, drawn with volt.
 ---@param win WinID
 ---@return boolean
 function M.session(win)
-  _ = win
+  local handle = require('features.ui.window').panel(win)
+  local width = math.max(10, vim.api.nvim_win_get_width(win) - (handle.xpad * 2))
+
   local branch = system_lines { 'git', 'branch', '--show-current' }
   local attached = NVOpenCodeSession and NVOpenCodeSession.attached_id and NVOpenCodeSession.attached_id()
-  local lines = {
-    'cwd      ' .. vim.fn.fnamemodify(vim.fn.getcwd(), ':~'),
-    'branch   ' .. (branch[1] and branch[1] ~= '' and branch[1] or '(detached)'),
-    'opencode ' .. (attached and tostring(attached) or 'not attached'),
-    'profile  ' .. (NVProfile and NVProfile.kind or '?'),
+
+  local label_w = 9
+  local function row(label, value)
+    value = tostring(value)
+    return {
+      { (' %-' .. label_w .. 's'):format(label), 'CommentFg' },
+      { value:sub(1, math.max(0, width - label_w - 1)) },
+    }
+  end
+
+  local body = {
+    row('cwd', vim.fn.fnamemodify(vim.fn.getcwd(), ':~')),
+    row('branch', (branch[1] and branch[1] ~= '') and branch[1] or '(detached)'),
+    row('opencode', attached or 'not attached'),
+    row('profile', require('config.profile').kind or '?'),
   }
-  NVSlots.set_buffer('right_bottom', panel('right_bottom', lines, 'nvsession'))
+
+  local progress = NVMessages.progress_current and NVMessages.progress_current()
+
+  local layout = {
+    { name = 'title', lines = function() return { { { ' Session ', 'ExLightGrey' } } } end },
+    { name = 'rule', lines = function() return { { { string.rep('─', width), 'CommentFg' } } } end },
+    { name = 'body', lines = function() return body end },
+  }
+
+  if progress then
+    layout[#layout + 1] = { name = 'gap', lines = function() return { {} } end }
+    layout[#layout + 1] = {
+      name = 'progress',
+      lines = function()
+        local label = progress.title or progress.message or 'LSP'
+        return {
+          { { ' ' .. label:sub(1, width - 2), 'CommentFg' } },
+          require('volt.ui').progressbar {
+            w = width,
+            val = progress.percent,
+            icon = { on = '┃', off = '┃' },
+            hl = { on = 'ExGreen', off = 'LineNr' },
+          },
+        }
+      end,
+    }
+  end
+
+  require('features.ui.window').render(handle, layout, width)
+  vim.bo[handle.buf].filetype = 'nvsession'
   return true
 end
 
