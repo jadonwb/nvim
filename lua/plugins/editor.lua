@@ -30,13 +30,6 @@ return {
       NVFocusMode.setup()
       NVFocusMode.autocmds()
 
-      require 'editor.git'
-      require 'editor.features.git-worktrees'
-      NVGitWorktrees.setup()
-
-      require 'editor.features.git-commit'
-      NVGitCommit.setup()
-
       require 'editor.features.opencode-artifacts'
       NVOpenCodeArtifacts.setup()
 
@@ -79,8 +72,6 @@ return {
         NVEditing.keymaps()
 
         NVFocusMode.keymaps()
-        NVGitCommit.keymaps()
-        NVGitWorktrees.keymaps()
         NVOpenCodeArtifacts.keymaps()
         NVOpenCodeSession.keymaps()
         NVSLazygit.keymaps()

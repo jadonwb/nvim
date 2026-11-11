@@ -4,7 +4,6 @@ NVClose = {}
 NVClose.priority = {
   'lsp_popup',
   'lsp_signature',
-  'git_commit',
   'nvlazy',
   'dashboard',
   'mason',
