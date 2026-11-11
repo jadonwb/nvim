@@ -59,3 +59,38 @@ markdown hover with a rounded border next to the cursor.
 - Markdown block constructs and code-fence aliases (`c++`, `c#`) are still the
   old renderer's (`features/lsp/markup.lua`); fixing them moves the last of the
   15 audit defects.
+
+## Second pass: volt
+
+Volt (`nvzone/volt`) is now the drawing layer. It is an interactive UI toolkit:
+it draws extmark text into a buffer the app owns, with components (`tabs`,
+`table`, `progressbar`, `graphs`, `hpad`, `border`) and hit-testing for mouse and
+keyboard. typr's dashboard is the reference: app-owned float, dim backdrop, a
+highlight namespace per window, `volt.gen_data` + `volt.run`, partial redraws.
+
+What that means here:
+
+- The popup owns its float and backdrop; volt fills the buffer. Sizing and
+  anchoring stay ours, which is what the slot layout needs.
+- `features/ui/markdown.lua` converts our rendered markdown into volt chunks:
+  it renders into a scratch buffer with the existing markup module, then reads
+  the extmark ranges back as `{ text, hl }` runs. Treesitter colouring survives,
+  and `wrap()` reflows prose to the popup width because volt emits one virtual
+  line per row and floats do not wrap virtual text.
+- Section switching redraws in place (`gen_data` + `redraw`), no reopen.
+- Volt is GPL-3.0. It is a runtime dependency here, not vendored code; copying
+  its source into this repo would require the repo to be GPL-compatible.
+
+Verified on screen: tab strip (`hover` / `diagnostics`), markdown body wrapping
+at 100 columns, footer hints, dimmed backdrop. `tests/lsp-ui.sh` reads the
+visible text back out of volt's extmarks, so the assertions cover what is drawn,
+not the buffer (which is blank lines by design).
+
+### Still to fix in the rendering
+
+1. Inline markdown is literal: `**bold**` shows its asterisks because the old
+   renderer relied on conceal, which virtual text cannot do. The chunk adapter
+   has to strip emphasis markers and emit bold/italic groups itself.
+2. Code fences lose syntax colour in the same conversion: the ranges exist in
+   the scratch buffer but are not being mapped into chunks reliably. Both are
+   converter work, not window work.

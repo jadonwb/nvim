@@ -15,25 +15,37 @@ probe=$(cat <<'LUA'
 local out = {}
 local function add(s) out[#out + 1] = s end
 
+-- Volt draws with virtual text over blank lines, so the visible text has to be
+-- reconstructed from extmarks.
+local function visible(buf)
+  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  local by_row = {}
+  for _, mark in ipairs(vim.api.nvim_buf_get_extmarks(buf, -1, 0, -1, { details = true })) do
+    local row, d = mark[2], mark[4]
+    local chunk = d.virt_text and table.concat(vim.tbl_map(function(c) return c[1] end, d.virt_text)) or nil
+    if chunk and chunk ~= '' then
+      by_row[row] = (by_row[row] or '') .. chunk
+    end
+  end
+  local text = {}
+  for i = 0, math.max(#lines - 1, 0) do
+    text[#text + 1] = by_row[i] or lines[i + 1] or ''
+  end
+  return table.concat(text, '\n')
+end
+
 local function win()
   for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-    if vim.api.nvim_win_get_config(w).relative ~= '' then
+    local c = vim.api.nvim_win_get_config(w)
+    if c.relative ~= '' and c.zindex == 60 then
       return w
     end
   end
 end
 
-local function title()
+local function text()
   local w = win()
-  if not w then
-    return 'none'
-  end
-  local t = vim.api.nvim_win_get_config(w).title or {}
-  local parts = {}
-  for _, chunk in ipairs(t) do
-    parts[#parts + 1] = chunk[1]
-  end
-  return (table.concat(parts):gsub('^%s+', ''):gsub('%s+$', ''))
+  return w and visible(vim.api.nvim_win_get_buf(w)) or ''
 end
 
 vim.cmd 'enew'
@@ -44,22 +56,20 @@ NVLspUi.open {
   { name = 'diagnostics', lines = { '**Error** 1:1', string.rep('long word ', 60) } },
 }
 add('open=' .. tostring(NVLspUi.is_open()))
-add('title=' .. title())
+add('has tabs=' .. tostring(text():find('hover', 1, true) and text():find('diagnostics', 1, true) ~= nil))
+add('has body=' .. tostring(text():find('hover text', 1, true) ~= nil))
 
 local w = win()
-add('wrap=' .. tostring(vim.wo[w].wrap) .. ' border=' .. tostring((vim.api.nvim_win_get_config(w).border ~= nil)))
 add('inside=' .. tostring(vim.api.nvim_win_get_config(w).width <= vim.api.nvim_win_get_width(vim.api.nvim_get_current_win())))
 
 NVLspUi.next()
-add('next title=' .. title())
+add('next body=' .. tostring(text():find('long word', 1, true) ~= nil))
 
--- Long wrapped line must grow the window, not clip it (measured on the
--- diagnostics section, which holds the long line).
-local h = vim.api.nvim_win_get_config(win()).height
-add('wrapped height=' .. tostring(h > 2))
+-- Long wrapped line must grow the window, not clip it.
+add('wrapped height=' .. tostring(vim.api.nvim_win_get_config(win()).height > 2))
 
 NVLspUi.prev()
-add('prev title=' .. title())
+add('prev body=' .. tostring(text():find('hover text', 1, true) ~= nil))
 
 NVLspUi.close()
 add('closed=' .. tostring(NVLspUi.is_open()))
@@ -84,10 +94,10 @@ printf '%s\n' "$got"
 fail=0
 check() { grep -qx -- "$1" <<<"$got" || { printf 'FAIL: missing %s\n' "$1"; fail=1; }; }
 check 'open=true'
-check 'title=hover 1/2'
-check 'wrap=true border=true'
-check 'next title=diagnostics 2/2'
-check 'prev title=hover 1/2'
+check 'has tabs=true'
+check 'has body=true'
+check 'next body=true'
+check 'prev body=true'
 check 'closed=false'
 check 'diag order=true'
 grep -q '^inside=true' <<<"$got" || { echo 'FAIL: popup wider than the window'; fail=1; }
