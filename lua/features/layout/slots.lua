@@ -441,6 +441,14 @@ function NVSlots.setup()
       else
         NVSlots.toggle_slot(slot)
       end
+    elseif action == 'provider' then
+      if not (slot and parts[3]) then
+        NVMessages.warn 'NVLayout provider <slot> <provider>'
+        return
+      end
+      if not NVSlots.set_provider(slot, parts[3]) then
+        NVMessages.warn(('NVLayout provider: slot %s is closed or %s is unknown'):format(slot, parts[3]))
+      end
     elseif action == 'swap' then
       if not (slot and parts[3]) then
         NVMessages.warn 'NVLayout swap <a> <b>'
@@ -455,6 +463,25 @@ function NVSlots.setup()
   end, { nargs = '*', desc = 'IDE layout slots' })
 
   K.map { NVKeymaps.layout_toggle, 'Toggle IDE layout', NVSlots.toggle, mode = { 'n', 'i', 'v', 't' } }
+
+  -- The changed-files panel follows the working tree.
+  local refresh_pending = false
+  vim.api.nvim_create_autocmd({ 'FocusGained', 'BufWritePost' }, {
+    group = vim.api.nvim_create_augroup('NV slots refresh', { clear = true }),
+    callback = function()
+      if refresh_pending then
+        return
+      end
+      refresh_pending = true
+      vim.schedule(function()
+        refresh_pending = false
+        local win = NVSlots.win 'right_top'
+        if win and NVSlots.providers.changes then
+          pcall(NVSlots.providers.changes, win)
+        end
+      end)
+    end,
+  })
 
   -- Progress changes come from the LSP handler through NVMessages.
   vim.api.nvim_create_autocmd('User', {

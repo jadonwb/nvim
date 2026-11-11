@@ -57,6 +57,7 @@ function M.changes(win)
   end
 
   local rows = {}
+  local paths = {}
   for _, line in ipairs(out) do
     local code, path = line:match '^%s*(%S+)%s+(.*)$'
     if code then
@@ -64,6 +65,7 @@ function M.changes(win)
         { (' %-2s '):format(code), status_hl(code) },
         { path:sub(1, math.max(1, width - 5)) },
       }
+      paths[#rows] = path
     end
   end
 
@@ -84,6 +86,34 @@ function M.changes(win)
 
   require('features.ui.window').render(handle, layout, width)
   vim.bo[handle.buf].filetype = 'nvchanges'
+
+  -- Row n of the body corresponds to the same index in `paths`.
+  vim.b[handle.buf].nv_changes = { paths = paths }
+
+  local function open_under_cursor()
+    local row = vim.api.nvim_win_get_cursor(0)[1] - 1
+    local path = paths[row]
+    if not path then
+      return
+    end
+    local centre
+    for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+      local cfg = vim.api.nvim_win_get_config(w)
+      if cfg.relative == '' and not vim.b[vim.api.nvim_win_get_buf(w)].nv_slot then
+        centre = w
+        break
+      end
+    end
+    if centre then
+      vim.api.nvim_set_current_win(centre)
+    end
+    vim.cmd('edit ' .. vim.fn.fnameescape(path))
+  end
+
+  vim.keymap.set('n', '<CR>', open_under_cursor, { buffer = handle.buf, nowait = true, desc = 'Open file' })
+  vim.keymap.set('n', '<C-r>', function()
+    M.changes(win)
+  end, { buffer = handle.buf, nowait = true, desc = 'Refresh changes' })
   return true
 end
 

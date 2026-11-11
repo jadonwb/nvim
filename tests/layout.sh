@@ -70,6 +70,15 @@ add('progress=' .. tostring(visible('right_bottom'):find('LuaLS', 1, true) ~= ni
 -- The changed-files panel is a volt table: title plus at least one status row.
 local changes = visible 'right_top'
 add('changes=' .. tostring(changes:find('Changes', 1, true) ~= nil))
+
+local top_buf = vim.api.nvim_win_get_buf(NVSlots.win 'right_top')
+add('rows=' .. tostring(#((vim.b[top_buf].nv_changes or {}).paths or {}) > 0))
+
+-- Any slot can host any provider.
+NVSlots.set_provider('right_top', 'session')
+add('substituted=' .. vim.bo[top_buf].filetype)
+NVSlots.set_provider('right_top', 'changes')
+add('restored=' .. vim.bo[top_buf].filetype)
 NVMessages.progress = {}
 vim.cmd 'NVLayout close'
 add('close wins=' .. wins() .. ' applied=' .. tostring(NVSlots.is_applied()))
@@ -125,6 +134,9 @@ check 'left=oil'
 check 'session=true'
 check 'progress=true'
 check 'changes=true'
+check 'rows=true'
+check 'substituted=nvsession'
+check 'restored=nvchanges'
 check 'close wins=1 applied=false'
 check 'reopen wins=6'
 check 'final wins=1'

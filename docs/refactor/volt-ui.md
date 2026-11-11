@@ -32,6 +32,19 @@ Two facts worth remembering:
   count in the title, status code coloured (red delete, green add, yellow
   modify/rename, grey untracked), path truncated to the panel width.
 
+### Substitution
+
+Every slot hosts a named provider, and any provider can run in any slot:
+`:NVLayout provider right_top session` swaps the panel in place (same window,
+same geometry), and `NVSlots.set_provider(slot, name)` does the same over RPC.
+That is what makes scenario profiles cheap later — a debug profile can put
+`changes` in `right_bottom` and `session` in `right_top` without touching layout
+code.
+
+The changed-files panel is interactive: `<CR>` opens the file under the cursor
+in the centre window, `<C-r>` refreshes, and it re-renders on `FocusGained` and
+`BufWritePost` so the list follows the working tree.
+
 ## Deliberately not volt
 
 - **Preview** (`bottom_left`): a read-only view of a real file. It needs the
