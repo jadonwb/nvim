@@ -112,7 +112,7 @@ local function derive_policy(startup)
   local transient = startup.transient
   local workspace = not transient and not startup.has_files and startup.purpose == nil
   local finish = 'stay'
-  if startup.purpose == 'pager' or startup.purpose == 'difftool' then
+  if startup.purpose == 'pager' or startup.purpose == 'difftool' or startup.purpose == 'mergetool' then
     finish = 'view'
   elseif transient then
     finish = startup.has_files and 'targets' or 'last_buffer'
@@ -143,17 +143,31 @@ local function capture_startup()
       purpose = 'pager'
     elseif name == 'DiffviewDiffFiles' or name == 'DiffviewOpen' or name == 'DiffviewFileHistory' then
       purpose = 'difftool'
+    elseif name == 'DiffviewMergeFiles' then
+      purpose = 'mergetool'
     end
   end
   if host == 'man' then
     purpose = 'pager'
   end
+
+  -- `nvim -d a b` and `vimdiff a b` are difftool invocations even though they
+  -- carry no Diffview command.
+  if not purpose then
+    for _, arg in ipairs(vim.v.argv) do
+      local base = vim.fn.fnamemodify(arg, ':t')
+      if arg == '-d' or arg == '--diff' or base == 'vimdiff' or base == 'nvimdiff' then
+        purpose = 'difftool'
+        break
+      end
+    end
+  end
   local launch_mode = vim.env.NVIM_LAUNCH_MODE
   vim.env.NVIM_LAUNCH_MODE = nil
-  if launch_mode ~= 'transient' and launch_mode ~= 'pager' and launch_mode ~= 'difftool' then
+  if launch_mode ~= 'transient' and launch_mode ~= 'pager' and launch_mode ~= 'difftool' and launch_mode ~= 'mergetool' then
     launch_mode = nil
   end
-  if launch_mode == 'pager' or launch_mode == 'difftool' then
+  if launch_mode == 'pager' or launch_mode == 'difftool' or launch_mode == 'mergetool' then
     purpose = launch_mode
   end
   local reason = vim.fn.exists 'v:startreason' == 1 and vim.v.startreason or 'normal'
