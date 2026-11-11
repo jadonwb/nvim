@@ -57,7 +57,7 @@ old config only loaded the theme after startup and the new one loads it during.
 ## Keymaps
 
 `keymaps-before.txt` is a dump from the live config on `master`;
-`keymaps-after.txt` is the same dump on this branch. 89 mappings dropped, 21
+`keymaps-after.txt` is the same dump on this branch. 71 mappings dropped, 18
 added (blink.cmp's cmdline and dot-repeat maps, 3 core LSP defaults).
 
 Dropped, by group:
@@ -89,11 +89,17 @@ implements format-on-save with conform, a global `vim.g.autoformat` switch and a
 per-buffer `vim.b.autoformat` override. Format-on-save had stopped working when
 LazyVim left, because nothing implemented it.
 
-Still dropped, needs a decision: LazyVim's picker group (`<leader>s*`), the
-buffer and tab groups (`<leader>b*`, `<leader><Tab>*`), quickfix
-(`<leader>x*`), and its movement polish (`j`/`k` display lines, `n`/`N`
-centring, `[i`/`]i` and `ai`/`ii` scope, `[w`/`]w`, `gco`/`gcO`, insert-mode
-`,`/`.`/`;`, `<C-W>` hydra, `<leader>-`, `<leader>|`).
+The `<leader>s` picker group is restored in `lua/plugins/snacks/snacks-picker.lua`
+(registers, autocmds, commands, diagnostics, help, icons, jumps, keymaps,
+location/quickfix lists, marks, man, plugin spec, resume, LSP symbols, todo,
+undotree). The entries the old `plugins/disabled.lua` deleted stay deleted:
+`sb`, `sB`, `sg`, `sG`, `sw`, `sW` and `sr`.
+
+Still dropped, needs a decision: the buffer and tab groups (`<leader>b*`,
+`<leader><Tab>*`), `<leader>?`, `<leader>K`, `<leader>l`, `<leader>cF`,
+`<leader>xl`/`xq`, and LazyVim's movement polish (`j`/`k` display lines,
+`n`/`N` centring, `[i`/`]i` and `ai`/`ii` scope, `[w`/`]w`, `gco`/`gcO`,
+insert-mode `<Esc>`, `<C-W>` hydra, `<leader>-`, `<leader>|`).
 
 ## Follow-ups
 

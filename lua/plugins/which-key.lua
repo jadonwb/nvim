@@ -10,8 +10,7 @@ NVWhichKey = {
     },
     spec = {
       { 'gr', group = 'LSP Jumps', icon = '' },
-      { '<leader>s', group = 'snacks/search', icon = '󱥰 ' },
-      { '<leader>f', group = 'find' },
+      { '<leader>s', group = 'snacks/search', icon = '󱥰 ' },      { '<leader>f', group = 'find' },
       { '<leader>d', group = 'Delta', icon = '󰇂 ' },
       { '<leader>i', group = 'image', icon = ' ' },
       { '<leader>a', group = 'OpenCode', icon = 'π ' },
