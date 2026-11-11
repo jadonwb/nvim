@@ -56,8 +56,28 @@ Also verified by hand: a `+DiffviewDiffFiles` launch opens the view
 (`get_current_view()` non-nil, two tabpages), and a workspace launch still has
 44 specs and an attached LSP client.
 
-## Left in this stage
+## Helper matrix
 
-- The `diffview-diff` shell helper's own case matrix: unstaged, staged-only,
-  historical, added, deleted, renamed, spaces/quotes/unicode paths, and an
-  unreachable `$NVIM` socket.
+`~/.local/share/chezmoi/tests/diffview-diff/matrix.sh` (in the dotfiles repo,
+not deployed) drives the real `diffview-diff` helper with a fake `nvim` on
+PATH that records argv and the `DIFFVIEW_*` environment, so each case can
+assert which path was taken:
+
+| Case | Expected |
+| --- | --- |
+| unstaged change | in-worktree fast path |
+| staged-only, clean worktree | in-worktree fast path at HEAD |
+| path with spaces, quotes, non-ASCII | in-worktree fast path |
+| historical commit | copied files |
+| added file | copied files |
+| deleted file | copied files |
+| rename | copied files |
+| existing `$NVIM` accepts the RPC | `--remote-expr` with `open_worktree` |
+| existing `$NVIM` unreachable | copied files in a dedicated process |
+
+Nine cases pass. The matrix also caught its own setup bug first: `git commit -a`
+had swept the modified files into the fixture commit, so two cases silently had
+nothing to diff and "passed" by never invoking the tool — the assertions now
+prove the helper ran.
+
+Stage 3 is complete.
