@@ -1,8 +1,8 @@
-require 'editor.class'
+require 'core.class'
 
 NVLspPopup = {}
 
-local Markup = require 'editor.features.lsp-markup'
+local Markup = require 'features.lsp.markup'
 
 local fn = {}
 

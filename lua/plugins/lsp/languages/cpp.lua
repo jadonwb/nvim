@@ -1,6 +1,8 @@
 return {
   {
-    'madskjeldgaard/cppman.nvim', cond = function() return require('config.profile').wants 'languages' end,
+    'madskjeldgaard/cppman.nvim',
+    ft = { 'c', 'cpp' },
+    cond = function() return require('config.profile').wants 'languages' end,
     dependencies = {
       { 'MunifTanjim/nui.nvim' },
     },

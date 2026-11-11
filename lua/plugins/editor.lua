@@ -13,7 +13,7 @@ return {
 
       require 'editor.windows'
 
-      require 'editor.features.layout-manager'
+      require 'features.layout.manager'
       NVLayoutManager.autocmds()
 
       require 'editor.help'
@@ -26,17 +26,17 @@ return {
       require 'editor.format'
       NVFormat.setup()
 
-      require 'editor.features.opencode-artifacts'
+      require 'features.opencode.artifacts'
       NVOpenCodeArtifacts.setup()
 
-      require 'editor.features.opencode-session'
+      require 'features.opencode.session'
       NVOpenCodeSession.setup()
 
-      require 'editor.class'
-      require 'editor.features.lsp-popup'
+      require 'core.class'
+      require 'features.lsp.popup'
       NVLspPopup.setup()
 
-      require 'editor.features.lsp-signature'
+      require 'features.lsp.signature'
       NVLspSignature.setup()
       NVLspSignature.autocmds()
 

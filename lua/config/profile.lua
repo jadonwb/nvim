@@ -12,7 +12,7 @@
 local M = {}
 
 if not (NVEnv and NVEnv.startup) then
-  require 'editor.environment'
+  require 'core.environment'
 end
 local startup = NVEnv.startup
 

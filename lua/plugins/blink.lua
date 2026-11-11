@@ -1,5 +1,7 @@
 NVBlink = {
-  'saghen/blink.cmp', cond = function() return require('config.profile').wants 'completion' end,
+  'saghen/blink.cmp',
+  event = { 'InsertEnter', 'CmdlineEnter' },
+  cond = function() return require('config.profile').wants 'completion' end,
   dependencies = {
     { 'xzbdmw/colorful-menu.nvim', opts = {} },
   },

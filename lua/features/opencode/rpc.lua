@@ -6,7 +6,7 @@
 -- knows nothing about artifacts, sessions, buffers, or UI.
 --
 -- Feature modules supply a namespace and a method:
---   local rpc = require 'editor.features.opencode-rpc'
+--   local rpc = require 'features.opencode.rpc'
 --   rpc.call('personal.artifacts', 'list', {}, function(output, err) ... end)
 --
 -- One process per call, argv list, JSON body; nothing blocks or polls, and all

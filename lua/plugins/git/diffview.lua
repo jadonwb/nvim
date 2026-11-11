@@ -223,7 +223,16 @@ end
 
 return {
   'dlyongemallo/diffview-plus.nvim',
-  lazy = false,
+  cmd = {
+    'DiffviewOpen',
+    'DiffviewClose',
+    'DiffviewCloseAll',
+    'DiffviewToggle',
+    'DiffviewFileHistory',
+    'DiffviewLog',
+    'DiffviewDiffFiles',
+    'DiffviewMergeFiles',
+  },
   opts = function()
     local actions = require 'diffview.actions'
 

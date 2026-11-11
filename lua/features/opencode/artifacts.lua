@@ -14,8 +14,8 @@
 NVOpenCodeArtifacts = {}
 local M = NVOpenCodeArtifacts
 
-local rpc = require 'editor.features.opencode-rpc'
-local session = require 'editor.features.opencode-session'
+local rpc = require 'features.opencode.rpc'
+local session = require 'features.opencode.session'
 
 local fn = {}
 

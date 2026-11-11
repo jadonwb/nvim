@@ -1,18 +1,8 @@
-require 'types'
+-- Editing behaviour.
+--
+-- Session persistence and the panel registry are needed before any feature
+-- sets up; the rest of the editor modules are loaded by their feature or by the
+-- startup spec in lua/plugins/editor.lua.
 
-require 'editor.keymap'
-require 'editor.messages'
-require 'editor.screen'
-require 'editor.borders'
-require 'editor.keys'
-require 'editor.icons'
-require 'editor.fs'
-require 'editor.clipboard'
-require 'editor.environment'
 require 'editor.session'
-
-require 'editor.close'
-require 'editor.tabs'
-require 'editor.companion-panels'
-
-require 'editor.dialogs'
+require 'features.layout.panels'

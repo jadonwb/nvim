@@ -1,5 +1,6 @@
 NVGitsigns = {
   'lewis6991/gitsigns.nvim',
+  event = { 'BufReadPre', 'BufNewFile' },
   opts = {
     signs = {
       add = { text = '▎' },

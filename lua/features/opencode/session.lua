@@ -10,7 +10,7 @@
 NVOpenCodeSession = {}
 local M = NVOpenCodeSession
 
-local rpc = require 'editor.features.opencode-rpc'
+local rpc = require 'features.opencode.rpc'
 local fn = {}
 
 local TIMEOUT_MS = rpc.timeout_ms
