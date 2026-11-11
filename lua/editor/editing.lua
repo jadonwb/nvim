@@ -3,7 +3,8 @@ NVEditing = {}
 local fn = {}
 
 function NVEditing.esc()
-  if NVLspPopup.ensure_hidden() then
+  if NVLspUi and NVLspUi.is_open() then
+    NVLspUi.close()
     return
   end
 

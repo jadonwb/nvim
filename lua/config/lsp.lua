@@ -63,6 +63,7 @@ local keys = {
   { lhs = 'gra', rhs = false, method = 'textDocument/codeAction' },
   { lhs = 'grn', rhs = false, method = 'textDocument/rename' },
   { lhs = 'K', rhs = function() NVLspUi.show_at_cursor() end, desc = 'Hover', method = 'textDocument/hover' },
+  { lhs = 'gK', rhs = function() NVLspUi.show_signature() end, desc = 'Signature Help', method = 'textDocument/signatureHelp' },
   { lhs = 'grd', rhs = function() NVSPickers.lsp_definitions() end, desc = 'Goto Definition', method = 'textDocument/definition' },
   { lhs = 'grr', rhs = function() NVSPickers.lsp_references() end, desc = 'References', method = 'textDocument/references' },
   { lhs = 'gri', rhs = function() NVSPickers.lsp_implementations() end, desc = 'Implementation', method = 'textDocument/implementation' },

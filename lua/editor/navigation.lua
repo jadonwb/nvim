@@ -70,7 +70,9 @@ end
 
 ---@param direction "up" | "down"
 function fn.scroll_vertical(direction)
-  NVLspPopup.hide_unless_active()
+  if NVLspUi and NVLspUi.is_open() then
+    NVLspUi.close()
+  end
 
   if direction == 'up' and vim.fn.line 'w0' == 1 then
     vim.api.nvim_win_set_cursor(0, { 1, 0 })

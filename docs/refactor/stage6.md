@@ -94,3 +94,19 @@ not the buffer (which is blank lines by design).
 2. Code fences lose syntax colour in the same conversion: the ranges exist in
    the scratch buffer but are not being mapped into chunks reliably. Both are
    converter work, not window work.
+
+
+## Signature help as a section
+
+`gK` opens signature help in the same volt popup as hover and diagnostics; `K`
+includes it when it answers. Implementation notes that close the audit items:
+
+- The active parameter is computed from the LSP ranges directly (string label or
+  `{ start, end }` where `end` is exclusive), so the last character is not
+  dropped (audit P4). There is no conversion through markdown, so the highlight
+  cannot drift onto the wrong row (P5).
+- Only the active overload is rendered, taken from `activeSignature` (P6).
+- Documentation is appended below the label through the markdown chunk adapter.
+
+The old `features/lsp/{popup,signature}.lua` modules are deleted; `markup.lua`
+stays as the renderer behind the chunk adapter.

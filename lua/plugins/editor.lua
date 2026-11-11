@@ -36,14 +36,8 @@ return {
       NVOpenCodeSession.setup()
 
       require 'core.class'
-      require 'features.lsp.popup'
-      NVLspPopup.setup()
-
       require 'features.lsp.ui'
 
-      require 'features.lsp.signature'
-      NVLspSignature.setup()
-      NVLspSignature.autocmds()
 
       NVSession.autocmds()
       NVMason.setup()

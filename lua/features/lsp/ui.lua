@@ -112,7 +112,7 @@ local function prepare()
   state.chunks = {}
   state.width = MIN_WIDTH
   for i, section in ipairs(state.sections) do
-    state.chunks[i] = MD.chunks(section.lines, { ft = section.ft })
+    state.chunks[i] = section.chunks or MD.chunks(section.lines, { ft = section.ft })
     state.width = math.max(state.width, MD.width(state.chunks[i]) + (PAD * 2) + 2)
   end
   state.width = math.min(state.width, MAX_WIDTH, math.max(MIN_WIDTH, vim.o.columns - 4))
@@ -283,6 +283,17 @@ function NVLspUi.show_hover()
   end)
 end
 
+--- Show signature help in the unified popup.
+function NVLspUi.show_signature()
+  require('features.lsp.sections').request_signature(function(sig)
+    if sig then
+      NVLspUi.open { sig }
+    else
+      NVMessages.info 'No signature help'
+    end
+  end)
+end
+
 --- Show diagnostics on the cursor line in the unified popup.
 function NVLspUi.show_diagnostics()
   local diags = require('features.lsp.sections').diagnostics()
@@ -307,10 +318,20 @@ function NVLspUi.show_at_cursor()
     return
   end
 
-  sections.request_hover(function(hover)
+  -- Both requests are async; open once each has answered so the section order
+  -- is stable (hover, signature, diagnostics).
+  local pending, hover_section, sig_section = 2, nil, nil
+  local function finish()
+    pending = pending - 1
+    if pending > 0 then
+      return
+    end
     local out = {}
-    if hover then
-      out[#out + 1] = hover
+    if hover_section then
+      out[#out + 1] = hover_section
+    end
+    if sig_section then
+      out[#out + 1] = sig_section
     end
     if diags then
       out[#out + 1] = diags
@@ -320,6 +341,15 @@ function NVLspUi.show_at_cursor()
       return
     end
     NVLspUi.open(out)
+  end
+
+  sections.request_hover(function(hover)
+    hover_section = hover
+    finish()
+  end)
+  sections.request_signature(function(sig)
+    sig_section = sig
+    finish()
   end)
 end
 

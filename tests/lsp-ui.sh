@@ -74,6 +74,26 @@ add('prev body=' .. tostring(text():find('hover text', 1, true) ~= nil))
 NVLspUi.close()
 add('closed=' .. tostring(NVLspUi.is_open()))
 
+-- Signature section: the active parameter is marked, ranges are LSP-exclusive.
+local sections = require 'features.lsp.sections'
+local sig = sections.signature_chunks({
+  label = 'function(name: string, count: integer)',
+  parameters = { { label = { 9, 22 } }, { label = { 24, 38 } } },
+}, 1)
+local joined, active = '', ''
+for _, c in ipairs(sig) do
+  joined = joined .. c[1]
+  if c[2] == 'NvSigActive' then
+    active = c[1]
+  end
+end
+add('sig label=' .. joined)
+add('sig active=' .. active)
+
+NVLspUi.open { { name = 'signature', chunks = { sig } } }
+add('sig drawn=' .. tostring(text():find('function(', 1, true) ~= nil))
+NVLspUi.close()
+
 -- Diagnostics section: severity order, both entries present.
 vim.api.nvim_buf_set_lines(0, 0, -1, false, { 'x' })
 vim.diagnostic.set(vim.api.nvim_create_namespace 'test', 0, {
@@ -100,6 +120,9 @@ check 'next body=true'
 check 'prev body=true'
 check 'closed=false'
 check 'diag order=true'
+check 'sig label=function(name: string, count: integer)'
+check 'sig active=name: string,'
+check 'sig drawn=true'
 grep -q '^inside=true' <<<"$got" || { echo 'FAIL: popup wider than the window'; fail=1; }
 grep -q '^wrapped height=true' <<<"$got" || { echo 'FAIL: wrapped line did not grow the popup'; fail=1; }
 

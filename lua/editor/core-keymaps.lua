@@ -6,7 +6,7 @@ local map = vim.keymap.set
 
 function NVKeymaps.core()
   map('n', '<leader>cd', function()
-    NVLspPopup.show_diagnostics()
+    NVLspUi.show_diagnostics()
   end, { desc = 'Diagnostics' })
 
   map('n', ']e', function()
