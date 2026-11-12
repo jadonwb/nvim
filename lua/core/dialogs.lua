@@ -431,9 +431,11 @@ function NVDialogs.select_panel(opts, callback)
   vim.b[buf].nv_slot = 'bottom'
 
   local function render()
+    local title = opts.title or 'Choose'
+    local message = opts.message or ''
     local lines = {
-      ' ' .. (opts.title or 'Choose'),
-      ' ' .. (opts.message or ''),
+      ' ' .. title,
+      ' ' .. message,
       '',
     }
     for i, choice in ipairs(choices) do
@@ -446,6 +448,19 @@ function NVDialogs.select_panel(opts, callback)
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
     vim.bo[buf].modifiable = false
     vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
+
+    -- Chips for the title and the buffer being reviewed, a selected row, and a
+    -- muted hint line: the same language as the other panels.
+    vim.api.nvim_buf_set_extmark(buf, ns, 0, 0, {
+      end_row = 0,
+      end_col = #lines[1],
+      hl_group = 'NvChip',
+    })
+    vim.api.nvim_buf_set_extmark(buf, ns, 1, 0, {
+      end_row = 1,
+      end_col = #lines[2],
+      hl_group = 'NvChipMuted',
+    })
     vim.api.nvim_buf_set_extmark(buf, ns, 2 + index, 0, {
       end_row = 2 + index,
       end_col = #lines[2 + index],
@@ -473,6 +488,7 @@ function NVDialogs.select_panel(opts, callback)
 
   render()
   NVSlots.set_buffer('bottom', buf)
+  pcall(vim.api.nvim_set_option_value, 'winbar', '%#NvChip# Unsaved Changes ', { win = win })
   vim.api.nvim_set_current_win(win)
 
   local map = function(lhs, fn)

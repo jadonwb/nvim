@@ -187,7 +187,9 @@ return {
         {
           lsp_clients,
           cond = function()
-            return #vim.lsp.get_clients { bufnr = 0 } > 0
+            -- The progress label already names the client doing the work.
+            local busy = NVMessages and NVMessages.progress_hl and NVMessages.progress_hl ~= ''
+            return not busy and #vim.lsp.get_clients { bufnr = 0 } > 0
           end,
           color = 'NvStMuted',
           padding = { left = 0, right = 0 },
