@@ -139,12 +139,32 @@ vim.cmd 'NVLayout slot bottom close'
 local h_after = vim.api.nvim_win_get_height(center())
 add('bottom closed grows centre=' .. tostring(h_after > h_before) .. ' open=' .. tostring(NVSlots.is_open('bottom')))
 
-local left_h_before = vim.api.nvim_win_get_height(NVSlots.win 'left')
-vim.cmd 'NVLayout slot bottom_left close'
-add('left fills column=' .. tostring(NVSlots.is_open 'left' and not NVSlots.is_open 'bottom_left'))
-
+-- Closing a slot leaves the others alone: left, bottom and right are
+-- independent, and what remains keeps its own space.
+vim.cmd 'NVLayout slot left close'
+add('left closed others stay=' .. tostring(not NVSlots.is_open 'left' and NVSlots.is_open 'right_top' and NVSlots.is_open 'right_bottom'))
+vim.cmd 'NVLayout slot left open'
 vim.cmd 'NVLayout slot bottom open'
 add('reopen one slot=' .. tostring(NVSlots.is_open 'bottom'))
+
+-- Protection: deleting a slot buffer must not lose the slot. The window is
+-- either kept (bufhidden=hide) or rebuilt by repair.
+local left_win = NVSlots.win 'left'
+vim.api.nvim_buf_delete(vim.api.nvim_win_get_buf(left_win), { force = true })
+vim.wait(200, function() return NVSlots.is_open 'left' end)
+add('buffer delete keeps window=' .. tostring(NVSlots.is_open 'left' and vim.api.nvim_win_is_valid(NVSlots.win 'left')))
+
+-- Protection: a slot window closed outside the API is rebuilt.
+local rt = NVSlots.win 'right_top'
+vim.api.nvim_win_close(rt, true)
+vim.wait(200, function() return NVSlots.is_open 'right_top' end)
+add('window repair=' .. tostring(NVSlots.is_open 'right_top'))
+
+-- Protection: the configured geometry is re-applied after a manual resize.
+local rw = NVSlots.win 'right_top'
+vim.api.nvim_win_set_width(rw, 12)
+NVSlots.enforce()
+add('geometry enforced=' .. tostring(vim.api.nvim_win_get_width(rw) > 12))
 
 -- Swap keeps the windows and exchanges their buffers.
 local ft_top_before = vim.bo[vim.api.nvim_win_get_buf(NVSlots.win 'right_top')].filetype
@@ -163,7 +183,7 @@ printf '%s\n' "$got"
 fail=0
 check() { if ! grep -qx -- "$1" <<<"$got"; then printf 'FAIL: missing %s\n' "$1"; fail=1; fi; }
 check 'start wins=1'
-check 'open wins=6 slots=5 applied=true'
+check 'open wins=5 slots=4 applied=true'
 check 'right halves=true'
 check 'providers=nvchanges,nvsession,nvprompt'
 check 'left=oil'
@@ -182,10 +202,13 @@ check 'bottom problems=true'
 check 'bottom prompt=true'
 check 'bottom cycle=true'
 check 'close wins=1 applied=false'
-check 'reopen wins=6'
+check 'reopen wins=5'
 check 'final wins=1'
 check 'bottom closed grows centre=true open=false'
-check 'left fills column=true'
+check 'left closed others stay=true'
+check 'buffer delete keeps window=true'
+check 'window repair=true'
+check 'geometry enforced=true'
 check 'reopen one slot=true'
 grep -q 'ratios=true' <<<"$got" || { echo 'FAIL: left column not narrower than right'; fail=1; }
 grep -q 'swap exchanged=true win=true' <<<"$got" || { echo 'FAIL: swap did not exchange slot contents'; fail=1; }

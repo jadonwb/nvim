@@ -41,7 +41,7 @@ function NVBuffers.is_managed(buf, opts)
     return false
   end
   local name = vim.api.nvim_buf_get_name(buf)
-  if name == '' or name:match '^%w+://' or NVLayoutManager.is_sidepad_buf(buf) then
+  if name == '' or name:match '^%w+://' then
     return false
   end
   return not (opts and opts.loaded) or vim.api.nvim_buf_is_loaded(buf)

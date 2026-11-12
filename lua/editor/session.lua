@@ -206,7 +206,7 @@ local function restore_ui(data)
   end
   vim.api.nvim_exec_autocmds('BufEnter', { buffer = 0, modeline = false })
   vim.api.nvim_exec_autocmds('BufWinEnter', { buffer = 0, modeline = false })
-  NVLayoutManager.enable()
+  NVSlots.open()
 end
 
 local function load_snapshot(file, restart)

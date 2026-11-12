@@ -16,8 +16,9 @@
 -- its space to its neighbour: closing `bottom` gives the centre height back,
 -- closing `bottom_left` leaves `left` as a single panel.
 --
--- This is separate from NVLayoutManager, which centres content with sidepad
--- windows in plain mode. Applying slots turns sidepads off.
+-- The layout owns its windows: they are `winfixwidth/height`, rebuilt when they
+-- disappear outside this API, and re-sized to the configured proportions after
+-- a terminal resize.
 
 NVSlots = {
   defs = {
@@ -27,13 +28,12 @@ NVSlots = {
     bottom = { height = 0.30, min_height = 8 },
     bottom_left = { height = 0.40, min_height = 6 },
   },
-  order = { 'left', 'bottom_left', 'right_top', 'right_bottom', 'bottom' },
+  order = { 'left', 'right_top', 'right_bottom', 'bottom' },
   ---@type table<string, fun(win: WinID): boolean> provider registry
   providers = {},
   ---@type table<string, string> slot -> provider name, used when a slot opens
   defaults = {
     left = 'explorer',
-    bottom_left = 'preview',
     right_top = 'changes',
     right_bottom = 'session',
     bottom = 'prompt',
@@ -77,7 +77,10 @@ end
 local function placeholder(name)
   local buf = vim.api.nvim_create_buf(false, true)
   vim.bo[buf].buftype = 'nofile'
-  vim.bo[buf].bufhidden = 'wipe'
+  -- `hide`, not `wipe`: `:bd` on a displayed buffer with `bufhidden=wipe`
+  -- destroys the window and with it the slot. Closing the slot deletes the
+  -- buffer explicitly.
+  vim.bo[buf].bufhidden = 'hide'
   vim.bo[buf].swapfile = false
   vim.bo[buf].filetype = 'nvslot'
   vim.b[buf].nv_slot = name
@@ -126,7 +129,8 @@ local function register(name, win)
     vim.bo[inherited].bufhidden = 'wipe'
   end
   decorate(win)
-  tab_state().slots[name] = { win = win, buf = buf, provider = NVSlots.defaults[name] }
+  fix(win)
+  tab_state().slots[name] = { win = win, buf = buf, provider = NVSlots.defaults[name], owned = true }
 end
 
 --- The slot currently showing a given provider.
@@ -249,11 +253,19 @@ end
 function NVSlots.remove(name)
   local win = existing(name)
   local tab = tab_state()
+  local slot = tab.slots[name]
   tab.slots[name] = nil
   if not win then
     return false
   end
   pcall(vim.api.nvim_win_close, win, true)
+  -- The window is gone; only a buffer this layer created is deleted with it.
+  if slot and slot.hidden_prev and slot.buf and vim.api.nvim_buf_is_valid(slot.buf) then
+    vim.bo[slot.buf].bufhidden = slot.hidden_prev
+  end
+  if slot and slot.owned and slot.buf and vim.api.nvim_buf_is_valid(slot.buf) then
+    pcall(vim.api.nvim_buf_delete, slot.buf, { force = true })
+  end
   return true
 end
 
@@ -273,6 +285,13 @@ function NVSlots.set_buffer(name, buf)
   end
   local slot = tab_state().slots[name]
   local previous = slot.buf
+  -- A slot buffer that is displayed must not be wiped by `:bd`; that would
+  -- close the window. Restore the provider's own value when the slot lets go.
+  if slot.hidden_prev ~= nil and previous and vim.api.nvim_buf_is_valid(previous) then
+    vim.bo[previous].bufhidden = slot.hidden_prev
+  end
+  slot.hidden_prev = vim.bo[buf].bufhidden
+  vim.bo[buf].bufhidden = 'hide'
   vim.api.nvim_win_set_buf(win, buf)
   slot.buf = buf
   vim.b[buf].nv_slot = name
@@ -323,9 +342,6 @@ end
 --- Open the whole layout.
 ---@param only? string[] Restrict to these slots.
 function NVSlots.open(only)
-  if NVLayoutManager then
-    NVLayoutManager.disable()
-  end
   teardown()
   for _, name in ipairs(only or NVSlots.order) do
     NVSlots.ensure(name)
@@ -352,6 +368,117 @@ end
 
 function NVSlots.close()
   teardown()
+end
+
+--- Re-apply the configured geometry. Windows are `winfixwidth/height`, but a
+--- resize, a `:vertical resize`, or a new tab can still take rows and columns
+--- from them.
+function NVSlots.enforce()
+  local slots = tab_state().slots
+  if not next(slots) then
+    return
+  end
+
+  local cols = vim.o.columns
+  local lines = vim.o.lines - vim.o.cmdheight
+
+  local function set_w(name, w)
+    local win = existing(name)
+    if win then
+      pcall(vim.api.nvim_win_set_width, win, math.max(1, w))
+    end
+  end
+  local function set_h(name, h)
+    local win = existing(name)
+    if win then
+      pcall(vim.api.nvim_win_set_height, win, math.max(1, h))
+    end
+  end
+
+  if slots.left then
+    set_w('left', math.max(NVSlots.defs.left.min_width, math.floor(cols * NVSlots.defs.left.width)))
+  end
+
+  local rw = math.max(NVSlots.defs.right_top.min_width, math.floor(cols * NVSlots.defs.right_top.width))
+  if slots.right_top then
+    set_w('right_top', rw)
+  end
+  if slots.right_bottom then
+    set_w('right_bottom', rw)
+  end
+
+  if slots.bottom then
+    local h = math.max(NVSlots.defs.bottom.min_height, math.floor(lines * NVSlots.defs.bottom.height))
+    set_h('bottom', math.min(h, math.max(NVSlots.defs.bottom.min_height, lines - 10)))
+  end
+
+  if slots.right_top and slots.right_bottom then
+    set_h('right_bottom', math.max(4, math.floor((lines - 1) / 2)))
+  end
+
+  if slots.bottom_left then
+    set_h('bottom_left', math.max(NVSlots.defs.bottom_left.min_height, math.floor(lines * 0.35)))
+  end
+end
+
+--- Widen or narrow the side slots by `delta` cells each.
+---@param delta integer
+function NVSlots.resize_width(delta)
+  local cols = math.max(1, vim.o.columns)
+  local step = delta / cols
+  NVSlots.defs.left.width = math.min(0.4, math.max(0.12, NVSlots.defs.left.width + step))
+  NVSlots.defs.right_top.width = math.min(0.4, math.max(0.15, NVSlots.defs.right_top.width + step))
+  NVSlots.enforce()
+end
+
+--- Restore the default slot proportions.
+function NVSlots.reset_sizes()
+  NVSlots.defs.left.width = 0.20
+  NVSlots.defs.right_top.width = 0.26
+  NVSlots.enforce()
+end
+
+--- Rebuild a slot whose window disappeared outside the slot API (`:q`,
+--- `<C-w>c`, `:bwipeout`) instead of leaving a hole in the layout.
+function NVSlots.repair()
+  local tab = tab_state()
+  if not next(tab.slots) then
+    return
+  end
+  if not center_win() then
+    return
+  end
+
+  local missing = {}
+  local tabpage = vim.api.nvim_get_current_tabpage()
+  for name, slot in pairs(tab.slots) do
+    local valid = vim.api.nvim_win_is_valid(slot.win)
+    if valid and vim.api.nvim_win_get_tabpage(slot.win) ~= tabpage then
+      valid = false
+    end
+    if not valid then
+      missing[#missing + 1] = name
+    end
+  end
+
+  if #missing == 0 then
+    return
+  end
+
+  table.sort(missing, function(a, b)
+    local ia, ib = 99, 99
+    for i, name in ipairs(NVSlots.order) do
+      if name == a then ia = i end
+      if name == b then ib = i end
+    end
+    return ia < ib
+  end)
+
+  for _, name in ipairs(missing) do
+    tab.slots[name] = nil
+    NVSlots.ensure(name)
+  end
+  NVSlots.refresh_providers()
 end
 
 --- Toggle one slot on or off.
@@ -542,6 +669,33 @@ function NVSlots.setup()
       if name and slot and vim.api.nvim_win_is_valid(slot.win) then
         pcall(NVSlots.providers.session, slot.win, name)
       end
+    end,
+  })
+
+  -- A slot that loses its window is rebuilt, and the configured geometry is
+  -- re-applied after any resize.
+  local guard = vim.api.nvim_create_augroup('NV slots guard', { clear = true })
+  vim.api.nvim_create_autocmd('WinClosed', {
+    group = guard,
+    callback = function()
+      vim.schedule(function()
+        NVSlots.repair()
+      end)
+    end,
+  })
+
+  local resize_pending = false
+  vim.api.nvim_create_autocmd({ 'VimResized', 'WinResized' }, {
+    group = guard,
+    callback = function()
+      if resize_pending then
+        return
+      end
+      resize_pending = true
+      vim.schedule(function()
+        resize_pending = false
+        NVSlots.enforce()
+      end)
     end,
   })
 

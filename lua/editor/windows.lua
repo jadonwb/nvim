@@ -8,7 +8,7 @@ function NVWindows.keymaps()
   K.map { NVKeymaps.window_move.left, 'Move to window on the left', '<Cmd>wincmd h<CR>', mode = { 'n', 'v', 'i', 't' } }
   K.map { NVKeymaps.window_move.down, 'Move to window below', '<Cmd>wincmd j<CR>', mode = { 'n', 'v', 'i', 't' } }
   K.map { NVKeymaps.window_move.up, 'Move to window above', '<Cmd>wincmd k<CR>', mode = { 'n', 'v', 'i', 't' } }
-  K.map { NVKeymaps.window_move.down, 'Move to window on the right', '<Cmd>wincmd l<CR>', mode = { 'n', 'v', 'i', 't' } }
+  K.map { NVKeymaps.window_move.right, 'Move to window on the right', '<Cmd>wincmd l<CR>', mode = { 'n', 'v', 'i', 't' } }
 
   -- Window move/swap (requires winshift.nvim)
   K.map {
@@ -146,9 +146,9 @@ end
 ---@param direction "up"|"down"
 function fn.change_window_width(direction)
   if direction == 'up' then
-    NVLayoutManager.increase_width()
+    NVSlots.resize_width(2)
   elseif direction == 'down' then
-    NVLayoutManager.decrease_width()
+    NVSlots.resize_width(-2)
   else
     NVMessages.error('Window Width Change: Unexpected direction: ' .. direction)
   end
@@ -166,7 +166,7 @@ function fn.change_window_height(direction)
 end
 
 function fn.equalize_layout()
-  NVLayoutManager.reset_width()
+  NVSlots.reset_sizes()
   vim.cmd 'wincmd ='
 end
 
@@ -178,9 +178,7 @@ function fn.get_normal_tab_windows()
 
   for _, winid in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
     if not NVWindows.is_window_floating(winid) then
-      if not NVLayoutManager.is_sidepad_win(winid) then
-        table.insert(result, winid)
-      end
+      table.insert(result, winid)
     end
   end
 

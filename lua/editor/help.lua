@@ -73,7 +73,7 @@ function NVHelp.autocmds()
           if vim.api.nvim_win_is_valid(win) then
             vim.api.nvim_set_current_win(win)
             NVLualine.show_everything()
-            NVLayoutManager.enable()
+            NVSlots.open()
           end
         end)
         return

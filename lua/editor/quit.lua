@@ -5,9 +5,21 @@ local function report(err)
   vim.notify(tostring(err), vim.log.levels.ERROR, { title = 'Editor' })
 end
 
--- Keep the final layout-manager content window intact.  Only the "more than
--- one content window may close" quit policy lives here; content-window
--- classification is owned by NVLayoutManager.is_content_win.
+-- Keep the final content window intact. Only the "more than one content window
+-- may close" quit policy lives here; slot windows are never content windows.
+---@param win WinID
+---@return boolean
+local function is_content_win(win)
+  if not win or not vim.api.nvim_win_is_valid(win) then
+    return false
+  end
+  if vim.api.nvim_win_get_config(win).relative ~= '' then
+    return false
+  end
+  local buf = vim.api.nvim_win_get_buf(win)
+  return vim.b[buf].nv_slot == nil
+end
+
 local function can_close_main_window(win)
   if not win or not vim.api.nvim_win_is_valid(win) then
     return false
@@ -15,7 +27,7 @@ local function can_close_main_window(win)
   local tab = vim.api.nvim_win_get_tabpage(win)
   local main = {}
   for _, candidate in ipairs(vim.api.nvim_tabpage_list_wins(tab)) do
-    if NVLayoutManager.is_content_win(candidate) then
+    if is_content_win(candidate) then
       main[#main + 1] = candidate
     end
   end
@@ -62,16 +74,16 @@ local function review(only, done)
   end
   local function show_buffer(buf)
     for _, win in ipairs(vim.fn.win_findbuf(buf)) do
-      if NVLayoutManager.is_content_win(win) then
+      if is_content_win(win) then
         vim.api.nvim_set_current_win(win)
         vim.cmd 'redraw'
         return
       end
     end
-    local win = NVLayoutManager.get_main_content_win()
-    if not NVLayoutManager.is_content_win(win) then
+    local win = NVSlots.content_win()
+    if not is_content_win(win) then
       for _, candidate in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-        if NVLayoutManager.is_content_win(candidate) then
+        if is_content_win(candidate) then
           win = candidate
           break
         end

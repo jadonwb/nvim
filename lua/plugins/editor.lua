@@ -13,9 +13,6 @@ return {
 
       require 'editor.windows'
 
-      require 'features.layout.manager'
-      NVLayoutManager.autocmds()
-
       require 'features.layout.slots'
       NVSlots.setup()
 
