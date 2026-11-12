@@ -67,8 +67,8 @@ The leader is `Space`; the local leader is `\`.
 | `sF` | Find left surrounding | n |
 | `sFl` | Find previous left surrounding | n |
 | `sFn` | Find next left surrounding | n |
-| `sa` | Add surrounding | n |
 | `sa` | Add surrounding to selection | v |
+| `sa` | Add surrounding | n |
 | `sd` | Delete surrounding | n |
 | `sdl` | Delete previous surrounding | n |
 | `sdn` | Delete next surrounding | n |

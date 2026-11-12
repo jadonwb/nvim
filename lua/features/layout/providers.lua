@@ -151,10 +151,12 @@ function M.session(win, _)
   local bridge = NVBridge and NVBridge.state
   local chrome = require 'features.ui.chrome'
   local inner = width - 4
+  local agent_session = bridge and bridge.session
+  local opencode_state = agent_session and ('session ' .. agent_session:sub(-8)) or attached or 'not attached'
   local body = {
     row('cwd', vim.fn.fnamemodify(vim.fn.getcwd(), ':~')),
     row('branch', (branch[1] and branch[1] ~= '') and branch[1] or '(detached)'),
-    row('opencode', attached or 'not attached'),
+    row('opencode', opencode_state),
     row('profile', profile),
     row('agent', bridge and bridge.job and 'running' or (bridge and bridge.session and 'idle' or 'ready')),
   }

@@ -164,6 +164,9 @@ function NVBridge.append(text)
   vim.bo[buf].modifiable = modifiable
   if not ok then
     NVMessages.warn('bridge: ' .. tostring(err))
+  else
+    -- The transcript is a stream, not an edit; no modified marker in the bar.
+    vim.bo[buf].modified = false
   end
 
   -- Follow the stream only while the reader is at the end, so scrolling back
@@ -421,13 +424,14 @@ function NVBridge.show_text(title, text)
   end
 
   local buf = vim.api.nvim_create_buf(true, false)
-  vim.bo[buf].buftype = 'nofile'
   vim.bo[buf].bufhidden = 'hide'
   vim.bo[buf].swapfile = false
-  vim.bo[buf].filetype = 'markdown'
   vim.bo[buf].modifiable = true
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(text, '\n', { plain = true }))
   vim.bo[buf].modifiable = false
+  vim.bo[buf].modified = false
+  vim.bo[buf].filetype = 'markdown'
+  pcall(vim.api.nvim_buf_set_name, buf, 'artifact://' .. tostring(title or 'text'))
 
   local win = NVSlots and NVSlots.content_win and NVSlots.content_win() or vim.api.nvim_get_current_win()
   vim.api.nvim_win_set_buf(win, buf)
