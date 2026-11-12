@@ -35,6 +35,8 @@ end
 local out = {}
 local function add(s) out[#out + 1] = s end
 
+-- The layout is on by default (VimEnter); start from a clean tab.
+pcall(vim.cmd, 'NVLayout close')
 vim.cmd 'enew'
 add('start wins=' .. wins())
 vim.cmd 'NVLayout open'
@@ -71,7 +73,7 @@ end
 add('session=' .. tostring(visible('right_bottom'):find('branch', 1, true) ~= nil))
 
 -- Bottom panel modes: each one swaps content in place and draws its winbar.
-for _, mode in ipairs { 'terminal', 'quickfix', 'problems', 'prompt' } do
+for _, mode in ipairs { 'prompt', 'quickfix', 'problems' } do
   NVBottom.set(mode)
   local bw = NVSlots.win 'bottom'
   add(('bottom %s=%s'):format(mode, tostring(NVSlots.provider_of('bottom') == mode and bw and vim.wo[bw].winbar ~= '')))
@@ -196,7 +198,6 @@ check 'substituted=nvsession'
 check 'restored=nvchanges'
 check 'prompt moved=nvprompt'
 check 'changes slot=right_bottom'
-check 'bottom terminal=true'
 check 'bottom quickfix=true'
 check 'bottom problems=true'
 check 'bottom prompt=true'

@@ -229,43 +229,47 @@ function M.explorer(win, name)
   local buf = vim.api.nvim_win_get_buf(win)
   NVSlots.set_buffer(slot, buf)
 
+  local preview = require 'features.preview'
+
   -- Once per oil buffer, not once per refresh.
   if not vim.b[buf].nv_oil_hooked then
     vim.b[buf].nv_oil_hooked = true
+
     vim.api.nvim_create_autocmd('CursorMoved', {
       buffer = buf,
       callback = function()
-        local preview_name, preview_slot = NVSlots.slot_with_provider 'preview'
-        if preview_name and preview_slot and vim.api.nvim_win_is_valid(preview_slot.win) then
-          M.preview(preview_slot.win, preview_name)
-        end
+        preview.from_cursor()
       end,
     })
+
+    -- Enter opens a file in the editing area, not in the explorer window; oil's
+    -- own mapping replaces the file on screen with the entry you picked.
+    vim.keymap.set('n', '<CR>', function()
+      local entry, dir = M.explorer_entry()
+      if not entry then
+        return
+      end
+      if entry.type == 'file' then
+        local path = entry.name
+        if path:sub(1, 1) ~= '/' and dir then
+          path = dir .. '/' .. entry.name
+        end
+        local target = NVSlots.content_win()
+        vim.api.nvim_set_current_win(target)
+        vim.cmd('edit ' .. vim.fn.fnameescape(path))
+      else
+        vim.cmd 'normal! <CR>'
+      end
+    end, { buffer = buf, nowait = true, desc = 'Open in content window' })
   end
 
-  -- Oil fills the buffer asynchronously, so the first preview waits for the
-  -- entry list to exist instead of firing on a timer.
-  local tries = 0
-  local function preview_when_ready()
-    local preview_name, preview_slot = NVSlots.slot_with_provider 'preview'
-    if not (preview_name and preview_slot and vim.api.nvim_win_is_valid(preview_slot.win)) then
-      return
-    end
-    if vim.api.nvim_buf_line_count(buf) > 1 or tries > 20 then
-      M.preview(preview_slot.win, preview_name)
-      return
-    end
-    tries = tries + 1
-    vim.defer_fn(preview_when_ready, 50)
-  end
-  vim.defer_fn(preview_when_ready, 20)
   return true
 end
 
 --- The entry under the cursor in the explorer slot, with its directory.
 ---@return table|nil entry
 ---@return string|nil dir
-local function explorer_entry()
+function M.explorer_entry()
   local win = NVSlots.win 'left'
   if not win then
     return nil, nil
@@ -284,72 +288,6 @@ end
 --- Preview of whatever the explorer is pointing at, in the bottom-left slot.
 ---@param win WinID
 ---@return boolean
-function M.preview(win, name)
-  local slot = name or 'bottom_left'
-  local entry, dir = explorer_entry()
-  if not entry then
-    return false
-  end
-
-  if entry.type ~= 'file' then
-    NVSlots.set_buffer(slot, panel(slot, { (dir or '') .. entry.name .. '/' }, 'nvpreview'))
-    return true
-  end
-
-  -- Oil's `id` is the adapter id, not a path; the path is dir + name.
-  local path = entry.name
-  if path:sub(1, 1) ~= '/' and dir then
-    path = dir .. '/' .. entry.name
-  end
-
-  local ok, lines = pcall(vim.fn.readfile, path, '', 200)
-  if not ok then
-    return false
-  end
-
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.bo[buf].buftype = 'nofile'
-  vim.bo[buf].bufhidden = 'wipe'
-  vim.bo[buf].swapfile = false
-  vim.b[buf].nv_slot = 'bottom_left'
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-  vim.bo[buf].modifiable = false
-  vim.bo[buf].filetype = vim.filetype.match { filename = path } or 'text'
-  NVSlots.set_buffer(slot, buf)
-  return true
-end
-
---- A terminal in the panel. One shell per tab, reused across mode switches.
----@param win WinID
----@param name string
----@return boolean
-function M.terminal(win, name)
-  local slot = name or 'bottom'
-  local buf = vim.w[win].nv_terminal_buf
-
-  if not (buf and vim.api.nvim_buf_is_valid(buf)) then
-    buf = vim.api.nvim_create_buf(false, true)
-    vim.w[win].nv_terminal_buf = buf
-    vim.bo[buf].bufhidden = 'hide'
-    -- The outer terminal's shell integration (WezTerm here) executes at shell
-    -- start and emits OSC sequences this terminal cannot answer, so they show up
-    -- as text. Start the shell without the WEZTERM_* environment.
-    local env = {}
-    for key, value in pairs(vim.fn.environ()) do
-      if not key:match '^WEZTERM' and key ~= 'TERM_PROGRAM' then
-        env[key] = value
-      end
-    end
-    env.TERM_PROGRAM = 'nvim'
-    vim.api.nvim_buf_call(buf, function()
-      vim.fn.termopen(vim.o.shell, { env = env })
-    end)
-  end
-
-  NVSlots.set_buffer(slot, buf)
-  return true
-end
-
 --- Show a quickfix/location list in the panel.
 ---@param win WinID
 ---@param name string
@@ -444,11 +382,9 @@ end
 -- Registry keyed by provider name, so a slot can be pointed at any provider at
 -- runtime (`NVSlots.set_provider(slot, provider)`).
 M.by_name = {
-  terminal = M.terminal,
   quickfix = M.quickfix,
   problems = M.problems,
   explorer = M.explorer,
-  preview = M.preview,
   changes = M.changes,
   session = M.session,
   prompt = M.prompt,

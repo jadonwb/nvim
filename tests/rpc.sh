@@ -33,7 +33,12 @@ fail=0
 check() { if ! grep -q -- "$2" <<<"$1"; then printf 'FAIL: %s\n  got: %s\n' "$3" "$1"; fail=1; fi }
 
 s=$(state)
-check "$s" '"applied":false' 'layout starts off'
+check "$s" '"applied":true' 'layout starts on in a workspace'
+
+# Closing over RPC is the external focus-mode switch.
+act "close()"
+s=$(state)
+check "$s" '"applied":false' 'close over RPC removes the layout'
 
 act "open()"
 s=$(state)

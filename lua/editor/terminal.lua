@@ -4,8 +4,8 @@ function NVTerminal.keymaps()
   K.map { NVKeymaps.scroll.up, 'Exit terminal mode', '<C-\\><C-n>', mode = 't' }
   K.map { NVKeymaps.scroll_alt.up, 'Exit terminal mode', '<C-\\><C-n>', mode = 't' }
 
-  K.map { '<C-/>', 'Toggle vsplit terminal', NVTerminal.open_vsplit, mode = { 'n', 'v', 'i', 't' } }
-  K.map { '<C-_>', 'Toggle vsplit terminal', NVTerminal.open_vsplit, mode = { 'n', 'v', 'i', 't' } }
+  K.map { '<C-/>', 'Toggle terminal', NVTerminal.toggle, mode = { 'n', 'v', 'i', 't' } }
+  K.map { '<C-_>', 'Toggle terminal', NVTerminal.toggle, mode = { 'n', 'v', 'i', 't' } }
 
   vim.api.nvim_create_autocmd('FileType', {
     pattern = 'snacks_terminal',
@@ -53,23 +53,15 @@ function NVTerminal.keymaps()
   })
 end
 
---- Toggle a vsplit terminal on the right side of the current tab.
+--- Toggle the terminal at the bottom of the editor.
 --- Delegates to Snacks.terminal.toggle for all state management.
---- Integrates with companion panels for mutual exclusion.
-function NVTerminal.open_vsplit()
-  if not NVCompanionPanels.ensure_exclusive 'terminal_vsplit' then
-    return
-  end
+function NVTerminal.toggle()
   Snacks.terminal.toggle(nil, {
-    win = {
-      position = 'right',
-      relative = 'editor',
-      width = NVCompanionPanels.width(),
-    },
+    win = { position = 'bottom', height = 0.32 },
   })
 end
 
-function NVTerminal.ensure_vsplit_hidden()
+function NVTerminal.ensure_hidden()
   local term = Snacks.terminal.get(nil, { create = false })
   if term and term:valid() then
     term:hide()
@@ -79,6 +71,5 @@ function NVTerminal.ensure_vsplit_hidden()
 end
 
 function NVTerminal.setup()
-  NVCompanionPanels.register('terminal_vsplit', NVTerminal.ensure_vsplit_hidden)
-  NVClose.register('terminal_vsplit', NVTerminal.ensure_vsplit_hidden)
+  NVClose.register('terminal', NVTerminal.ensure_hidden)
 end

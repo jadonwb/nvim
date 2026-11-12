@@ -228,6 +228,19 @@ local function pin_cmdline()
   end
 end
 
+-- The command line is pinned over the bottom slot. If the slot was closed,
+-- bring it back so the cmdline never floats over a hole in the layout.
+if vim.api.nvim_create_autocmd then
+  vim.api.nvim_create_autocmd('CmdlineEnter', {
+    callback = function()
+      if NVSlots and NVSlots.is_applied() and not NVSlots.is_open 'bottom' then
+        NVSlots.ensure 'bottom'
+        NVSlots.refresh_providers()
+      end
+    end,
+  })
+end
+
 -- Pager buffer keymaps for close (keep q from ui2; add <M-w> and <Esc> equiv)
 vim.api.nvim_create_autocmd('FileType', {
   pattern = 'pager',

@@ -1,14 +1,14 @@
 -- Bottom panel modes.
 --
--- The slot hosts one provider at a time: prompt, terminal, quickfix or
--- problems. The command line is not a mode: ui2's cmd window is pinned over the
+-- The slot hosts one provider at a time: prompt, quickfix or problems.
+-- The terminal is a Snacks surface on <C-/> and does not live in a slot. The command line is not a mode: ui2's cmd window is pinned over the
 -- slot while it is open (config/ui2.lua).
 --
 -- A window-local winbar (not volt: the content is a real buffer) shows the modes.
 
 NVBottom = {}
 
-NVBottom.modes = { 'prompt', 'terminal', 'quickfix', 'problems' }
+NVBottom.modes = { 'prompt', 'quickfix', 'problems' }
 
 for name, spec in pairs {
   NvBottomActive = { link = 'StatusLine', bold = true },

@@ -525,12 +525,21 @@ function NVSlots.refresh_providers()
   end
 end
 
+--- Focus mode: hide the whole layout, then restore exactly the slots that were
+--- open. A slot the user closed is not reopened by the toggle.
 function NVSlots.toggle()
+  local tab = tab_state()
   if NVSlots.is_applied() then
+    tab.saved = {}
+    for name in pairs(tab.slots) do
+      tab.saved[#tab.saved + 1] = name
+    end
     NVSlots.close()
-    NVMessages.info 'Layout off'
+    NVMessages.info 'Focus mode'
   else
-    NVSlots.open()
+    local saved = tab.saved
+    tab.saved = nil
+    NVSlots.open(saved)
     NVMessages.info 'Layout on'
   end
 end
@@ -698,6 +707,20 @@ function NVSlots.setup()
       end)
     end,
   })
+
+  -- The layout is the default workspace surface. VimEnter is after every
+  -- plugin, and this autocmd is registered before the dashboard's own, so the
+  -- dashboard opens inside the layout instead of flashing a bare editor first.
+  if require('config.profile').wants 'layout' then
+    vim.api.nvim_create_autocmd('VimEnter', {
+      once = true,
+      callback = function()
+        if not NVSlots.is_applied() then
+          NVSlots.open()
+        end
+      end,
+    })
+  end
 
   vim.api.nvim_create_autocmd('TabClosed', {
     group = vim.api.nvim_create_augroup('NV slots', { clear = true }),

@@ -12,7 +12,7 @@ NVClose.priority = {
   'snacks_lazygit',
   'grug-far',
   'help_docs',
-  'terminal_vsplit',
+  'terminal',
 }
 
 ---@type table<string, fun(): boolean>

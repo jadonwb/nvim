@@ -19,6 +19,8 @@ return {
       require 'features.layout.bottom'
       NVBottom.setup()
 
+      require('features.preview').setup()
+
       require 'features.bridge'
       NVBridge.setup()
 
