@@ -406,6 +406,12 @@ function NVSlots.toggle()
   end
 end
 
+--- The window content should open in: the first non-slot window in this tab.
+---@return WinID
+function NVSlots.content_win()
+  return center_win() or vim.api.nvim_get_current_win()
+end
+
 --- Provider name currently shown in a slot.
 ---@param name string
 ---@return string|nil
@@ -525,9 +531,10 @@ function NVSlots.setup()
     end,
   })
 
-  -- Progress changes come from the LSP handler through NVMessages.
+  -- Progress changes come from the LSP handler through NVMessages; the bridge
+  -- fires `NVBridge` when the agent starts, finishes a step or exits.
   vim.api.nvim_create_autocmd('User', {
-    pattern = 'NVProgress',
+    pattern = { 'NVProgress', 'NVBridge' },
     callback = function()
       local name, slot = NVSlots.slot_with_provider 'session'
       if name and slot and vim.api.nvim_win_is_valid(slot.win) then

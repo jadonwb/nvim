@@ -141,12 +141,22 @@ function M.session(win, _)
     }
   end
 
+  local bridge = NVBridge and NVBridge.state
   local body = {
     row('cwd', vim.fn.fnamemodify(vim.fn.getcwd(), ':~')),
     row('branch', (branch[1] and branch[1] ~= '') and branch[1] or '(detached)'),
     row('opencode', attached or 'not attached'),
     row('profile', require('config.profile').kind or '?'),
+    row('agent', bridge and bridge.job and 'running' or (bridge and bridge.session and 'idle' or 'ready')),
   }
+
+  if bridge and bridge.status then
+    local tokens = bridge.status.tokens or {}
+    body[#body + 1] = row('tokens', ('%s in / %s out'):format(tokens.input or 0, tokens.output or 0))
+    if bridge.status.cost then
+      body[#body + 1] = row('cost', ('$%.4f'):format(bridge.status.cost))
+    end
+  end
 
   local progress = NVMessages.progress_current and NVMessages.progress_current()
 
@@ -378,13 +388,38 @@ end
 ---@return boolean
 function M.prompt(win, name)
   local slot = name or 'bottom'
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.bo[buf].buftype = 'nofile'
-  vim.bo[buf].bufhidden = 'wipe'
-  vim.bo[buf].swapfile = false
-  vim.bo[buf].filetype = 'nvprompt'
-  vim.b[buf].nv_slot = slot
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { '' })
+  -- One prompt buffer per slot, so a draft survives a mode switch.
+  local buf = vim.w[win].nv_prompt_buf
+
+  if not (buf and vim.api.nvim_buf_is_valid(buf)) then
+    buf = vim.api.nvim_create_buf(false, true)
+    vim.w[win].nv_prompt_buf = buf
+    vim.bo[buf].buftype = 'nofile'
+    vim.bo[buf].bufhidden = 'hide'
+    vim.bo[buf].swapfile = false
+    vim.bo[buf].filetype = 'nvprompt'
+    vim.b[buf].nv_slot = slot
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, { '' })
+
+    local function submit()
+      local text = vim.trim(table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), '\n'))
+      if text == '' then
+        return
+      end
+      if not NVBridge then
+        NVMessages.warn 'Agent bridge is unavailable'
+        return
+      end
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, { '' })
+      NVBridge.submit(text)
+    end
+
+    -- Enter sends from normal and insert mode; the panel is a prompt, not a
+    -- scratch pad.
+    vim.keymap.set({ 'n', 'i' }, '<CR>', submit, { buffer = buf, nowait = true, desc = 'Send prompt to opencode' })
+  end
+
+  vim.wo[win].wrap = true
   NVSlots.set_buffer(slot, buf)
   return true
 end

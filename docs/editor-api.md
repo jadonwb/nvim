@@ -35,10 +35,35 @@ nvim --server "$NVIM" --remote-expr 'v:lua.NVSlots.toggle_slot("bottom")'
 | `NVSlots.set_buffer(slot, buf)` | show an arbitrary buffer in a slot |
 | `NVSlots.win(name)` | window id, for `nvim_win_call` |
 | `:NVLayout status` / `slot <name> [open\|close\|toggle]` / `swap <a> <b>` | the same from Ex or vimscript |
+| `NVBridge.open()` | show the agent transcript in the editing area |
+| `NVBridge.submit(text)` | send a prompt; the answer streams into the transcript |
+| `NVBridge.cancel()` | stop the running `opencode run` |
+| `NVBridge.state` | `{ job, session, status = { cost, tokens }, buf, win }` |
+| `NVBridge.append(text)` | append a line to the transcript from outside |
+| `:NVAgent [text]` | open the transcript, or send `text` |
 
 Slot names: `left`, `bottom_left`, `right_top`, `right_bottom`, `bottom`.
-Built-in providers: `changes`, `session`, `prompt`. `left` and `bottom_left`
-have no provider yet and keep their placeholder.
+Built-in providers: `terminal`, `quickfix`, `problems`, `explorer`, `preview`,
+`changes`, `session`, `prompt`. Any provider can live in any slot.
+
+## Agent transcript
+
+The transcript is a real, listed buffer (`opencode://<id>`, `markdown`) with
+`modifiable = false`: motions, visual selection and `y` work; editing does not.
+That is deliberate — the streamed answer has to be selectable, so it cannot be
+virtual text.
+
+Streaming is `opencode run --format json`, whose NDJSON events are appended by
+`NVBridge.on_event`. A new session is created with `--archived` so scripted runs
+stay out of the session list; continuing one passes `--session <id>`.
+
+Inbound control uses the same entry points as any external tool:
+
+```sh
+nvim --server "$NVIM" --remote-expr 'v:lua.NVBridge.open()'
+nvim --server "$NVIM" --remote-expr 'v:lua.NVSlots.set_provider("right_top", "changes")'
+nvim --server "$NVIM" --remote-expr 'v:lua.NVBridge.append("note from opencode")'
+```
 
 ## Design notes
 

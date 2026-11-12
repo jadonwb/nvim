@@ -22,6 +22,9 @@ return {
       require 'features.layout.bottom'
       NVBottom.setup()
 
+      require 'features.bridge'
+      NVBridge.setup()
+
       require 'editor.help'
       NVHelp.setup()
       NVHelp.autocmds()

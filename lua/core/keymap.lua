@@ -29,6 +29,7 @@ NVKeymaps = {
 
   layout_toggle = '<M-i>',
   bottom_cycle = '<M-n>',
+  agent = '<M-a>',
 }
 
 local default_keymap_options = { noremap = true, silent = true }
