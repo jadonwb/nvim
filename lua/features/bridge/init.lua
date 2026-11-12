@@ -478,6 +478,29 @@ end
 --- Reading surface options for the transcript window: no numbers, wrapped
 --- prose. They are window-local, so save the values and restore them when the
 --- window moves back to a file.
+--- Tables only make sense when the pane is wide enough; on a narrow split the
+--- rigid grid clips and wraps into vertical text, so the raw markdown lines are
+--- the better read.
+---@param win WinID
+function NVBridge.sync_markdown(win)
+  local buf = NVBridge.state.buf
+  if not (win and buf and vim.api.nvim_win_is_valid(win) and vim.api.nvim_win_get_buf(win) == buf) then
+    return
+  end
+  local ok, api = pcall(require, 'render-markdown.api')
+  if not ok then
+    return
+  end
+  local wide = vim.api.nvim_win_get_width(win) >= 110
+  vim.api.nvim_win_call(win, function()
+    if wide then
+      api.buf_enable()
+    else
+      api.buf_disable()
+    end
+  end)
+end
+
 local transcript_opts = {
   number = false,
   relativenumber = false,
@@ -529,6 +552,7 @@ function NVBridge.setup()
     group = surface,
     callback = function(ev)
       NVBridge.style_window(vim.api.nvim_get_current_win())
+      NVBridge.sync_markdown(vim.api.nvim_get_current_win())
       if NVBridge.state.buf and ev.buf ~= NVBridge.state.buf then
         restore_window(vim.api.nvim_get_current_win())
       end
@@ -539,6 +563,15 @@ function NVBridge.setup()
     group = surface,
     callback = function()
       NVBridge.style_window(vim.api.nvim_get_current_win())
+      NVBridge.sync_markdown(vim.api.nvim_get_current_win())
+    end,
+  })
+
+  vim.api.nvim_create_autocmd({ 'VimResized', 'WinResized' }, {
+    group = surface,
+    callback = function()
+      local win = vim.api.nvim_get_current_win()
+      NVBridge.sync_markdown(win)
     end,
   })
 
