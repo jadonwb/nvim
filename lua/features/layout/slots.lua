@@ -539,12 +539,19 @@ function NVSlots.sync_winbar(name)
   end
   -- A provider that draws its own winbar; clear it when another provider takes
   -- the slot, so a title never outlives what it named.
-  if slot.provider == 'explorer' then
-    local dir = vim.fn.getcwd()
-    pcall(vim.api.nvim_set_option_value, 'winbar', '%#NvPanelBorder# Explorer ' .. vim.fn.fnamemodify(dir, ':t') .. ' ', { win = slot.win })
-  else
-    pcall(vim.api.nvim_set_option_value, 'winbar', '', { win = slot.win })
-  end
+  local titles = {
+    explorer = 'Explorer ' .. vim.fn.fnamemodify(vim.fn.getcwd(), ':t'),
+    prompt = 'Prompt',
+    quickfix = 'Quickfix',
+    problems = 'Problems',
+  }
+  local title = titles[slot.provider]
+  pcall(
+    vim.api.nvim_set_option_value,
+    'winbar',
+    title and ('%#NvPanelBorder# ' .. title .. ' ') or '',
+    { win = slot.win }
+  )
 end
 
 --- Switch a slot to another registered provider and refresh it.

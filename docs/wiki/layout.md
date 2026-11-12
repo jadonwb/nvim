@@ -66,6 +66,18 @@ nvim --server "$NVIM" --remote-expr 'luaeval("vim.json.encode(NVSlots.state())")
 `NVSlots.state()` returns `{ applied, order, slots = { name = { width, height, provider } } }`.
 `NVSlots.status()` returns the live windows.
 
+## Session persistence
+
+The workspace snapshot records which slots were open and what each showed
+(`layout.providers` in the session metadata). Restoring a session (`l` on the
+dashboard or `:lua NVSession.restore()`) reopens exactly those slots and
+reapplies their providers; a slot that was closed stays closed. Slot windows
+themselves are not in mksession (their buffers are unlisted), so they are rebuilt
+deterministically.
+
+Verified by `tests/session.sh`: save with `bottom=problems` and
+`right_bottom=prompt`, restart, restore, and both providers come back.
+
 ## Hardening
 
 - Slot buffers are `bufhidden=hide` while displayed, so `:bd` cannot close a

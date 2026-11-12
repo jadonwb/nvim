@@ -35,60 +35,85 @@ def colour_from_256(n):
     return "#%02x%02x%02x" % (v, v, v)
 
 
+def apply_sgr(body, state):
+    params = [p for p in body.split(";") if p != ""]
+    params = [int(p) if p.isdigit() else 0 for p in params] or [0]
+    j = 0
+    while j < len(params):
+        p = params[j]
+        if p == 0:
+            state.update(fg=None, bg=None, bold=False, reverse=False)
+        elif p == 1:
+            state["bold"] = True
+        elif p == 22:
+            state["bold"] = False
+        elif p == 7:
+            state["reverse"] = True
+        elif p == 27:
+            state["reverse"] = False
+        elif 30 <= p <= 37:
+            state["fg"] = PALETTE[p - 30]
+        elif 90 <= p <= 97:
+            state["fg"] = PALETTE[p - 90 + 8]
+        elif 40 <= p <= 47:
+            state["bg"] = PALETTE[p - 40]
+        elif 100 <= p <= 107:
+            state["bg"] = PALETTE[p - 100 + 8]
+        elif p == 39:
+            state["fg"] = None
+        elif p == 49:
+            state["bg"] = None
+        elif p in (38, 48):
+            key = "fg" if p == 38 else "bg"
+            if j + 2 < len(params) and params[j + 1] == 5:
+                state[key] = colour_from_256(params[j + 2])
+                j += 2
+            elif j + 4 < len(params) and params[j + 1] == 2:
+                state[key] = "#%02x%02x%02x" % (
+                    params[j + 2],
+                    params[j + 3],
+                    params[j + 4],
+                )
+                j += 4
+        j += 1
+
+
 def parse(line, state):
-    """Yield (char, fg, bg, bold) for one line, updating state."""
+    """Yield (char, fg, bg, bold, reverse) for one line, updating state.
+
+    Escape sequences are consumed by hand: CSI parameters can contain `:`
+    (e.g. `4:3` underline styles), and an incomplete regex match used to leak
+    fragments like `[0;4:3m` into the image.
+    """
     out = []
     i = 0
     while i < len(line):
-        m = SGR.match(line, i)
-        if m:
-            params = [int(p) for p in m.group(1).split(";") if p != ""] or [0]
-            j = 0
-            while j < len(params):
-                p = params[j]
-                if p == 0:
-                    state.update(fg=None, bg=None, bold=False, reverse=False)
-                elif p == 1:
-                    state["bold"] = True
-                elif p == 22:
-                    state["bold"] = False
-                elif p == 7:
-                    state["reverse"] = True
-                elif p == 27:
-                    state["reverse"] = False
-                elif 30 <= p <= 37:
-                    state["fg"] = PALETTE[p - 30]
-                elif 90 <= p <= 97:
-                    state["fg"] = PALETTE[p - 90 + 8]
-                elif 40 <= p <= 47:
-                    state["bg"] = PALETTE[p - 40]
-                elif 100 <= p <= 107:
-                    state["bg"] = PALETTE[p - 100 + 8]
-                elif p == 39:
-                    state["fg"] = None
-                elif p == 49:
-                    state["bg"] = None
-                elif p in (38, 48):
-                    key = "fg" if p == 38 else "bg"
-                    if j + 2 < len(params) and params[j + 1] == 5:
-                        state[key] = colour_from_256(params[j + 2])
-                        j += 2
-                    elif j + 4 < len(params) and params[j + 1] == 2:
-                        state[key] = "#%02x%02x%02x" % (
-                            params[j + 2], params[j + 3], params[j + 4]
-                        )
-                        j += 4
-                j += 1
-            i = m.end()
-            continue
-        m = OSC.match(line, i) or CSI.match(line, i)
-        if m:
-            i = m.end()
-            continue
         ch = line[i]
         if ch == "\x1b":
-            # An escape the regexes did not recognise; never let it into XML.
-            i += 1
+            nxt = line[i + 1] if i + 1 < len(line) else ""
+            if nxt == "[":
+                j = i + 2
+                while j < len(line) and not ("@" <= line[j] <= "~"):
+                    j += 1
+                if j < len(line):
+                    if line[j] == "m":
+                        apply_sgr(line[i + 2 : j].replace(":", ";"), state)
+                    j += 1
+                i = j
+                continue
+            if nxt == "]":
+                j = i + 2
+                while j < len(line):
+                    if line[j] == "\x07":
+                        j += 1
+                        break
+                    if line[j] == "\x1b" and j + 1 < len(line) and line[j + 1] == "\\":
+                        j += 2
+                        break
+                    j += 1
+                i = j
+                continue
+            i += 2
             continue
         if ord(ch) < 32 and ch != "\t":
             i += 1
