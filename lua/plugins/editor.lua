@@ -39,7 +39,7 @@ return {
       require 'features.opencode.artifacts'
       NVOpenCodeArtifacts.setup()
 
-      require 'features.opencode.session'
+      require 'features.opencode.attach'
       NVOpenCodeSession.setup()
 
       require 'core.class'

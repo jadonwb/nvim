@@ -97,6 +97,25 @@ function M.setup()
     SnacksNotifierTitle = { fg = normal_fg, bg = normal_bg, bold = true },
     SnacksNotifierFooter = { fg = comment, bg = normal_bg },
 
+    -- Trouble (diagnostic/symbol lists).
+    TroubleNormal = { fg = normal_fg, bg = normal_bg },
+    TroubleNormalNC = { fg = normal_fg, bg = normal_bg },
+    TroubleText = { fg = normal_fg },
+    TroubleCount = { fg = blue, bold = true },
+    TroubleFile = { fg = normal_fg, bold = true },
+    TroubleDirectory = { fg = comment },
+    TroubleSource = { fg = comment },
+    TroublePos = { fg = comment },
+    TroubleCode = { fg = comment },
+    TroubleIndent = { fg = line },
+    TroubleFoldIcon = { fg = comment },
+    TroubleTitle = { fg = normal_fg, bold = true },
+    TroubleWinSeparator = { fg = line },
+    TroubleIconError = { fg = red },
+    TroubleIconWarn = { fg = yellow },
+    TroubleIconInfo = { fg = blue },
+    TroubleIconHint = { fg = green },
+
     -- Statusline blocks.
     NvStMode = { fg = normal_bg, bg = blue, bold = true },
     NvStModeInsert = { fg = normal_bg, bg = green, bold = true },

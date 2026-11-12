@@ -3,7 +3,9 @@ local fn = {}
 local DIAGNOSTICS_SOURCE = 'diagnostics_per_ft'
 
 NVTrouble = {
-  'folke/trouble.nvim', cond = function() return require('config.profile').wants 'lsp' end,
+  'folke/trouble.nvim',
+  cond = function() return require('config.profile').wants 'lsp' end,
+  cmd = { 'Trouble' },
   keys = function()
     return {
       { '<leader>xx', false },
@@ -56,6 +58,8 @@ NVTrouble = {
       auto_refresh = true, -- auto refresh when open
       auto_jump = false, -- auto jump to the item when there's only one
       focus = true, -- Focus the window when opened
+      -- A split would carve a column out of the slot layout; trouble floats.
+      win = { type = 'float', position = 'center', size = { width = 0.7, height = 0.5 }, border = 'single' },
       restore = true, -- restores the last location in the list when opening
       follow = false, -- Follow the current item
       indent_guides = false, -- show indent guides
