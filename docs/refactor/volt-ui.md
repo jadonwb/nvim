@@ -157,3 +157,50 @@ the fixes are covered by tests where a test can reach them:
   a crashed or stopped server cannot leave a stale bar refreshing at 10 Hz.
 - **Hover.** The async response is dropped when the buffer, window or cursor
   line changed while it was in flight.
+
+## Round 2: the layout owns its windows
+
+The sidepad layout manager (`features/layout/manager.lua`) is gone. It kept
+auto-enabling its centred layout next to the slot layout, which is the "middle
+layout" that appeared on startup.
+
+What the slot layout guarantees now:
+
+- **Independent slots.** Any subset can be open; closing `left` leaves `right`
+  and `bottom` untouched, closing `bottom` gives the centre its height back, and
+  a closed slot is not reopened by focus mode.
+- **Protected windows.** Slot buffers are `bufhidden=hide` while displayed, so
+  `:bd` cannot close a panel. Deleting the buffer or closing the window outside
+  the API is repaired on `WinClosed`: the slot is rebuilt and its provider
+  re-rendered.
+- **Protected geometry.** Slot windows are `winfixwidth/height`, and
+  `VimResized`/`WinResized` re-applies the configured proportions. The width
+  keys adjust the side-slot proportions instead of a content width.
+- **Focus mode.** `<M-i>` hides every slot and restores exactly the set that was
+  open, so it doubles as "give me the whole screen for this file".
+- **Default on.** Workspace launches open the layout at `VimEnter`, before the
+  dashboard's handler, and open the dashboard into the content window. Snacks'
+  dashboard autostart is a float that refuses to run with more than one window,
+  hence the explicit call.
+
+`bottom_left` is gone. The preview is an inset float over the content window with
+a dimmed backdrop (`features/preview.lua`), toggled with `<leader>up`; the
+explorer drives it only while it is on, and `<CR>` in the explorer opens files in
+the content window rather than replacing the explorer.
+
+The terminal on `<C-/>` is a bordered Snacks float over the content area: a split
+would push the grid. The shell starts without the outer terminal's `WEZTERM_*`
+integration, which was writing OSC sequences into the buffer.
+
+## Round 2: panels, cheatsheet, command line
+
+- `features/ui/chrome.lua` composes the framed panels (border, header with icon
+  and right-aligned meta, blank-row sections) in the typr language.
+- `<leader>?` opens `features/cheatsheet.lua`: live keymaps grouped into framed
+  blocks, four balanced columns, description left and key right.
+- which-key is a bottom-left popup again with group specs matching the leader
+  groups; `expand = 1` shows the group beside the list.
+- The command line is pinned to one row at the top of the bottom slot, under its
+  winbar, and `:` reopens the bottom slot when it was closed.
+- The unsaved-changes review (`NVDialogs.select_panel`) renders in the bottom
+  panel with `w`/`d`/`c`, falling back to the float without a layout.
