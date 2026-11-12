@@ -54,6 +54,7 @@ for _, e in ipairs(NVNotify.store) do
   end
 end
 add('cleared=' .. tostring(read == #NVNotify.store))
+add('unread after clear=' .. tostring(NVNotify.unread == 0))
 
 io.write(table.concat(out, '\n'))
 LUA
@@ -72,5 +73,6 @@ check 'shows error=true'
 check 'shows tabs=true'
 check 'unread cleared=true'
 check 'cleared=true'
+check 'unread after clear=true'
 
 [ "$fail" = 0 ] && echo 'notify: pass' || { echo 'notify: FAIL'; exit 1; }

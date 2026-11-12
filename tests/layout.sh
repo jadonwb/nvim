@@ -162,6 +162,27 @@ vim.api.nvim_win_close(rt, true)
 vim.wait(200, function() return NVSlots.is_open 'right_top' end)
 add('window repair=' .. tostring(NVSlots.is_open 'right_top'))
 
+-- Focus mode restores the providers, not just the slot names.
+NVSlots.set_provider('bottom', 'problems')
+local info = NVMessages.info
+NVMessages.info = function() end
+NVSlots.toggle()
+NVSlots.toggle()
+NVMessages.info = info
+add('focus providers=' .. tostring(NVSlots.provider_of 'bottom'))
+NVSlots.set_provider('bottom', 'prompt')
+
+-- Closing the only content buffer rebuilds the editing area.
+local centre = NVSlots.content_win()
+vim.api.nvim_buf_delete(vim.api.nvim_win_get_buf(centre), { force = true })
+vim.wait(200, function()
+  local ok, cb = pcall(function()
+    return vim.b[vim.api.nvim_win_get_buf(NVSlots.content_win())].nv_slot == nil
+  end)
+  return ok and cb
+end)
+add('centre rebuilt=' .. tostring(vim.b[vim.api.nvim_win_get_buf(NVSlots.content_win())].nv_slot == nil))
+
 -- Protection: the configured geometry is re-applied after a manual resize.
 local rw = NVSlots.win 'right_top'
 vim.api.nvim_win_set_width(rw, 12)
@@ -211,6 +232,8 @@ local ft_top_after = vim.bo[vim.api.nvim_win_get_buf(NVSlots.win 'right_top')].f
 add('swap exchanged=' .. tostring(ft_top_before ~= ft_top_after) .. ' win=' .. tostring(NVSlots.win 'right_top' ~= nil))
 _ = left_h_before
 
+-- Keep message-area output from prefixing the first result line.
+pcall(vim.cmd, 'silent! messages clear')
 io.write(table.concat(out, '\n'))
 LUA
 )
@@ -246,6 +269,8 @@ check 'left closed others stay=true'
 check 'buffer delete keeps window=true'
 check 'window repair=true'
 check 'geometry enforced=true'
+check 'focus providers=problems'
+check 'centre rebuilt=true'
 check 'cheatsheet=true'
 check 'highlights=true'
 check 'notification centre=true'

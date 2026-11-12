@@ -10,6 +10,7 @@ NVPreview = {
   buf = nil,
   win = nil,
   backdrop = nil,
+  backdrop_buf = nil,
   path = nil,
 }
 
@@ -31,8 +32,13 @@ function NVPreview.hide()
   if valid(NVPreview.backdrop) then
     pcall(vim.api.nvim_win_close, NVPreview.backdrop, true)
   end
+  if NVPreview.backdrop_buf and vim.api.nvim_buf_is_valid(NVPreview.backdrop_buf) then
+    pcall(vim.api.nvim_buf_delete, NVPreview.backdrop_buf, { force = true })
+  end
+  NVPreview.buf = nil
   NVPreview.win = nil
   NVPreview.backdrop = nil
+  NVPreview.backdrop_buf = nil
   NVPreview.path = nil
 end
 
@@ -55,7 +61,13 @@ local function draw(target)
   local geo = geometry(target)
 
   if not valid(NVPreview.win) then
+    -- A previous float may have been closed by the user; never stack a second
+    -- backdrop or a second preview window.
+    if valid(NVPreview.backdrop) then
+      pcall(vim.api.nvim_win_close, NVPreview.backdrop, true)
+    end
     local backdrop_buf = vim.api.nvim_create_buf(false, true)
+    NVPreview.backdrop_buf = backdrop_buf
     NVPreview.backdrop = vim.api.nvim_open_win(backdrop_buf, false, {
       relative = 'win',
       win = target,
@@ -202,7 +214,16 @@ function NVPreview.setup()
       end
     end,
   })
-  vim.api.nvim_create_autocmd({ 'WinClosed', 'TabLeave', 'BufLeave' }, {
+  vim.api.nvim_create_autocmd('WinClosed', {
+    group = group,
+    callback = function(ev)
+      if NVPreview.win and tonumber(ev.match) == NVPreview.win then
+        NVPreview.hide()
+      end
+    end,
+  })
+
+  vim.api.nvim_create_autocmd({ 'TabLeave', 'BufLeave' }, {
     group = group,
     callback = function()
       vim.schedule(function()

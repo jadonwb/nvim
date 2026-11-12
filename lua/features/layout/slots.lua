@@ -285,6 +285,7 @@ function NVSlots.set_buffer(name, buf)
   end
   local slot = tab_state().slots[name]
   local previous = slot.buf
+  local owned_previous = slot.owned
   -- A slot buffer that is displayed must not be wiped by `:bd`; that would
   -- close the window. Restore the provider's own value when the slot lets go.
   if slot.hidden_prev ~= nil and previous and vim.api.nvim_buf_is_valid(previous) then
@@ -293,6 +294,14 @@ function NVSlots.set_buffer(name, buf)
   slot.hidden_prev = vim.bo[buf].bufhidden
   vim.bo[buf].bufhidden = 'hide'
   vim.api.nvim_win_set_buf(win, buf)
+
+  -- The placeholder this layer created is replaced by a provider buffer; the
+  -- provider owns its buffer, so `remove` must not delete it. Delete the
+  -- placeholder only after the window no longer shows it, or the window closes.
+  if owned_previous and previous and previous ~= buf and vim.api.nvim_buf_is_valid(previous) then
+    pcall(vim.api.nvim_buf_delete, previous, { force = true })
+  end
+  slot.owned = false
   slot.buf = buf
   vim.b[buf].nv_slot = name
   -- The replaced buffer belongs to the caller again; only a buffer the slot
@@ -440,13 +449,27 @@ end
 
 --- Rebuild a slot whose window disappeared outside the slot API (`:q`,
 --- `<C-w>c`, `:bwipeout`) instead of leaving a hole in the layout.
+local repairing = false
+
 function NVSlots.repair()
+  if repairing then
+    return
+  end
   local tab = tab_state()
   if not next(tab.slots) then
     return
   end
+  repairing = true
+  local ok, err = pcall(function()
   if not center_win() then
-    return
+    -- The only content buffer was closed (`:bd` on the dashboard). Rebuild the
+    -- editing area instead of leaving a layout with no file window.
+    local _, slot = next(tab.slots)
+    if not (slot and vim.api.nvim_win_is_valid(slot.win)) then
+      return
+    end
+    vim.api.nvim_set_current_win(slot.win)
+    vim.cmd 'botright new'
   end
 
   local missing = {}
@@ -479,6 +502,11 @@ function NVSlots.repair()
     NVSlots.ensure(name)
   end
   NVSlots.refresh_providers()
+  end)
+  repairing = false
+  if not ok then
+    NVMessages.warn('layout repair failed: ' .. tostring(err))
+  end
 end
 
 --- Toggle one slot on or off.
@@ -502,11 +530,20 @@ end
 ---@param name string
 function NVSlots.sync_winbar(name)
   local slot = tab_state().slots[name]
-  if name ~= 'bottom' or not slot or not slot.provider then
+  if not slot or not vim.api.nvim_win_is_valid(slot.win) then
     return
   end
-  if NVBottom and NVBottom.winbar and vim.api.nvim_win_is_valid(slot.win) then
+  if name == 'bottom' and NVBottom and NVBottom.winbar then
     pcall(NVBottom.winbar, slot.win, slot.provider)
+    return
+  end
+  -- A provider that draws its own winbar; clear it when another provider takes
+  -- the slot, so a title never outlives what it named.
+  if slot.provider == 'explorer' then
+    local dir = vim.fn.getcwd()
+    pcall(vim.api.nvim_set_option_value, 'winbar', '%#NvPanelBorder# Explorer ' .. vim.fn.fnamemodify(dir, ':t') .. ' ', { win = slot.win })
+  else
+    pcall(vim.api.nvim_set_option_value, 'winbar', '', { win = slot.win })
   end
 end
 
@@ -546,15 +583,24 @@ function NVSlots.toggle()
   local tab = tab_state()
   if NVSlots.is_applied() then
     tab.saved = {}
-    for name in pairs(tab.slots) do
-      tab.saved[#tab.saved + 1] = name
+    for name, slot in pairs(tab.slots) do
+      tab.saved[name] = slot.provider
     end
     NVSlots.close()
     NVMessages.info 'Focus mode'
   else
     local saved = tab.saved
     tab.saved = nil
-    NVSlots.open(saved)
+    if saved then
+      NVSlots.open(vim.tbl_keys(saved))
+      for name, provider in pairs(saved) do
+        if provider then
+          NVSlots.set_provider(name, provider)
+        end
+      end
+    else
+      NVSlots.open()
+    end
     NVMessages.info 'Layout on'
   end
 end

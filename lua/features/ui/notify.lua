@@ -60,6 +60,7 @@ function NVNotify.clear()
   -- Re-fill with one read confirmation so the list visibly changed.
   local entry = NVNotify.add(vim.log.levels.INFO, 'Notifications cleared')
   entry.read = true
+  NVNotify.unread = 0
   if NVNotify.handle and NVNotify.handle.win and vim.api.nvim_win_is_valid(NVNotify.handle.win) then
     vim.api.nvim_buf_clear_namespace(NVNotify.handle.buf, NVNotify.handle.ns, 0, -1)
     NVNotify.render()

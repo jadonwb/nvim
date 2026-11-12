@@ -86,6 +86,17 @@ local function find_terminal()
 end
 
 function NVTerminal.toggle()
+  local ok, Snacks = pcall(require, 'snacks')
+  if not ok then
+    -- Snacks is lazy; <C-/> is a plain mapping, so it does not load it.
+    pcall(vim.cmd, 'Lazy load snacks')
+    ok, Snacks = pcall(require, 'snacks')
+  end
+  if not ok or not Snacks.terminal then
+    NVMessages.warn 'Terminal is unavailable (Snacks not loaded)'
+    return
+  end
+
   Snacks.terminal.toggle(nil, {
     env = shell_env(),
     win = {
