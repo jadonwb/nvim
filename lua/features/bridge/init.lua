@@ -245,6 +245,16 @@ function NVBridge.on_event(line)
       detail = vim.fn.fnamemodify(detail, ':.')
     end
 
+    -- OpenCode runs plugin tools through its `execute` tool; the useful name is
+    -- inside the code (`tools.nvim.control({ action = "status" })`).
+    if tool == 'execute' and type(input.code) == 'string' then
+      local mod, fn = input.code:match 'tools%.([%w_]+)%.([%w_]+)%('
+      if mod then
+        local action = input.code:match 'action%s*=%s*"([%w_%-]+)"' or input.code:match "action%s*=%s*'([%w_%-]+)'"
+        detail = mod .. '_' .. fn .. (action and (' ' .. action) or '')
+      end
+    end
+
     local label = state.status == 'completed' and '✓' or '…'
     append_line_hl(
       ('  %s %s%s'):format(label, tool, detail and (': ' .. tostring(detail)) or ''),
