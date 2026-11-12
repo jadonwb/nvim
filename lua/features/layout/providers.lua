@@ -96,10 +96,10 @@ function M.changes(win, name)
   require('features.ui.window').render(handle, layout, width)
   vim.bo[handle.buf].filetype = 'nvchanges'
 
-  -- Rows are the last `#rows` lines of the frame. Store the offset rather than
-  -- a sparse map: `vim.b` turns a sparse Lua table into a list padded with
-  -- vim.NIL, so a map with holes would report rows that do not exist.
-  local first = #lines - #rows
+  -- The frame is: top border, header, blank row, then the body rows. The body
+  -- no longer ends the frame (it is padded to the slot height), so the offset
+  -- is fixed rather than derived from the line count.
+  local first = 4
   vim.b[handle.buf].nv_changes = { paths = paths, first = first }
 
   local function open_under_cursor()
