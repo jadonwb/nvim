@@ -384,12 +384,28 @@ function M.prompt(win, name)
     vim.b[buf].nv_slot = slot
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, { '' })
     vim.bo[buf].modifiable = true
-    -- A hint line the prompt can show while empty; it is removed on the first
-    -- keystroke (see the BufEnter autocmd below).
-    vim.api.nvim_buf_set_extmark(buf, vim.api.nvim_create_namespace('nvprompt'), 0, 0, {
-      virt_text = { { ' Ask opencode…  <CR> send   <M-a> transcript ', 'CommentFg' } },
-      virt_text_pos = 'overlay',
+
+    -- A hint while the prompt is empty, removed as soon as there is text and
+    -- restored when it is cleared again.
+    local hint_ns = vim.api.nvim_create_namespace('nvprompt-' .. buf)
+    local hint_id
+    local function sync_hint()
+      local empty = vim.trim(vim.api.nvim_buf_get_lines(buf, 0, 1, false)[1] or '') == ''
+      if empty and not hint_id then
+        hint_id = vim.api.nvim_buf_set_extmark(buf, hint_ns, 0, 0, {
+          virt_text = { { ' Ask opencode…  <CR> send   <M-a> transcript ', 'CommentFg' } },
+          virt_text_pos = 'overlay',
+        })
+      elseif not empty and hint_id then
+        pcall(vim.api.nvim_buf_del_extmark, buf, hint_ns, hint_id)
+        hint_id = nil
+      end
+    end
+    vim.api.nvim_create_autocmd({ 'TextChanged', 'TextChangedI', 'BufEnter' }, {
+      buffer = buf,
+      callback = sync_hint,
     })
+    sync_hint()
 
     local function submit()
       local text = vim.trim(table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), '\n'))

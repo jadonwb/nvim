@@ -77,9 +77,21 @@ end
 
 --- File icon plus a shortened name. The directory is in the session panel, so
 --- the statusline keeps the file itself readable instead of repeating a path.
+local SPECIAL = {
+  snacks_dashboard = ' Neovim ',
+  nvnotify = ' Notifications ',
+  nvprompt = ' Prompt ',
+  nvcheatsheet = ' Cheatsheet ',
+  oil = ' Explorer ',
+  trouble = ' Trouble ',
+  snacks_terminal = ' Terminal ',
+  nvdialog = ' Dialog ',
+}
+
 local function file_component()
-  if vim.bo.filetype == 'snacks_dashboard' then
-    return ' Neovim '
+  local special = SPECIAL[vim.bo.filetype]
+  if special then
+    return special
   end
   local name = vim.api.nvim_buf_get_name(0)
   if name == '' then
