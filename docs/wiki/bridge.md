@@ -60,9 +60,16 @@ entry whose `cwd` contains the session directory and registers `nvim_control`:
 | `slot` | point a slot at a provider |
 | `layout` / `status` | read layout state as JSON |
 | `append` | add a note line to the transcript |
+| `show` | display arbitrary text (an artifact, a report) in the editing area |
 
 All of it goes through `nvim --server … --remote-expr` against the documented
 editor API (`docs/editor-api.md`); there is no custom protocol.
+
+`show` renders the text as a read-only markdown buffer in the content window with
+a `q back` winbar, so an agent can put an artifact in front of the user without
+taking over the editor. Verified live: an OpenCode run called
+`nvim_control { action = "show", title = "Artifact test", text = "…" }` and the
+content appeared in Neovim.
 
 ## Extending it
 

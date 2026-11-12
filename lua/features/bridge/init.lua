@@ -410,6 +410,37 @@ function NVBridge.open_file(path, line)
   return true
 end
 
+--- Show read-only text in the editing area: an artifact, a report, or anything
+--- an agent wants the user to read. Real buffer lines, so it is selectable.
+---@param title string
+---@param text string
+---@return boolean
+function NVBridge.show_text(title, text)
+  if type(text) ~= 'string' or text == '' then
+    return false
+  end
+
+  local buf = vim.api.nvim_create_buf(true, false)
+  vim.bo[buf].buftype = 'nofile'
+  vim.bo[buf].bufhidden = 'hide'
+  vim.bo[buf].swapfile = false
+  vim.bo[buf].filetype = 'markdown'
+  vim.bo[buf].modifiable = true
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, vim.split(text, '\n', { plain = true }))
+  vim.bo[buf].modifiable = false
+
+  local win = NVSlots and NVSlots.content_win and NVSlots.content_win() or vim.api.nvim_get_current_win()
+  vim.api.nvim_win_set_buf(win, buf)
+  pcall(vim.api.nvim_set_option_value, 'winbar', '%#NvPanelBorder# ' .. tostring(title or 'Artifact') .. '  %#NvChipMuted# q back ', { win = win })
+  vim.keymap.set('n', 'q', function()
+    pcall(vim.cmd, 'bprevious')
+  end, { buffer = buf, nowait = true, desc = 'Back' })
+  vim.keymap.set('n', '<Esc>', function()
+    pcall(vim.cmd, 'bprevious')
+  end, { buffer = buf, nowait = true, desc = 'Back' })
+  return true
+end
+
 --- Re-render the session panel when it shows agent status.
 function NVBridge.refresh()
   vim.schedule(function()
