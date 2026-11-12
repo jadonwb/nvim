@@ -57,6 +57,22 @@ end
 function NVHelp.autocmds()
   local group = vim.api.nvim_create_augroup('NVHelpPanel', { clear = true })
 
+  -- A doc pane sets a winbar; clear it when the window moves on so the label
+  -- does not stick to the next file.
+  vim.api.nvim_create_autocmd('BufWinLeave', {
+    group = group,
+    callback = function(ev)
+      if not NVHelp.is_help(ev.buf) then
+        return
+      end
+      local win = vim.api.nvim_get_current_win()
+      local bar = vim.api.nvim_get_option_value('winbar', { win = win })
+      if bar:find('Doc ', 1, true) then
+        pcall(vim.api.nvim_set_option_value, 'winbar', '', { win = win })
+      end
+    end,
+  })
+
   vim.api.nvim_create_autocmd({ 'BufWinEnter', 'FileType' }, {
     group = group,
     callback = function(ev)
@@ -68,12 +84,36 @@ function NVHelp.autocmds()
       if win == -1 or vim.w[win].nvhelp_panel then
         return
       end
+
+      -- With the layout on, a doc opens in the editing area instead of
+      -- splitting it: a help split would carve a fifth column out of the grid.
+      local win_buf = vim.api.nvim_win_get_buf(win)
+      if NVSlots and NVSlots.is_applied() and vim.b[win_buf].nv_slot == nil then
+        local centre = NVSlots.content_win()
+        if centre and win ~= centre then
+          vim.api.nvim_win_set_buf(centre, ev.buf)
+          pcall(vim.api.nvim_win_close, win, true)
+          win = centre
+        end
+        vim.api.nvim_set_current_win(win)
+        vim.api.nvim_set_option_value(
+          'winbar',
+          '%#NvPanelBorder# Doc  ' .. vim.fn.fnamemodify(vim.api.nvim_buf_get_name(ev.buf), ':t') .. '  %#NvChipMuted# q back ',
+          { win = win }
+        )
+        local function back()
+          pcall(vim.cmd, 'bprevious')
+        end
+        vim.keymap.set('n', 'q', back, { buffer = ev.buf, nowait = true, desc = 'Back to the file' })
+        vim.keymap.set('n', '<Esc>', back, { buffer = ev.buf, nowait = true, desc = 'Back to the file' })
+        return
+      end
+
       if NVEnv.startup.purpose == 'pager' then
         vim.schedule(function()
           if vim.api.nvim_win_is_valid(win) then
             vim.api.nvim_set_current_win(win)
             NVLualine.show_everything()
-            NVSlots.open()
           end
         end)
         return

@@ -13,7 +13,7 @@ from xml.sax.saxutils import escape
 
 SGR = re.compile(r"\x1b\[([0-9;]*)m")
 CSI = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
-OSC = re.compile(r"\x1b\][^\x07]*\x07")
+OSC = re.compile(r"\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)")
 
 PALETTE = {
     0: "#000000", 1: "#cc5555", 2: "#55aa66", 3: "#d0a040", 4: "#5599cc",
