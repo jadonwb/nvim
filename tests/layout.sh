@@ -99,7 +99,7 @@ local top_buf = vim.api.nvim_win_get_buf(NVSlots.win 'right_top')
 local changes_meta = vim.b[top_buf].nv_changes or {}
 add('rows=' .. tostring(#(changes_meta.paths or {}) > 0))
 -- Body rows start after the frame's top border and header.
-add('row map=' .. tostring(changes_meta.first == 3 and #(changes_meta.paths or {}) > 0))
+add('row map=' .. tostring(changes_meta.first == 4 and #(changes_meta.paths or {}) > 0))
 
 -- Any slot can host any provider.
 NVSlots.set_provider('right_top', 'session')

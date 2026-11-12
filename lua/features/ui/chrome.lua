@@ -97,6 +97,9 @@ function M.frame(opts)
   lines[#lines + 1] = M.fit(require('volt.ui').hpad(head, inner), inner)
 
   for _, section in ipairs(opts.sections or {}) do
+    -- A blank row after the header (and between sections), as in the volt
+    -- dashboards; blocks read as groups instead of one dense list.
+    lines[#lines + 1] = {}
     if section.title then
       lines[#lines + 1] = { { section.title, M.hl.meta } }
     end
