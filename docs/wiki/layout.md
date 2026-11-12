@@ -92,6 +92,15 @@ Verified by `tests/session.sh`: save with `bottom=problems` and
 `right_bottom=prompt`; then a second save with `bottom`/`right_top` closed and
 `right_bottom=problems`; both restores come back exactly.
 
+## Window picker
+
+`<M-Tab>` swaps the current window with another. Each candidate shows a bold
+letter chip in its **winbar** (`H`, `J`, `K`, `L`, listed in the prompt) and
+`Esc` cancels. Winshift's built-in picker writes the letter into the window's
+statusline, but with `laststatus=2` the bottom-most window of each column shares
+the global statusline — in a four-slot layout that hid most of the letters. The
+winbar is always visible, and it is restored when the picker closes.
+
 ## Width and height
 
 Side-slot widths and the bottom panel height are proportions of the screen.

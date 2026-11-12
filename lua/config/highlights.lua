@@ -121,6 +121,9 @@ function M.setup()
     MasonError = { fg = red },
     MasonWarning = { fg = yellow },
 
+    -- Window picker (winshift): a chip in each candidate's winbar.
+    WinShiftWindowPicker = { fg = normal_bg, bg = blue, bold = true },
+
     -- blink.cmp. The menu's selection, scrollbar, matched text and kind icons
     -- were unstyled, so the menu read as a flat wall of text.
     BlinkCmpMenuSelection = { bg = muted_bg },

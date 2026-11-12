@@ -34,20 +34,54 @@ NVWinshift = {
       },
     },
     window_picker = function()
-      return require('winshift.lib').pick_window {
-        picker_chars = NVWindows.window_picker_keys,
-        filter_rules = {
-          cur_win = true, -- Filter out the current window
-          floats = true, -- Filter out floating windows
-          filetype = {}, -- List of ignored file types
-          buftype = {}, -- List of ignored buftypes
-          bufname = {}, -- List of vim regex patterns matching ignored buffer names
-        },
-        filter_func = nil,
-      }
+      return NVWinshift.pick_window()
     end,
   },
 }
+
+--- Pick a window by letter, drawn in each candidate's winbar.
+---
+--- Winshift's built-in picker writes the letter into each window's statusline.
+--- With `laststatus=2` the bottom-most window of a column shares the global
+--- statusline, and in the slot layout that hides most of the letters. The
+--- winbar is always visible, so the letter is a chip there instead.
+---@return integer? winid
+function NVWinshift.pick_window()
+  local current = vim.api.nvim_get_current_win()
+  local wins = {}
+  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    if win ~= current and vim.api.nvim_win_get_config(win).relative == '' then
+      wins[#wins + 1] = win
+    end
+  end
+  if #wins == 0 then
+    return nil
+  end
+  if #wins == 1 then
+    return wins[1]
+  end
+
+  local chars = NVWindows.window_picker_keys
+  local map, saved, order = {}, {}, {}
+  for i, win in ipairs(wins) do
+    local char = chars:sub(i, i):upper()
+    map[char] = win
+    saved[win] = vim.api.nvim_get_option_value('winbar', { win = win })
+    order[#order + 1] = char
+    pcall(vim.api.nvim_set_option_value, 'winbar', '%#WinShiftWindowPicker#%=' .. char .. '%=%*', { win = win })
+  end
+
+  vim.cmd 'redraw'
+  vim.api.nvim_echo({ { 'Pick window [' .. table.concat(order, '/') .. ']: ', 'ModeMsg' } }, false, {})
+  local ok, resp = pcall(vim.fn.getchar)
+  local char = ok and type(resp) == 'number' and vim.fn.nr2char(resp):upper() or ''
+
+  for win, bar in pairs(saved) do
+    pcall(vim.api.nvim_set_option_value, 'winbar', bar or '', { win = win })
+  end
+  vim.cmd 'redraw'
+  return map[char]
+end
 
 function NVWinshift.move()
   vim.cmd 'WinShift'

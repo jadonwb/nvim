@@ -37,6 +37,20 @@ NVBlink = {
           columns = { { 'kind_icon' }, { 'label', gap = 1 } },
           components = {
             label = {
+              -- Blink clamps the menu to the editing window and hard-cuts any
+              -- label wider than the frame. Cap the label and let blink add an
+              -- ellipsis so long signatures read as truncated, not broken.
+              width = {
+                max = function()
+                  local win = vim.api.nvim_get_current_win()
+                  local width = vim.o.columns
+                  if win and vim.bo[vim.api.nvim_get_current_buf()].filetype ~= 'blink-cmp-menu' then
+                    width = vim.api.nvim_win_get_width(win)
+                  end
+                  return math.max(16, width - 26)
+                end,
+              },
+              ellipsis = true,
               text = function(ctx)
                 return require('colorful-menu').blink_components_text(ctx)
               end,

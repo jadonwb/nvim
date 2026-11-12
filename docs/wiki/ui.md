@@ -106,7 +106,9 @@ backgrounds and status lines now read like the rest of the UI.
 
 The blink completion menu and documentation windows use a single border with
 `NvPanelBorder`, a selection background, matched-text colour and kind colours;
-the scrollbar is off because the gutter read as a second border.
+the scrollbar is off because the gutter read as a second border. Labels are
+capped to the editing window's width with an ellipsis, because blink clamps the
+menu to that window and otherwise hard-cuts long signatures at the frame.
 
 ## Third-party surfaces
 
