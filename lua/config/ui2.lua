@@ -204,10 +204,12 @@ function NVCmdlinePin()
 
   cfg.relative = 'editor'
   cfg.win = nil
+  -- One row at the top edge of the slot: the cmdline is a line, not the panel,
+  -- and letting ui2 grow it pushed the statusline around.
   cfg.row = rect.row
   cfg.col = rect.col
   cfg.width = rect.width
-  cfg.height = math.min(rect.height or 1, math.max(1, cfg.height or 1))
+  cfg.height = 1
   cfg.border = 'none'
   pcall(vim.api.nvim_win_set_config, cmd, cfg)
   return true

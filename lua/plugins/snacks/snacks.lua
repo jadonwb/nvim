@@ -40,6 +40,9 @@ return {
       styles = {
         terminal = {
           wo = {
+            -- A title bar so a terminal split reads as a surface, the same way
+            -- every other panel labels itself.
+            winbar = '%#Comment# Terminal ',
             winhighlight = 'Normal:Normal,WinBar:SnacksWinBar,WinBarNC:SnacksWinBarNC,FloatTitle:SnacksTitle,FloatFooter:SnacksFooter,WinSeparator:SnacksWinSeparator,FloatBorder:Border',
           },
         },
