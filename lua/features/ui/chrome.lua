@@ -79,7 +79,7 @@ end
 ---
 --- `sections` is a list of `{ title?, rows }`, where each row is a chunk list
 --- (use `M.row`). Rows are padded to the frame's inner width.
----@param opts { width: integer, title: string, icon?: string, meta?: string, sections: table[] }
+---@param opts { width: integer, height?: integer, title: string, icon?: string, meta?: string, sections: table[] }
 ---@return table[] lines
 function M.frame(opts)
   local width_total = math.max(12, opts.width)
@@ -107,6 +107,15 @@ function M.frame(opts)
     end
     for _, row in ipairs(section.rows or {}) do
       lines[#lines + 1] = M.fit(row, inner)
+    end
+  end
+
+  -- Fill the slot when a height is given: a sidebar should read as one surface,
+  -- not as a small card floating in an empty window.
+  if opts.height then
+    local target = math.max(0, opts.height - 2)
+    while #lines < target do
+      lines[#lines + 1] = {}
     end
   end
 

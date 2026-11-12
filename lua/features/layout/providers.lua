@@ -77,6 +77,7 @@ function M.changes(win, name)
 
   local lines = chrome.frame {
     width = width,
+    height = vim.api.nvim_win_get_height(win),
     icon = '',
     title = 'Changes',
     meta = #out > 0 and (' ' .. #out .. ' ') or nil,
@@ -212,6 +213,7 @@ function M.session(win, _)
 
   local lines = chrome.frame {
     width = width,
+    height = vim.api.nvim_win_get_height(win),
     icon = '󰒓',
     title = 'Session',
     meta = (' %s '):format(profile),
