@@ -40,6 +40,7 @@ nvim --server "$NVIM" --remote-expr 'v:lua.NVSlots.toggle_slot("bottom")'
 | `NVBridge.cancel()` | stop the running `opencode run` |
 | `NVBridge.state` | `{ job, session, status = { cost, tokens }, buf, win }` |
 | `NVBridge.append(text)` | append a line to the transcript from outside |
+| `NVBridge.open_file(path, line)` | show a file in the editing area, optionally at a line |
 | `:NVAgent [text]` | open the transcript, or send `text` |
 
 Slot names: `left`, `bottom_left`, `right_top`, `right_bottom`, `bottom`.
@@ -56,6 +57,17 @@ virtual text.
 Streaming is `opencode run --format json`, whose NDJSON events are appended by
 `NVBridge.on_event`. A new session is created with `--archived` so scripted runs
 stay out of the session list; continuing one passes `--session <id>`.
+
+An external process that did not inherit `$NVIM` (an opencode plugin runs in the
+OpenCode server) finds the socket in the editor registry:
+
+```text
+${XDG_RUNTIME_DIR}/nvim-bridge/<pid>.json
+{ "server": "…", "cwd": "…", "pid": 123, "profile": "workspace", "updated": 1794442321 }
+```
+
+Entries are refreshed while the editor runs and removed on exit; readers ignore
+entries older than five minutes.
 
 Inbound control uses the same entry points as any external tool:
 

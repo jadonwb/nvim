@@ -293,6 +293,33 @@ function NVBridge.submit(text, opts)
   })
 end
 
+--- Open a file in the editing area, optionally at a line. Used by the agent's
+--- `nvim` tool through `--remote-expr`.
+---@param path string
+---@param line integer|nil
+---@return boolean
+function NVBridge.open_file(path, line)
+  if type(path) ~= 'string' or path == '' then
+    return false
+  end
+
+  local target = vim.fn.fnamemodify(vim.fn.expand(path), ':p')
+  if vim.fn.filereadable(target) == 0 and vim.fn.isdirectory(target) == 0 then
+    return false
+  end
+
+  local win = NVSlots and NVSlots.content_win and NVSlots.content_win() or vim.api.nvim_get_current_win()
+  vim.api.nvim_win_call(win, function()
+    vim.cmd.edit(vim.fn.fnameescape(target))
+    if line and tonumber(line) then
+      local row = math.max(1, math.min(tonumber(line), vim.api.nvim_buf_line_count(0)))
+      vim.api.nvim_win_set_cursor(win, { row, 0 })
+      vim.cmd 'normal! zz'
+    end
+  end)
+  return true
+end
+
 --- Re-render the session panel when it shows agent status.
 function NVBridge.refresh()
   vim.schedule(function()
@@ -308,6 +335,8 @@ function NVBridge.cancel()
 end
 
 function NVBridge.setup()
+  require('features.bridge.registry').setup()
+
   vim.api.nvim_create_user_command('NVAgent', function(args)
     if args.args ~= '' then
       NVBridge.submit(args.args)

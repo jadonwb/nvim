@@ -60,18 +60,34 @@ session list. Continuing a session passes `--session <id>`.
 
 ## Control direction
 
-Neovim exports `$NVIM` to processes it starts, including the `opencode` job, so
-an opencode tool can call back:
+`$NVIM` is exported to processes Neovim starts, but an opencode *plugin* runs in
+the OpenCode server, which does not inherit it (the server may predate the run or
+be shared). So the editor publishes its socket instead:
 
-```sh
-nvim --server "$NVIM" --remote-expr 'v:lua.NVBridge.open()'
-nvim --server "$NVIM" --remote-expr 'v:lua.NVSlots.set_provider("right_top", "changes")'
-nvim --server "$NVIM" --remote-expr 'luaeval("vim.json.encode(NVSlots.state())")'
+```text
+${XDG_RUNTIME_DIR}/nvim-bridge/<pid>.json
+{ "server": "/run/user/1000/nvim.123.0", "cwd": "/home/me/project",
+  "pid": 123, "profile": "workspace", "updated": 1794442321 }
 ```
 
-That is the whole channel: no socket protocol of our own, no plugin on the
-opencode side that Neovim must trust. The opencode-side wrapper belongs in the
-opencode config repository.
+`features/bridge/registry.lua` writes it on startup and refreshes it on
+`DirChanged`/`BufEnter`/`FocusGained`; `VimLeavePre` removes it. Readers ignore
+entries older than five minutes, so a crashed editor cannot hijack calls.
+
+The opencode plugin picks the entry whose `cwd` contains the session's directory
+(exact match wins, then the longest prefix, then the most recently active) and
+calls the same API any external tool can:
+
+```sh
+nvim --server <server> --remote-expr 'v:lua.NVBridge.open()'
+nvim --server <server> --remote-expr 'v:lua.NVSlots.set_provider("right_top", "changes")'
+nvim --server <server> --remote-expr 'luaeval("vim.json.encode(NVSlots.state())")'
+```
+
+`plugins/nvim-bridge.ts` in the opencode config registers one tool,
+`nvim_control`, with actions `open` (file + line), `transcript`, `slot`
+(name + provider), `layout`, `status`, `append`. There is no protocol of our own
+and nothing on the Neovim side to trust beyond the editor API.
 
 ## Known gaps
 

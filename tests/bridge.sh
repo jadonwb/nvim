@@ -24,10 +24,18 @@ FAKE
 chmod +x "$tmp/bin/opencode"
 export PATH="$tmp/bin:$PATH"
 export FAKE_ARGV_LOG="$tmp/argv.log"
+# Keep registry files out of the user's runtime directory.
+export XDG_RUNTIME_DIR="$tmp/runtime"
+export PROBE_FILE="$tmp/probe.txt"
+printf 'alpha\nbeta\n' >"$PROBE_FILE"
 
 probe=$(cat <<'LUA'
 local out = {}
 local function add(s) out[#out + 1] = s end
+
+-- XDG_RUNTIME_DIR points at the test directory, so the system clipboard
+-- provider cannot reach Wayland. The bridge never uses it.
+vim.opt.clipboard = ''
 
 NVBridge.submit 'hi'
 vim.wait(3000, function() return NVBridge.state.job == nil end)
@@ -53,6 +61,16 @@ vim.cmd 'normal! yy'
 add('yankable=' .. tostring(vim.fn.getreg '"':find('hello world', 1, true) ~= nil))
 add('editing blocked=' .. tostring(not pcall(vim.api.nvim_buf_set_lines, buf, 0, 0, false, { 'x' })))
 
+-- The registry is how an external agent finds this editor's socket.
+require('features.bridge.registry').write()
+local entry = vim.fn.glob(vim.env.XDG_RUNTIME_DIR .. '/nvim-bridge/*.json')
+local info = entry ~= '' and vim.json.decode(table.concat(vim.fn.readfile(entry), '\n')) or {}
+add('registry=' .. tostring(info.server ~= nil and info.cwd == vim.fn.getcwd()))
+
+-- Inbound control surface used by the opencode tool.
+add('open_file=' .. tostring(NVBridge.open_file(vim.env.PROBE_FILE, 2)))
+add('open_line=' .. tostring(vim.fn.line '.'))
+
 -- A new session is created archived; continuing one is not.
 NVBridge.submit('again', { session = 'ses_existing' })
 vim.wait(3000, function() return NVBridge.state.job == nil end)
@@ -64,7 +82,7 @@ io.write(table.concat(out, '\n'))
 LUA
 )
 
-got=$(nvim --headless "+lua $probe" +qa! 2>&1)
+got=$(nvim --headless --listen "$tmp/nvim.sock" "+lua $probe" +qa! 2>&1)
 printf '%s\n' "$got"
 
 fail=0
@@ -80,6 +98,9 @@ check 'tokens=10'
 check 'readonly=true'
 check 'yankable=true'
 check 'editing blocked=true'
+check 'registry=true'
+check 'open_file=true'
+check 'open_line=2'
 check 'archived first=true'
 check 'archived when continuing=false'
 
