@@ -85,6 +85,9 @@ add('registry=' .. tostring(info.server ~= nil and info.cwd == vim.fn.getcwd()))
 add('open_file=' .. tostring(NVBridge.open_file(vim.env.PROBE_FILE, 2)))
 add('open_line=' .. tostring(vim.fn.line '.'))
 
+-- Starting over drops the session and the buffer reference.
+add('new session=' .. tostring(NVBridge.new_session() and NVBridge.state.session == nil))
+
 -- A new session is created archived; continuing one is not.
 NVBridge.submit('again', { session = 'ses_existing' })
 vim.wait(3000, function() return NVBridge.state.job == nil end)
@@ -118,6 +121,7 @@ check 'open_line=2'
 check 'winbar=true'
 check 'winbar status=true'
 check 'foreign winbar=true'
+check 'new session=true'
 check 'archived first=true'
 check 'archived when continuing=false'
 

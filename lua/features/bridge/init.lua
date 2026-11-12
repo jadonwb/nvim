@@ -101,7 +101,10 @@ function NVBridge.ensure_buffer()
   -- Read-only for the user, written to only by the stream. Motions, visual
   -- selection and yanking still work: only editing is blocked.
   vim.bo[buf].modifiable = false
-  vim.api.nvim_buf_set_name(buf, 'opencode://' .. tostring(os.time()))
+  -- Unique even when a new session starts in the same second: the previous
+  -- transcript is still alive and keeps its name.
+  NVBridge.state.counter = (NVBridge.state.counter or 0) + 1
+  vim.api.nvim_buf_set_name(buf, ('opencode://%d-%d'):format(os.time(), NVBridge.state.counter))
   NVBridge.state.buf = buf
   return buf
 end
@@ -270,7 +273,14 @@ function NVBridge.submit(text, opts)
     NVBridge.open()
   end
   NVBridge.state.parts = {}
-  NVBridge.append('\n**You**\n\n' .. text .. '\n\n**opencode**\n\n')
+
+  -- Plain real headers, highlighted through extmarks: the text stays copyable
+  -- and searchable.
+  NVBridge.append('\n')
+  append_line_hl('You', 'NvAgentName')
+  NVBridge.append('\n' .. text .. '\n')
+  append_line_hl('opencode', 'NvAgentName')
+  NVBridge.append('\n')
   NVBridge.refresh()
 
   local cmd = { 'opencode', 'run', '--format', 'json' }
@@ -399,6 +409,21 @@ function NVBridge.cancel()
   end
 end
 
+--- Forget the current session and transcript; the next prompt starts clean.
+---@return boolean
+function NVBridge.new_session()
+  if NVBridge.state.job then
+    NVMessages.warn 'opencode is still running'
+    return false
+  end
+  NVBridge.state.session = nil
+  NVBridge.state.status = nil
+  NVBridge.state.parts = {}
+  NVBridge.state.buf = nil
+  NVBridge.state.win = nil
+  return true
+end
+
 function NVBridge.setup()
   require('features.bridge.registry').setup()
 
@@ -411,12 +436,23 @@ function NVBridge.setup()
   })
 
   vim.api.nvim_create_user_command('NVAgent', function(args)
-    if args.args ~= '' then
-      NVBridge.submit(args.args)
-    else
+    local arg = vim.trim(args.args)
+    if arg == '' then
       NVBridge.open()
+    elseif arg == 'stop' then
+      NVBridge.cancel()
+    elseif arg == 'new' then
+      NVBridge.new_session()
+    else
+      NVBridge.submit(arg)
     end
-  end, { nargs = '*', desc = 'Open or prompt the agent output buffer' })
+  end, {
+    nargs = '*',
+    desc = 'Open the agent transcript, prompt it, stop it, or start a new session',
+    complete = function()
+      return { 'new', 'stop' }
+    end,
+  })
 
   K.map {
     NVKeymaps.agent,
