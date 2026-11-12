@@ -168,6 +168,19 @@ vim.api.nvim_win_set_width(rw, 12)
 NVSlots.enforce()
 add('geometry enforced=' .. tostring(vim.api.nvim_win_get_width(rw) > 12))
 
+-- The cheatsheet opens as a float over the layout and closes on q.
+require('features.cheatsheet').open()
+local cheat_win
+for _, w in ipairs(vim.api.nvim_list_wins()) do
+  if vim.bo[vim.api.nvim_win_get_buf(w)].filetype == 'nvcheatsheet' then
+    cheat_win = w
+  end
+end
+add('cheatsheet=' .. tostring(cheat_win ~= nil and #vim.api.nvim_win_get_config(cheat_win).relative > 0))
+if cheat_win then
+  vim.api.nvim_win_close(cheat_win, true)
+end
+
 -- Swap keeps the windows and exchanges their buffers.
 local ft_top_before = vim.bo[vim.api.nvim_win_get_buf(NVSlots.win 'right_top')].filetype
 vim.cmd 'NVLayout swap right_top right_bottom'
@@ -210,6 +223,7 @@ check 'left closed others stay=true'
 check 'buffer delete keeps window=true'
 check 'window repair=true'
 check 'geometry enforced=true'
+check 'cheatsheet=true'
 check 'reopen one slot=true'
 grep -q 'ratios=true' <<<"$got" || { echo 'FAIL: left column not narrower than right'; fail=1; }
 grep -q 'swap exchanged=true win=true' <<<"$got" || { echo 'FAIL: swap did not exchange slot contents'; fail=1; }

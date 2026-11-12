@@ -20,6 +20,7 @@ return {
       NVBottom.setup()
 
       require('features.preview').setup()
+      require('features.cheatsheet').setup()
 
       require 'features.bridge'
       NVBridge.setup()
