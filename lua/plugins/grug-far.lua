@@ -3,7 +3,9 @@ local filetype = 'grug-far'
 local fn = {}
 
 NVGrugFar = {
-  'MagicDuck/grug-far.nvim', cond = function() return require('config.profile').wants 'picker' end,
+  'MagicDuck/grug-far.nvim',
+  cond = function() return require('config.profile').wants 'picker' end,
+  cmd = { 'GrugFar', 'GrugFarWithin' },
   opts = {
     headerMaxWidth = 80,
     engines = {
@@ -96,7 +98,23 @@ function NVGrugFar.autocmds()
     group = vim.api.nvim_create_augroup('grug-far-custom-keybinds', { clear = true }),
     pattern = { filetype },
     callback = function()
+      -- One instance only: a second :GrugFar used to stack another split in the
+      -- editing area.
+      local current = vim.api.nvim_get_current_win()
+      for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+        local buf = vim.api.nvim_win_get_buf(win)
+        if win ~= current and vim.bo[buf].filetype == filetype then
+          pcall(vim.api.nvim_win_close, win, true)
+        end
+      end
       -- TODO!: what this do? focuses the replace bar specifically?
+      keymap('q', function()
+        NVGrugFar.ensure_hidden()
+      end)
+      keymap('<Esc>', function()
+        NVGrugFar.ensure_hidden()
+      end)
+
       keymap('<A-Up>', function()
         vim.api.nvim_win_set_cursor(vim.fn.bufwinid(0), { 2, 0 })
         vim.cmd 'normal! $'
