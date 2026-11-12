@@ -105,6 +105,19 @@ not a mode; it is pinned over one row of the panel.
 the theme's real colours, and `scripts/gen-keymaps.sh` regenerates the keymap
 page. Both are development tools, not loaded by Neovim.
 
+## Narrow widths
+
+The layout is tested at 120x36 as well as full width:
+
+- The transcript switches render-markdown off below 110 columns, because a rigid
+  table grid wraps into vertical text in a narrow pane; raw markdown tables stay
+  readable and copyable either way. Tables are not rendered at any width for the
+  same reason: pipe lines wrap predictably.
+- Heading blocks have no fixed minimum width, so they fit a split.
+- Trouble floats at 90% x 60%, which fits a typical diagnostic message.
+- Pickers use the vertical layout (input, list, preview) and keep their chips.
+- The notification centre sizes to the editor and wraps long messages.
+
 ## Picker
 
 Snacks pickers with the custom layouts in `plugins/snacks/snacks-picker.lua`:
