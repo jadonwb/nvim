@@ -498,6 +498,18 @@ function NVSlots.toggle_slot(name)
   end
 end
 
+--- Keep the bottom slot's mode strip in sync with its provider.
+---@param name string
+function NVSlots.sync_winbar(name)
+  local slot = tab_state().slots[name]
+  if name ~= 'bottom' or not slot or not slot.provider then
+    return
+  end
+  if NVBottom and NVBottom.winbar and vim.api.nvim_win_is_valid(slot.win) then
+    pcall(NVBottom.winbar, slot.win, slot.provider)
+  end
+end
+
 --- Switch a slot to another registered provider and refresh it.
 ---@param name string slot name
 ---@param provider string provider name
@@ -509,7 +521,9 @@ function NVSlots.set_provider(name, provider)
     return false
   end
   slot.provider = provider
-  return (pcall(fn, slot.win, name))
+  local ok = (pcall(fn, slot.win, name))
+  NVSlots.sync_winbar(name)
+  return ok
 end
 
 --- Update every open slot from its provider.
@@ -521,6 +535,7 @@ function NVSlots.refresh_providers()
     local fn = slot and slot.provider and NVSlots.providers[slot.provider]
     if fn and vim.api.nvim_win_is_valid(slot.win) then
       pcall(fn, slot.win, name)
+      NVSlots.sync_winbar(name)
     end
   end
 end
@@ -717,6 +732,9 @@ function NVSlots.setup()
       callback = function()
         if not NVSlots.is_applied() then
           NVSlots.open()
+        end
+        if NVSnacksDashboard and NVSnacksDashboard.open then
+          pcall(NVSnacksDashboard.open)
         end
       end,
     })

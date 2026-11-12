@@ -8,7 +8,9 @@
 -- buffers; it is only ever opened through the slot provider.
 return {
   'stevearc/oil.nvim',
-  cmd = { 'Oil' },
+  -- The explorer is part of the default layout, which opens at VimEnter; a
+  -- `cmd`-lazy spec would not be loaded yet and the panel would stay empty.
+  lazy = false,
   cond = function()
     return require('config.profile').wants 'picker'
   end,

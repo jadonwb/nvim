@@ -14,11 +14,33 @@ function NVSnacksDashboard.setup()
   end)
 end
 
+--- Open the dashboard in the layout's content window. Snacks' automatic
+--- dashboard is a float and it refuses to open once more than one window exists
+--- (the layout), so the layout opens it explicitly instead.
+---@return boolean
+function NVSnacksDashboard.open()
+  if not NVSnacksDashboard.should_show() or vim.fn.argc() > 0 then
+    return false
+  end
+  local ok, snacks = pcall(require, 'snacks')
+  if not ok then
+    return false
+  end
+  local win = NVSlots and NVSlots.content_win and NVSlots.content_win()
+  if not win then
+    return false
+  end
+  return pcall(snacks.dashboard.open, { win = win })
+end
+
 return {
   'folke/snacks.nvim',
   opts = {
     dashboard = {
-      enabled = NVSnacksDashboard.should_show(),
+      -- Opened by NVSnacksDashboard.open() after the layout exists: snacks'
+      -- own autostart is a float and bails out when there is more than one
+      -- window.
+      enabled = false,
       sections = {
         { section = 'header' },
         function()

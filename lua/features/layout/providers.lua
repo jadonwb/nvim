@@ -217,13 +217,40 @@ end
 function M.explorer(win, name)
   local slot = name or 'left'
   local dir = vim.fn.getcwd()
-  local ok = pcall(function()
+
+  local function load()
     vim.api.nvim_win_call(win, function()
       require('oil').open(dir, { preview = false })
     end)
-  end)
+  end
+
+  local ok = pcall(load)
   if not ok then
     return false
+  end
+
+  -- The layout opens at VimEnter, which can be before lazy has configured oil;
+  -- oil then leaves the buffer as a bare `oil://` URL. Retry briefly instead of
+  -- leaving an empty panel.
+  if vim.bo[vim.api.nvim_win_get_buf(win)].filetype ~= 'oil' then
+    local tries = 0
+    local function retry()
+      if not vim.api.nvim_win_is_valid(win) then
+        return
+      end
+      if vim.bo[vim.api.nvim_win_get_buf(win)].filetype == 'oil' then
+        return
+      end
+      if tries >= 20 then
+        return
+      end
+      tries = tries + 1
+      vim.defer_fn(function()
+        pcall(load)
+        retry()
+      end, 50)
+    end
+    retry()
   end
 
   local buf = vim.api.nvim_win_get_buf(win)
