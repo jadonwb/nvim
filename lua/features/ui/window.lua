@@ -50,11 +50,12 @@ function NVUi.float(opts)
   vim.bo[buf].bufhidden = 'wipe'
   vim.bo[buf].swapfile = false
 
-  local ns = vim.api.nvim_create_namespace('nvui-' .. buf)
+  local ns = vim.api.nvim_create_namespace 'nvui-float'
   local handle = { buf = buf, ns = ns, xpad = opts.xpad or 2, source = opts.source }
 
   if opts.backdrop ~= false then
     local dim = vim.api.nvim_create_buf(false, true)
+    vim.bo[dim].bufhidden = 'wipe'
     handle.backdrop = vim.api.nvim_open_win(dim, false, {
       relative = 'editor',
       row = 0,
@@ -67,6 +68,7 @@ function NVUi.float(opts)
       zindex = (opts.zindex or 60) - 10,
     })
     vim.wo[handle.backdrop].winblend = 20
+    vim.wo[handle.backdrop].winhighlight = 'Normal:NvBackdrop'
   end
 
   handle.win = vim.api.nvim_open_win(buf, opts.enter or false, {
@@ -82,7 +84,8 @@ function NVUi.float(opts)
   -- No window-local highlight namespace: an empty namespace leaves `Normal`
   -- undefined for the window, so floats paint no background and whatever is
   -- behind them (a dimmed backdrop) shows through.
-  vim.wo[handle.win].winhighlight = 'Normal:NormalFloat,FloatBorder:NvPanelBorder,EndOfBuffer:NormalFloat'
+  -- Raised surface; the border is the surface colour, so it only pads.
+  vim.wo[handle.win].winhighlight = 'Normal:NvRaised,NormalNC:NvRaised,FloatBorder:NvRaisedBorder,EndOfBuffer:NvRaised'
 
   if opts.enter then
     -- Opening from insert mode (a prompt, a grug-far field) must not leave the
@@ -133,7 +136,7 @@ end
 function NVUi.panel(win, opts)
   opts = opts or {}
   local buf = vim.api.nvim_win_get_buf(win)
-  local ns = vim.api.nvim_create_namespace('nvui-panel-' .. win)
+  local ns = vim.api.nvim_create_namespace 'nvui-panel'
   vim.wo[win].list = false
   return { buf = buf, win = win, ns = ns, xpad = opts.xpad or 1 }
 end

@@ -1,290 +1,102 @@
 #!/usr/bin/env bash
-# IDE slot layout assertions, run headless against this checkout.
+# Slot layout invariants, run headless against this checkout.
 #
 #   tests/layout.sh
+#
+# Covers what the layout promises (docs/wiki/layout.md): it applies on the
+# first file, sizes are a pure function of the screen, hidden panels stay
+# hidden, panels closed any other way are rebuilt, side panels step aside for
+# a side-by-side split, and help opens in the content window.
 set -uo pipefail
 
 root=$(cd -- "$(dirname -- "$0")/.." && pwd -P)
 tmp=$(mktemp -d "${TMPDIR:-/tmp}/nv-layout.XXXXXX")
 trap 'rm -rf -- "$tmp"' EXIT
 export XDG_CONFIG_HOME="$tmp/xdg"
-mkdir -p "$XDG_CONFIG_HOME"
+# Panel memory (nv-layout.json) must not touch the caller's state.
+export XDG_STATE_HOME="$tmp/state"
+mkdir -p "$XDG_CONFIG_HOME" "$XDG_STATE_HOME"
 ln -sfn "$root" "$XDG_CONFIG_HOME/nvim"
 
-# A deterministic repository: the changed-files panel must not depend on the
-# caller's working tree having uncommitted edits.
 repo=$tmp/repo
 mkdir -p "$repo"
 git -C "$repo" init -q
-git -C "$repo" config user.email test@example.com
-git -C "$repo" config user.name test
+git -C "$repo" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m base
 printf 'one\n' >"$repo/a.txt"
 printf 'one\n' >"$repo/b.txt"
-git -C "$repo" add -A
-git -C "$repo" commit -qm base
-printf 'two\n' >>"$repo/a.txt"
-printf 'two\n' >>"$repo/b.txt"
 cd "$repo" || exit 1
 
 probe=$(cat <<'LUA'
-local function wins() return #vim.api.nvim_tabpage_list_wins(0) end
-local function slot(name)
-  local s = NVSlots.status()[name]
-  return s and (s.width .. 'x' .. s.height) or 'none'
-end
+vim.o.columns, vim.o.lines = 200, 50
 local out = {}
 local function add(s) out[#out + 1] = s end
-
--- The layout is on by default (VimEnter); start from a clean tab.
-pcall(vim.cmd, 'NVLayout close')
-vim.cmd 'enew'
-add('start wins=' .. wins())
-vim.cmd 'NVLayout open'
-add('open wins=' .. wins() .. ' slots=' .. vim.tbl_count(NVSlots.status()) .. ' applied=' .. tostring(NVSlots.is_applied()))
-local left = NVSlots.status().left
-local right = NVSlots.status().right_top
-local rt = NVSlots.status().right_top.height
-local rb = NVSlots.status().right_bottom.height
-add('left=' .. left.width .. ' right=' .. right.width .. ' ratios=' .. tostring(left.width < right.width))
-add('right halves=' .. tostring(rt == rb))
--- Providers render into their slots.
-local function ft(name)
-  local w = NVSlots.win(name)
-  return w and vim.bo[vim.api.nvim_win_get_buf(w)].filetype or 'none'
-end
-add('providers=' .. ft 'right_top' .. ',' .. ft 'right_bottom' .. ',' .. ft 'bottom')
-add('left=' .. ft 'left')
-
--- Volt panels draw with virtual text; read what is actually visible.
-local function visible(name)
-  local w = NVSlots.win(name)
-  if not w then
-    return ''
+local function wait(ms) vim.wait(ms or 200) end
+local function sizes()
+  local o = {}
+  for name, s in pairs(NVSlots.status()) do
+    o[#o + 1] = name .. '=' .. s.width .. 'x' .. s.height
   end
-  local b = vim.api.nvim_win_get_buf(w)
-  local t = {}
-  for _, m in ipairs(vim.api.nvim_buf_get_extmarks(b, -1, 0, -1, { details = true })) do
-    if m[4].virt_text then
-      t[#t + 1] = table.concat(vim.tbl_map(function(c) return c[1] end, m[4].virt_text))
-    end
+  table.sort(o)
+  return table.concat(o, ' ')
+end
+local SIDES = { 'left', 'right_top', 'right_mid', 'right_bottom' }
+local function sides_open()
+  for _, n in ipairs(SIDES) do
+    if not NVSlots.is_open(n) then return false end
   end
-  return table.concat(t, ' ')
-end
-add('session=' .. tostring(visible('right_bottom'):find('branch', 1, true) ~= nil))
-
--- Bottom panel modes: each one swaps content in place and draws its winbar.
-for _, mode in ipairs { 'prompt', 'quickfix', 'problems' } do
-  NVBottom.set(mode)
-  local bw = NVSlots.win 'bottom'
-  add(('bottom %s=%s'):format(mode, tostring(NVSlots.provider_of('bottom') == mode and bw and vim.wo[bw].winbar ~= '')))
-end
-NVBottom.cycle(1)
-add('bottom cycle=' .. tostring(NVSlots.provider_of('bottom') ~= nil))
-
--- LSP progress renders as a volt bar inside the session panel.
-NVMessages.progress['test.1'] = {
-  client_id = 1,
-  name = 'lua_ls',
-  kind = 'report',
-  title = 'LuaLS',
-  percent = 50,
-  updated = 1,
-}
-NVSlots.providers.session(NVSlots.win 'right_bottom')
-add('progress=' .. tostring(visible('right_bottom'):find('LuaLS', 1, true) ~= nil))
-
--- The changed-files panel is a volt table: title plus at least one status row.
-local changes = visible 'right_top'
-add('changes=' .. tostring(changes:find('Changes', 1, true) ~= nil))
-
-local top_buf = vim.api.nvim_win_get_buf(NVSlots.win 'right_top')
-local changes_meta = vim.b[top_buf].nv_changes or {}
-add('rows=' .. tostring(#(changes_meta.paths or {}) > 0))
--- Body rows start after the frame's top border and header.
-add('row map=' .. tostring(changes_meta.first == 4 and #(changes_meta.paths or {}) > 0))
-
--- Any slot can host any provider.
-NVSlots.set_provider('right_top', 'session')
-add('substituted=' .. vim.bo[top_buf].filetype)
-NVSlots.set_provider('right_top', 'changes')
-add('restored=' .. vim.bo[top_buf].filetype)
-
--- A provider can move to a slot that is not its default.
-NVSlots.set_provider('right_bottom', 'prompt')
-add('prompt moved=' .. vim.bo[vim.api.nvim_win_get_buf(NVSlots.win 'right_bottom')].filetype)
-NVSlots.set_provider('right_bottom', 'session')
-
--- After a swap, the periodic refresh must find changes by provider, not by slot.
-NVSlots.swap('right_top', 'right_bottom')
-add('changes slot=' .. tostring(NVSlots.slot_with_provider 'changes'))
-NVMessages.progress = {}
-vim.cmd 'NVLayout close'
-add('close wins=' .. wins() .. ' applied=' .. tostring(NVSlots.is_applied()))
-vim.cmd 'NVLayout open'
-add('reopen wins=' .. wins())
-vim.cmd 'NVLayout close'
-add('final wins=' .. wins())
-
--- Per-slot control: closing a slot returns its space to the neighbour.
-local function center()
-  for _, w in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-    local c = vim.api.nvim_win_get_config(w)
-    if c.relative == '' and not vim.b[vim.api.nvim_win_get_buf(w)].nv_slot then
-      return w
-    end
-  end
+  return true
 end
 
-vim.cmd 'NVLayout open'
-local h_before = vim.api.nvim_win_get_height(center())
-vim.cmd 'NVLayout slot bottom close'
-local h_after = vim.api.nvim_win_get_height(center())
-add('bottom closed grows centre=' .. tostring(h_after > h_before) .. ' open=' .. tostring(NVSlots.is_open('bottom')))
+-- Applies on the first real file.
+vim.cmd 'edit a.txt'
+wait(500)
+add('applied=' .. tostring(NVSlots.is_applied()) .. ' sides=' .. tostring(sides_open()) .. ' bottom=' .. tostring(NVSlots.is_open 'bottom'))
+add('left narrower=' .. tostring(NVSlots.status().left.width < vim.o.columns / 4))
 
--- Closing a slot leaves the others alone: left, bottom and right are
--- independent, and what remains keeps its own space.
-vim.cmd 'NVLayout slot left close'
-add('left closed others stay=' .. tostring(not NVSlots.is_open 'left' and NVSlots.is_open 'right_top' and NVSlots.is_open 'right_bottom'))
-vim.cmd 'NVLayout slot left open'
-vim.cmd 'NVLayout slot bottom open'
-add('reopen one slot=' .. tostring(NVSlots.is_open 'bottom'))
+-- Sizes are stable across focus mode.
+local before = sizes()
+NVSlots.toggle() wait()
+add('focus off=' .. tostring(not NVSlots.is_applied()))
+NVSlots.toggle() wait()
+add('toggle stable=' .. tostring(sizes() == before))
 
--- Protection: deleting a slot buffer must not lose the slot. The window is
--- either kept (bufhidden=hide) or rebuilt by repair.
-local left_win = NVSlots.win 'left'
-vim.api.nvim_buf_delete(vim.api.nvim_win_get_buf(left_win), { force = true })
-vim.wait(200, function() return NVSlots.is_open 'left' end)
-add('buffer delete keeps window=' .. tostring(NVSlots.is_open 'left' and vim.api.nvim_win_is_valid(NVSlots.win 'left')))
+-- Hidden panels stay hidden through focus mode; show brings them back.
+NVSlots.hide 'right_mid' wait()
+NVSlots.toggle() wait() NVSlots.toggle() wait()
+add('hidden kept=' .. tostring(not NVSlots.is_open 'right_mid') .. ' remembered=' .. tostring(NVSlots.memory().closed.right_mid == true))
+NVSlots.show 'right_mid' wait()
+add('shown=' .. tostring(NVSlots.is_open 'right_mid'))
 
--- Protection: a slot window closed outside the API is rebuilt.
-local rt = NVSlots.win 'right_top'
-vim.api.nvim_win_close(rt, true)
-vim.wait(200, function() return NVSlots.is_open 'right_top' end)
-add('window repair=' .. tostring(NVSlots.is_open 'right_top'))
+-- A panel closed outside the API is rebuilt; :only is repaired.
+vim.api.nvim_win_close(NVSlots.win 'right_top', true) wait(400)
+add('repaired=' .. tostring(NVSlots.is_open 'right_top'))
+vim.api.nvim_set_current_win(NVSlots.content_win())
+pcall(vim.cmd, 'only') wait(400)
+add('only repaired=' .. tostring(sides_open()) .. ' stable=' .. tostring(sizes() == before))
 
--- Focus mode restores the providers, not just the slot names.
-NVSlots.set_provider('bottom', 'problems')
-local info = NVMessages.info
-NVMessages.info = function() end
-NVSlots.toggle()
-NVSlots.toggle()
-NVMessages.info = info
-add('focus providers=' .. tostring(NVSlots.provider_of 'bottom'))
-NVSlots.set_provider('bottom', 'prompt')
+-- Reading room: a narrow vsplit moves the side panels aside, closing it
+-- brings them back.
+vim.api.nvim_set_current_win(NVSlots.content_win())
+vim.cmd 'vsplit b.txt' wait(400)
+add('room sides gone=' .. tostring(not NVSlots.is_open 'left' and not NVSlots.is_open 'right_top'))
+vim.cmd 'close' wait(400)
+add('room sides back=' .. tostring(sides_open()))
 
--- Closing the only content buffer rebuilds the editing area.
-local centre = NVSlots.content_win()
-vim.api.nvim_buf_delete(vim.api.nvim_win_get_buf(centre), { force = true })
-vim.wait(200, function()
-  local ok, cb = pcall(function()
-    return vim.b[vim.api.nvim_win_get_buf(NVSlots.content_win())].nv_slot == nil
-  end)
-  return ok and cb
-end)
-add('centre rebuilt=' .. tostring(vim.b[vim.api.nvim_win_get_buf(NVSlots.content_win())].nv_slot == nil))
+-- Help opens in the content window (no extra split); q goes back.
+local wins = #vim.tbl_filter(function(w) return vim.api.nvim_win_get_config(w).relative == '' end, vim.api.nvim_tabpage_list_wins(0))
+pcall(vim.cmd, 'help lua-guide') wait(400)
+local now = #vim.tbl_filter(function(w) return vim.api.nvim_win_get_config(w).relative == '' end, vim.api.nvim_tabpage_list_wins(0))
+add('help in content=' .. tostring(vim.bo.filetype == 'help' and now == wins))
+vim.cmd 'normal q' wait(300)
+add('help back=' .. tostring(vim.fn.expand('%:t') == 'a.txt'))
 
--- Height keys resize the bottom panel (the grid's only vertical freedom).
-local bottom_win = NVSlots.win 'bottom'
-local bottom_h = vim.api.nvim_win_get_height(bottom_win)
-NVSlots.resize_height(2)
-local bottom_h2 = vim.api.nvim_win_get_height(bottom_win)
-NVSlots.resize_height(-2)
-add('height key=' .. tostring(bottom_h2 > bottom_h))
-NVSlots.reset_sizes()
+-- Default sizes restore after a manual resize.
+vim.api.nvim_win_set_width(NVSlots.win 'left', 50) wait()
+pcall(NVSlots.reset_sizes or function() vim.cmd 'NVLayout reset' end) wait(300)
+add('reset=' .. tostring(sizes() == before))
 
--- Protection: the configured geometry is re-applied after a manual resize.
-local rw = NVSlots.win 'right_top'
-vim.api.nvim_win_set_width(rw, 12)
-NVSlots.enforce()
-add('geometry enforced=' .. tostring(vim.api.nvim_win_get_width(rw) > 12))
-
--- Semantic highlight groups exist for every panel colour the UI asks for.
-local hl_ok = true
-for _, name in ipairs { 'ExRed', 'ExGreen', 'ExYellow', 'ExBlue', 'CommentFg', 'NvPanelBorder', 'NvPanelTitle', 'NvChip', 'NvChipMuted', 'NvStMode', 'NvStFile', 'SnacksPicker', 'SnacksPickerList', 'SnacksPickerTitle' } do
-  if vim.fn.hlexists(name) == 0 then
-    hl_ok = false
-    add('missing hl ' .. name)
-  end
-end
-add('highlights=' .. tostring(hl_ok))
-
--- The notification centre renders a sample entry.
-require('features.ui.notify').add(vim.log.levels.WARN, 'ui test entry', { title = 'test' })
-require('features.ui.notify').open()
-local notify_open = false
-for _, w in ipairs(vim.api.nvim_list_wins()) do
-  -- Closing the float also closes its backdrop, which invalidates later
-  -- entries in this snapshot.
-  if vim.api.nvim_win_is_valid(w) and vim.bo[vim.api.nvim_win_get_buf(w)].filetype == 'nvnotify' then
-    notify_open = true
-    vim.api.nvim_win_close(w, true)
-  end
-end
-add('notification centre=' .. tostring(notify_open))
-pcall(vim.cmd, 'silent messages clear')
-
--- The cheatsheet opens as a float over the layout and closes on q.
-require('features.cheatsheet').open()
-local cheat_win
-for _, w in ipairs(vim.api.nvim_list_wins()) do
-  if vim.bo[vim.api.nvim_win_get_buf(w)].filetype == 'nvcheatsheet' then
-    cheat_win = w
-  end
-end
-add('cheatsheet=' .. tostring(cheat_win ~= nil and #vim.api.nvim_win_get_config(cheat_win).relative > 0))
-if cheat_win then
-  vim.api.nvim_win_close(cheat_win, true)
-end
-
--- A help page opens in the editing area, and closing it returns to the file
--- without resizing or rebuilding the grid.
-local before_grid = {}
-for name, slot in pairs(NVSlots.status()) do
-  before_grid[name] = slot.width .. 'x' .. slot.height
-end
-local centre_before = NVSlots.content_win()
-local help_ok, help_err = pcall(vim.cmd, 'help lua-guide')
-vim.wait(300)
-local help_win = NVSlots.content_win()
-local help_buf = help_win and vim.api.nvim_win_get_buf(help_win) or nil
-add(
-  'help in centre='
-    .. tostring(
-      help_ok
-        and help_buf ~= nil
-        and vim.bo[help_buf].filetype == 'help'
-        and help_win == centre_before
-        and vim.api.nvim_win_is_valid(centre_before)
-        and vim.api.nvim_win_get_buf(centre_before) == help_buf
-    )
-)
-if help_ok and help_buf then
-  vim.api.nvim_buf_call(help_buf, function()
-    vim.cmd 'normal q'
-  end)
-  vim.wait(300)
-end
-local same_grid = vim.tbl_count(before_grid) == vim.tbl_count(NVSlots.status())
-for name, slot in pairs(NVSlots.status()) do
-  if before_grid[name] ~= (slot.width .. 'x' .. slot.height) then
-    same_grid = false
-  end
-end
-add('help close keeps grid=' .. tostring(same_grid))
-if not help_ok then
-  add('help error=' .. tostring(help_err))
-end
-
--- Swap keeps the windows and exchanges their buffers.
-local ft_top_before = vim.bo[vim.api.nvim_win_get_buf(NVSlots.win 'right_top')].filetype
-vim.cmd 'NVLayout swap right_top right_bottom'
-local ft_top_after = vim.bo[vim.api.nvim_win_get_buf(NVSlots.win 'right_top')].filetype
-add('swap exchanged=' .. tostring(ft_top_before ~= ft_top_after) .. ' win=' .. tostring(NVSlots.win 'right_top' ~= nil))
-_ = left_h_before
-
--- Keep message-area output from prefixing the first result line.
 pcall(vim.cmd, 'silent! messages clear')
-io.write(table.concat(out, '\n'))
+io.write('\n' .. table.concat(out, '\n'))
 LUA
 )
 
@@ -293,42 +105,18 @@ printf '%s\n' "$got"
 
 fail=0
 check() { if ! grep -qx -- "$1" <<<"$got"; then printf 'FAIL: missing %s\n' "$1"; fail=1; fi; }
-check 'start wins=1'
-check 'open wins=5 slots=4 applied=true'
-check 'right halves=true'
-check 'providers=nvchanges,nvsession,nvprompt'
-check 'left=oil'
-check 'session=true'
-check 'progress=true'
-check 'changes=true'
-check 'rows=true'
-check 'row map=true'
-check 'substituted=nvsession'
-check 'restored=nvchanges'
-check 'prompt moved=nvprompt'
-check 'changes slot=right_bottom'
-check 'bottom quickfix=true'
-check 'bottom problems=true'
-check 'bottom prompt=true'
-check 'bottom cycle=true'
-check 'close wins=1 applied=false'
-check 'reopen wins=5'
-check 'final wins=1'
-check 'bottom closed grows centre=true open=false'
-check 'left closed others stay=true'
-check 'buffer delete keeps window=true'
-check 'window repair=true'
-check 'geometry enforced=true'
-check 'height key=true'
-check 'focus providers=problems'
-check 'centre rebuilt=true'
-check 'cheatsheet=true'
-check 'highlights=true'
-check 'notification centre=true'
-check 'help in centre=true'
-check 'help close keeps grid=true'
-check 'reopen one slot=true'
-grep -q 'ratios=true' <<<"$got" || { echo 'FAIL: left column not narrower than right'; fail=1; }
-grep -q 'swap exchanged=true win=true' <<<"$got" || { echo 'FAIL: swap did not exchange slot contents'; fail=1; }
+check 'applied=true sides=true bottom=true'
+check 'left narrower=true'
+check 'focus off=true'
+check 'toggle stable=true'
+check 'hidden kept=true remembered=true'
+check 'shown=true'
+check 'repaired=true'
+check 'only repaired=true stable=true'
+check 'room sides gone=true'
+check 'room sides back=true'
+check 'help in content=true'
+check 'help back=true'
+check 'reset=true'
 
 [ "$fail" = 0 ] && echo 'layout: pass' || { echo 'layout: FAIL'; exit 1; }

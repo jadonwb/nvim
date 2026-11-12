@@ -1,353 +1,123 @@
--- LSP progress for the statusline and the session panel.
+-- LSP progress state, shared by the LSP panel and (when that panel is hidden)
+-- the statusline.
 --
--- Lives here rather than in core/messages: it is LSP state, not a message
--- transport. `install(api)` attaches it to the NVMessages table so the public
--- surface (progress, progress_hl, progress_current) is unchanged.
+-- Event-driven: every `LspProgress` updates the table; listeners are told at
+-- most once per 100 ms (`User NVProgress`). No polling timer, no forced
+-- statusline redraws, so nothing repaints while nothing changes.
 
 return function(M)
-  -- LSP progress stored for lualine (no nvim_echo, does not go to msg/pager)
-  M.progress = M.progress or {} -- keyed client_id.token
+  M.progress = M.progress or {} -- client_id.token -> entry
   M.progress_hl = M.progress_hl or ''
-  M._progress_end_timers = M._progress_end_timers or {}
-  M._progress_timer = M._progress_timer or nil
 
-  local uv = vim.uv or vim.loop
+  local WIDTH = 10
 
-  -- 16-column LSP progress bar: background highlights with a fraction label inside.
-  local PROGRESS_BAR_WIDTH = 16
-
-  local function parse_hex_rgb(color)
-    if type(color) ~= 'string' then
-      return nil
-    end
-    local hex = color:match '^#(%x+)$'
-    if not hex then
-      return nil
-    end
-    if #hex == 3 then
-      hex = hex:gsub('.', function(c)
-        return c .. c
-      end)
-    end
-    if #hex ~= 6 then
-      return nil
-    end
-    return tonumber(hex:sub(1, 2), 16), tonumber(hex:sub(3, 4), 16), tonumber(hex:sub(5, 6), 16)
+  local function setup_hl()
+    vim.api.nvim_set_hl(0, 'MProgressFill', { link = 'NvMeterPurple', default = true })
+    vim.api.nvim_set_hl(0, 'MProgressEmpty', { link = 'NvMeterTrack', default = true })
   end
+  setup_hl()
+  vim.api.nvim_create_autocmd('ColorScheme', { callback = setup_hl })
 
-  -- Pick black/white text that contrasts with a background color.
-  local function contrasting_fg(bg)
-    local r, g, b = parse_hex_rgb(bg)
-    if not r then
-      return '#ffffff'
+  local function percent_of(entry)
+    if entry.kind == 'end' then
+      return 100
     end
-    local function linearize(c)
-      c = c / 255
-      return c <= 0.03928 and c / 12.92 or ((c + 0.055) / 1.055) ^ 2.4
+    local n, d = tostring(entry.message or ''):match '(%d+)%s*/%s*(%d+)'
+    if n and tonumber(d) > 1 then
+      return math.floor(tonumber(n) / tonumber(d) * 100)
     end
-    local lum = 0.2126 * linearize(r) + 0.7152 * linearize(g) + 0.0722 * linearize(b)
-    return lum > 0.5 and '#000000' or '#ffffff'
-  end
-
-  -- Solid bg/fg groups for the progress bar; refreshed on ColorScheme.
-  local function setup_progress_hl()
-    local constant = vim.api.nvim_get_hl(0, { name = 'Constant' })
-    local statusline = vim.api.nvim_get_hl(0, { name = 'StatusLine' })
-    local nontext = vim.api.nvim_get_hl(0, { name = 'NonText' })
-    -- Fill: solid bg color taken from Constant (its bg, else its fg color),
-    -- with a contrasting fg for the label digits inside the fill.
-    local fill_bg = constant.bg or constant.fg or statusline.bg or '#000000'
-    vim.api.nvim_set_hl(0, 'MProgressFill', {
-      bg = fill_bg,
-      fg = contrasting_fg(fill_bg),
-    })
-    -- Empty: muted bg + muted fg (StatusLine/NonText).
-    local empty_bg = statusline.bg or nontext.bg or '#000000'
-    vim.api.nvim_set_hl(0, 'MProgressEmpty', {
-      bg = empty_bg,
-      fg = nontext.fg or statusline.fg or '#000000',
-    })
-  end
-
-  setup_progress_hl()
-  vim.api.nvim_create_autocmd('ColorScheme', {
-    callback = setup_progress_hl,
-  })
-
-  local function format_progress_hl(p)
-    if not p then
-      return ''
-    end
-    local parts = {}
-    local msg = p.message
-    local msg_text = msg and tostring(msg) or ''
-    -- If the message carries a useful fraction like "… 294/307" (denominator
-    -- > 1), it becomes the inner label and the fill ratio; the plain message is
-    -- consumed (no duplicate). A useless denominator (d <= 1, e.g. clangd "0/1")
-    -- draws the bar with no inner digits.
-    local n, d = msg_text:match '(%d+)%s*/%s*(%d+)'
-    local inner -- 16-char inner label; nil when the bar should carry no digits
-    local ratio -- fill fraction 0..1
-    local has_basis -- whether the bar can be drawn
-    if n and d then
-      local dn = tonumber(d)
-      local nn = tonumber(n)
-      if dn and dn > 1 then
-        has_basis = true
-        ratio = nn and (nn / dn) or 0
-        if p.kind == 'end' then
-          inner = d .. '/' .. d -- snap the count to a full bar
-        else
-          inner = n .. '/' .. d
-        end
-      else
-        -- useless denominator: bar with no inner digits
-        has_basis = true
-        ratio = 0
-        inner = nil
-      end
-    elseif p.percent ~= nil then
-      has_basis = true
-      ratio = p.percent / 100
-      inner = tostring(p.percent) .. '%'
-    end
-    if has_basis then
-      if p.kind == 'end' then
-        ratio = 1 -- completed: full bar during the 1.5s linger
-      end
-      local visible = inner and inner:gsub('%%', '%%%%') or '' -- escape literal '%' for statusline
-      if #visible > PROGRESS_BAR_WIDTH then
-        visible = string.sub(visible, 1, PROGRESS_BAR_WIDTH)
-      end
-      local left = math.floor((PROGRESS_BAR_WIDTH - #visible) / 2)
-      local right = PROGRESS_BAR_WIDTH - #visible - left
-      local bar = string.rep(' ', left) .. visible .. string.rep(' ', right)
-      local filled = math.max(0, math.min(PROGRESS_BAR_WIDTH, math.floor(ratio * PROGRESS_BAR_WIDTH)))
-      table.insert(parts, '%#MProgressFill#' .. string.sub(bar, 1, filled) .. '%#MProgressEmpty#' .. string.sub(bar, filled + 1))
-    else
-      -- no fraction and no percent: fall back to the plain message text
-      if msg and tostring(msg) ~= '' then
-        local m = tostring(msg):gsub('%%', '%%%%')
-        table.insert(parts, '%#StatusLine#' .. m)
-      end
-    end
-    if p.title then
-      local t = tostring(p.title):gsub('%%', '%%%%')
-      table.insert(parts, '%#NonText#' .. t)
-    end
-    local nm = p.name
-    if nm then
-      table.insert(parts, '%#Title#' .. nm)
-    end
-    return table.concat(parts, ' ')
-  end
-
-  local function rebuild_progress_hl()
-    M.progress_hl = ''
-    if not M.progress or next(M.progress) == nil then
-      return
-    end
-    -- pick the running (kind ~= 'end') with highest .updated; else highest-updated ended (stable, no hash order flip)
-    local chosen
-    local best = -1
-    for _, p in pairs(M.progress) do
-      if p.kind ~= 'end' then
-        local u = p.updated or 0
-        if u > best then
-          best = u
-          chosen = p
-        end
-      end
-    end
-    if not chosen then
-      for _, p in pairs(M.progress) do
-        local u = p.updated or 0
-        if u > best then
-          best = u
-          chosen = p
-        end
-      end
-    end
-    if chosen then
-      M.progress_hl = format_progress_hl(chosen)
-      M.notify_progress()
-    end
+    return math.max(0, math.min(100, math.floor(entry.percent or 0)))
   end
 
   --- The running progress worth showing, most recently updated first.
-  ---@return { title: string|nil, message: string|nil, percent: number }|nil
+  ---@return { client: string, title?: string, message?: string, percent: integer }|nil
   function M.progress_current()
     local chosen
-    for _, entry in pairs(M.progress or {}) do
-      if entry.kind ~= 'end' and (not chosen or (entry.updated or 0) > (chosen.updated or 0)) then
+    for _, entry in pairs(M.progress) do
+      if entry.kind ~= 'end' and (not chosen or entry.updated > chosen.updated) then
         chosen = entry
       end
     end
     if not chosen then
       return nil
     end
-    return {
-      title = chosen.title,
-      message = chosen.message,
-      percent = math.max(0, math.min(100, math.floor(chosen.percent or 0))),
-    }
+    return { client = chosen.name, title = chosen.title, message = chosen.message, percent = percent_of(chosen) }
   end
 
-  --- Notify volt panels that progress changed (debounced to one redraw a tick).
-  local progress_pending = false
-  function M.notify_progress()
-    if progress_pending then
+  local function rebuild_statusline()
+    local p = M.progress_current()
+    if not p then
+      M.progress_hl = ''
       return
     end
-    progress_pending = true
-    vim.schedule(function()
-      progress_pending = false
-      vim.api.nvim_exec_autocmds('User', { pattern = 'NVProgress' })
-    end)
-  end
-
-  local function has_running_progress()
-    for _, p in pairs(M.progress or {}) do
-      if p.kind ~= 'end' then
-        return true
-      end
-    end
-    return false
-  end
-
-  local function stop_progress_timer()
-    local t = M._progress_timer
-    if t then
-      pcall(function()
-        t:stop()
-      end)
-      if not t:is_closing() then
-        pcall(function()
-          t:close()
-        end)
-      end
-      M._progress_timer = nil
-    end
-  end
-
-  local function refresh_statusline()
-    pcall(function()
-      require('lualine').refresh()
-    end)
-    pcall(vim.cmd, 'redrawstatus')
-  end
-
-  -- A server that stops mid-progress never sends `kind = 'end'`.
-  vim.api.nvim_create_autocmd('LspDetach', {
-    callback = function(ev)
-      local changed = false
-      for id, entry in pairs(M.progress or {}) do
-        if entry.client_id == ev.data.client_id then
-          M.progress[id] = nil
-          changed = true
-        end
-      end
-      if changed then
-        rebuild_progress_hl()
-        if not has_running_progress() then
-          stop_progress_timer()
-        end
-        vim.schedule(function()
-          pcall(function()
-            require('lualine').refresh()
-          end)
-        end)
-      end
-    end,
-  })
-
-  local function start_progress_timer()
-    if M._progress_timer then
-      return
-    end
-    local timer = uv.new_timer()
-    M._progress_timer = timer
-    timer:start(
-      100,
-      100,
-      vim.schedule_wrap(function()
-        rebuild_progress_hl()
-        refresh_statusline()
-        if not has_running_progress() then
-          stop_progress_timer()
-        end
-      end)
+    local on = math.floor(WIDTH * p.percent / 100 + 0.5)
+    M.progress_hl = ('%%#NvStMuted#%s %%#MProgressFill#%s%%#MProgressEmpty#%s'):format(
+      (p.client or ''):gsub('%%', '%%%%'),
+      string.rep('┃', on),
+      string.rep('┃', WIDTH - on)
     )
   end
 
+  -- Throttled notification: one per 100 ms at most, trailing edge included.
+  local timer = assert(vim.uv.new_timer())
+  local dirty, waiting = false, false
+  local function flush()
+    waiting = false
+    if not dirty then
+      return
+    end
+    dirty = false
+    rebuild_statusline()
+    pcall(vim.api.nvim_exec_autocmds, 'User', { pattern = 'NVProgress', modeline = false })
+  end
+  function M.notify_progress()
+    dirty = true
+    if waiting then
+      return
+    end
+    waiting = true
+    timer:start(100, 0, vim.schedule_wrap(flush))
+  end
+
   vim.api.nvim_create_autocmd('LspProgress', {
-    pattern = '*',
     callback = function(ev)
       local client_id = ev.data and ev.data.client_id
-      if not client_id then
-        return
-      end
-      local params = ev.data.params or ev.data.result or {}
+      local params = ev.data and ev.data.params or {}
       local val = params.value
-      if type(val) ~= 'table' then
+      local client = client_id and vim.lsp.get_client_by_id(client_id)
+      if not client or type(val) ~= 'table' then
         return
       end
       local id = client_id .. '.' .. tostring(params.token)
-      local client = vim.lsp.get_client_by_id(client_id)
-      if not client then
-        return
-      end
-      local update = { kind = val.kind }
-      if val.title ~= nil then
-        update.title = val.title
-      end
-      if val.message ~= nil then
-        update.message = val.message
-      end
-      if val.percentage ~= nil then
-        update.percent = val.percentage
-      end
-      local base = M.progress[id] or { client_id = client_id, name = client.name }
-      local entry = vim.tbl_deep_extend('force', base, update)
-      entry.updated = (vim.uv or vim.loop).hrtime()
-      if val.kind == 'end' then
-        entry.percent = 100 -- full-fill the bar during the 1.5s linger
-      end
+      local entry = M.progress[id] or { client_id = client_id, name = client.name }
+      entry.kind = val.kind
+      entry.title = val.title or entry.title
+      entry.message = val.message or entry.message
+      entry.percent = val.percentage or entry.percent
+      entry.updated = vim.uv.hrtime()
       M.progress[id] = entry
-      rebuild_progress_hl()
-      if val.kind ~= 'end' then
-        start_progress_timer()
-        refresh_statusline()
-      else
-        refresh_statusline()
-        if not has_running_progress() then
-          stop_progress_timer()
-        end
-      end
       if val.kind == 'end' then
-        local prev = M._progress_end_timers[id]
-        if prev then
-          pcall(function()
-            prev:stop()
-          end)
-          if not prev:is_closing() then
-            pcall(function()
-              prev:close()
-            end)
-          end
-        end
-        M._progress_end_timers[id] = vim.defer_fn(function()
+        -- Keep the finished entry briefly so a full bar is visible, then drop it.
+        vim.defer_fn(function()
           if M.progress[id] and M.progress[id].kind == 'end' then
             M.progress[id] = nil
-            M._progress_end_timers[id] = nil
-            rebuild_progress_hl()
-            refresh_statusline()
-            if not has_running_progress() then
-              stop_progress_timer()
-            end
+            M.notify_progress()
           end
-        end, 1500)
+        end, 1200)
       end
+      M.notify_progress()
+    end,
+  })
+
+  -- A server that stops mid-progress never sends `end`.
+  vim.api.nvim_create_autocmd('LspDetach', {
+    callback = function(ev)
+      for id, entry in pairs(M.progress) do
+        if entry.client_id == ev.data.client_id then
+          M.progress[id] = nil
+        end
+      end
+      M.notify_progress()
     end,
   })
 end

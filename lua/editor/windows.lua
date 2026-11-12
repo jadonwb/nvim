@@ -87,7 +87,8 @@ function NVWindows.keymaps()
   }
 
   -- Equalize layout
-  K.map { NVKeymaps.layout_equalize, 'Equalize layout', fn.equalize_layout, mode = { 'n', 'i', 'v' } }
+  K.map { NVKeymaps.layout_equalize, 'Reset layout sizes', fn.equalize_layout, mode = { 'n', 'i', 'v', 't' } }
+  K.map { NVKeymaps.layout_equalize_alt, 'Reset layout sizes', fn.equalize_layout, mode = { 'n', 'i', 'v', 't' } }
 end
 
 ---@param winid WinID
@@ -168,9 +169,17 @@ function fn.change_window_height(direction)
   vim.cmd(direction == 'up' and 'resize +3' or 'resize -3')
 end
 
+--- Restore sizes: the layout's default geometry when it is applied (the
+--- content area may still hold user splits, which are equalised among
+--- themselves), plain `wincmd =` otherwise.
 function fn.equalize_layout()
-  NVSlots.reset_sizes()
-  vim.cmd 'wincmd ='
+  if NVSlots and NVSlots.is_applied() then
+    NVSlots.reset_sizes()
+    vim.cmd 'wincmd ='
+    NVSlots.enforce()
+  else
+    vim.cmd 'wincmd ='
+  end
 end
 
 ---@return WinID[]

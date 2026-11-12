@@ -41,6 +41,7 @@ return {
         { '<leader>g', group = 'git', icon = '󰊢' },
         { '<leader>q', group = 'quit / session', icon = '󰗼' },
         { '<leader>s', group = 'search', icon = '󰍉' },
+        { '<leader>t', group = 'terminals', icon = '\u{f018d}' },
         { '<leader>u', group = 'ui', icon = '󰙵' },
         { '<leader>w', group = 'windows', icon = '󰖲' },
         { '<leader>x', group = 'diagnostics', icon = '󰅚' },

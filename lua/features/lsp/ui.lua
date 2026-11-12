@@ -29,15 +29,18 @@ local MAX_WIDTH = 100
 local MIN_WIDTH = 28
 local PAD = 2
 
+--- The window the popup belongs to: the one `K` was pressed in, unless that
+--- is a float or a panel, then the content window.
 ---@return WinID
 local function source_win()
-  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-    local cfg = vim.api.nvim_win_get_config(win)
-    if cfg.relative == '' and not vim.b[vim.api.nvim_win_get_buf(win)].nv_slot then
-      return win
-    end
+  if state.src_win and vim.api.nvim_win_is_valid(state.src_win) then
+    return state.src_win
   end
-  return vim.api.nvim_get_current_win()
+  local win = vim.api.nvim_get_current_win()
+  if vim.api.nvim_win_get_config(win).relative ~= '' or (NVSlots and NVSlots.slot_of_win and NVSlots.slot_of_win(win)) then
+    win = NVSlots and NVSlots.content_win() or win
+  end
+  return win
 end
 
 local function is_open()
@@ -59,6 +62,7 @@ local function teardown()
     pcall(vim.keymap.del, 'n', '<S-Tab>', { buffer = state.src_buf })
   end
   state.src_buf = nil
+  state.src_win = nil
 
   if state.buf then
     pcall(function()
@@ -112,39 +116,40 @@ end
 --- Layout description handed to volt. Sections read live state.
 ---@return table
 local function layout()
-  local names = {}
-  for i, section in ipairs(state.sections) do
-    names[i] = section.name
-  end
-
-  return {
-    {
+  local out = {}
+  if #state.sections > 1 then
+    out[#out + 1] = {
       name = 'tabs',
       lines = function()
-        if #names < 2 then
-          return { { { ' ' .. (names[1] or ''), 'NvPanelTitle' } } }
+        local chunks = {}
+        for i, section in ipairs(state.sections) do
+          if i > 1 then
+            chunks[#chunks + 1] = { '  ' }
+          end
+          local active = i == state.index
+          chunks[#chunks + 1] = { ' ' .. section.name .. ' ', active and 'NvChipPurple' or 'NvChipMuted' }
         end
-        return require('volt.ui').tabs(names, state.width - (PAD * 2), {
-          active = current() and current().name,
-          hlon = 'NvChip',
-          hloff = 'ExInactive',
-        })
+        chunks[#chunks + 1] = { '   Tab', 'NvKey' }
+        return { chunks, {} }
       end,
-    },
-    {
-      name = 'body',
-      lines = function()
-        return state.chunks[state.index] or { {} }
-      end,
-    },
-    {
-      name = 'footer',
-      lines = function()
-        local hint = #state.sections > 1 and ' Tab next  S-Tab prev  q close ' or ' q close '
-        return { { { hint, 'CommentFg' } } }
-      end,
-    },
+    }
+  end
+  out[#out + 1] = {
+    name = 'body',
+    lines = function()
+      return state.chunks[state.index] or { {} }
+    end,
   }
+  return out
+end
+
+--- `[text](url)` → `text ↗`: links read as links, not as markdown source.
+local function conceal_links(lines)
+  local out = {}
+  for i, line in ipairs(lines or {}) do
+    out[i] = line:gsub('%[([^%]]+)%]%(([^)]+)%)', '%1 ↗')
+  end
+  return out
 end
 
 --- Recompute chunks for the current sections.
@@ -152,7 +157,7 @@ local function prepare()
   state.chunks = {}
   state.width = MIN_WIDTH
   for i, section in ipairs(state.sections) do
-    state.chunks[i] = section.chunks or MD.chunks(section.lines, { ft = section.ft })
+    state.chunks[i] = section.chunks or MD.chunks(conceal_links(section.lines), { ft = section.ft })
     state.width = math.max(state.width, MD.width(state.chunks[i]) + (PAD * 2) + 2)
   end
   state.width = math.min(state.width, MAX_WIDTH, math.max(MIN_WIDTH, vim.o.columns - 4))
@@ -164,25 +169,45 @@ local function prepare()
   end
 end
 
+--- Above the cursor when it fits (the code you are reading stays visible),
+--- else below; never over the cursor row, clamped inside the source window.
 ---@return { row: integer, col: integer }
 local function position(width, height)
   local win = source_win()
-  local cursor = vim.api.nvim_win_get_cursor(win)
-  local row_in_win = cursor[1] - vim.fn.line 'w0'
+  local row_in_win, col_in_win
+  vim.api.nvim_win_call(win, function()
+    row_in_win = vim.fn.winline() - 1
+    col_in_win = vim.fn.wincol() - 1
+  end)
   local win_h = vim.api.nvim_win_get_height(win)
   local win_w = vim.api.nvim_win_get_width(win)
-  local col_in_win = vim.fn.wincol() - 1
+  local full = height + 2 -- padding border
 
   local row
-  if row_in_win + 1 + height <= win_h then
+  if row_in_win - full >= 0 then
+    row = row_in_win - full
+  elseif row_in_win + 1 + full <= win_h then
     row = row_in_win + 1
-  elseif row_in_win - height >= 0 then
-    row = row_in_win - height
   else
-    row = math.max(0, win_h - height)
+    -- Neither side fits whole: take the larger side; the popup scrolls.
+    row = (row_in_win > win_h - row_in_win - 1) and 0 or (row_in_win + 1)
   end
+  return { row = row, col = math.max(0, math.min(col_in_win - 1, win_w - width - 2)) }
+end
 
-  return { row = row, col = math.min(col_in_win, math.max(0, win_w - width)) }
+--- Rows available on the side the popup opens on.
+local function room(height)
+  local win = source_win()
+  local row_in_win
+  vim.api.nvim_win_call(win, function()
+    row_in_win = vim.fn.winline() - 1
+  end)
+  local win_h = vim.api.nvim_win_get_height(win)
+  local above, below = row_in_win - 2, win_h - row_in_win - 3
+  if height <= above or height <= below then
+    return height
+  end
+  return math.max(3, math.max(above, below))
 end
 
 --- Redraw the current section set and re-fit the window.
@@ -197,6 +222,7 @@ function NVLspUi.refresh()
   prepare()
   volt.gen_data { { buf = state.buf, layout = layout(), xpad = PAD, ns = state.ns } }
   local h = math.max(1, volt_state[state.buf].h)
+  local visible = room(h)
 
   -- Volt draws virt_text onto real rows, so the buffer has to hold them.
   pcall(require, 'volt.highlights')
@@ -204,12 +230,12 @@ function NVLspUi.refresh()
   vim.api.nvim_buf_clear_namespace(state.buf, state.ns, 0, -1)
   volt.redraw(state.buf, 'all')
 
-  local pos = position(state.width, h)
+  local pos = position(state.width, visible)
   vim.api.nvim_win_set_config(state.win, {
     relative = 'win',
     win = source_win(),
     width = state.width,
-    height = h,
+    height = visible,
     row = pos.row,
     col = pos.col,
   })
@@ -227,9 +253,10 @@ function NVLspUi.open(sections)
   end
 
   NVLspUi.close()
+  state.src_win = nil
+  state.src_win = source_win()
   state.sections = sections
   state.index = 1
-  state.src_win = source_win()
 
   local buf = vim.api.nvim_create_buf(false, true)
   vim.bo[buf].buftype = 'nofile'
@@ -237,7 +264,7 @@ function NVLspUi.open(sections)
   vim.bo[buf].swapfile = false
   vim.bo[buf].filetype = 'nvlsp'
 
-  local ns = vim.api.nvim_create_namespace('nv-lsp-ui-' .. buf)
+  local ns = vim.api.nvim_create_namespace 'nv-lsp-ui'
   state.buf, state.ns = buf, ns
 
   -- No dim backdrop: a hover belongs to the line it came from, not to a modal
@@ -252,11 +279,12 @@ function NVLspUi.open(sections)
     width = MIN_WIDTH,
     height = 1,
     style = 'minimal',
-    border = 'single',
+    border = 'solid',
     zindex = 60,
   })
   vim.api.nvim_win_set_hl_ns(state.win, ns)
-  vim.wo[state.win].winhighlight = 'FloatBorder:LineNr,Normal:NormalFloat'
+  vim.wo[state.win].winhighlight = 'Normal:NvPopup,FloatBorder:NvPopupBorder,EndOfBuffer:NvPopup'
+  vim.wo[state.win].wrap = false
 
   NVLspUi.refresh()
 

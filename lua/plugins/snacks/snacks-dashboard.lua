@@ -12,11 +12,19 @@ function NVSnacksDashboard.setup()
   NVClose.register('dashboard', function()
     return NVSnacksDashboard.is_active()
   end)
+  -- Full screen at startup; the layout applies when a file is opened.
+  if vim.v.vim_did_enter == 0 then
+    vim.api.nvim_create_autocmd('VimEnter', {
+      once = true,
+      callback = function()
+        vim.schedule(NVSnacksDashboard.open)
+      end,
+    })
+  end
 end
 
---- Open the dashboard in the layout's content window. Snacks' automatic
---- dashboard is a float and it refuses to open once more than one window exists
---- (the layout), so the layout opens it explicitly instead.
+--- Open the dashboard in the content window (snacks' own autostart is
+--- disabled so startup order is ours).
 ---@return boolean
 function NVSnacksDashboard.open()
   if not NVSnacksDashboard.should_show() or vim.fn.argc() > 0 then
@@ -37,9 +45,6 @@ return {
   'folke/snacks.nvim',
   opts = {
     dashboard = {
-      -- Opened by NVSnacksDashboard.open() after the layout exists: snacks'
-      -- own autostart is a float and bails out when there is more than one
-      -- window.
       enabled = false,
       formats = {
         -- Snacks' default pathshorten turns every component into one letter when

@@ -3,125 +3,97 @@
 The workspace is a fixed grid of slots around the editing area:
 
 ```
-┌────────┬──────────────────┬──────────┐
-│        │                  │ right    │
-│  left  │     content      │ top      │
-│        │                  ├──────────┤
-│        │                  │ right    │
-│        │                  │ bottom   │
-├────────┴──────────────────┤          │
-│          bottom           │          │
-└───────────────────────────┴──────────┘
+┌────────┬──────────────────────────┬────────────┐
+│        │                          │ right_top  │  changes
+│  left  │         content          ├────────────┤
+│  tree  │                          │ right_mid  │  opencode / project
+│        ├──────────────────────────┼────────────┤
+│        │          bottom          │right_bottom│  lsp
+└────────┴──────────────────────────┴────────────┘
 ```
 
-Each slot is one window with one provider. Slots open and close independently:
-closing `left` leaves `right` and `bottom`; closing `bottom` returns its height
-to the content window; a closed slot stays closed when focus mode restores the
-layout.
+- The dashboard opens full screen; the layout applies when the first file is
+  opened (or with `<M-i>`).
+- Each slot is one window on the panel surface. Every split, panel or code, is
+  the same 1-cell channel of editor background with a hairline.
+
+## Panels stay where you put them
+
+- `<M-w>` (or `:q`) inside a panel **hides that panel**. Hidden panels are
+  remembered per project (`stdpath('state')/nv-layout.json`): a restart and
+  `<M-i>` off/on keep them hidden. `:NVLayout slot <name> open` brings one back.
+- A panel that disappears for any other reason (`:only`, a plugin) is rebuilt.
+- Sizes are one pure function of the screen size (`NVSlots.geometry`). Toggling
+  the layout never changes them. Dragging a separator or `:resize` on a panel
+  becomes this tab's size; `<A-0>` / `<A-=>` restore the defaults.
+- **Reading room:** when the content is split side by side (a vsplit,
+  grug-far) and each column would be narrower than 80 cells, the side panels
+  step aside; they return when the content is one column again. Help and man
+  pages open in the content window (`q` goes back).
 
 ## Keymaps
 
 | Key | Action |
 | --- | --- |
-| `<M-i>` | Focus mode: hide every slot, restore exactly the previous set |
-| `<M-n>` | Cycle the bottom panel (prompt / quickfix / problems) |
-| `<C-h>` `<C-j>` `<C-k>` `<C-l>` | Move between windows, including slots |
-| `<leader>wv` / `<leader>wm` / `<leader>wc` | Compare mode: files, man page, close |
-| `<S-Left>` / `<S-Right>` | Grow / shrink the side columns (layout proportions) |
+| `<M-i>` | Focus mode: hide / restore the layout (hidden panels stay hidden) |
+| `<M-w>` in a panel | Hide that panel |
+| `<A-0>` / `<A-=>` | Restore default sizes |
+| `<C-/>` | Show / hide the bottom panel (focuses a terminal or the prompt) |
+| `<M-n>` | Cycle the bottom panel (prompt / terminal / quickfix / problems) |
+| `<leader>tb` / `<leader>tf` / `<leader>tc` | Terminal in the bottom panel / floating (toggle) / main window; inside a terminal, *moves* it there |
+| `<leader>tt` | Pick a terminal (shows each one's home: ▃ panel, ❐ float, ▣ main) |
+| `<leader>tn` | New panel terminal (the picker has "new" for every home) |
+| `<leader>t]` / `<leader>t[` | Next / previous panel terminal |
+| `E` in a panel | Expand into its dashboard (LSP / Git / OpenCode; `Tab` cycles) |
+| `R` in a panel | Refresh |
+| `q` in a panel | Back to the editor |
+| `<S-Left>` / `<S-Right>` | Narrow / widen the side columns |
 | `<S-Up>` / `<S-Down>` | Grow / shrink the bottom panel |
-| `<A-=>` | Equalize: default proportions |
-| `<M-S-Left>` … `<M-Tab>` | Move / swap windows (winshift picker) |
+| `-` (content) | Edit the directory as a buffer (oil) |
 
 ## Providers
 
-A provider fills a slot and can be moved to any other slot at runtime.
-
 | Provider | What it shows |
 | --- | --- |
-| `explorer` | oil.nvim; `<CR>` opens files in the content window |
-| `changes` | changed files as a volt table; `<CR>` opens, `<C-r>` refreshes |
-| `session` | cwd, branch, opencode attach state, profile, agent state, tokens, cost, LSP progress |
-| `prompt` | the OpenCode prompt, per-slot draft, Enter sends |
-| `quickfix` | the real quickfix buffer, so `:cnext` keeps working |
-| `problems` | diagnostics as a quickfix list |
+| `explorer` | nvim-tree; files open in the content window, `P` preview, `f` filter |
+| `changes` | staged / changes / untracked with diff stats; `<CR>` opens |
+| `session` | the followed OpenCode session: title, model, effort, context meter with a red tick where OpenCode compacts (from `compaction.buffer` in `opencode.json[c]`), activity; tokens and charts are in the dashboard (`E`). Project and ahead/behind are in the statusline |
+| `lsp` | attached servers, live progress, diagnostic counts; the dashboard adds each server's command, settings and init options, code actions at the cursor, buffer keymaps, and diagnostics per file |
+| `prompt` | the OpenCode prompt; Enter sends |
+| `terminal` | the panel's terminal; any number of terminals can run, each with a home (panel, float, main window); `<M-w>` hides a float or sends a main-window terminal back to its file (also `q` in terminal-normal mode); the shell keeps running |
+| `quickfix` / `problems` | quickfix list / diagnostics |
+
+Panels draw from cached data (`features/layout/data.lua`): git is read
+asynchronously on focus/write/dir change, the OpenCode session from OpenCode's
+local database (read-only `sqlite3`), LSP state on attach/diagnostic/progress
+events. Nothing shells out while drawing.
+
+## Command line
+
+`:` is drawn on the bottom panel's tab-strip row; the statusline never moves
+(`cmdheight` stays 0). With the bottom panel hidden, `:` opens it for the
+command and closes it after. Completion opens below the command line inside
+the panel.
 
 ## Commands
 
 ```vim
 :NVLayout                 " toggle (focus mode)
-:NVLayout open | close
+:NVLayout open | close | reset | status
 :NVLayout slot <name> [open|close|toggle]
 :NVLayout provider <slot> <provider>
 :NVLayout swap <a> <b>
-:NVLayout status
 :NVBottom [prompt|quickfix|problems]
 ```
 
 ## External API
 
-Everything is a global so an external tool or an agent can drive it over RPC:
+Everything is a global, so an external tool can drive it over RPC (the
+OpenCode `nvim` tool uses these):
 
 ```sh
-nvim --server "$NVIM" --remote-expr 'v:lua.NVSlots.open()'
 nvim --server "$NVIM" --remote-expr 'v:lua.NVSlots.set_provider("right_top", "changes")'
 nvim --server "$NVIM" --remote-expr 'luaeval("vim.json.encode(NVSlots.state())")'
 ```
 
-`NVSlots.state()` returns `{ applied, order, slots = { name = { width, height, provider } } }`.
-`NVSlots.status()` returns the live windows.
-
-## Session persistence
-
-The workspace snapshot records which slots were open and what each showed
-(`layout.providers` in the session metadata). Restoring a session (`l` on the
-dashboard or `:lua NVSession.restore()`) reopens exactly those slots and
-reapplies their providers; a slot that was closed stays closed.
-
-The slot windows are not session content. Saving tears the layout down first, so
-`mksession` writes a layout-free window tree, and reopens the recorded slots
-afterwards; slot assembly always follows the fixed order (left, right_top,
-right_bottom, bottom) whatever order the providers map has, because building the
-grid in table order produced scrambled sizes. Restoring suspends the window
-repair/enforcement hooks while the session file rebuilds the tree.
-
-Slots that were closed stay closed (the right column can exist with only
-`right_bottom`). A bottom panel opened implicitly by pressing `:` is marked as
-automatic and is not written into the snapshot.
-
-Verified by `tests/session.sh`: save with `bottom=problems` and
-`right_bottom=prompt`; then a second save with `bottom`/`right_top` closed and
-`right_bottom=problems`; both restores come back exactly.
-
-## Window picker
-
-`<M-Tab>` swaps the current window with another. Each candidate shows a bold
-letter chip in its **winbar** (`H`, `J`, `K`, `L`, listed in the prompt) and
-`Esc` cancels. Winshift's built-in picker writes the letter into the window's
-statusline, but with `laststatus=2` the bottom-most window of each column shares
-the global statusline — in a four-slot layout that hid most of the letters. The
-winbar is always visible, and it is restored when the picker closes.
-
-## Width and height
-
-Side-slot widths and the bottom panel height are proportions of the screen.
-The first open and every later reset use the same basis (`vim.o.columns`), so
-`<A-=>` does not jump the columns; the width keys adjust the left/right
-proportions and the height keys adjust the bottom panel, which is the only
-vertical degree of freedom in the grid.
-
-## Hardening
-
-- Slot buffers are `bufhidden=hide` while displayed, so `:bd` cannot close a
-  panel; buffers the slot layer created are deleted when the slot closes.
-- A slot window closed outside the API (`:q`, `<C-w>c`, `:bwipeout`) is rebuilt
-  on `WinClosed` and its provider re-rendered.
-- Slot windows are `winfixwidth/height`; `VimResized` and `WinResized` re-apply
-  the configured proportions.
-- The explorer retries briefly when oil is not configured yet at `VimEnter`.
-- The command line is pinned to one row at the top of the bottom slot, `:`
-  reopens the bottom slot when it was closed, and that implicit open is marked
-  automatic so it is not written into a session.
-- If the editing area disappears, `repair()` rebuilds the whole grid from the
-  recorded providers instead of dropping an unaligned window into the hole.
-- Framed providers (`changes`, `session`) re-render when their window changes
-  size, so a closed neighbour does not leave a half-drawn panel.
+`NVSlots.state()` returns `{ applied, order, hidden, slots = { name = { width, height, provider } } }`.

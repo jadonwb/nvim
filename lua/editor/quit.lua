@@ -34,12 +34,24 @@ local function can_close_main_window(win)
   return #main > 1 and vim.tbl_contains(main, win)
 end
 
+--- Buffers whose unsaved changes mean lost work: files (`buftype` empty or
+--- `acwrite` with a name). Panel, prompt, terminal, tree and scratch buffers
+--- are never "unsaved changes"; oil buffers confirm their own edits.
+local function needs_review(buf)
+  if not (vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].modified) then
+    return false
+  end
+  local bt = vim.bo[buf].buftype
+  if vim.b[buf].nv_slot ~= nil or vim.bo[buf].filetype == 'oil' then
+    return false
+  end
+  return bt == '' or (bt == 'acwrite' and vim.api.nvim_buf_get_name(buf) ~= '')
+end
+
 local function modified_buffers(only)
   local result = {}
   for _, buf in ipairs(only or vim.api.nvim_list_bufs()) do
-    -- Include unlisted modified buffers on editor exit as well: qall checks
-    -- them too. This does not change the picker/MRU buffer definition.
-    if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].modified then
+    if needs_review(buf) then
       result[#result + 1] = { buf = buf, name = vim.api.nvim_buf_get_name(buf) }
     end
   end
@@ -252,6 +264,14 @@ function NVQuit.close_current(opts)
   opts = opts or {}
   local pager = NVEnv.startup.purpose == 'pager'
   if NVClose.consume(pager and { help_docs = true } or nil) then
+    return
+  end
+  -- In a panel the close key hides that panel (remembered per project);
+  -- panels never delete buffers or close the editor.
+  local slot = NVSlots and NVSlots.slot_of_win and NVSlots.slot_of_win(vim.api.nvim_get_current_win())
+  if slot then
+    vim.api.nvim_set_current_win(NVSlots.content_win())
+    NVSlots.hide(slot)
     return
   end
   local buf, win = vim.api.nvim_get_current_buf(), vim.api.nvim_get_current_win()

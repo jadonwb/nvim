@@ -4,8 +4,8 @@ function NVTerminal.keymaps()
   K.map { NVKeymaps.scroll.up, 'Exit terminal mode', '<C-\\><C-n>', mode = 't' }
   K.map { NVKeymaps.scroll_alt.up, 'Exit terminal mode', '<C-\\><C-n>', mode = 't' }
 
-  K.map { '<C-/>', 'Toggle terminal', NVTerminal.toggle, mode = { 'n', 'v', 'i', 't' } }
-  K.map { '<C-_>', 'Toggle terminal', NVTerminal.toggle, mode = { 'n', 'v', 'i', 't' } }
+  -- <C-/> toggles the bottom panel (features/layout/bottom.lua), where the
+  -- terminals live.
 
   vim.api.nvim_create_autocmd('FileType', {
     pattern = 'snacks_terminal',
@@ -53,29 +53,6 @@ function NVTerminal.keymaps()
   })
 end
 
---- Toggle the terminal over the editing area.
----
---- A split would squeeze the layout slots (a full-width bottom split pushes the
---- whole grid), so the terminal is a float over the content window. Delegates
---- to Snacks.terminal.toggle for all state management.
---- The outer terminal's shell integration emits OSC sequences the embedded
---- terminal cannot consume, and they land in the buffer as text. Start the shell
---- without the inherited integration, as the termopen panel does.
----@return table<string, string>
-local function shell_env()
-  local env = {}
-  for key, value in pairs(vim.fn.environ()) do
-    if not key:match '^WEZTERM' and key ~= 'TERM_PROGRAM' then
-      env[key] = value
-    end
-  end
-  env.TERM_PROGRAM = 'nvim'
-  -- The documented switch for the WezTerm shell integration; if a profile
-  -- still sources it, this keeps its OSC 1337 sequences out of the buffer.
-  env.WEZTERM_SHELL_SKIP_ALL = '1'
-  return env
-end
-
 --- The visible terminal buffer, if one is open.
 ---@return BufID|nil buf
 ---@return WinID|nil win
@@ -88,40 +65,6 @@ local function find_terminal()
   end
 end
 
-function NVTerminal.toggle()
-  local ok, Snacks = pcall(require, 'snacks')
-  if not ok then
-    -- Snacks is lazy; <C-/> is a plain mapping, so it does not load it.
-    pcall(vim.cmd, 'Lazy load snacks')
-    ok, Snacks = pcall(require, 'snacks')
-  end
-  if not ok or not Snacks.terminal then
-    NVMessages.warn 'Terminal is unavailable (Snacks not loaded)'
-    return
-  end
-
-  local win = {
-    position = 'float',
-    width = 0.8,
-    height = 0.55,
-    border = 'single',
-    title = ' Terminal ',
-    title_pos = 'center',
-    -- A working surface, not a modal dialog: the layout stays readable around
-    -- it so you can see what the shell is operating on.
-    backdrop = false,
-  }
-  -- Anchor to the editing area so the float is in the same place no matter which
-  -- window (or RPC call) triggered it.
-  local target = NVSlots and NVSlots.content_win and NVSlots.content_win()
-  if target and vim.api.nvim_win_is_valid(target) then
-    win.relative = 'win'
-    win.win = target
-  end
-
-  Snacks.terminal.toggle(nil, { env = shell_env(), win = win })
-end
-
 function NVTerminal.ensure_hidden()
   local _, win = find_terminal()
   if win and vim.api.nvim_win_get_config(win).relative ~= '' then
@@ -132,5 +75,8 @@ function NVTerminal.ensure_hidden()
 end
 
 function NVTerminal.setup()
-  NVClose.register('terminal', NVTerminal.ensure_hidden)
+  -- The close key hides a floating terminal (the shell keeps running).
+  NVClose.register('terminal', function()
+    return (NVTerminals and NVTerminals.hide_float()) or NVTerminal.ensure_hidden()
+  end)
 end

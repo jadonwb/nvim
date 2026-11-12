@@ -46,7 +46,9 @@ local function setup()
   local ui2 = require 'vim._core.ui2'
   ui2.enable {
     msg = {
-      target = 'cmd',
+      -- With 'cmdheight' 0 the cmd target draws over the statusline; plain
+      -- messages go to the corner popup instead.
+      target = 'msg',
       targets = {
         echo = 'msg',
         echomsg = 'msg',
@@ -70,10 +72,10 @@ local function setup()
         shell_err = 'pager',
         shell_out = 'pager',
 
-        search_cmd = 'cmd',
+        search_cmd = 'msg',
         search_count = 'cmd',
-        empty = 'cmd',
-        [''] = 'cmd',
+        empty = 'msg',
+        [''] = 'msg',
       },
       cmd = { height = 0.5 },
       dialog = { height = 0.5 },
@@ -159,59 +161,58 @@ local function setup()
   end
 end
 
--- Command line in the bottom slot.
+-- Command line in the bottom panel.
 --
--- ui2's cmd window is a float; when the bottom slot is open it would otherwise
--- hover over the editor. Re-anchor it to the slot's screen rectangle after every
--- show. tiny-cmdline.nvim does the same kind of monkey-patching but only accepts
--- editor-relative coordinates, so it cannot dock to a window.
-local function bottom_slot_rect()
-  if not (NVSlots and NVSlots.win) then
+-- ui2's cmd window is a float. When the layout is applied the cmdline lives on
+-- the bottom panel's tab-strip row (same row, same surface), so nothing moves:
+-- 'cmdheight' stays 0 and the statusline keeps its row. If the panel is
+-- closed, `:` opens it for the duration of the command and closes it again;
+-- the free rows under the cmdline hold blink's completion menu.
+
+--- Screen rectangle of the bottom panel's top row (its winbar, else line 1).
+local function bottom_row()
+  local win = NVSlots and NVSlots.win and NVSlots.win 'bottom'
+  if not win then
     return nil
   end
-  local slot = NVSlots.win 'bottom'
-  if not slot then
-    return nil
-  end
-  local pos = vim.fn.screenpos(slot, 1, 1)
-  if pos.row == 0 then
-    return nil
-  end
-  return {
-    row = pos.row - 1,
-    col = pos.col - 1,
-    width = vim.api.nvim_win_get_width(slot),
-    height = vim.api.nvim_win_get_height(slot),
-  }
+  local pos = vim.api.nvim_win_get_position(win)
+  return { row = pos[1], col = pos[2], width = vim.api.nvim_win_get_width(win) }
 end
 
---- Re-anchor the ui2 cmd window over the bottom slot. Returns true when pinned.
-function NVCmdlinePin()
-  local rect = bottom_slot_rect()
-  if not rect then
-    return false
+--- 0-indexed screen position of the pinned cmdline, or nil.
+function NVCmdlinePos()
+  local r = bottom_row()
+  if not r then
+    return nil
   end
+  local ok, line = pcall(vim.fn.getcmdline)
+  local typed = ok and vim.fn.strdisplaywidth(line or '') or 0
+  return { r.row, r.col + 1 + math.min(typed, r.width - 2) }
+end
+
+--- Re-anchor the ui2 cmd window over the bottom panel. Returns true when pinned.
+function NVCmdlinePin()
+  local r = bottom_row()
   local ui2 = require 'vim._core.ui2'
   local cmd = ui2.wins and ui2.wins.cmd
-  if not (cmd and vim.api.nvim_win_is_valid(cmd)) then
+  if not (r and cmd and vim.api.nvim_win_is_valid(cmd)) then
     return false
   end
-
-  local ok, cfg = pcall(vim.api.nvim_win_get_config, cmd)
-  if not ok then
-    return false
+  pcall(vim.api.nvim_win_set_config, cmd, {
+    relative = 'editor',
+    row = r.row,
+    col = r.col,
+    width = r.width,
+    height = 1,
+    border = 'none',
+  })
+  vim.wo[cmd].winhighlight = 'Normal:NvPanel'
+  -- ui2 raises 'cmdheight' to fit the cmdline; pinned, it needs no rows.
+  if vim.o.cmdheight ~= 0 then
+    vim._with({ noautocmd = true, o = { splitkeep = 'screen' } }, function()
+      vim.o.cmdheight = 0
+    end)
   end
-
-  cfg.relative = 'editor'
-  cfg.win = nil
-  -- One row at the top edge of the slot: the cmdline is a line, not the panel,
-  -- and letting ui2 grow it pushed the statusline around.
-  cfg.row = rect.row
-  cfg.col = rect.col
-  cfg.width = rect.width
-  cfg.height = 1
-  cfg.border = 'none'
-  pcall(vim.api.nvim_win_set_config, cmd, cfg)
   return true
 end
 
@@ -221,7 +222,6 @@ local function pin_cmdline()
     return
   end
   cmdline.__nv_pinned = true
-
   local orig_show = cmdline.cmdline_show
   cmdline.cmdline_show = function(...)
     local result = orig_show(...)
@@ -230,22 +230,80 @@ local function pin_cmdline()
   end
 end
 
--- The command line is pinned over the bottom slot. If the slot was closed,
--- bring it back so the cmdline never floats over a hole in the layout.
-if vim.api.nvim_create_autocmd then
-  vim.api.nvim_create_autocmd('CmdlineEnter', {
-    callback = function()
-      if NVSlots and NVSlots.is_applied() and not NVSlots.is_open 'bottom' then
-        NVSlots.ensure 'bottom'
-        -- Render only the panel the command line is pinned over; refreshing
-        -- every slot reloaded the explorer on each ':'.
-        NVSlots.render_slot 'bottom'
-        -- Opened for the command line, not by the user.
-        NVSlots.mark_auto 'bottom'
-      end
-    end,
-  })
+--- Open the bottom panel for a command line; it closes again afterwards.
+local function open_for_cmdline()
+  if not (NVSlots and NVSlots.is_applied() and not NVSlots.is_open 'bottom') then
+    return false
+  end
+  local cur = vim.api.nvim_get_current_win()
+  NVSlots.ensure 'bottom'
+  NVSlots.render_slot 'bottom'
+  NVSlots.mark_auto 'bottom'
+  if vim.api.nvim_win_is_valid(cur) then
+    vim.api.nvim_set_current_win(cur)
+  end
+  return true
 end
+
+-- `:` from normal mode: open the panel first, then start the command line,
+-- so the cmdline has its row before it is drawn.
+vim.keymap.set('n', ':', function()
+  open_for_cmdline()
+  vim.api.nvim_feedkeys(':', 'in', false)
+end, { desc = 'Command line' })
+
+-- blink's menu height is a plain number it re-reads on every update: while
+-- the cmdline is pinned, cap it to the rows free under the cmdline so the menu
+-- opens downward inside the panel instead of flipping above it.
+local saved_max_height
+local function fit_completion(on)
+  local ok, cfg = pcall(require, 'blink.cmp.config')
+  if not ok then
+    return
+  end
+  local menu = cfg.completion.menu
+  if on then
+    local r = bottom_row()
+    if not r then
+      return
+    end
+    local free = vim.o.lines - (vim.o.laststatus == 3 and 1 or 0) - (r.row + 1) - 2 -- padded border
+    saved_max_height = saved_max_height or menu.max_height
+    menu.max_height = math.max(3, math.min(saved_max_height, free))
+  elseif saved_max_height then
+    menu.max_height = saved_max_height
+    saved_max_height = nil
+  end
+end
+
+-- Any other way into the cmdline (visual `:`, mappings, `q:`-less paths).
+vim.api.nvim_create_autocmd('CmdlineEnter', {
+  callback = function()
+    vim.schedule(function()
+      fit_completion(true)
+    end)
+    if vim.fn.getcmdtype() == ':' and NVSlots and NVSlots.is_applied() and not NVSlots.is_open 'bottom' then
+      vim.schedule(function()
+        if vim.fn.mode() == 'c' and open_for_cmdline() then
+          NVCmdlinePin()
+          vim.cmd 'redraw'
+        end
+      end)
+    end
+  end,
+})
+
+vim.api.nvim_create_autocmd('CmdlineLeave', {
+  callback = function()
+    fit_completion(false)
+    vim.schedule(function()
+      if vim.fn.mode() ~= 'c' and NVSlots and NVSlots.is_auto 'bottom' and NVSlots.is_open 'bottom' then
+        NVSlots.clear_auto 'bottom'
+        NVSlots.remove 'bottom'
+      end
+    end)
+  end,
+})
 
 -- Pager buffer keymaps for close (keep q from ui2; add <M-w> and <Esc> equiv)
 vim.api.nvim_create_autocmd('FileType', {

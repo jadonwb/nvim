@@ -17,7 +17,8 @@ NVKeymaps = {
   window_swap = { up = '<M-S-Left>', down = '<M-S-Right>', left = '<M-S-Up>', right = '<M-S-Down>', swap = '<M-Tab>' },
   layout_resize = { up = '<S-Left>', down = '<S-Right>' },
   window_resize = { up = '<S-Up>', down = '<S-Down>' },
-  layout_equalize = '<A-=>', -- TODO?: try something else
+  layout_equalize = '<A-=>',
+  layout_equalize_alt = '<A-0>',
 
   quit_save = '<A-q>',
   quit_force = '<A-Q>',

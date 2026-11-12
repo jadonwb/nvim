@@ -1,5 +1,16 @@
+-- blink.cmp: completion in buffers and on the command line.
+--
+-- Look: NvChad's borderless menu — raised surface, invisible padding border,
+-- kind icon + label + kind name. On the command line the menu opens
+-- *below* the cmdline, into the bottom panel's space (the cmdline is pinned
+-- to the panel's top row, see config/ui2.lua).
+
+local WINHL = 'Normal:NvRaised,FloatBorder:NvRaisedBorder,CursorLine:NvCursorLine,Search:None'
+
 NVBlink = {
   'saghen/blink.cmp',
+  -- v2 needs blink.lib; stay on the stable v1 line.
+  version = '1.*',
   event = { 'InsertEnter', 'CmdlineEnter' },
   cond = function()
     return require('config.profile').wants 'completion'
@@ -9,45 +20,60 @@ NVBlink = {
   },
   opts = {
     sources = {},
-    completion = {
-      list = {
-        selection = {
-          preselect = false,
+    cmdline = {
+      enabled = true,
+      keymap = { preset = 'cmdline' },
+      completion = {
+        menu = {
+          auto_show = function()
+            return vim.fn.getcmdtype() == ':'
+          end,
         },
+        list = { selection = { preselect = false } },
       },
+    },
+    completion = {
+      list = { selection = { preselect = false } },
       documentation = {
         auto_show = false,
-        window = {
-          border = 'single',
-          winhighlight = 'Normal:BlinkCmpDoc,FloatBorder:NvPanelBorder',
-        },
+        window = { border = 'padded', winhighlight = WINHL },
       },
       ghost_text = { enabled = false },
       menu = {
-        -- A visible frame: the old space-only border read as a borderless wall
-        -- of text over the code.
-        border = 'single',
-        -- The scrollbar gutter read as a second border; C-n/C-p and the list
-        -- itself are enough, and the frame stays a single clean edge.
+        border = 'padded',
         scrollbar = false,
-        winhighlight = 'Normal:BlinkCmpMenu,FloatBorder:NvPanelBorder,CursorLine:BlinkCmpMenuSelection,Search:None',
+        winhighlight = WINHL,
+        -- Screen position of the command line; the pinned cmdline lives in
+        -- the bottom panel, so the menu can open beneath it.
+        cmdline_position = function()
+          if NVCmdlinePos then
+            local pos = NVCmdlinePos()
+            if pos then
+              return pos
+            end
+          end
+          return { vim.o.lines - 1, 0 }
+        end,
+        direction_priority = function()
+          if vim.api.nvim_get_mode().mode == 'c' and NVCmdlinePos and NVCmdlinePos() then
+            return { 's', 'n' }
+          end
+          return { 's', 'n' }
+        end,
         draw = {
-          -- We don't need label_description now because label and label_description are already
-          -- combined together in label by colorful-menu.nvim.
-          columns = { { 'kind_icon' }, { 'label', gap = 1 } },
+          padding = 1,
+          columns = { { 'kind_icon' }, { 'label', gap = 1 }, { 'kind' } },
           components = {
             label = {
-              -- Blink clamps the menu to the editing window and hard-cuts any
-              -- label wider than the frame. Cap the label and let blink add an
-              -- ellipsis so long signatures read as truncated, not broken.
+              -- Cap the label so long signatures read as truncated, not cut.
               width = {
                 max = function()
-                  local win = vim.api.nvim_get_current_win()
                   local width = vim.o.columns
-                  if win and vim.bo[vim.api.nvim_get_current_buf()].filetype ~= 'blink-cmp-menu' then
+                  local win = vim.api.nvim_get_current_win()
+                  if vim.bo[vim.api.nvim_get_current_buf()].filetype ~= 'blink-cmp-menu' then
                     width = vim.api.nvim_win_get_width(win)
                   end
-                  return math.max(16, width - 26)
+                  return math.max(16, width - 30)
                 end,
               },
               ellipsis = true,
@@ -62,9 +88,7 @@ NVBlink = {
         },
       },
     },
-    keymap = {
-      preset = 'enter',
-    },
+    keymap = { preset = 'enter' },
   },
 }
 

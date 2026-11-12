@@ -231,6 +231,8 @@ function NVBridge.on_event(line)
       parts[part.id] = part.text
     end
   elseif event.type == 'tool_use' then
+    NVBridge.state.tools = (NVBridge.state.tools or 0) + 1
+    NVBridge.state.last_tool = part.tool
     -- One line per tool call, part of the agent's narrative but visually apart
     -- from the answer. Not folded yet: the title is the useful part.
     local state = part.state or {}
@@ -264,6 +266,18 @@ function NVBridge.on_event(line)
       cost = part.cost,
       tokens = part.tokens,
     }
+    -- Running totals for the session panel/dashboard.
+    local totals = NVBridge.state.totals or { input = 0, output = 0, reasoning = 0, cache_read = 0, cache_write = 0, cost = 0, steps = 0 }
+    local t = part.tokens or {}
+    local cache = type(t.cache) == 'table' and t.cache or {}
+    totals.input = totals.input + (tonumber(t.input) or 0)
+    totals.output = totals.output + (tonumber(t.output) or 0)
+    totals.reasoning = totals.reasoning + (tonumber(t.reasoning) or 0)
+    totals.cache_read = totals.cache_read + (tonumber(cache.read) or 0)
+    totals.cache_write = totals.cache_write + (tonumber(cache.write) or 0)
+    totals.cost = totals.cost + (tonumber(part.cost) or 0)
+    totals.steps = totals.steps + 1
+    NVBridge.state.totals = totals
     NVBridge.append '\n'
     NVBridge.refresh()
   end
@@ -338,6 +352,8 @@ function NVBridge.submit(text, opts)
   end
 
   local stderr_tail = {}
+  NVBridge.state.started = vim.uv.now()
+  NVBridge.state.prompts = (NVBridge.state.prompts or 0) + 1
   NVBridge.state.job = vim.fn.jobstart(cmd, {
     stdout_buffered = false,
     -- `opencode run` needs a controlling terminal; without a pty it starts and

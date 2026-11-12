@@ -15,6 +15,7 @@ return {
 
       require 'features.layout.slots'
       NVSlots.setup()
+      require('features.layout.data').setup()
 
       require 'features.layout.bottom'
       NVBottom.setup()

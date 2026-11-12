@@ -1,35 +1,61 @@
 -- Bottom panel modes.
 --
--- The slot hosts one provider at a time: prompt, quickfix or problems.
--- The terminal is a Snacks surface on <C-/> and does not live in a slot. The command line is not a mode: ui2's cmd window is pinned over the
--- slot while it is open (config/ui2.lua).
+-- The slot hosts one provider at a time: prompt, terminal, quickfix or
+-- problems. `<C-/>` shows/hides the panel; terminals are managed by
+-- layout/terminals.lua. The command line is not a mode: ui2's cmd window is
+-- pinned over the slot's tab row while it is open (config/ui2.lua).
 --
 -- A window-local winbar (not volt: the content is a real buffer) shows the modes.
 
 NVBottom = {}
 
-NVBottom.modes = { 'prompt', 'quickfix', 'problems' }
+require 'features.layout.terminals'
 
-for name, spec in pairs {
-  NvBottomActive = { link = 'NvChip' },
-  NvBottomInactive = { link = 'NvPanelLabel' },
-  NvBottomSep = { link = 'NvPanelBorder' },
-} do
-  if vim.fn.hlexists(name) == 0 then
-    vim.api.nvim_set_hl(0, name, spec)
+NVBottom.modes = { 'prompt', 'terminal', 'quickfix', 'problems' }
+
+local ICONS = { prompt = '󰚩', terminal = '\u{f018d}', quickfix = '\u{f0279}', problems = '\u{f05d6}' }
+
+local function count(mode)
+  if mode == 'quickfix' then
+    return #vim.fn.getqflist()
+  elseif mode == 'problems' then
+    return #vim.diagnostic.get()
+  elseif mode == 'terminal' and NVTerminals then
+    return NVTerminals.count()
   end
+  return 0
 end
 
+--- Tab strip: active tab in the structure colour, underlined; counts muted;
+--- key hints right-aligned.
 ---@param win WinID
 ---@param mode string
 function NVBottom.winbar(win, mode)
-  local parts = {}
+  local parts = { '%#NvTabStrip# ' }
   for _, m in ipairs(NVBottom.modes) do
-    local hl = m == mode and 'NvBottomActive' or 'NvBottomInactive'
-    parts[#parts + 1] = ('%%#%s# %s '):format(hl, m:sub(1, 1):upper() .. m:sub(2))
+    local hl = m == mode and 'NvTabActive' or 'NvTabInactive'
+    local n = count(m)
+    parts[#parts + 1] = ('%%#%s#%s %s%%#NvTabStrip#'):format(hl, ICONS[m], m:sub(1, 1):upper() .. m:sub(2))
+    if n > 0 then
+      parts[#parts + 1] = ('%%#NvTabCount# %d'):format(n)
+    end
+    parts[#parts + 1] = '%#NvTabStrip#   '
+  end
+  parts[#parts + 1] = '%='
+  if mode == 'prompt' then
+    parts[#parts + 1] = '%#NvKey# CR %#NvMuted# send  %#NvKey# M-a %#NvMuted# transcript  %#NvKey# M-n %#NvMuted# next '
+  elseif mode == 'terminal' and NVTerminals and NVTerminals.active then
+    for _, t in ipairs(NVTerminals.list) do
+      if t.buf == NVTerminals.active then
+        parts[#parts + 1] = '%#NvDim#' .. NVTerminals.title(t):gsub('%%', '%%%%') .. '   '
+      end
+    end
+    parts[#parts + 1] = '%#NvKey# SPC tt %#NvMuted# pick  %#NvKey# SPC tn %#NvMuted# new  %#NvKey# C-/ %#NvMuted# hide '
+  else
+    parts[#parts + 1] = '%#NvKey# M-n %#NvMuted# next '
   end
   pcall(function()
-    vim.wo[win].winbar = table.concat(parts, '%#NvBottomSep#│')
+    vim.wo[win].winbar = table.concat(parts)
   end)
 end
 
@@ -53,6 +79,54 @@ function NVBottom.set(mode)
     NVBottom.winbar(win, mode)
   end
   return ok
+end
+
+--- Redraw the tab strip (counts and titles change outside a mode switch).
+function NVBottom.refresh_winbar()
+  local win = NVSlots.win 'bottom'
+  if win then
+    NVBottom.winbar(win, NVSlots.provider_of 'bottom')
+  end
+end
+
+-- Opened while the layout was off (focus mode, dashboard): closing it again
+-- must not be remembered as "the user hid the bottom panel".
+local transient = false
+
+--- `<C-/>`: show or hide the bottom panel. Showing focuses a terminal (or the
+--- prompt) so you can type straight away.
+function NVBottom.toggle()
+  local win = NVSlots.win 'bottom'
+  if win then
+    if vim.api.nvim_get_current_win() == win then
+      vim.cmd 'stopinsert'
+      vim.api.nvim_set_current_win(NVSlots.content_win())
+    end
+    if transient or NVSlots.is_auto 'bottom' then
+      transient = false
+      NVSlots.clear_auto 'bottom'
+      NVSlots.remove 'bottom'
+    else
+      NVSlots.hide 'bottom'
+    end
+    return
+  end
+  if NVSlots.is_applied() then
+    NVSlots.show 'bottom'
+  else
+    transient = true
+    NVSlots.ensure 'bottom'
+    NVSlots.render_slot 'bottom'
+  end
+  win = NVSlots.win 'bottom'
+  if not win then
+    return
+  end
+  NVBottom.refresh_winbar()
+  vim.api.nvim_set_current_win(win)
+  if NVSlots.provider_of 'bottom' == 'terminal' or NVSlots.provider_of 'bottom' == 'prompt' then
+    vim.cmd 'startinsert'
+  end
 end
 
 --- Cycle through the modes; `-1` goes backwards.
@@ -95,8 +169,70 @@ function NVBottom.setup()
     function()
       NVBottom.cycle(1)
     end,
-    mode = { 'n' },
+    mode = { 'n', 't' },
   }
+  for _, lhs in ipairs { '<C-/>', '<C-_>' } do
+    K.map { lhs, 'Toggle bottom panel', NVBottom.toggle, mode = { 'n', 'v', 'i', 't' } }
+  end
+  K.map { '<leader>tt', 'Terminals: pick', NVTerminals.pick, mode = 'n' }
+  K.map {
+    '<leader>tn',
+    'Terminals: new (panel)',
+    function()
+      NVTerminals.new 'panel'
+    end,
+    mode = 'n',
+  }
+  K.map {
+    '<leader>tb',
+    'Terminals: in bottom panel',
+    function()
+      NVTerminals.place 'panel'
+    end,
+    mode = 'n',
+  }
+  K.map {
+    '<leader>tf',
+    'Terminals: floating (toggle)',
+    function()
+      NVTerminals.place 'float'
+    end,
+    mode = 'n',
+  }
+  K.map {
+    '<leader>tc',
+    'Terminals: in main window',
+    function()
+      NVTerminals.place 'content'
+    end,
+    mode = 'n',
+  }
+  K.map {
+    '<leader>t]',
+    'Terminals: next',
+    function()
+      NVTerminals.cycle(1)
+    end,
+    mode = 'n',
+  }
+  K.map {
+    '<leader>t[',
+    'Terminals: previous',
+    function()
+      NVTerminals.cycle(-1)
+    end,
+    mode = 'n',
+  }
+
+  -- Terminal titles change as commands run; keep the strip current.
+  vim.api.nvim_create_autocmd({ 'TermRequest', 'TermOpen', 'BufEnter' }, {
+    group = vim.api.nvim_create_augroup('NV bottom strip', { clear = true }),
+    callback = function()
+      if NVSlots.provider_of 'bottom' == 'terminal' then
+        vim.schedule(NVBottom.refresh_winbar)
+      end
+    end,
+  })
 end
 
 return NVBottom

@@ -12,9 +12,18 @@ export XDG_CONFIG_HOME="$tmp/xdg"
 mkdir -p "$XDG_CONFIG_HOME"
 ln -sfn "$root" "$XDG_CONFIG_HOME/nvim"
 
-nvim --headless --listen "$sock" >/dev/null 2>&1 &
+# The layout applies on the first real file.
+export XDG_STATE_HOME="$tmp/state"
+printf 'one\n' >"$tmp/a.txt"
+nvim --headless --listen "$sock" --cmd 'set columns=200 lines=50' "$tmp/a.txt" >/dev/null 2>&1 &
 pid=$!
-cleanup() { kill "$pid" 2>/dev/null; rm -rf -- "$tmp"; }
+# A headless nvim can ignore SIGTERM; never leave one behind.
+cleanup() {
+  nvim --server "$sock" --remote-send '<C-\><C-n>:qa!<CR>' >/dev/null 2>&1 </dev/null
+  sleep 0.3
+  kill -9 "$pid" 2>/dev/null
+  rm -rf -- "$tmp"
+}
 trap cleanup EXIT
 
 for _ in $(seq 1 100); do
@@ -32,8 +41,13 @@ act() { nvim --server "$sock" --remote-expr "v:lua.NVSlots.$1" >/dev/null 2>&1; 
 fail=0
 check() { if ! grep -q -- "$2" <<<"$1"; then printf 'FAIL: %s\n  got: %s\n' "$3" "$1"; fail=1; fi }
 
-s=$(state)
-check "$s" '"applied":true' 'layout starts on in a workspace'
+# Setup is deferred past startup; give the first file a moment to apply it.
+for _ in $(seq 1 50); do
+  s=$(state)
+  grep -q '"applied":true' <<<"$s" && break
+  sleep 0.2
+done
+check "$s" '"applied":true' 'layout applies on the first file'
 
 # Closing over RPC is the external focus-mode switch.
 act "close()"

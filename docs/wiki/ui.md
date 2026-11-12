@@ -145,23 +145,10 @@ Neovim could run under a different XDG config and paint the shot with the wrong
 theme).
 `scripts/gen-keymaps.sh` regenerates the keymap page.
 
-`scripts/capture-panels.sh [cols] [lines] [tag]` captures the panels the sweep
-does not: hover, Trouble with a long diagnostic, which-key, Lazy, Mason,
-grug-far, the unsaved prompt and the notification centre, at any size.
+Behaviour is covered by the headless suites in `tests/` (`tests/layout.sh`
+for the slot layout).
 
-`scripts/capture-integrations.sh [cols] [lines] [tag]` captures and asserts the
-integration surfaces: signature help (`gK`), code actions (`<leader>ca`) with a
-real lua_ls action, the blink completion menu, diffview, lazygit, and the
-window width/height/swap keys (geometry checked before and after).
-
-`scripts/sweep.sh [cols] [lines] [tag]` runs the end-to-end interaction sweep in
-an isolated tmux session and temporary XDG dirs: layout, window navigation (real
-keys), bottom modes, command line over a closed panel, preview, compare with a
-man page, help, cheatsheet, which-key, picker, notification centre, terminal,
-slot close/reopen, and session save/restart/restore with geometry assertions.
-It prints per-step probes, writes PNGs, and exits non-zero if anything fails.
-
-All three are development tools, not loaded by Neovim.
+Both scripts are development tools, not loaded by Neovim.
 
 ## Narrow widths
 
