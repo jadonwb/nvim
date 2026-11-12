@@ -1,185 +1,212 @@
+-- Statusline.
+--
+-- One line, no tabline: the layout's buffers live in the centre window and the
+-- tab layer is gone. It carries what the session panel does not (mode, file,
+-- diagnostics, LSP, position) so the two never repeat each other.
+
+-- Used by the pager/help surfaces, which hide the statusline entirely.
 NVLualine = {}
 
 function NVLualine.show_everything()
   vim.opt.laststatus = 3
-  vim.opt.showtabline = 1
+  vim.opt.showtabline = 0
 end
 
 function NVLualine.hide_everything()
   vim.opt.laststatus = 0
-  vim.opt.showtabline = 0
 end
 
-function NVLualine.show_tabline()
-  pcall(function()
-    require('lualine').hide { place = 'tabline', unhide = true }
-  end)
+local function syn(name, what)
+  local id = vim.fn.hlID(name)
+  if id == 0 then
+    return nil
+  end
+  local colour = vim.fn.synIDattr(vim.fn.synIDtrans(id), what .. '#')
+  return colour ~= '' and colour or nil
 end
 
-function NVLualine.hide_tabline()
-  pcall(function()
-    require('lualine').hide { place = 'tabline', unhide = false }
-  end)
+local function colour(name)
+  return { fg = syn(name, 'fg'), bg = syn(name, 'bg'), gui = 'bold' }
 end
 
-function NVLualine.rename_tab(label)
-  vim.cmd('LualineRenameTab ' .. label)
+local MODE_NAMES = {
+  n = 'NORMAL',
+  i = 'INSERT',
+  v = 'VISUAL',
+  V = 'V-LINE',
+  [string.char(22)] = 'V-BLOCK',
+  R = 'REPLACE',
+  r = 'REPLACE',
+  c = 'COMMAND',
+  t = 'TERMINAL',
+  s = 'SELECT',
+}
+
+local function mode_group()
+  local m = vim.api.nvim_get_mode().mode
+  if m == 'i' then
+    return 'NvStModeInsert'
+  elseif m == 'v' or m == 'V' or m == string.char(22) then
+    return 'NvStModeVisual'
+  elseif m == 'R' or m == 'r' then
+    return 'NvStModeReplace'
+  end
+  return 'NvStMode'
 end
 
-local tabline_mode = 'filepath'
-
---- Root directory of the current project, for the statusline.
-local function root_dir()
-  return {
-    function()
-      local root = vim.fs.root(0, { '.git', 'lua' }) or vim.fn.getcwd()
-      return ' ' .. vim.fn.fnamemodify(root, ':t') .. ' '
-    end,
-    color = { fg = 'DiagnosticHint' },
-  }
+local function mode_text()
+  local m = vim.api.nvim_get_mode().mode
+  return ' ' .. (MODE_NAMES[m] or m:upper()) .. ' '
 end
 
---- File path relative to the working directory, with a modified marker.
----@param opts? { modified_sign?: string }
-local function pretty_path(opts)
-  return {
-    'filename',
-    path = 1,
-    shorting_target = 40,
-    symbols = { modified = (opts and opts.modified_sign) or ' ●' },
-  }
+local function recording()
+  local reg = vim.fn.reg_recording()
+  return reg ~= '' and (' REC @' .. reg .. ' ') or ''
 end
 
+local function search_count()
+  if vim.v.hlsearch == 0 then
+    return ''
+  end
+  local sc = vim.fn.searchcount { recompute = true, maxcount = 999 }
+  if sc.total == 0 then
+    return ''
+  end
+  return (' %d/%d '):format(sc.current, sc.total)
+end
+
+--- File icon plus a shortened name. The directory is in the session panel, so
+--- the statusline keeps the file itself readable instead of repeating a path.
+local function file_component()
+  local name = vim.api.nvim_buf_get_name(0)
+  if name == '' then
+    return ' [No Name] '
+  end
+  local label = vim.fn.fnamemodify(name, ':t')
+  local icon = ''
+  local ok, mini = pcall(require, 'mini.icons')
+  if ok then
+    icon = mini.get('file', name)
+  end
+  if vim.bo.modified then
+    label = label .. ' ●'
+  end
+  if vim.bo.readonly then
+    label = label .. ' '
+  end
+  return ' ' .. icon .. ' ' .. label .. ' '
+end
+
+local function lsp_clients()
+  local names = {}
+  for _, client in ipairs(vim.lsp.get_clients { bufnr = 0 }) do
+    if client.name and client.name ~= '' then
+      names[#names + 1] = client.name
+    end
+  end
+  if #names == 0 then
+    return ''
+  end
+  return ' ' .. vim.fn.strcharpart(table.concat(names, ','), 0, 18) .. ' '
+end
 
 return {
   'nvim-lualine/lualine.nvim',
   event = 'VeryLazy',
-  keys = {
-    {
-      '<Leader><tab>t',
-      function()
-        tabline_mode = tabline_mode == 'filepath' and 'lsp_symbol' or 'filepath'
-        vim.notify('Tabline: ' .. (tabline_mode == 'filepath' and 'filepath' or 'LSP symbols'), vim.log.levels.INFO, { title = 'Tabline' })
-      end,
-      desc = 'Toggle Tabline (filepath / LSP symbols)',
-    },
-  },
-  opts = function(_, opts)
-    -- LazyVim used to supply these tables; a spec without them has to start
-    -- from empty sections rather than indexing nil.
-    opts.sections = opts.sections or {}
-    for _, name in ipairs { 'lualine_a', 'lualine_b', 'lualine_c', 'lualine_x', 'lualine_y', 'lualine_z' } do
-      opts.sections[name] = opts.sections[name] or {}
-    end
-
-    -- Single letter mode indicator
-    opts.sections.lualine_a = {
-      {
-        'mode',
-        fmt = function(str)
-          return ' ' .. str:sub(1, 1) .. ' '
-        end,
-      },
-    }
-
-    -- Remove separators for square look
-    opts.options = vim.tbl_deep_extend('force', opts.options or {}, {
+  opts = {
+    options = {
+      theme = 'auto',
+      globalstatus = true,
       section_separators = { left = '', right = '' },
       component_separators = { left = '', right = '' },
+      disabled_filetypes = { statusline = { 'snacks_dashboard', 'dashboard', 'nvcheatsheet' } },
       always_show_tabline = false,
-    })
-
-    -- Make nice path and modified indicator
-    opts.sections.lualine_x = {
-      {
-        function()
-          local reg = vim.fn.reg_recording()
-          return reg ~= '' and 'Recording @' .. reg or ''
-        end,
-        cond = function()
-          return #vim.fn.reg_recording() > 0
-        end,
-        color = 'DiagnosticWarn',
-      },
-      {
-        function()
-          return (NVMessages and NVMessages.progress_hl) or ''
-        end,
-        cond = function()
-          return NVMessages and type(NVMessages.progress_hl) == 'string' and NVMessages.progress_hl ~= ''
-        end,
-      },
-      {
-        function()
-          local sc = vim.fn.searchcount { recompute = true, maxcount = 999 }
-          if sc.incomplete == 1 then
-            return '[?/??]'
-          end
-          return string.format('[%d/%d]', sc.current, sc.total)
-        end,
-        cond = function()
-          if vim.v.hlsearch == 0 then
-            return false
-          end
-          local sc = vim.fn.searchcount { recompute = true, maxcount = 999 }
-          return sc.total > 0
-        end,
-        color = 'DiagnosticInfo',
-      },
-    }
-    opts.sections.lualine_c = {
-      root_dir(),
-      {
-        'diagnostics',
-  symbols = {
-    error = NVIcons.lsp.full.error .. ' ',
-    warn = NVIcons.lsp.full.warn .. ' ',
-    info = NVIcons.lsp.full.info .. ' ',
-    hint = NVIcons.lsp.full.hint .. ' ',
-  },
-      },
-      { 'filetype', icon_only = true, separator = '', padding = { left = 1, right = 0 } },
-      pretty_path { modified_sign = ' ●' },
-    }
-
-    -- Tabline: project name | filepath / LSP symbol | tab list
-    -- DiagnosticFloatingHintLabel: dark fg on cyan bg (pill badge style from arrowlake)
-    opts.tabline = {
+    },
+    sections = {
       lualine_a = {
         {
           function()
-            return ' ' .. vim.fn.fnamemodify(vim.fn.getcwd(), ':t'):upper() .. ' '
+            return mode_text()
           end,
-          color = 'DiagnosticFloatingHintLabel',
-          padding = 1,
+          color = function()
+            return colour(mode_group())
+          end,
+          padding = 0,
+        },
+      },
+      lualine_b = {
+        {
+          'diagnostics',
+          symbols = {
+            error = ' ',
+            warn = ' ',
+            info = ' ',
+            hint = ' ',
+          },
+          colored = true,
+          always_visible = false,
+          padding = { left = 1, right = 0 },
         },
       },
       lualine_c = {
         {
+          file_component,
+          color = 'NvStFile',
+          padding = { left = 0, right = 0 },
+        },
+      },
+      lualine_x = {
+        {
           function()
-            if tabline_mode == 'lsp_symbol' then
-              local ok, result = pcall(require('trouble').statusline, {
-                mode = 'lsp_document_symbols',
-                groups = {},
-                title = '',
-                filter = { range = true },
-                format = '{kind_icon}{filename}:{symbol.name}',
-              })
-              return ok and result.get() or ''
-            end
-            return vim.fn.expand '%:.:h' == '.' and vim.fn.expand '%:t' or vim.fn.expand '%:.:h' .. '/' .. vim.fn.expand '%:t'
+            return (NVMessages and NVMessages.progress_hl) or ''
           end,
+          cond = function()
+            return NVMessages and type(NVMessages.progress_hl) == 'string' and NVMessages.progress_hl ~= ''
+          end,
+          padding = { left = 0, right = 1 },
+        },
+        {
+          recording,
+          cond = function()
+            return vim.fn.reg_recording() ~= ''
+          end,
+          color = 'DiagnosticWarn',
+          padding = { left = 0, right = 0 },
+        },
+        {
+          search_count,
+          cond = function()
+            return vim.v.hlsearch ~= 0
+          end,
+          color = 'NvChipMuted',
+          padding = { left = 0, right = 0 },
+        },
+        {
+          lsp_clients,
+          cond = function()
+            return #vim.lsp.get_clients { bufnr = 0 } > 0
+          end,
+          color = 'NvStMuted',
+          padding = { left = 0, right = 0 },
+        },
+      },
+      lualine_y = {
+        {
+          'filetype',
+          colored = false,
+          color = 'NvStMuted',
+          padding = { left = 1, right = 1 },
         },
       },
       lualine_z = {
         {
-          'tabs',
-          mode = 2,
-          fmt = function(name, _)
-            return ' ' .. name .. ' '
+          function()
+            return (' %d:%d '):format(vim.fn.line '.', vim.fn.col '.')
           end,
+          color = 'NvStMuted',
+          padding = { left = 0, right = 0 },
         },
       },
-    }
-  end,
+    },
+  },
 }

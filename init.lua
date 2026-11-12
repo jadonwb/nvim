@@ -9,5 +9,6 @@ require 'core'
 require 'editor'
 
 require 'config.ui2'
+require('config.highlights').setup_autocmds()
 
 require 'config.lazy'

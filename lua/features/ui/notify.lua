@@ -14,11 +14,11 @@ NVNotify.store = NVNotify.store or {}
 NVNotify.unread = NVNotify.unread or 0
 
 local levels = {
-  [vim.log.levels.TRACE] = { label = 'trace', hl = 'CommentFg' },
-  [vim.log.levels.DEBUG] = { label = 'debug', hl = 'CommentFg' },
-  [vim.log.levels.INFO] = { label = 'info', hl = 'ExBlue' },
-  [vim.log.levels.WARN] = { label = 'warn', hl = 'ExYellow' },
-  [vim.log.levels.ERROR] = { label = 'error', hl = 'ExRed' },
+  [vim.log.levels.TRACE] = { label = 'trace', hl = 'CommentFg', chip = 'NvChipMuted' },
+  [vim.log.levels.DEBUG] = { label = 'debug', hl = 'CommentFg', chip = 'NvChipMuted' },
+  [vim.log.levels.INFO] = { label = 'info', hl = 'ExBlue', chip = 'NvChipInfo' },
+  [vim.log.levels.WARN] = { label = 'warn', hl = 'ExYellow', chip = 'NvChipWarn' },
+  [vim.log.levels.ERROR] = { label = 'error', hl = 'ExRed', chip = 'NvChipErr' },
 }
 
 ---@param level integer
@@ -102,7 +102,7 @@ function NVNotify.open()
   end
 
   local ui = require 'features.ui.window'
-  local ok, handle = pcall(ui.float, { border = 'rounded', zindex = 70, enter = true })
+  local ok, handle = pcall(ui.float, { border = 'single', zindex = 70, enter = true })
   if not ok then
     NVMessages.warn 'Notification centre unavailable'
     return
@@ -113,12 +113,25 @@ function NVNotify.open()
 
   local layout = {
     {
+      name = 'header',
+      lines = function()
+        local unread = NVNotify.unread > 0 and (' ' .. NVNotify.unread .. ' unread ') or nil
+        local row = { { '󰂚 Notifications ', 'NvPanelTitle' } }
+        if unread then
+          row[#row + 1] = { unread, 'NvChip' }
+        end
+        row[#row + 1] = { '_pad_' }
+        row[#row + 1] = { ' ' .. #NVNotify.store .. ' total ', 'NvChipMuted' }
+        return { require('volt.ui').hpad(row, width - 4), {} }
+      end,
+    },
+    {
       name = 'tabs',
       lines = function()
         return require('volt.ui').tabs({ 'all', 'errors' }, width - 4, {
           active = filter,
-          hlon = 'ExLightGrey',
-          hloff = 'CommentFg',
+          hlon = 'NvChip',
+          hloff = 'ExInactive',
         })
       end,
     },
@@ -129,18 +142,26 @@ function NVNotify.open()
         if #list == 0 then
           return { { { ' nothing here ', 'CommentFg' } } }
         end
+        local MD = require 'features.ui.markdown'
         local lines = {}
         for i = #list, math.max(1, #list - 40), -1 do
           local entry = list[i]
           local info = level_info(entry.level)
-          local head = (' %s  %-5s '):format(entry.time, info.label)
+          local head = {
+            { '  ' },
+            { (' %s '):format(info.label), info.chip },
+            { '  ' .. entry.time .. '  ', 'CommentFg' },
+          }
           if entry.title then
-            head = head .. ('%s: '):format(entry.title)
+            head[#head + 1] = { entry.title, 'NvPanelTitle' }
           end
-          lines[#lines + 1] = { { head, info.hl } }
+          lines[#lines + 1] = head
           for _, l in ipairs(vim.split(entry.msg, '\n', { plain = true })) do
-            lines[#lines + 1] = { { '   ' .. l:sub(1, width - 6) } }
+            for _, row in ipairs(MD.wrap({ { { l } } }, width - 8)) do
+              lines[#lines + 1] = vim.list_extend({ { '   ' } }, row)
+            end
           end
+          lines[#lines + 1] = {}
         end
         return lines
       end,
@@ -148,7 +169,16 @@ function NVNotify.open()
     {
       name = 'footer',
       lines = function()
-        return { { { ' q close  C clear ', 'CommentFg' } } }
+        return {
+          {
+            { ' q ', 'NvChipMuted' },
+            { ' close   ', 'CommentFg' },
+            { ' C ', 'NvChipMuted' },
+            { ' clear   ', 'CommentFg' },
+            { ' Tab ', 'NvChipMuted' },
+            { ' filter ', 'CommentFg' },
+          },
+        }
       end,
     },
   }
@@ -166,6 +196,8 @@ function NVNotify.open()
   ui.resize(handle, width, height, { row = math.max(0, math.floor((vim.o.lines - height) / 2) - 2), col = math.floor((vim.o.columns - width) / 2) })
 
   local buf = handle.buf
+  vim.bo[buf].filetype = 'nvnotify'
+
   local function close()
     ui.close(handle)
     NVNotify.handle = nil

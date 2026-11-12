@@ -11,9 +11,9 @@ NVBottom = {}
 NVBottom.modes = { 'prompt', 'quickfix', 'problems' }
 
 for name, spec in pairs {
-  NvBottomActive = { link = 'StatusLine', bold = true },
-  NvBottomInactive = { link = 'Comment' },
-  NvBottomSep = { link = 'Comment' },
+  NvBottomActive = { link = 'NvChip' },
+  NvBottomInactive = { link = 'NvPanelLabel' },
+  NvBottomSep = { link = 'NvPanelBorder' },
 } do
   if vim.fn.hlexists(name) == 0 then
     vim.api.nvim_set_hl(0, name, spec)

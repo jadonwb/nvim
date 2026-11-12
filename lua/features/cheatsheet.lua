@@ -102,7 +102,7 @@ local function block(title, entries, width)
   local chrome = require 'features.ui.chrome'
   local inner = width - 4
   local lines = {
-    { { ' ' .. title, 'ExLightGrey' } },
+    { { ' ' .. title .. ' ', 'NvChipMuted' } },
     {},
   }
 
@@ -117,7 +117,7 @@ local function block(title, entries, width)
     lines[#lines + 1] = chrome.fit(voltui.hpad(row, inner), inner)
   end
 
-  voltui.border(lines, 'LineNr')
+  voltui.border(lines, 'NvPanelBorder')
   return lines
 end
 
@@ -188,7 +188,7 @@ function NVCheatsheet.open()
     {
       name = 'title',
       lines = function()
-        local row = { { 'C H E A T S H E E T', 'Title' }, { '_pad_' }, { ' q close ', 'CommentFg' } }
+        local row = { { 'C H E A T S H E E T ', 'NvChip' }, { '_pad_' }, { ' q close ', 'NvPanelLabel' } }
         return { require('volt.ui').hpad(row, width - 4), {} }
       end,
     },

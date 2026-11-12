@@ -41,7 +41,37 @@ return {
       -- own autostart is a float and bails out when there is more than one
       -- window.
       enabled = false,
+      formats = {
+        -- Snacks' default pathshorten turns every component into one letter when
+        -- the field is narrow. Show the tail of the path instead, which is the
+        -- part that identifies the file.
+        file = function(item, ctx)
+          local fname = vim.fn.fnamemodify(item.file, ':~')
+          if ctx.width and #fname > ctx.width then
+            fname = '…' .. fname:sub(-(ctx.width - 1))
+          end
+          return { { fname, hl = 'file' } }
+        end,
+      },
       sections = {
+        -- Status chips: version, branch and launch profile, the same facts the
+        -- statusline and session panel leave out.
+        function()
+          local version = vim.version()
+          local branch = vim.fn.systemlist { 'git', 'branch', '--show-current' }[1]
+          local profile = require('config.profile').kind or 'workspace'
+          return {
+            align = 'center',
+            padding = 0,
+            text = {
+              { ' 󰚩 nvim ' .. version.major .. '.' .. version.minor .. '.' .. version.patch .. ' ', hl = 'special' },
+              { '   ', hl = 'footer' },
+              { '  ' .. ((branch and branch ~= '') and branch or 'no branch') .. ' ', hl = 'special' },
+              { '   ', hl = 'footer' },
+              { ' ' .. profile .. ' ', hl = 'special' },
+            },
+          }
+        end,
         { section = 'header' },
         function()
           return {
@@ -54,6 +84,10 @@ return {
           }
         end,
         { section = 'keys', gap = 1, padding = 1 },
+        function()
+          return { align = 'center', padding = 0, text = { { ' Recent files ', hl = 'title' } } }
+        end,
+        { section = 'recent_files', cwd = false, limit = 4, padding = 0 },
         { section = 'startup' },
       },
       preset = {

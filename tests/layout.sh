@@ -168,6 +168,29 @@ vim.api.nvim_win_set_width(rw, 12)
 NVSlots.enforce()
 add('geometry enforced=' .. tostring(vim.api.nvim_win_get_width(rw) > 12))
 
+-- Semantic highlight groups exist for every panel colour the UI asks for.
+local hl_ok = true
+for _, name in ipairs { 'ExRed', 'ExGreen', 'ExYellow', 'ExBlue', 'CommentFg', 'NvPanelBorder', 'NvPanelTitle', 'NvChip', 'NvChipMuted', 'NvStMode', 'NvStFile' } do
+  if vim.fn.hlexists(name) == 0 then
+    hl_ok = false
+    add('missing hl ' .. name)
+  end
+end
+add('highlights=' .. tostring(hl_ok))
+
+-- The notification centre renders a sample entry.
+require('features.ui.notify').add(vim.log.levels.WARN, 'ui test entry', { title = 'test' })
+require('features.ui.notify').open()
+local notify_open = false
+for _, w in ipairs(vim.api.nvim_list_wins()) do
+  if vim.bo[vim.api.nvim_win_get_buf(w)].filetype == 'nvnotify' then
+    notify_open = true
+    vim.api.nvim_win_close(w, true)
+  end
+end
+add('notification centre=' .. tostring(notify_open))
+pcall(vim.cmd, 'silent messages clear')
+
 -- The cheatsheet opens as a float over the layout and closes on q.
 require('features.cheatsheet').open()
 local cheat_win
@@ -224,6 +247,8 @@ check 'buffer delete keeps window=true'
 check 'window repair=true'
 check 'geometry enforced=true'
 check 'cheatsheet=true'
+check 'highlights=true'
+check 'notification centre=true'
 check 'reopen one slot=true'
 grep -q 'ratios=true' <<<"$got" || { echo 'FAIL: left column not narrower than right'; fail=1; }
 grep -q 'swap exchanged=true win=true' <<<"$got" || { echo 'FAIL: swap did not exchange slot contents'; fail=1; }

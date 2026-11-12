@@ -122,12 +122,12 @@ local function layout()
       name = 'tabs',
       lines = function()
         if #names < 2 then
-          return { { { ' ' .. (names[1] or ''), 'ExLightGrey' } } }
+          return { { { ' ' .. (names[1] or ''), 'NvPanelTitle' } } }
         end
         return require('volt.ui').tabs(names, state.width - (PAD * 2), {
           active = current() and current().name,
-          hlon = 'ExLightGrey',
-          hloff = 'CommentFg',
+          hlon = 'NvChip',
+          hloff = 'ExInactive',
         })
       end,
     },

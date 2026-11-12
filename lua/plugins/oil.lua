@@ -16,6 +16,14 @@ return {
   end,
   opts = {
     default_file_explorer = false,
+    -- Window navigation is global; oil's own <C-h>/<C-l> (split/refresh) would
+    -- shadow it in the explorer.
+    keymaps = {
+      ['<C-h>'] = false,
+      ['<C-j>'] = false,
+      ['<C-k>'] = false,
+      ['<C-l>'] = false,
+    },
     columns = { 'icon' },
     view_options = {
       show_hidden = false,

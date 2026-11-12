@@ -10,11 +10,12 @@
 local M = {}
 
 M.hl = {
-  border = 'LineNr',
-  title = 'ExLightGrey',
-  meta = 'CommentFg',
-  label = 'CommentFg',
-  icon = 'ExLightGrey',
+  border = 'NvPanelBorder',
+  title = 'NvPanelTitle',
+  meta = 'NvChip',
+  label = 'NvPanelLabel',
+  icon = 'NvPanelSection',
+  section = 'NvPanelSection',
 }
 
 ---@param chunks table[]
@@ -101,7 +102,7 @@ function M.frame(opts)
     -- dashboards; blocks read as groups instead of one dense list.
     lines[#lines + 1] = {}
     if section.title then
-      lines[#lines + 1] = { { section.title, M.hl.meta } }
+      lines[#lines + 1] = { { section.title, M.hl.section } }
     end
     for _, row in ipairs(section.rows or {}) do
       lines[#lines + 1] = M.fit(row, inner)
