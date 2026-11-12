@@ -111,6 +111,7 @@ Global LuaLS annotations for the `NV*` globals.
 | --- | --- |
 | `scripts/gen-keymaps.sh`, `scripts/gen-keymaps.lua` | regenerate `docs/wiki/keymaps.md` |
 | `scripts/shot.sh`, `scripts/ansi2svg.py` | tmux pane → PNG with theme colours |
+| `scripts/sweep.sh` | end-to-end UI sweep at a given size (probes + captures + pass/fail) |
 | `tests/{layout,session,notify,lsp-ui,bridge,rpc,launch}.sh` | headless behaviour suites |
 | `docs/wiki/` | this wiki |
 | `docs/refactor/` | design notes and review history |

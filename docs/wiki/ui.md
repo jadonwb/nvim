@@ -113,8 +113,16 @@ not a mode; it is pinned over one row of the panel.
 `scripts/shot.sh [session] out.png` renders a tmux pane capture to a PNG with
 the theme's real colours: SGR runs become background bands and box-drawing
 characters are drawn as lines, so borders are continuous like the real UI.
-`scripts/gen-keymaps.sh` regenerates the keymap page. Both are development
-tools, not loaded by Neovim.
+`scripts/gen-keymaps.sh` regenerates the keymap page.
+
+`scripts/sweep.sh [cols] [lines] [tag]` runs the end-to-end interaction sweep in
+an isolated tmux session and temporary XDG dirs: layout, window navigation (real
+keys), bottom modes, command line over a closed panel, preview, compare with a
+man page, help, cheatsheet, which-key, picker, notification centre, terminal,
+slot close/reopen, and session save/restart/restore with geometry assertions.
+It prints per-step probes, writes PNGs, and exits non-zero if anything fails.
+
+All three are development tools, not loaded by Neovim.
 
 ## Narrow widths
 
