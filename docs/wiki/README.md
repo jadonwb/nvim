@@ -2,6 +2,7 @@
 
 This wiki documents the configuration as it behaves, not as it was planned.
 
+- [Structure](structure.md) — every Lua file and what it owns.
 - [Keymaps](keymaps.md) — generated from the running configuration.
 - [Layout](layout.md) — slots, focus mode, providers and the external API.
 - [UI](ui.md) — statusline, dashboard, notifications, cheatsheet, popup, preview, terminal.
