@@ -9,7 +9,8 @@ return {
       library = {
         { path = '${3rd}/luv/library', words = { 'vim%.uv' } },
       },
+      -- lazydev adds the deployed config as a library, which is what gives the
+      -- source tree `vim` types; keep it.
     },
   },
-
 }

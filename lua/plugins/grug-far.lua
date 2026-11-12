@@ -4,7 +4,9 @@ local fn = {}
 
 NVGrugFar = {
   'MagicDuck/grug-far.nvim',
-  cond = function() return require('config.profile').wants 'picker' end,
+  cond = function()
+    return require('config.profile').wants 'picker'
+  end,
   cmd = { 'GrugFar', 'GrugFarWithin' },
   opts = {
     headerMaxWidth = 80,
@@ -101,6 +103,7 @@ function NVGrugFar.autocmds()
       -- One instance only: a second :GrugFar used to stack another split in the
       -- editing area.
       local current = vim.api.nvim_get_current_win()
+      pcall(vim.api.nvim_set_option_value, 'winbar', '%#NvPanelBorder# Search & Replace   %#NvChipMuted# q close ', { win = current })
       for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
         local buf = vim.api.nvim_win_get_buf(win)
         if win ~= current and vim.bo[buf].filetype == filetype then

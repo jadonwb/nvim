@@ -2,7 +2,10 @@
 -- distro both belong here.
 return {
   {
-    'stevearc/conform.nvim', cond = function() return require('config.profile').wants 'format' end,
+    'stevearc/conform.nvim',
+    cond = function()
+      return require('config.profile').wants 'format'
+    end,
     event = { 'BufWritePre' },
     keys = {
       {

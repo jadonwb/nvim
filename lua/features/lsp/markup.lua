@@ -171,15 +171,7 @@ local function highlight_syntax(buf, srow, erow, lang)
       if not pcall(vim.cmd, string.format('syntax include %s syntax/%s.vim', group, lang)) then
         return
       end
-      vim.cmd(
-        string.format(
-          'syntax region %s start=+\\%%%dl+ end=+\\%%%dl+ contains=%s keepend',
-          lang .. srow,
-          srow + 1,
-          erow + 1,
-          group
-        )
-      )
+      vim.cmd(string.format('syntax region %s start=+\\%%%dl+ end=+\\%%%dl+ contains=%s keepend', lang .. srow, srow + 1, erow + 1, group))
     end)
   end)
 end

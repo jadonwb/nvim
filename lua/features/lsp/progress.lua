@@ -20,7 +20,7 @@ return function(M)
     if type(color) ~= 'string' then
       return nil
     end
-    local hex = color:match('^#(%x+)$')
+    local hex = color:match '^#(%x+)$'
     if not hex then
       return nil
     end
@@ -85,7 +85,7 @@ return function(M)
     -- > 1), it becomes the inner label and the fill ratio; the plain message is
     -- consumed (no duplicate). A useless denominator (d <= 1, e.g. clangd "0/1")
     -- draws the bar with no inner digits.
-    local n, d = msg_text:match('(%d+)%s*/%s*(%d+)')
+    local n, d = msg_text:match '(%d+)%s*/%s*(%d+)'
     local inner -- 16-char inner label; nil when the bar should carry no digits
     local ratio -- fill fraction 0..1
     local has_basis -- whether the bar can be drawn
@@ -123,11 +123,7 @@ return function(M)
       local right = PROGRESS_BAR_WIDTH - #visible - left
       local bar = string.rep(' ', left) .. visible .. string.rep(' ', right)
       local filled = math.max(0, math.min(PROGRESS_BAR_WIDTH, math.floor(ratio * PROGRESS_BAR_WIDTH)))
-      table.insert(
-        parts,
-        '%#MProgressFill#' .. string.sub(bar, 1, filled)
-          .. '%#MProgressEmpty#' .. string.sub(bar, filled + 1)
-      )
+      table.insert(parts, '%#MProgressFill#' .. string.sub(bar, 1, filled) .. '%#MProgressEmpty#' .. string.sub(bar, filled + 1))
     else
       -- no fraction and no percent: fall back to the plain message text
       if msg and tostring(msg) ~= '' then
@@ -174,7 +170,7 @@ return function(M)
     end
     if chosen then
       M.progress_hl = format_progress_hl(chosen)
-    M.notify_progress()
+      M.notify_progress()
     end
   end
 

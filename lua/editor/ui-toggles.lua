@@ -26,11 +26,14 @@ function NVUIToggles.keymaps()
   map_toggle('<leader>us', t.option('spell', { name = 'Spelling' }))
   map_toggle('<leader>uw', t.option('wrap', { name = 'Wrap' }))
   map_toggle('<leader>uA', t.option('showtabline', { off = 0, on = 2, name = 'Tabline' }))
-  map_toggle('<leader>uc', t.option('conceallevel', {
-    off = 0,
-    on = vim.o.conceallevel > 0 and vim.o.conceallevel or 2,
-    name = 'Conceal Level',
-  }))
+  map_toggle(
+    '<leader>uc',
+    t.option('conceallevel', {
+      off = 0,
+      on = vim.o.conceallevel > 0 and vim.o.conceallevel or 2,
+      name = 'Conceal Level',
+    })
+  )
   map_toggle('<leader>ub', t.option('background', { off = 'light', on = 'dark', name = 'Dark Background' }))
   map_toggle('<leader>uT', t.treesitter())
   map_toggle('<leader>uD', t.dim())

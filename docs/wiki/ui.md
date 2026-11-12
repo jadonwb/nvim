@@ -97,11 +97,25 @@ A bordered Snacks float anchored to the content window, without a backdrop: the
 layout stays readable around it. The shell starts without the outer terminal's
 integration so OSC sequences do not land in the buffer.
 
+## Third-party surfaces
+
+Lazy gets a single border (`ui.border` in `config/lazy.lua`) instead of its
+borderless default, and Mason's highlight groups are defined in the palette so
+its float is opaque with chip tabs and update badges. `FloatBorder` comes from
+the theme, so any plugin float reads the same as ours. `WinSeparator` is set to
+the line colour — the theme left it equal to the normal background, which made
+every split (grug-far, compare) look like one buffer.
+
+grug-far's split carries a `Search & Replace` winbar with `q close`, and its
+insert-mode field still closes on `q`/`Esc`.
+
 ## Unsaved changes
 
-`NVDialogs.select_panel` renders the review in the bottom panel with
-`w`/`d`/`c`, showing the buffer being reviewed in the content window. Without a
-layout it falls back to the float.
+`NVDialogs.select_panel` renders the review in the bottom panel: a winbar with
+the title and the buffer being reviewed, the option list with the selected row
+highlighted, and `w`/`d`/`c`/`<CR>`/`Esc`. Opening it leaves insert mode (so
+`Esc` and the option keys work even if the previous surface was a search
+field). Without a layout it falls back to the float.
 
 ## Bottom panel
 
@@ -114,6 +128,10 @@ not a mode; it is pinned over one row of the panel.
 the theme's real colours: SGR runs become background bands and box-drawing
 characters are drawn as lines, so borders are continuous like the real UI.
 `scripts/gen-keymaps.sh` regenerates the keymap page.
+
+`scripts/capture-panels.sh [cols] [lines] [tag]` captures the panels the sweep
+does not: hover, Trouble with a long diagnostic, which-key, Lazy, Mason,
+grug-far, the unsaved prompt and the notification centre, at any size.
 
 `scripts/sweep.sh [cols] [lines] [tag]` runs the end-to-end interaction sweep in
 an isolated tmux session and temporary XDG dirs: layout, window navigation (real

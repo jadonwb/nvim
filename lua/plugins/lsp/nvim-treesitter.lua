@@ -174,10 +174,10 @@ return {
           local tsc = require 'treesitter-context'
           if tsc.enabled and tsc.enabled() then
             tsc.disable()
-            NVMessages.info('Disabled Treesitter Context')
+            NVMessages.info 'Disabled Treesitter Context'
           else
             tsc.enable()
-            NVMessages.info('Enabled Treesitter Context')
+            NVMessages.info 'Enabled Treesitter Context'
           end
         end,
         desc = 'Toggle Treesitter Context',

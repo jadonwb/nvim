@@ -4,7 +4,9 @@ local DIAGNOSTICS_SOURCE = 'diagnostics_per_ft'
 
 NVTrouble = {
   'folke/trouble.nvim',
-  cond = function() return require('config.profile').wants 'lsp' end,
+  cond = function()
+    return require('config.profile').wants 'lsp'
+  end,
   cmd = { 'Trouble' },
   keys = function()
     return {

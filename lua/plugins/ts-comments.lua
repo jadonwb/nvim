@@ -6,5 +6,4 @@ return {
     event = 'VeryLazy',
     opts = {},
   },
-
 }

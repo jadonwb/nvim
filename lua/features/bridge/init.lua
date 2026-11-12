@@ -42,8 +42,7 @@ function NVBridge.winbar()
   end
 
   if status and status.tokens then
-    parts[#parts + 1] = ('%%#NvAgentSep#│%%#NvAgentMeta# %s in / %s out ')
-      :format(status.tokens.input or 0, status.tokens.output or 0)
+    parts[#parts + 1] = ('%%#NvAgentSep#│%%#NvAgentMeta# %s in / %s out '):format(status.tokens.input or 0, status.tokens.output or 0)
   end
   if status and status.cost then
     parts[#parts + 1] = ('%%#NvAgentSep#│%%#NvAgentMeta# $%.4f '):format(status.cost)
@@ -259,16 +258,13 @@ function NVBridge.on_event(line)
     end
 
     local label = state.status == 'completed' and '✓' or '…'
-    append_line_hl(
-      ('  %s %s%s'):format(label, tool, detail and (': ' .. tostring(detail)) or ''),
-      'Comment'
-    )
+    append_line_hl(('  %s %s%s'):format(label, tool, detail and (': ' .. tostring(detail)) or ''), 'Comment')
   elseif event.type == 'step_finish' then
     NVBridge.state.status = {
       cost = part.cost,
       tokens = part.tokens,
     }
-    NVBridge.append('\n')
+    NVBridge.append '\n'
     NVBridge.refresh()
   end
   return true
@@ -295,11 +291,11 @@ function NVBridge.submit(text, opts)
 
   -- Plain real headers, highlighted through extmarks: the text stays copyable
   -- and searchable.
-  NVBridge.append('\n')
+  NVBridge.append '\n'
   append_line_hl('You', 'NvAgentName')
   NVBridge.append('\n' .. text .. '\n')
   append_line_hl('opencode', 'NvAgentName')
-  NVBridge.append('\n')
+  NVBridge.append '\n'
   NVBridge.refresh()
 
   local cmd = { 'opencode', 'run', '--format', 'json' }

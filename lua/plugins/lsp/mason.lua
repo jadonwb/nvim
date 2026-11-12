@@ -33,7 +33,10 @@ local function install_missing(opts)
 end
 
 return {
-  'mason-org/mason.nvim', cond = function() return require('config.profile').wants 'lsp' end,
+  'mason-org/mason.nvim',
+  cond = function()
+    return require('config.profile').wants 'lsp'
+  end,
   cmd = 'Mason',
   keys = { { '<leader>cm', '<cmd>Mason<cr>', desc = 'Mason' } },
   build = ':MasonUpdate',

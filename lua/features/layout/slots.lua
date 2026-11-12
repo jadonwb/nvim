@@ -20,6 +20,21 @@
 -- disappear outside this API, and re-sized to the configured proportions after
 -- a terminal resize.
 
+--- One slot: its window, the buffer it shows, and the provider filling it.
+---@class NVSlot
+---@field win WinID
+---@field buf BufID
+---@field provider? string
+---@field owned? boolean         buffer created by this layer, not the provider
+---@field hidden_prev? string    bufhidden the provider buffer had before display
+---@field auto? boolean          opened implicitly (the command line), not by the user
+
+--- Layout state for one tab.
+---@class NVTabState
+---@field slots table<string, NVSlot>
+---@field auto? table<string, boolean>
+---@field saved? table<string, string>
+
 NVSlots = {
   defs = {
     left = { width = 0.20, min_width = 24 },
@@ -38,10 +53,12 @@ NVSlots = {
     right_bottom = 'session',
     bottom = 'prompt',
   },
-  ---@type table<TabID, { slots: table<string, { win: WinID, buf: BufID, provider?: string }> }>
+  ---@type table<TabID, NVTabState>
   _tabs = {},
 }
 
+---@param tabid? TabID
+---@return NVTabState
 local function tab_state(tabid)
   tabid = tabid or vim.api.nvim_get_current_tabpage()
   NVSlots._tabs[tabid] = NVSlots._tabs[tabid] or { slots = {} }
@@ -119,18 +136,15 @@ local function register(name, win)
   -- A `:split` window inherits the centre's buffer, which is still displayed
   -- there. Never touch a buffer that another window still shows: the centre may
   -- legitimately be an unnamed scratch buffer.
-  if
-    inherited ~= buf
-    and vim.api.nvim_buf_get_name(inherited) == ''
-    and vim.bo[inherited].buftype == ''
-    and #vim.fn.win_findbuf(inherited) == 0
-  then
+  if inherited ~= buf and vim.api.nvim_buf_get_name(inherited) == '' and vim.bo[inherited].buftype == '' and #vim.fn.win_findbuf(inherited) == 0 then
     vim.bo[inherited].buflisted = false
     vim.bo[inherited].bufhidden = 'wipe'
   end
   decorate(win)
   fix(win)
-  tab_state().slots[name] = { win = win, buf = buf, provider = NVSlots.defaults[name], owned = true }
+  ---@type NVSlot
+  local slot = { win = win, buf = buf, provider = NVSlots.defaults[name], owned = true }
+  tab_state().slots[name] = slot
 end
 
 --- The slot currently showing a given provider.
@@ -193,10 +207,7 @@ function NVSlots.ensure(name)
     vim.cmd 'split'
     win = vim.api.nvim_get_current_win()
     register('bottom_left', win)
-    vim.api.nvim_win_set_height(
-      win,
-      math.max(NVSlots.defs.bottom_left.min_height, math.floor(left_h * NVSlots.defs.bottom_left.height))
-    )
+    vim.api.nvim_win_set_height(win, math.max(NVSlots.defs.bottom_left.min_height, math.floor(left_h * NVSlots.defs.bottom_left.height)))
     fix(win)
     vim.api.nvim_set_current_win(center)
     return win
@@ -213,10 +224,7 @@ function NVSlots.ensure(name)
       win = vim.api.nvim_get_current_win()
       vim.cmd 'wincmd K'
       register('right_top', win)
-      vim.api.nvim_win_set_width(
-        win,
-        math.max(NVSlots.defs.right_top.min_width, math.floor(total_w * NVSlots.defs.right_top.width))
-      )
+      vim.api.nvim_win_set_width(win, math.max(NVSlots.defs.right_top.min_width, math.floor(total_w * NVSlots.defs.right_top.width)))
       vim.api.nvim_win_set_height(win, math.max(4, math.floor(column_h / 2)))
       fix(win)
       vim.api.nvim_set_current_win(center)
@@ -227,10 +235,7 @@ function NVSlots.ensure(name)
     vim.cmd 'botright vnew'
     win = vim.api.nvim_get_current_win()
     register('right_top', win)
-    vim.api.nvim_win_set_width(
-      win,
-      math.max(NVSlots.defs.right_top.min_width, math.floor(total_w * NVSlots.defs.right_top.width))
-    )
+    vim.api.nvim_win_set_width(win, math.max(NVSlots.defs.right_top.min_width, math.floor(total_w * NVSlots.defs.right_top.width)))
     fix(win)
     vim.api.nvim_set_current_win(center)
     return win
@@ -255,10 +260,7 @@ function NVSlots.ensure(name)
     vim.cmd 'botright vnew'
     win = vim.api.nvim_get_current_win()
     register('right_bottom', win)
-    vim.api.nvim_win_set_width(
-      win,
-      math.max(NVSlots.defs.right_top.min_width, math.floor(total_w * NVSlots.defs.right_top.width))
-    )
+    vim.api.nvim_win_set_width(win, math.max(NVSlots.defs.right_top.min_width, math.floor(total_w * NVSlots.defs.right_top.width)))
     fix(win)
     vim.api.nvim_set_current_win(center)
     return win
@@ -269,10 +271,7 @@ function NVSlots.ensure(name)
     vim.cmd 'split'
     win = vim.api.nvim_get_current_win()
     register('bottom', win)
-    vim.api.nvim_win_set_height(
-      win,
-      math.max(NVSlots.defs.bottom.min_height, math.floor(total_h * NVSlots.defs.bottom.height))
-    )
+    vim.api.nvim_win_set_height(win, math.max(NVSlots.defs.bottom.min_height, math.floor(total_h * NVSlots.defs.bottom.height)))
     fix(win)
     vim.api.nvim_set_current_win(center)
     return win
@@ -521,55 +520,59 @@ function NVSlots.repair()
   end
   repairing = true
   local ok, err = pcall(function()
-  if not center_win() then
-    -- The editing area disappeared. `botright new` would leave a full-width
-    -- window that ignores the grid, so rebuild the whole layout from the
-    -- recorded providers instead.
-    local providers = {}
-    for name, slot in pairs(tab.slots) do
-      providers[name] = slot.provider
+    if not center_win() then
+      -- The editing area disappeared. `botright new` would leave a full-width
+      -- window that ignores the grid, so rebuild the whole layout from the
+      -- recorded providers instead.
+      local providers = {}
+      for name, slot in pairs(tab.slots) do
+        providers[name] = slot.provider
+      end
+      teardown()
+      local names = vim.tbl_keys(providers)
+      NVSlots.open(#names > 0 and names or nil)
+      for name, provider in pairs(providers) do
+        if provider then
+          NVSlots.set_provider(name, provider)
+        end
+      end
+      return
     end
-    teardown()
-    local names = vim.tbl_keys(providers)
-    NVSlots.open(#names > 0 and names or nil)
-    for name, provider in pairs(providers) do
-      if provider then
-        NVSlots.set_provider(name, provider)
+
+    local missing = {}
+    local tabpage = vim.api.nvim_get_current_tabpage()
+    for name, slot in pairs(tab.slots) do
+      local valid = vim.api.nvim_win_is_valid(slot.win)
+      if valid and vim.api.nvim_win_get_tabpage(slot.win) ~= tabpage then
+        valid = false
+      end
+      if not valid then
+        missing[#missing + 1] = name
       end
     end
-    return
-  end
 
-  local missing = {}
-  local tabpage = vim.api.nvim_get_current_tabpage()
-  for name, slot in pairs(tab.slots) do
-    local valid = vim.api.nvim_win_is_valid(slot.win)
-    if valid and vim.api.nvim_win_get_tabpage(slot.win) ~= tabpage then
-      valid = false
+    if #missing == 0 then
+      return
     end
-    if not valid then
-      missing[#missing + 1] = name
+
+    table.sort(missing, function(a, b)
+      local ia, ib = 99, 99
+      for i, name in ipairs(NVSlots.order) do
+        if name == a then
+          ia = i
+        end
+        if name == b then
+          ib = i
+        end
+      end
+      return ia < ib
+    end)
+
+    for _, name in ipairs(missing) do
+      tab.slots[name] = nil
+      NVSlots.ensure(name)
     end
-  end
-
-  if #missing == 0 then
-    return
-  end
-
-  table.sort(missing, function(a, b)
-    local ia, ib = 99, 99
-    for i, name in ipairs(NVSlots.order) do
-      if name == a then ia = i end
-      if name == b then ib = i end
-    end
-    return ia < ib
-  end)
-
-  for _, name in ipairs(missing) do
-    tab.slots[name] = nil
-    NVSlots.ensure(name)
-  end
-  NVSlots.refresh_providers()
+    NVSlots.refresh_providers()
   end)
   repairing = false
   if not ok then
@@ -639,12 +642,7 @@ function NVSlots.sync_winbar(name)
     problems = 'Problems',
   }
   local title = titles[slot.provider]
-  pcall(
-    vim.api.nvim_set_option_value,
-    'winbar',
-    title and ('%#NvPanelBorder# ' .. title .. ' ') or '',
-    { win = slot.win }
-  )
+  pcall(vim.api.nvim_set_option_value, 'winbar', title and ('%#NvPanelBorder# ' .. title .. ' ') or '', { win = slot.win })
 end
 
 --- Switch a slot to another registered provider and refresh it.

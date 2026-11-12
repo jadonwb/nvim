@@ -45,12 +45,7 @@ end
 
 ---@return string
 function M.describe()
-  return ('%s (purpose=%s host=%s transient=%s)'):format(
-    M.kind,
-    tostring(startup.purpose),
-    tostring(startup.host),
-    tostring(startup.transient)
-  )
+  return ('%s (purpose=%s host=%s transient=%s)'):format(M.kind, tostring(startup.purpose), tostring(startup.host), tostring(startup.transient))
 end
 
 return M

@@ -6,13 +6,13 @@
 local M = {}
 
 local function proc_lines(pid, file)
-  local ok, lines = pcall(vim.fn.readfile, "/proc/" .. pid .. "/" .. file)
+  local ok, lines = pcall(vim.fn.readfile, '/proc/' .. pid .. '/' .. file)
   return ok and lines or {}
 end
 
 local function proc_ppid(pid)
-  for _, line in ipairs(proc_lines(pid, "status")) do
-    local ppid = line:match("^PPid:%s+(%d+)")
+  for _, line in ipairs(proc_lines(pid, 'status')) do
+    local ppid = line:match '^PPid:%s+(%d+)'
     if ppid then
       return tonumber(ppid)
     end
@@ -28,7 +28,7 @@ local function ancestor_process_named(name)
       return false
     end
 
-    local comm = proc_lines(ppid, "comm")[1] or ""
+    local comm = proc_lines(ppid, 'comm')[1] or ''
     if comm:find(name, 1, true) then
       return true
     end
@@ -42,23 +42,21 @@ end
 function M.setup()
   local in_tmux = vim.env.TMUX ~= nil
   local in_ssh = vim.env.SSH_TTY ~= nil or vim.env.SSH_CONNECTION ~= nil
-  local in_herdr = vim.env.HERDR_PANE_ID ~= nil or ancestor_process_named("herdr")
+  local in_herdr = vim.env.HERDR_PANE_ID ~= nil or ancestor_process_named 'herdr'
 
   if not (in_tmux or in_ssh or in_herdr) then
     return
   end
 
-  local osc52 = require("vim.ui.clipboard.osc52")
-  local has_wayland = vim.env.WAYLAND_DISPLAY ~= nil
-    and vim.fn.executable("wl-copy") == 1
-    and vim.fn.executable("wl-paste") == 1
+  local osc52 = require 'vim.ui.clipboard.osc52'
+  local has_wayland = vim.env.WAYLAND_DISPLAY ~= nil and vim.fn.executable 'wl-copy' == 1 and vim.fn.executable 'wl-paste' == 1
 
-  local has_tmux = in_tmux and vim.fn.executable("tmux") == 1
+  local has_tmux = in_tmux and vim.fn.executable 'tmux' == 1
   local last_copy = {}
 
   local function tmux_export_enabled()
-    local setting = vim.fn.systemlist({ "tmux", "show-options", "-sv", "set-clipboard" })
-    return vim.v.shell_error == 0 and (setting[1] == "on" or setting[1] == "external")
+    local setting = vim.fn.systemlist { 'tmux', 'show-options', '-sv', 'set-clipboard' }
+    return vim.v.shell_error == 0 and (setting[1] == 'on' or setting[1] == 'external')
   end
 
   local function copy(register)
@@ -68,29 +66,29 @@ function M.setup()
       last_copy[register] = { vim.deepcopy(lines), regtype }
 
       if has_wayland then
-        local cmd = { "wl-copy", "--sensitive", "--type", "text/plain" }
-        if register == "*" then
-          cmd[#cmd + 1] = "--primary"
+        local cmd = { 'wl-copy', '--sensitive', '--type', 'text/plain' }
+        if register == '*' then
+          cmd[#cmd + 1] = '--primary'
         end
         vim.fn.system(cmd, lines)
       end
 
       if vim.g.omarchy_remote_clipboard_osc52 ~= false then
-        if has_tmux and register == "+" then
+        if has_tmux and register == '+' then
           -- tmux ignores zero-byte loads. Record the current buffer's identity
           -- instead: all Neovim instances see empty until a new buffer arrives,
           -- without deleting the user's shared tmux clipboard history.
-          if #lines == 0 or (#lines == 1 and lines[1] == "") then
-            vim.fn.system({ "tmux", "set-option", "-sF", "@omarchy-nvim-cleared-buffer", "#{buffer_name}" })
+          if #lines == 0 or (#lines == 1 and lines[1] == '') then
+            vim.fn.system { 'tmux', 'set-option', '-sF', '@omarchy-nvim-cleared-buffer', '#{buffer_name}' }
             return
           end
           -- Let tmux emit OSC 52, avoiding its input parser's payload size limit.
           -- Explicit -w bypasses set-clipboard, so honor the user's policy first.
-          local cmd = { "tmux", "load-buffer" }
+          local cmd = { 'tmux', 'load-buffer' }
           if tmux_export_enabled() then
-            cmd[#cmd + 1] = "-w"
+            cmd[#cmd + 1] = '-w'
           end
-          cmd[#cmd + 1] = "-"
+          cmd[#cmd + 1] = '-'
           vim.fn.system(cmd, lines)
           if vim.v.shell_error == 0 then
             return
@@ -106,28 +104,26 @@ function M.setup()
       local cmd
       -- tmux's buffer is shared between Neovim instances on the server. Over
       -- SSH, prefer it to the remote machine's unrelated graphical clipboard.
-      if has_tmux and register == "+" and (in_ssh or not has_wayland)
-        and vim.g.omarchy_remote_clipboard_osc52 ~= false then
-        local buffers = vim.fn.systemlist({ "tmux", "display-message", "-p",
-          "#{buffer_name}\n#{@omarchy-nvim-cleared-buffer}" })
+      if has_tmux and register == '+' and (in_ssh or not has_wayland) and vim.g.omarchy_remote_clipboard_osc52 ~= false then
+        local buffers = vim.fn.systemlist { 'tmux', 'display-message', '-p', '#{buffer_name}\n#{@omarchy-nvim-cleared-buffer}' }
         if vim.v.shell_error ~= 0 then
-          return vim.deepcopy(last_copy[register] or { {}, "v" })
+          return vim.deepcopy(last_copy[register] or { {}, 'v' })
         end
-        if not buffers[1] or buffers[1] == "" or buffers[1] == buffers[2] then
-          return { {}, "v" }
+        if not buffers[1] or buffers[1] == '' or buffers[1] == buffers[2] then
+          return { {}, 'v' }
         end
         -- Pin the buffer selected above: a concurrent copy must not change
         -- which payload we read after checking its identity against the marker.
-        cmd = { "tmux", "save-buffer", "-b", buffers[1], "-" }
+        cmd = { 'tmux', 'save-buffer', '-b', buffers[1], '-' }
       elseif has_wayland then
-        cmd = { "wl-paste", "--no-newline" }
-        if register == "*" then
-          cmd[#cmd + 1] = "--primary"
+        cmd = { 'wl-paste', '--no-newline' }
+        if register == '*' then
+          cmd[#cmd + 1] = '--primary'
         end
       end
 
       if cmd then
-        local lines = vim.fn.systemlist(cmd, "", 1)
+        local lines = vim.fn.systemlist(cmd, '', 1)
         if vim.v.shell_error == 0 then
           -- An empty clipboard is valid; only failed reads use the fallback.
           if last_copy[register] and vim.deep_equal(lines, last_copy[register][1]) then
@@ -137,21 +133,21 @@ function M.setup()
         end
       end
 
-      return vim.deepcopy(last_copy[register] or { {}, "v" })
+      return vim.deepcopy(last_copy[register] or { {}, 'v' })
     end
   end
 
   vim.g.clipboard = {
-    name = "OmarchyRemoteClipboard",
-    copy = { ["+"] = copy("+"), ["*"] = copy("*") },
-    paste = { ["+"] = paste("+"), ["*"] = paste("*") },
+    name = 'OmarchyRemoteClipboard',
+    copy = { ['+'] = copy '+', ['*'] = copy '*' },
+    paste = { ['+'] = paste '+', ['*'] = paste '*' },
     cache_enabled = 0,
   }
 
   -- LazyVim clears this over SSH. Users can opt out before setup or override
   -- the option afterward in config/options.lua.
   if vim.g.omarchy_remote_clipboard_sync ~= false then
-    vim.opt.clipboard:append("unnamedplus")
+    vim.opt.clipboard:append 'unnamedplus'
   end
 end
 

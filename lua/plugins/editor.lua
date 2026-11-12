@@ -45,7 +45,6 @@ return {
       require 'core.class'
       require 'features.lsp.ui'
 
-
       NVSession.autocmds()
       NVMason.setup()
       NVTrouble.setup()

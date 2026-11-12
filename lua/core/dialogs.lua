@@ -431,39 +431,23 @@ function NVDialogs.select_panel(opts, callback)
   vim.b[buf].nv_slot = 'bottom'
 
   local function render()
-    local title = opts.title or 'Choose'
-    local message = opts.message or ''
-    local lines = {
-      ' ' .. title,
-      ' ' .. message,
-      '',
-    }
+    local lines = { '' }
     for i, choice in ipairs(choices) do
-      lines[#lines + 1] = (' %s %d. %s'):format(i == index and config.indicator or ' ', i, choice)
+      lines[#lines + 1] = ('  %s %d. %s'):format(i == index and config.indicator or ' ', i, choice)
     end
     lines[#lines + 1] = ''
-    lines[#lines + 1] = ' w write   d discard   c cancel   <CR> choose   Esc cancel'
+    lines[#lines + 1] = '  w write   d discard   c cancel   <CR> choose   Esc cancel'
 
     vim.bo[buf].modifiable = true
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
     vim.bo[buf].modifiable = false
     vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
 
-    -- Chips for the title and the buffer being reviewed, a selected row, and a
-    -- muted hint line: the same language as the other panels.
-    vim.api.nvim_buf_set_extmark(buf, ns, 0, 0, {
-      end_row = 0,
-      end_col = #lines[1],
-      hl_group = 'NvChip',
-    })
-    vim.api.nvim_buf_set_extmark(buf, ns, 1, 0, {
-      end_row = 1,
-      end_col = #lines[2],
-      hl_group = 'NvChipMuted',
-    })
-    vim.api.nvim_buf_set_extmark(buf, ns, 2 + index, 0, {
-      end_row = 2 + index,
-      end_col = #lines[2 + index],
+    -- The title and file live in the winbar; the body is the choice list.
+    -- Option `i` is buffer line `i` (line 0 is the blank spacer).
+    vim.api.nvim_buf_set_extmark(buf, ns, index, 0, {
+      end_row = index,
+      end_col = #lines[index],
       hl_group = 'Visual',
     })
     vim.api.nvim_buf_set_extmark(buf, ns, #lines - 1, 0, {
@@ -488,11 +472,17 @@ function NVDialogs.select_panel(opts, callback)
 
   render()
   NVSlots.set_buffer('bottom', buf)
-  pcall(vim.api.nvim_set_option_value, 'winbar', '%#NvChip# Unsaved Changes ', { win = win })
+  pcall(
+    vim.api.nvim_set_option_value,
+    'winbar',
+    '%#NvPanelTitle# ' .. (opts.title or 'Choose') .. '  %#NvPanelLabel#' .. (opts.message or '') .. ' ',
+    { win = win }
+  )
   vim.api.nvim_set_current_win(win)
+  vim.cmd 'stopinsert'
 
-  local map = function(lhs, fn)
-    vim.keymap.set('n', lhs, fn, { buffer = buf, nowait = true, silent = true })
+  local map = function(lhs, fn, modes)
+    vim.keymap.set(modes or 'n', lhs, fn, { buffer = buf, nowait = true, silent = true })
   end
   map('j', function()
     index = math.min(#choices, index + 1)
@@ -510,7 +500,7 @@ function NVDialogs.select_panel(opts, callback)
   end)
   map('<Esc>', function()
     finish 'Cancel'
-  end)
+  end, { 'n', 'i' })
   for i, choice in ipairs(choices) do
     map(tostring(i), function()
       finish(choice)

@@ -84,6 +84,12 @@ function NVUi.float(opts)
   -- behind them (a dimmed backdrop) shows through.
   vim.wo[handle.win].winhighlight = 'Normal:NormalFloat,FloatBorder:NvPanelBorder,EndOfBuffer:NormalFloat'
 
+  if opts.enter then
+    -- Opening from insert mode (a prompt, a grug-far field) must not leave the
+    -- float in insert mode, where its normal-mode keys do nothing.
+    vim.cmd 'stopinsert'
+  end
+
   -- A float closed outside this module (`:q`, `<C-w>c`, a plugin) must take its
   -- backdrop with it, or the editor stays dimmed with nothing on top.
   local group = vim.api.nvim_create_augroup('nvui-float-' .. handle.win, { clear = true })

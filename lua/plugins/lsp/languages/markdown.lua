@@ -2,7 +2,9 @@ return {
   {
     'MeanderingProgrammer/render-markdown.nvim',
     ft = 'markdown',
-    cond = function() return require('config.profile').wants 'markdown' end,
+    cond = function()
+      return require('config.profile').wants 'markdown'
+    end,
     opts = function()
       return {
         heading = {

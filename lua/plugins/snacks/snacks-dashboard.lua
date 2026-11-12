@@ -60,7 +60,7 @@ return {
         -- statusline and session panel leave out.
         function()
           local version = vim.version()
-          local branch = vim.fn.systemlist { 'git', 'branch', '--show-current' }[1]
+          local branch = vim.fn.systemlist({ 'git', 'branch', '--show-current' })[1]
           local profile = require('config.profile').kind or 'workspace'
           return {
             align = 'center',

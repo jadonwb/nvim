@@ -109,4 +109,4 @@ function NVMessages.pager(chunks_or_string)
   vim.api.nvim_echo(chunks, false, { kind = 'list_cmd' })
 end
 
-require('features.lsp.progress')(NVMessages)
+require 'features.lsp.progress'(NVMessages)

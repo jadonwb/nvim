@@ -36,11 +36,7 @@ end
 
 --- RPC path for one namespace/method, scoped to a directory.
 function M.rpc_path(namespace, method, location)
-  return ('/api/rpc/%s/%s?location%%5Bdirectory%%5D=%s'):format(
-    namespace,
-    method,
-    fn.encode_segment(location or M.location())
-  )
+  return ('/api/rpc/%s/%s?location%%5Bdirectory%%5D=%s'):format(namespace, method, fn.encode_segment(location or M.location()))
 end
 
 --- Client-generated request ID used for deduplication on the server.

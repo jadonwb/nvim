@@ -14,7 +14,16 @@ M.servers = {
   lua_ls = {
     settings = {
       Lua = {
-        diagnostics = { globals = { 'vim' } },
+        diagnostics = {
+          globals = { 'vim' },
+          -- The config is built from global module tables (`NVSlots.x = ...`).
+          -- LuaLS models those as one strict shape, so every method assignment
+          -- and every scratch field on a window/buffer table looks like an
+          -- error. Editing the chezmoi source adds a second copy (lazydev's
+          -- deployed library) and doubles them. These four checks do not fit
+          -- the architecture; everything else stays on.
+          disable = { 'duplicate-set-field', 'duplicate-doc-field', 'inject-field', 'undefined-field' },
+        },
         workspace = { checkThirdParty = false },
         completion = { callSnippet = 'Replace' },
         hint = { enable = true, setType = false, paramType = true, paramName = 'Disable', semicolon = 'Disable', arrayIndex = 'Disable' },
@@ -62,20 +71,85 @@ local keys = {
   { lhs = 'gD', rhs = false, method = 'textDocument/declaration' },
   { lhs = 'gra', rhs = false, method = 'textDocument/codeAction' },
   { lhs = 'grn', rhs = false, method = 'textDocument/rename' },
-  { lhs = 'K', rhs = function() NVLspUi.show_at_cursor() end, desc = 'Hover', method = 'textDocument/hover' },
-  { lhs = 'gK', rhs = function() NVLspUi.show_signature() end, desc = 'Signature Help', method = 'textDocument/signatureHelp' },
-  { lhs = 'grd', rhs = function() NVSPickers.lsp_definitions() end, desc = 'Goto Definition', method = 'textDocument/definition' },
-  { lhs = 'grr', rhs = function() NVSPickers.lsp_references() end, desc = 'References', method = 'textDocument/references' },
-  { lhs = 'gri', rhs = function() NVSPickers.lsp_implementations() end, desc = 'Implementation', method = 'textDocument/implementation' },
-  { lhs = 'grt', rhs = function() NVSPickers.lsp_type_definitions() end, desc = 'Type Definition', method = 'textDocument/typeDefinition' },
-  { lhs = 'grD', rhs = function() NVSPickers.lsp_declarations() end, desc = 'Declaration', method = 'textDocument/declaration' },
-  { lhs = '<leader>ca', rhs = function() require('actions-preview').code_actions() end, desc = 'Code Action', mode = { 'n', 'x' }, method = 'textDocument/codeAction' },
-  { lhs = '<leader>cd', rhs = function() NVLspUi.show_diagnostics() end, desc = 'Diagnostics' },
+  {
+    lhs = 'K',
+    rhs = function()
+      NVLspUi.show_at_cursor()
+    end,
+    desc = 'Hover',
+    method = 'textDocument/hover',
+  },
+  {
+    lhs = 'gK',
+    rhs = function()
+      NVLspUi.show_signature()
+    end,
+    desc = 'Signature Help',
+    method = 'textDocument/signatureHelp',
+  },
+  {
+    lhs = 'grd',
+    rhs = function()
+      NVSPickers.lsp_definitions()
+    end,
+    desc = 'Goto Definition',
+    method = 'textDocument/definition',
+  },
+  {
+    lhs = 'grr',
+    rhs = function()
+      NVSPickers.lsp_references()
+    end,
+    desc = 'References',
+    method = 'textDocument/references',
+  },
+  {
+    lhs = 'gri',
+    rhs = function()
+      NVSPickers.lsp_implementations()
+    end,
+    desc = 'Implementation',
+    method = 'textDocument/implementation',
+  },
+  {
+    lhs = 'grt',
+    rhs = function()
+      NVSPickers.lsp_type_definitions()
+    end,
+    desc = 'Type Definition',
+    method = 'textDocument/typeDefinition',
+  },
+  {
+    lhs = 'grD',
+    rhs = function()
+      NVSPickers.lsp_declarations()
+    end,
+    desc = 'Declaration',
+    method = 'textDocument/declaration',
+  },
+  {
+    lhs = '<leader>ca',
+    rhs = function()
+      require('actions-preview').code_actions()
+    end,
+    desc = 'Code Action',
+    mode = { 'n', 'x' },
+    method = 'textDocument/codeAction',
+  },
+  {
+    lhs = '<leader>cd',
+    rhs = function()
+      NVLspUi.show_diagnostics()
+    end,
+    desc = 'Diagnostics',
+  },
   {
     lhs = ']d',
     rhs = function()
       vim.diagnostic.jump { count = 1, float = false }
-      vim.schedule(function() NVLspUi.show_diagnostics() end)
+      vim.schedule(function()
+        NVLspUi.show_diagnostics()
+      end)
     end,
     desc = 'Next Diagnostic',
   },
@@ -83,7 +157,9 @@ local keys = {
     lhs = '[d',
     rhs = function()
       vim.diagnostic.jump { count = -1, float = false }
-      vim.schedule(function() NVLspUi.show_diagnostics() end)
+      vim.schedule(function()
+        NVLspUi.show_diagnostics()
+      end)
     end,
     desc = 'Previous Diagnostic',
   },

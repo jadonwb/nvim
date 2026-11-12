@@ -62,6 +62,9 @@ function M.setup()
     NvChipInfo = { fg = normal_bg, bg = blue, bold = true },
     NvChipMuted = { fg = comment, bg = muted_bg },
 
+    -- Splits need an edge: the theme's separator is the normal background.
+    WinSeparator = { fg = line, bg = normal_bg },
+
     -- A bar that reads as a surface instead of blending into the text.
     StatusLine = { fg = normal_fg, bg = muted_bg },
     StatusLineNC = { fg = comment, bg = muted_bg },
@@ -96,6 +99,27 @@ function M.setup()
     SnacksNotifierBorder = { fg = line, bg = normal_bg },
     SnacksNotifierTitle = { fg = normal_fg, bg = normal_bg, bold = true },
     SnacksNotifierFooter = { fg = comment, bg = normal_bg },
+
+    -- Mason. The theme leaves most of these undefined, which made its float
+    -- transparent with invisible block highlights.
+    MasonNormal = { fg = normal_fg, bg = normal_bg },
+    MasonNormalNC = { fg = normal_fg, bg = normal_bg },
+    MasonBackdrop = { bg = normal_bg },
+    MasonHeader = { fg = normal_bg, bg = blue, bold = true },
+    MasonHeaderSecondary = { fg = normal_bg, bg = green, bold = true },
+    MasonHighlight = { fg = blue },
+    MasonHighlightSecondary = { fg = green },
+    MasonHighlightBlock = { fg = normal_bg, bg = blue },
+    MasonHighlightBlockBold = { fg = normal_bg, bg = blue, bold = true },
+    MasonHighlightBlockSecondary = { fg = normal_bg, bg = green },
+    MasonHighlightBlockBoldSecondary = { fg = normal_bg, bg = green, bold = true },
+    MasonMuted = { fg = comment },
+    MasonMutedBlock = { fg = comment, bg = muted_bg },
+    MasonMutedBlockBold = { fg = comment, bg = muted_bg, bold = true },
+    MasonHeading = { fg = normal_fg, bold = true },
+    MasonLink = { fg = blue, underline = true },
+    MasonError = { fg = red },
+    MasonWarning = { fg = yellow },
 
     -- Trouble (diagnostic/symbol lists).
     TroubleNormal = { fg = normal_fg, bg = normal_bg },

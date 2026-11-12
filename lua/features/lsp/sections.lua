@@ -194,11 +194,7 @@ function M.diagnostics()
     if i > 1 then
       lines[#lines + 1] = ''
     end
-    lines[#lines + 1] = ('**%s** %d:%d'):format(
-      severity[d.severity or vim.diagnostic.severity.HINT] or 'Diagnostic',
-      d.lnum + 1,
-      d.col + 1
-    )
+    lines[#lines + 1] = ('**%s** %d:%d'):format(severity[d.severity or vim.diagnostic.severity.HINT] or 'Diagnostic', d.lnum + 1, d.col + 1)
     vim.list_extend(lines, split(d.message))
   end
 

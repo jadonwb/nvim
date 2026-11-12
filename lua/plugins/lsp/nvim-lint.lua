@@ -1,5 +1,8 @@
 return {
-  'mfussenegger/nvim-lint', cond = function() return require('config.profile').wants 'lint' end,
+  'mfussenegger/nvim-lint',
+  cond = function()
+    return require('config.profile').wants 'lint'
+  end,
   -- nvim-lint has no setup(): configuration is assignment on the module.
   config = function(_, opts)
     local lint = require 'lint'

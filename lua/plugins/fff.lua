@@ -1,5 +1,8 @@
 NVFff = {
-  'dmtrKovalenko/fff.nvim', cond = function() return require('config.profile').wants 'picker' end,
+  'dmtrKovalenko/fff.nvim',
+  cond = function()
+    return require('config.profile').wants 'picker'
+  end,
   branch = 'main',
   build = function()
     require('fff.download').download_or_build_binary()

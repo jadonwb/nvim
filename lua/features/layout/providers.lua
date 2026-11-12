@@ -142,7 +142,7 @@ function M.session(win, _)
   -- Ahead/behind from the status header, so the panel says whether the branch
   -- is in sync without a second command.
   local sync
-  local head = system_lines { 'git', 'status', '-sb' }[1] or ''
+  local head = system_lines({ 'git', 'status', '-sb' })[1] or ''
   local ahead = tonumber(head:match 'ahead (%d+)')
   local behind = tonumber(head:match 'behind (%d+)')
   if ahead or behind then

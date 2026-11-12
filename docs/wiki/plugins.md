@@ -75,6 +75,14 @@ its event, command or key.
 | built-in opencode features | `features/opencode`: artifacts, sessions | eager (feature) |
 | `chezmoi.nvim`, `chezmoi.vim` | edit managed dotfiles through chezmoi | eager/lazy |
 
+## LuaLS diagnostics
+
+The config is built from global module tables (`NVSlots.x = ...`) and stores
+scratch fields on `vim.b`/`vim.w`. LuaLS models those as strict shapes, so four
+checks are disabled in the server settings: `duplicate-set-field`,
+`duplicate-doc-field`, `inject-field`, `undefined-field`. The slot and tab state
+tables still carry real `---@class` annotations. Everything else stays on.
+
 ## Removed on purpose
 
 LazyVim's bufferline, noice, flash, persistence, mini.pairs, dashboard-nvim,
