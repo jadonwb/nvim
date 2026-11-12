@@ -11,6 +11,9 @@
 
 NVBridge = {}
 
+--- Extmark namespace for decoration (tool lines, later status).
+NVBridge.ns = vim.api.nvim_create_namespace 'nv_bridge'
+
 NVBridge.state = {
   job = nil,
   buf = nil,
@@ -107,6 +110,20 @@ function NVBridge.append(text)
   end
 end
 
+--- Append a whole line and highlight it without touching the text.
+---@param line string
+---@param hl string
+local function append_line_hl(line, hl)
+  NVBridge.append(line .. '\n')
+  local buf = NVBridge.ensure_buffer()
+  local row = vim.api.nvim_buf_line_count(buf) - 1
+  pcall(vim.api.nvim_buf_set_extmark, buf, NVBridge.ns, row, 0, {
+    end_row = row,
+    end_col = #line,
+    hl_group = hl,
+  })
+end
+
 --- Handle one NDJSON event line from `opencode run --format json`.
 ---@param line string
 ---@return boolean handled
@@ -138,6 +155,28 @@ function NVBridge.on_event(line)
       NVBridge.append(part.text:sub(#previous + 1))
       parts[part.id] = part.text
     end
+  elseif event.type == 'tool_use' then
+    -- One line per tool call, part of the agent's narrative but visually apart
+    -- from the answer. Not folded yet: the title is the useful part.
+    local state = part.state or {}
+    local input = state.input or {}
+    local tool = part.tool or 'tool'
+
+    -- The useful part of a tool call is what it touched, not its name: `read`
+    -- alone says nothing.
+    local detail = input.path or input.filePath or input.file or input.command or input.pattern or input.query
+    if detail == nil and state.title and state.title ~= tool then
+      detail = state.title
+    end
+    if type(detail) == 'string' and detail:match '^/' then
+      detail = vim.fn.fnamemodify(detail, ':.')
+    end
+
+    local label = state.status == 'completed' and '✓' or '…'
+    append_line_hl(
+      ('  %s %s%s'):format(label, tool, detail and (': ' .. tostring(detail)) or ''),
+      'Comment'
+    )
   elseif event.type == 'step_finish' then
     NVBridge.state.status = {
       cost = part.cost,

@@ -18,6 +18,7 @@ printf '%s\n' '{"type":"step_start","sessionID":"ses_test"}'
 printf '%s\n' '{"type":"text","sessionID":"ses_test","part":{"id":"p1","type":"text","text":"hello "}}'
 printf '%s\n' '{"type":"text","sessionID":"ses_test","part":{"id":"p1","type":"text","text":"hello world"}}'
 printf '%s\n' '{"type":"text","sessionID":"ses_test","part":{"id":"p2","type":"text","text":"!"}}'
+printf '%s\n' '{"type":"tool_use","sessionID":"ses_test","part":{"tool":"read","state":{"status":"completed","title":"read","input":{"path":"note.txt"}}}}'
 printf '%s\n' '{"type":"step_finish","sessionID":"ses_test","part":{"cost":0.01,"tokens":{"input":10,"output":2}}}'
 FAKE
 chmod +x "$tmp/bin/opencode"
@@ -35,6 +36,7 @@ local buf = NVBridge.state.buf
 local text = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), '\n')
 add('streamed=' .. tostring(text:find('hello world!', 1, true) ~= nil))
 add('deduped=' .. tostring(text:find('hello hello', 1, true) == nil))
+add('tool line=' .. tostring(text:find('✓ read: note.txt', 1, true) ~= nil))
 add('prompt echoed=' .. tostring(text:find('hi', 1, true) ~= nil))
 add('real lines=' .. tostring(vim.api.nvim_buf_line_count(buf) > 3))
 add('ft=' .. vim.bo[buf].filetype)
@@ -69,6 +71,7 @@ fail=0
 check() { grep -qx -- "$1" <<<"$got" || { printf 'FAIL: missing %s\n' "$1"; fail=1; }; }
 check 'streamed=true'
 check 'deduped=true'
+check 'tool line=true'
 check 'prompt echoed=true'
 check 'real lines=true'
 check 'ft=markdown'
