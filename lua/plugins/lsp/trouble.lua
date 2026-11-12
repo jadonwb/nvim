@@ -58,6 +58,22 @@ NVTrouble = {
       auto_refresh = true, -- auto refresh when open
       auto_jump = false, -- auto jump to the item when there's only one
       focus = true, -- Focus the window when opened
+      modes = {
+        diagnostics = {
+          -- Trouble cuts a long message at the window edge. Trim it to the
+          -- float width so the cut is visible as an ellipsis.
+          formatters = {
+            message = function(ctx)
+              local max = math.max(30, math.floor(vim.o.columns * 0.9) - 20)
+              local text = vim.trim((ctx.value or ''):gsub('%s+', ' '))
+              if vim.api.nvim_strwidth(text) > max then
+                text = vim.fn.strcharpart(text, 0, max - 1) .. '…'
+              end
+              return text
+            end,
+          },
+        },
+      },
       -- A split would carve a column out of the slot layout; trouble floats.
       win = { type = 'float', position = 'center', size = { width = 0.9, height = 0.6 }, border = 'single' },
       restore = true, -- restores the last location in the list when opening
@@ -97,7 +113,12 @@ NVTrouble = {
           local ns = vim.lsp.diagnostic.get_namespace(client.id)
           local diags = vim.diagnostic.get(nil, { namespace = ns })
 
+          local max = math.max(30, math.floor(vim.o.columns * 0.9) - 18)
           for _, d in ipairs(diags) do
+            local message = vim.trim((d.message or ''):gsub('%s+', ' '))
+            if vim.api.nvim_strwidth(message) > max then
+              message = vim.fn.strcharpart(message, 0, max - 1) .. '…'
+            end
             table.insert(
               items,
               Item.new {
@@ -105,6 +126,7 @@ NVTrouble = {
                 buf = d.bufnr,
                 pos = { d.lnum + 1, d.col },
                 end_pos = { d.end_lnum and (d.end_lnum + 1) or nil, d.end_col },
+                message = message,
                 item = d,
               }
             )

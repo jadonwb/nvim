@@ -42,7 +42,8 @@ Snacks' own autostart is a float that refuses to run with more than one window.
 
 Sections: version / branch / profile chips, the Neovim header, the working
 directory, action keys, recent files (with readable path tails) and startup
-stats.
+stats. Below 44 terminal lines the recent-files section is dropped: the content
+window is too short for it and a clipped list looked broken.
 
 ## Notification centre (`<leader>,`)
 
@@ -54,9 +55,16 @@ stats.
 
 ## Keymap cheatsheet (`<leader>?`)
 
-Built from the live keymaps: one framed block per leader group in four balanced
-columns, description on the left, key right-aligned, plus a general block for
-non-leader keys and a generated [keymaps page](keymaps.md).
+Built from the live keymaps: one framed block per leader group in balanced
+columns, description on the left (long ones ellipsised), key right-aligned and
+never cut, plus a general block for non-leader keys and a generated
+[keymaps page](keymaps.md). The sheet scrolls with `j`/`k` when the terminal is
+too short for every group.
+
+## Help and man pages
+
+A doc opens in the editing area with a `Doc <file>` winbar and `q` returns to
+the buffer it was opened from (the window is kept, the grid is untouched).
 
 ## Hover / signature / diagnostics popup
 
@@ -85,8 +93,9 @@ shows.
 
 ## Terminal (`<C-/>`)
 
-A bordered Snacks float over the content area. The shell starts without the
-outer terminal's integration so OSC sequences do not land in the buffer.
+A bordered Snacks float anchored to the content window, without a backdrop: the
+layout stays readable around it. The shell starts without the outer terminal's
+integration so OSC sequences do not land in the buffer.
 
 ## Unsaved changes
 
@@ -102,8 +111,10 @@ not a mode; it is pinned over one row of the panel.
 ## Screenshots
 
 `scripts/shot.sh [session] out.png` renders a tmux pane capture to a PNG with
-the theme's real colours, and `scripts/gen-keymaps.sh` regenerates the keymap
-page. Both are development tools, not loaded by Neovim.
+the theme's real colours: SGR runs become background bands and box-drawing
+characters are drawn as lines, so borders are continuous like the real UI.
+`scripts/gen-keymaps.sh` regenerates the keymap page. Both are development
+tools, not loaded by Neovim.
 
 ## Narrow widths
 

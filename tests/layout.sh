@@ -204,7 +204,9 @@ require('features.ui.notify').add(vim.log.levels.WARN, 'ui test entry', { title 
 require('features.ui.notify').open()
 local notify_open = false
 for _, w in ipairs(vim.api.nvim_list_wins()) do
-  if vim.bo[vim.api.nvim_win_get_buf(w)].filetype == 'nvnotify' then
+  -- Closing the float also closes its backdrop, which invalidates later
+  -- entries in this snapshot.
+  if vim.api.nvim_win_is_valid(w) and vim.bo[vim.api.nvim_win_get_buf(w)].filetype == 'nvnotify' then
     notify_open = true
     vim.api.nvim_win_close(w, true)
   end
@@ -223,6 +225,45 @@ end
 add('cheatsheet=' .. tostring(cheat_win ~= nil and #vim.api.nvim_win_get_config(cheat_win).relative > 0))
 if cheat_win then
   vim.api.nvim_win_close(cheat_win, true)
+end
+
+-- A help page opens in the editing area, and closing it returns to the file
+-- without resizing or rebuilding the grid.
+local before_grid = {}
+for name, slot in pairs(NVSlots.status()) do
+  before_grid[name] = slot.width .. 'x' .. slot.height
+end
+local centre_before = NVSlots.content_win()
+local help_ok, help_err = pcall(vim.cmd, 'help lua-guide')
+vim.wait(300)
+local help_win = NVSlots.content_win()
+local help_buf = help_win and vim.api.nvim_win_get_buf(help_win) or nil
+add(
+  'help in centre='
+    .. tostring(
+      help_ok
+        and help_buf ~= nil
+        and vim.bo[help_buf].filetype == 'help'
+        and help_win == centre_before
+        and vim.api.nvim_win_is_valid(centre_before)
+        and vim.api.nvim_win_get_buf(centre_before) == help_buf
+    )
+)
+if help_ok and help_buf then
+  vim.api.nvim_buf_call(help_buf, function()
+    vim.cmd 'normal q'
+  end)
+  vim.wait(300)
+end
+local same_grid = vim.tbl_count(before_grid) == vim.tbl_count(NVSlots.status())
+for name, slot in pairs(NVSlots.status()) do
+  if before_grid[name] ~= (slot.width .. 'x' .. slot.height) then
+    same_grid = false
+  end
+end
+add('help close keeps grid=' .. tostring(same_grid))
+if not help_ok then
+  add('help error=' .. tostring(help_err))
 end
 
 -- Swap keeps the windows and exchanges their buffers.
@@ -274,6 +315,8 @@ check 'centre rebuilt=true'
 check 'cheatsheet=true'
 check 'highlights=true'
 check 'notification centre=true'
+check 'help in centre=true'
+check 'help close keeps grid=true'
 check 'reopen one slot=true'
 grep -q 'ratios=true' <<<"$got" || { echo 'FAIL: left column not narrower than right'; fail=1; }
 grep -q 'swap exchanged=true win=true' <<<"$got" || { echo 'FAIL: swap did not exchange slot contents'; fail=1; }

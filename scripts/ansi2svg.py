@@ -123,6 +123,44 @@ def parse(line, state):
     return out
 
 
+
+# Box-drawing characters are drawn as lines rather than glyphs: in most
+# monospace fonts the glyph has a small gap at the cell edge, which makes a
+# continuous border look dashed in a screenshot.
+BOX_SEGMENTS = {
+    "\u2500": "lr", "\u2501": "lr", "\u2550": "lr",
+    "\u2502": "ud", "\u2503": "ud", "\u2551": "ud",
+    "\u250c": "rd", "\u250f": "rd", "\u2554": "rd", "\u256d": "rd",
+    "\u2510": "ld", "\u2513": "ld", "\u2557": "ld", "\u256e": "ld",
+    "\u2514": "ru", "\u2517": "ru", "\u255a": "ru", "\u256f": "ru",
+    "\u2518": "lu", "\u251b": "lu", "\u255d": "lu", "\u2570": "lu",
+    "\u251c": "udr", "\u2523": "udr", "\u2560": "udr", "\u255e": "udr",
+    "\u2524": "udl", "\u252b": "udl", "\u2563": "udl", "\u2561": "udl",
+    "\u252c": "lrd", "\u2533": "lrd", "\u2566": "lrd", "\u2564": "lrd",
+    "\u2534": "lru", "\u253b": "lru", "\u2569": "lru", "\u2567": "lru",
+    "\u253c": "lrud", "\u254b": "lrud", "\u256c": "lrud", "\u256a": "lrud",
+    "\u256b": "lrud", "\u2568": "lrud", "\u2565": "lrud",
+}
+
+
+def box_lines(char, x, y_top, height, char_w, y_mid, row_mid_x):
+    """Return (x1, y1, x2, y2) segments for one box character."""
+    x_mid = x + char_w / 2
+    segs = BOX_SEGMENTS.get(char)
+    if not segs:
+        return []
+    out = []
+    if "l" in segs:
+        out.append((x, y_mid, x_mid, y_mid))
+    if "r" in segs:
+        out.append((x_mid, y_mid, x + char_w, y_mid))
+    if "u" in segs:
+        out.append((x_mid, y_top, x_mid, y_mid))
+    if "d" in segs:
+        out.append((x_mid, y_mid, x_mid, y_top + height))
+    return out
+
+
 def main():
     src, dst = sys.argv[1], sys.argv[2]
     default_fg = sys.argv[3] if len(sys.argv) > 3 else "#2f2a22"
@@ -166,6 +204,10 @@ def main():
                 run_style = style
         flush(len(cells))
 
+        row_top = int(row * line_h)
+        row_height = max(1, int((row + 1) * line_h) - row_top)
+        y_mid = row_top + row_height / 2
+        stroke_w = max(1.0, size * 0.08)
         for start, text, style in runs:
             fg, bg, bold, reverse = style or (None, None, False, False)
             if reverse:
@@ -174,15 +216,39 @@ def main():
             rect_fill = bg
             x = int(start * char_w + 6)
             if rect_fill and rect_fill != default_bg:
+                # Cover the whole row band: per-row integer rounding used to
+                # leave 1px gaps between background rectangles (striping).
                 parts.append(
-                    f'<rect x="{x}" y="{int(row * line_h + 2)}" '
-                    f'width="{int(len(text) * char_w)}" height="{int(line_h)}" fill="{rect_fill}"/>'
+                    f'<rect x="{x}" y="{row_top}" '
+                    f'width="{int(len(text) * char_w)}" height="{row_height}" fill="{rect_fill}"/>'
                 )
-            weight = ' font-weight="bold"' if bold else ""
-            parts.append(
-                f'<text x="{x}" y="{y}" fill="{fill}"{weight} '
-                f'xml:space="preserve">{escape(text)}</text>'
-            )
+
+            buffer, buffer_start = [], start
+            for offset, char in enumerate(text):
+                if char in BOX_SEGMENTS:
+                    if buffer:
+                        parts.append(
+                            f'<text x="{int(buffer_start * char_w + 6)}" y="{y}" '
+                            f'fill="{fill}" xml:space="preserve">{escape("".join(buffer))}</text>'
+                        )
+                        buffer = []
+                    cx = int((start + offset) * char_w + 6)
+                    for x1, y1, x2, y2 in box_lines(char, cx, row_top, row_height, char_w, y_mid, 0):
+                        parts.append(
+                            f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" '
+                            f'stroke="{fill}" stroke-width="{stroke_w:.1f}"/>'
+                        )
+                    buffer_start = start + offset + 1
+                else:
+                    if not buffer:
+                        buffer_start = start + offset
+                    buffer.append(char)
+            if buffer:
+                weight = ' font-weight="bold"' if bold else ""
+                parts.append(
+                    f'<text x="{int(buffer_start * char_w + 6)}" y="{y}" fill="{fill}"{weight} '
+                    f'xml:space="preserve">{escape("".join(buffer))}</text>'
+                )
 
     parts.append("</svg>")
     open(dst, "w", encoding="utf-8").write("\n".join(parts))

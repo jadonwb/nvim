@@ -237,7 +237,9 @@ if vim.api.nvim_create_autocmd then
     callback = function()
       if NVSlots and NVSlots.is_applied() and not NVSlots.is_open 'bottom' then
         NVSlots.ensure 'bottom'
-        NVSlots.refresh_providers()
+        -- Render only the panel the command line is pinned over; refreshing
+        -- every slot reloaded the explorer on each ':'.
+        NVSlots.render_slot 'bottom'
         -- Opened for the command line, not by the user.
         NVSlots.mark_auto 'bottom'
       end

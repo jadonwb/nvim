@@ -90,11 +90,23 @@ function NVHelp.autocmds()
       local win_buf = vim.api.nvim_win_get_buf(win)
       if NVSlots and NVSlots.is_applied() and vim.b[win_buf].nv_slot == nil then
         local centre = NVSlots.content_win()
-        if centre and win ~= centre then
-          vim.api.nvim_win_set_buf(centre, ev.buf)
-          pcall(vim.api.nvim_win_close, win, true)
-          win = centre
+        if not centre then
+          return
         end
+        -- Remember the file the reader came from exactly once. The handler
+        -- fires again once the doc is displayed in the centre, and `:bprevious`
+        -- is not reliable for an unlisted help buffer.
+        if win ~= centre or vim.w[centre].nvhelp_previous == nil then
+          local previous = vim.api.nvim_win_get_buf(centre)
+          if previous ~= ev.buf then
+            vim.w[centre].nvhelp_previous = previous
+            vim.api.nvim_win_set_buf(centre, ev.buf)
+          end
+          if win ~= centre then
+            pcall(vim.api.nvim_win_close, win, true)
+          end
+        end
+        win = centre
         vim.api.nvim_set_current_win(win)
         vim.api.nvim_set_option_value(
           'winbar',
@@ -102,7 +114,17 @@ function NVHelp.autocmds()
           { win = win }
         )
         local function back()
-          pcall(vim.cmd, 'bprevious')
+          if not vim.api.nvim_win_is_valid(win) then
+            return
+          end
+          pcall(vim.api.nvim_set_option_value, 'winbar', '', { win = win })
+          local previous = vim.w[win].nvhelp_previous
+          vim.w[win].nvhelp_previous = nil
+          if previous and previous ~= ev.buf and vim.api.nvim_buf_is_valid(previous) then
+            vim.api.nvim_win_set_buf(win, previous)
+          else
+            pcall(vim.cmd, 'bprevious')
+          end
         end
         vim.keymap.set('n', 'q', back, { buffer = ev.buf, nowait = true, desc = 'Back to the file' })
         vim.keymap.set('n', '<Esc>', back, { buffer = ev.buf, nowait = true, desc = 'Back to the file' })
@@ -130,6 +152,11 @@ function NVHelp.autocmds()
       end
       vim.w[win].nvhelp_panel = true
       NVHelp.reposition()
+      vim.keymap.set('n', 'q', function()
+        if not NVHelp.ensure_hidden() then
+          pcall(vim.cmd, 'close')
+        end
+      end, { buffer = ev.buf, nowait = true, desc = 'Close doc' })
     end,
   })
 end

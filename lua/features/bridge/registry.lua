@@ -52,7 +52,34 @@ function M.remove()
   pcall(vim.fn.delete, file())
 end
 
+--- Is a pid still running? Killing with signal 0 only checks.
+---@param pid integer
+---@return boolean
+local function alive(pid)
+  if not pid or pid <= 0 then
+    return false
+  end
+  local ok, err = pcall(vim.uv.kill, pid, 0)
+  -- EPERM means the process exists but belongs to someone else.
+  return ok or (type(err) == 'string' and err:find('EPERM', 1, true) ~= nil)
+end
+
+--- Remove registry entries whose process is gone. Killed terminals and
+--- crashed editors never run VimLeavePre.
+function M.prune()
+  local self = vim.fn.getpid()
+  for _, path in ipairs(vim.fn.glob(dir() .. '/*.json', false, true)) do
+    local ok, lines = pcall(vim.fn.readfile, path)
+    local entry = ok and lines[1] and vim.json.decode(lines[1]) or nil
+    local pid = entry and tonumber(entry.pid)
+    if pid and pid ~= self and not alive(pid) then
+      pcall(vim.fn.delete, path)
+    end
+  end
+end
+
 function M.setup()
+  M.prune()
   M.write()
 
   local group = vim.api.nvim_create_augroup('NV bridge registry', { clear = true })

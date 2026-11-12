@@ -126,6 +126,17 @@ local function write_snapshot(file, restart)
   local data = capture(restart)
   local options, hidden = vim.o.sessionoptions, {}
   local temp = file .. '.tmp'
+
+  -- The slot windows are not session content. mksession records the whole
+  -- window tree, so saving with the layout open writes panel windows into the
+  -- file; restoring then recreates them next to the ones the layout builds,
+  -- which scrambles every size. Save from a layout-free tree and reopen the
+  -- recorded slots afterwards.
+  local layout = data.layout
+  local suspend_layout = layout and layout.applied and NVSlots and NVSlots.begin_restore
+  if suspend_layout then
+    NVSlots.begin_restore()
+  end
   local ok, err = xpcall(function()
     -- UI buffers and process globals are not workspace contents. Tab labels and
     -- restart context are serialized explicitly in the snapshot's first line.
@@ -149,6 +160,23 @@ local function write_snapshot(file, restart)
     end
   end, debug.traceback)
   vim.o.sessionoptions = options
+
+  if suspend_layout then
+    NVSlots.end_restore()
+    local names = vim.tbl_keys(layout.providers or {})
+    if #names > 0 then
+      NVSlots.open(names)
+      for name, provider in pairs(layout.providers) do
+        if provider then
+          NVSlots.set_provider(name, provider)
+        end
+      end
+    else
+      NVSlots.open()
+    end
+    NVSlots.enforce()
+  end
+
   for _, buf in ipairs(hidden) do
     if vim.api.nvim_buf_is_valid(buf) then
       vim.bo[buf].buflisted = true
@@ -232,10 +260,12 @@ local function restore_ui(data)
           NVSlots.set_provider(name, provider)
         end
       end
+      NVSlots.enforce()
       return
     end
   end
   NVSlots.open()
+  NVSlots.enforce()
 end
 
 local function load_snapshot(file, restart)
@@ -256,6 +286,9 @@ local function load_snapshot(file, restart)
     end
   end
   NVEnv.restoring = true
+  if NVSlots and NVSlots.begin_restore then
+    NVSlots.begin_restore()
+  end
   local ok, err = xpcall(function()
     if restart then
       NVEnv.restore_context(data.context)
@@ -296,6 +329,9 @@ local function load_snapshot(file, restart)
     end
   end, debug.traceback)
   NVEnv.restoring = false
+  if NVSlots and NVSlots.end_restore then
+    NVSlots.end_restore()
+  end
   if not ok then
     error(err)
   end

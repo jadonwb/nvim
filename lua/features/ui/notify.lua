@@ -129,11 +129,13 @@ function NVNotify.open()
     {
       name = 'tabs',
       lines = function()
-        return require('volt.ui').tabs({ 'all', 'errors' }, width - 4, {
+        local tabs = require('volt.ui').tabs({ 'all', 'errors' }, width - 4, {
           active = filter,
           hlon = 'NvChip',
           hloff = 'ExInactive',
         })
+        tabs[#tabs + 1] = {}
+        return tabs
       end,
     },
     {

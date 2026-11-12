@@ -106,19 +106,28 @@ local function block(title, entries, width)
     {},
   }
 
+  local function truncate(desc, room)
+    if vim.api.nvim_strwidth(desc) > room then
+      return vim.fn.strcharpart(desc, 0, math.max(1, room - 1)) .. '…'
+    end
+    return desc
+  end
+
   for _, entry in ipairs(entries) do
     local row
     if entry.chunks then
       row = vim.deepcopy(entry.chunks)
+      -- The last chunk is the key; keep it intact and cut the label instead.
+      local key = row[#row] and row[#row][1] or ''
+      local room = inner - vim.api.nvim_strwidth(key) - 1
+      if row[1] then
+        row[1] = { truncate(row[1][1], room), row[1][2] }
+      end
     else
       local key = ' ' .. entry.lhs
       -- Only the description may be cut; the key must stay readable.
       local room = inner - vim.api.nvim_strwidth(key) - 1
-      local desc = entry.desc
-      if vim.api.nvim_strwidth(desc) > room then
-        desc = vim.fn.strcharpart(desc, 0, math.max(1, room - 1)) .. '…'
-      end
-      row = { { desc }, { '_pad_' }, { key } }
+      row = { { truncate(entry.desc, room) }, { '_pad_' }, { key } }
     end
     lines[#lines + 1] = voltui.hpad(row, inner)
   end
@@ -194,7 +203,11 @@ function NVCheatsheet.open()
     {
       name = 'title',
       lines = function()
-        local row = { { 'C H E A T S H E E T ', 'NvChip' }, { '_pad_' }, { ' q close ', 'NvPanelLabel' } }
+        local row = {
+          { ' C H E A T S H E E T ', 'NvChip' },
+          { '_pad_' },
+          { ' j/k scroll   q close ', 'NvPanelLabel' },
+        }
         return { require('volt.ui').hpad(row, width - 4), {} }
       end,
     },

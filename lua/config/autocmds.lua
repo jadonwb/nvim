@@ -60,7 +60,6 @@ vim.api.nvim_create_autocmd('FileType', {
     'dbout',
     'gitsigns-blame',
     'grug-far',
-    'help',
     'lspinfo',
     'qf',
     'startuptime',

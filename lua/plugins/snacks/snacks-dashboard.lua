@@ -86,10 +86,15 @@ return {
           }
         end,
         { section = 'keys', gap = 1, padding = 1 },
-        function()
-          return { align = 'center', padding = 0, text = { { ' Recent files ', hl = 'title' } } }
-        end,
-        { section = 'recent_files', cwd = false, limit = 4, padding = 0 },
+        -- Recent files need vertical room. On a short terminal the content
+        -- window is 25 rows, and the bottom panel would cut the list in half,
+        -- so the dashboard drops it rather than showing a clipped section.
+        (vim.o.lines >= 44) and {
+          function()
+            return { align = 'center', padding = 0, text = { { ' Recent files ', hl = 'title' } } }
+          end,
+          { section = 'recent_files', cwd = false, limit = 4, padding = 0 },
+        } or {},
         { section = 'startup' },
       },
       preset = {

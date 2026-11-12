@@ -71,9 +71,14 @@ nvim --server "$NVIM" --remote-expr 'luaeval("vim.json.encode(NVSlots.state())")
 The workspace snapshot records which slots were open and what each showed
 (`layout.providers` in the session metadata). Restoring a session (`l` on the
 dashboard or `:lua NVSession.restore()`) reopens exactly those slots and
-reapplies their providers; a slot that was closed stays closed. Slot windows
-themselves are not in mksession (their buffers are unlisted), so they are rebuilt
-deterministically.
+reapplies their providers; a slot that was closed stays closed.
+
+The slot windows are not session content. Saving tears the layout down first, so
+`mksession` writes a layout-free window tree, and reopens the recorded slots
+afterwards; slot assembly always follows the fixed order (left, right_top,
+right_bottom, bottom) whatever order the providers map has, because building the
+grid in table order produced scrambled sizes. Restoring suspends the window
+repair/enforcement hooks while the session file rebuilds the tree.
 
 Slots that were closed stay closed (the right column can exist with only
 `right_bottom`). A bottom panel opened implicitly by pressing `:` is marked as
@@ -92,5 +97,10 @@ Verified by `tests/session.sh`: save with `bottom=problems` and
 - Slot windows are `winfixwidth/height`; `VimResized` and `WinResized` re-apply
   the configured proportions.
 - The explorer retries briefly when oil is not configured yet at `VimEnter`.
-- The command line is pinned to one row at the top of the bottom slot, and `:`
-  reopens the bottom slot when it was closed.
+- The command line is pinned to one row at the top of the bottom slot, `:`
+  reopens the bottom slot when it was closed, and that implicit open is marked
+  automatic so it is not written into a session.
+- If the editing area disappears, `repair()` rebuilds the whole grid from the
+  recorded providers instead of dropping an unaligned window into the hole.
+- Framed providers (`changes`, `session`) re-render when their window changes
+  size, so a closed neighbour does not leave a half-drawn panel.

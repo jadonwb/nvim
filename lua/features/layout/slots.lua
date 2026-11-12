@@ -384,8 +384,20 @@ end
 ---@param only? string[] Restrict to these slots.
 function NVSlots.open(only)
   teardown()
-  for _, name in ipairs(only or NVSlots.order) do
-    NVSlots.ensure(name)
+  local wanted
+  if only and #only > 0 then
+    wanted = {}
+    for _, name in ipairs(only) do
+      wanted[name] = true
+    end
+  end
+  -- Always build in layout order. A caller-supplied list (session restore,
+  -- focus mode) is a set, and building the grid in table order produced
+  -- scrambled sizes.
+  for _, name in ipairs(NVSlots.order) do
+    if not wanted or wanted[name] then
+      NVSlots.ensure(name)
+    end
   end
   NVSlots.refresh_providers()
 end
@@ -412,12 +424,27 @@ function NVSlots.close()
   teardown()
 end
 
+--- Suspend repair/enforcement while a session file rebuilds the window tree.
+---
+--- `:mksession` closes every window before rebuilding its own, so the WinClosed
+--- repair would rebuild slots against a half-restored layout and leave the
+--- registry pointing at the wrong windows. Restoring starts from an empty
+--- registry and ends with a fresh build.
+function NVSlots.begin_restore()
+  NVSlots.restoring = true
+  teardown()
+end
+
+function NVSlots.end_restore()
+  NVSlots.restoring = false
+end
+
 --- Re-apply the configured geometry. Windows are `winfixwidth/height`, but a
 --- resize, a `:vertical resize`, or a new tab can still take rows and columns
 --- from them.
 function NVSlots.enforce()
   local slots = tab_state().slots
-  if not next(slots) then
+  if NVSlots.restoring or not next(slots) then
     return
   end
 
@@ -485,7 +512,7 @@ end
 local repairing = false
 
 function NVSlots.repair()
-  if repairing then
+  if repairing or NVSlots.restoring then
     return
   end
   local tab = tab_state()
@@ -495,14 +522,22 @@ function NVSlots.repair()
   repairing = true
   local ok, err = pcall(function()
   if not center_win() then
-    -- The only content buffer was closed (`:bd` on the dashboard). Rebuild the
-    -- editing area instead of leaving a layout with no file window.
-    local _, slot = next(tab.slots)
-    if not (slot and vim.api.nvim_win_is_valid(slot.win)) then
-      return
+    -- The editing area disappeared. `botright new` would leave a full-width
+    -- window that ignores the grid, so rebuild the whole layout from the
+    -- recorded providers instead.
+    local providers = {}
+    for name, slot in pairs(tab.slots) do
+      providers[name] = slot.provider
     end
-    vim.api.nvim_set_current_win(slot.win)
-    vim.cmd 'botright new'
+    teardown()
+    local names = vim.tbl_keys(providers)
+    NVSlots.open(#names > 0 and names or nil)
+    for name, provider in pairs(providers) do
+      if provider then
+        NVSlots.set_provider(name, provider)
+      end
+    end
+    return
   end
 
   local missing = {}
@@ -629,6 +664,48 @@ function NVSlots.set_provider(name, provider)
   return ok
 end
 
+-- Providers whose output depends on the window's size (framed panels).
+local RESIZE_PROVIDERS = { changes = true, session = true }
+
+---@return table<string, string>
+local function slot_sizes()
+  local out = {}
+  for name in pairs(tab_state().slots) do
+    local win = existing(name)
+    if win then
+      out[name] = vim.api.nvim_win_get_width(win) .. 'x' .. vim.api.nvim_win_get_height(win)
+    end
+  end
+  return out
+end
+
+--- Render one slot from its provider.
+---@param name string
+---@return boolean
+function NVSlots.render_slot(name)
+  local slot = tab_state().slots[name]
+  local fn = slot and slot.provider and NVSlots.providers[slot.provider]
+  if not (fn and vim.api.nvim_win_is_valid(slot.win)) then
+    return false
+  end
+  local ok = pcall(fn, slot.win, name)
+  NVSlots.sync_winbar(name)
+  return ok
+end
+
+--- Re-render framed panels after their window changed size (a closed slot
+--- gives its space to the neighbour; a terminal resize changes every panel).
+local function rerender_resized()
+  local now = slot_sizes()
+  local before = NVSlots._sizes or {}
+  for name, slot in pairs(tab_state().slots) do
+    if RESIZE_PROVIDERS[slot.provider] and now[name] and now[name] ~= before[name] then
+      NVSlots.render_slot(name)
+    end
+  end
+  NVSlots._sizes = now
+end
+
 --- Update every open slot from its provider.
 function NVSlots.refresh_providers()
   local slots = tab_state().slots
@@ -641,6 +718,7 @@ function NVSlots.refresh_providers()
       NVSlots.sync_winbar(name)
     end
   end
+  NVSlots._sizes = slot_sizes()
 end
 
 --- Focus mode: hide the whole layout, then restore exactly the slots that were
@@ -831,6 +909,7 @@ function NVSlots.setup()
       vim.schedule(function()
         resize_pending = false
         NVSlots.enforce()
+        rerender_resized()
       end)
     end,
   })

@@ -84,6 +84,23 @@ function NVUi.float(opts)
   -- behind them (a dimmed backdrop) shows through.
   vim.wo[handle.win].winhighlight = 'Normal:NormalFloat,FloatBorder:NvPanelBorder,EndOfBuffer:NormalFloat'
 
+  -- A float closed outside this module (`:q`, `<C-w>c`, a plugin) must take its
+  -- backdrop with it, or the editor stays dimmed with nothing on top.
+  local group = vim.api.nvim_create_augroup('nvui-float-' .. handle.win, { clear = true })
+  vim.api.nvim_create_autocmd('WinClosed', {
+    group = group,
+    callback = function(ev)
+      if tonumber(ev.match) ~= handle.win then
+        return
+      end
+      if handle.backdrop and vim.api.nvim_win_is_valid(handle.backdrop) then
+        pcall(vim.api.nvim_win_close, handle.backdrop, true)
+      end
+      handle.backdrop = nil
+      pcall(vim.api.nvim_del_augroup_by_id, group)
+    end,
+  })
+
   return handle
 end
 

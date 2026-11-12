@@ -100,17 +100,26 @@ function NVTerminal.toggle()
     return
   end
 
-  Snacks.terminal.toggle(nil, {
-    env = shell_env(),
-    win = {
-      position = 'float',
-      width = 0.8,
-      height = 0.55,
-      border = 'single',
-      title = ' Terminal ',
-      title_pos = 'center',
-    },
-  })
+  local win = {
+    position = 'float',
+    width = 0.8,
+    height = 0.55,
+    border = 'single',
+    title = ' Terminal ',
+    title_pos = 'center',
+    -- A working surface, not a modal dialog: the layout stays readable around
+    -- it so you can see what the shell is operating on.
+    backdrop = false,
+  }
+  -- Anchor to the editing area so the float is in the same place no matter which
+  -- window (or RPC call) triggered it.
+  local target = NVSlots and NVSlots.content_win and NVSlots.content_win()
+  if target and vim.api.nvim_win_is_valid(target) then
+    win.relative = 'win'
+    win.win = target
+  end
+
+  Snacks.terminal.toggle(nil, { env = shell_env(), win = win })
 end
 
 function NVTerminal.ensure_hidden()
