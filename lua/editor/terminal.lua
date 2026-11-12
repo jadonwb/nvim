@@ -53,11 +53,37 @@ function NVTerminal.keymaps()
   })
 end
 
---- Toggle the terminal at the bottom of the editor.
---- Delegates to Snacks.terminal.toggle for all state management.
+--- Toggle the terminal over the editing area.
+---
+--- A split would squeeze the layout slots (a full-width bottom split pushes the
+--- whole grid), so the terminal is a float over the content window. Delegates
+--- to Snacks.terminal.toggle for all state management.
+--- The outer terminal's shell integration emits OSC sequences the embedded
+--- terminal cannot consume, and they land in the buffer as text. Start the shell
+--- without the inherited integration, as the termopen panel does.
+---@return table<string, string>
+local function shell_env()
+  local env = {}
+  for key, value in pairs(vim.fn.environ()) do
+    if not key:match '^WEZTERM' and key ~= 'TERM_PROGRAM' then
+      env[key] = value
+    end
+  end
+  env.TERM_PROGRAM = 'nvim'
+  return env
+end
+
 function NVTerminal.toggle()
   Snacks.terminal.toggle(nil, {
-    win = { position = 'bottom', height = 0.32 },
+    env = shell_env(),
+    win = {
+      position = 'float',
+      width = 0.8,
+      height = 0.55,
+      border = 'single',
+      title = ' Terminal ',
+      title_pos = 'center',
+    },
   })
 end
 
