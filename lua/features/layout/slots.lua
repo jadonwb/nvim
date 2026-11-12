@@ -203,6 +203,26 @@ function NVSlots.ensure(name)
   end
 
   if name == 'right_top' then
+    local below = existing 'right_bottom'
+    if below then
+      -- The column exists with only the bottom half: split it and move the new
+      -- window to the top instead of creating a second column.
+      local column_h = vim.api.nvim_win_get_height(below)
+      vim.api.nvim_set_current_win(below)
+      vim.cmd 'split'
+      win = vim.api.nvim_get_current_win()
+      vim.cmd 'wincmd K'
+      register('right_top', win)
+      vim.api.nvim_win_set_width(
+        win,
+        math.max(NVSlots.defs.right_top.min_width, math.floor(total_w * NVSlots.defs.right_top.width))
+      )
+      vim.api.nvim_win_set_height(win, math.max(4, math.floor(column_h / 2)))
+      fix(win)
+      vim.api.nvim_set_current_win(center)
+      return win
+    end
+
     vim.api.nvim_set_current_win(center)
     vim.cmd 'botright vnew'
     win = vim.api.nvim_get_current_win()
@@ -217,16 +237,28 @@ function NVSlots.ensure(name)
   end
 
   if name == 'right_bottom' then
-    local top = NVSlots.ensure 'right_top'
-    if not top then
-      return
+    local top = existing 'right_top'
+    if top then
+      local column_h = vim.api.nvim_win_get_height(top)
+      vim.api.nvim_set_current_win(top)
+      vim.cmd 'split'
+      win = vim.api.nvim_get_current_win()
+      register('right_bottom', win)
+      vim.api.nvim_win_set_height(win, math.floor(column_h / 2))
+      fix(win)
+      vim.api.nvim_set_current_win(center)
+      return win
     end
-    local column_h = vim.api.nvim_win_get_height(top)
-    vim.api.nvim_set_current_win(top)
-    vim.cmd 'split'
+
+    -- No top panel: the right column exists with just its bottom half.
+    vim.api.nvim_set_current_win(center)
+    vim.cmd 'botright vnew'
     win = vim.api.nvim_get_current_win()
     register('right_bottom', win)
-    vim.api.nvim_win_set_height(win, math.floor(column_h / 2))
+    vim.api.nvim_win_set_width(
+      win,
+      math.max(NVSlots.defs.right_top.min_width, math.floor(total_w * NVSlots.defs.right_top.width))
+    )
     fix(win)
     vim.api.nvim_set_current_win(center)
     return win
@@ -361,6 +393,7 @@ end
 --- Close every slot, leaving the centre.
 function teardown()
   local tab = tab_state()
+  tab.auto = {}
   for name in pairs(tab.slots) do
     NVSlots.remove(name)
   end
@@ -512,6 +545,7 @@ end
 --- Toggle one slot on or off.
 ---@param name string
 function NVSlots.toggle_slot(name)
+  NVSlots.clear_auto(name)
   if NVSlots.is_open(name) then
     NVSlots.remove(name)
     NVMessages.info(('Slot %s closed'):format(name))
@@ -524,6 +558,30 @@ function NVSlots.toggle_slot(name)
     end
     NVMessages.info(('Slot %s open'):format(name))
   end
+end
+
+--- Mark a slot that was opened implicitly (the command line reopens the bottom
+--- panel) so a session save does not record it as the user's layout.
+---@param name string
+function NVSlots.mark_auto(name)
+  local tab = tab_state()
+  tab.auto = tab.auto or {}
+  tab.auto[name] = true
+end
+
+---@param name string
+function NVSlots.clear_auto(name)
+  local tab = tab_state()
+  if tab.auto then
+    tab.auto[name] = nil
+  end
+end
+
+---@param name string
+---@return boolean
+function NVSlots.is_auto(name)
+  local tab = tab_state()
+  return tab.auto ~= nil and tab.auto[name] == true
 end
 
 --- Keep the bottom slot's mode strip in sync with its provider.
@@ -565,6 +623,7 @@ function NVSlots.set_provider(name, provider)
     return false
   end
   slot.provider = provider
+  NVSlots.clear_auto(name)
   local ok = (pcall(fn, slot.win, name))
   NVSlots.sync_winbar(name)
   return ok

@@ -238,6 +238,8 @@ if vim.api.nvim_create_autocmd then
       if NVSlots and NVSlots.is_applied() and not NVSlots.is_open 'bottom' then
         NVSlots.ensure 'bottom'
         NVSlots.refresh_providers()
+        -- Opened for the command line, not by the user.
+        NVSlots.mark_auto 'bottom'
       end
     end,
   })

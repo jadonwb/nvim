@@ -76,9 +76,10 @@ function NVCompare.man(page)
   NVCompare.active = true
   local left = content_win()
   vim.api.nvim_set_current_win(left)
-  vim.cmd 'vsplit'
+  -- `:Man` opens its own window; `:vertical` makes that a side-by-side split,
+  -- so there is no intermediate empty split.
+  vim.cmd('vertical Man ' .. page)
   local win = vim.api.nvim_get_current_win()
-  vim.cmd('Man ' .. page)
   set_bar(left, 'Compare  ' .. name_of(left))
   set_bar(win, 'Man  ' .. page)
 end

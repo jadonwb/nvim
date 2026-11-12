@@ -71,7 +71,8 @@ drives it only while it is on. `Esc`/`q` close it, `:bd` cannot break it.
 
 ## Compare mode (`<leader>wv`, `<leader>wm`, `<leader>wc`)
 
-Two things side by side: two files, or a file and a man page. The layout is
+Two things side by side: two files, or a file and a man page (`:Man` with
+`:vertical`, so there is no empty intermediate split). The layout is
 suspended while compare mode is open (the slots remember their state) and
 restored exactly when `<leader>wc` closes it. Each window's winbar names what it
 shows.

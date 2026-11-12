@@ -98,6 +98,9 @@ local function file_component()
     return special
   end
   local name = vim.api.nvim_buf_get_name(0)
+  if name:find('^opencode://', 1, true) then
+    return ' Agent '
+  end
   if name == '' then
     return ' [No Name] '
   end

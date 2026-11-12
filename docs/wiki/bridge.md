@@ -20,6 +20,12 @@ NVBridge.submit('refactor this function', { session = 'ses_…' })
 You can drive an existing TUI session by passing its id, which is the same as
 typing the message into the TUI prompt for that session.
 
+The transcript window is a reading surface: numbers and the sign column are off,
+prose wraps, and the buffer is named `opencode://transcript/<n>` (the statusline
+shows `Agent`). Markdown renders through render-markdown: headings as blocks,
+tables with borders, fenced code with a language icon and syntax colours, while
+the underlying text stays plain markdown and selectable.
+
 ## 2. Content back (OpenCode → Neovim)
 
 `opencode run --format json` emits NDJSON; `NVBridge.on_event` appends to a real

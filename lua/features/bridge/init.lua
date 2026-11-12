@@ -104,7 +104,7 @@ function NVBridge.ensure_buffer()
   -- Unique even when a new session starts in the same second: the previous
   -- transcript is still alive and keeps its name.
   NVBridge.state.counter = (NVBridge.state.counter or 0) + 1
-  vim.api.nvim_buf_set_name(buf, ('opencode://%d-%d'):format(os.time(), NVBridge.state.counter))
+  vim.api.nvim_buf_set_name(buf, ('opencode://transcript/%d'):format(NVBridge.state.counter))
   NVBridge.state.buf = buf
   return buf
 end
@@ -475,8 +475,72 @@ function NVBridge.new_session()
   return true
 end
 
+--- Reading surface options for the transcript window: no numbers, wrapped
+--- prose. They are window-local, so save the values and restore them when the
+--- window moves back to a file.
+local transcript_opts = {
+  number = false,
+  relativenumber = false,
+  signcolumn = 'no',
+  foldcolumn = '0',
+  cursorline = false,
+  wrap = true,
+  linebreak = true,
+}
+
+local saved_window_opts = {}
+
+function NVBridge.style_window(win)
+  local buf = NVBridge.state.buf
+  if not (win and buf and vim.api.nvim_win_is_valid(win)) then
+    return
+  end
+  if vim.api.nvim_win_get_buf(win) ~= buf then
+    return
+  end
+  if not saved_window_opts[win] then
+    local previous = {}
+    for name in pairs(transcript_opts) do
+      previous[name] = vim.api.nvim_get_option_value(name, { win = win })
+    end
+    saved_window_opts[win] = previous
+  end
+  for name, value in pairs(transcript_opts) do
+    pcall(vim.api.nvim_set_option_value, name, value, { win = win })
+  end
+end
+
+local function restore_window(win)
+  local previous = saved_window_opts[win]
+  if not previous then
+    return
+  end
+  for name, value in pairs(previous) do
+    pcall(vim.api.nvim_set_option_value, name, value, { win = win })
+  end
+  saved_window_opts[win] = nil
+end
+
 function NVBridge.setup()
   require('features.bridge.registry').setup()
+
+  local surface = vim.api.nvim_create_augroup('NV bridge surface', { clear = true })
+  vim.api.nvim_create_autocmd('BufEnter', {
+    group = surface,
+    callback = function(ev)
+      NVBridge.style_window(vim.api.nvim_get_current_win())
+      if NVBridge.state.buf and ev.buf ~= NVBridge.state.buf then
+        restore_window(vim.api.nvim_get_current_win())
+      end
+    end,
+  })
+
+  vim.api.nvim_create_autocmd('BufWinEnter', {
+    group = surface,
+    callback = function()
+      NVBridge.style_window(vim.api.nvim_get_current_win())
+    end,
+  })
 
   -- A window that stops showing the transcript must not keep its bar.
   vim.api.nvim_create_autocmd('BufEnter', {

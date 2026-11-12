@@ -80,9 +80,14 @@ local function capture(restart)
   -- each was showing. Slot windows themselves are not in mksession (their
   -- buffers are unlisted), so they are rebuilt on restore.
   if NVSlots and NVSlots.is_applied and NVSlots.is_applied() then
-    data.layout = { applied = true, providers = {} }
+    local providers = {}
     for name, slot in pairs(NVSlots.status()) do
-      data.layout.providers[name] = slot.provider
+      if not (NVSlots.is_auto and NVSlots.is_auto(name)) then
+        providers[name] = slot.provider
+      end
+    end
+    if next(providers) then
+      data.layout = { applied = true, providers = providers }
     end
   end
 

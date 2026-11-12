@@ -75,8 +75,13 @@ reapplies their providers; a slot that was closed stays closed. Slot windows
 themselves are not in mksession (their buffers are unlisted), so they are rebuilt
 deterministically.
 
+Slots that were closed stay closed (the right column can exist with only
+`right_bottom`). A bottom panel opened implicitly by pressing `:` is marked as
+automatic and is not written into the snapshot.
+
 Verified by `tests/session.sh`: save with `bottom=problems` and
-`right_bottom=prompt`, restart, restore, and both providers come back.
+`right_bottom=prompt`; then a second save with `bottom`/`right_top` closed and
+`right_bottom=problems`; both restores come back exactly.
 
 ## Hardening
 
