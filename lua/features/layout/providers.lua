@@ -150,9 +150,13 @@ function M.session(win, _)
   end
 
   local clients = vim.lsp.get_clients()
-  local client_names = {}
+  local client_names, seen_clients = {}, {}
   for _, client in ipairs(clients) do
-    client_names[#client_names + 1] = client.name
+    -- One client per root: the same server name can appear twice.
+    if client.name and not seen_clients[client.name] then
+      seen_clients[client.name] = true
+      client_names[#client_names + 1] = client.name
+    end
   end
   local profile = require('config.profile').kind or '?'
 

@@ -9,6 +9,7 @@ Usage: ansi2svg.py input.ansi output.svg [fg] [bg] [font-size]
 
 import re
 import sys
+from collections import Counter
 from xml.sax.saxutils import escape
 
 SGR = re.compile(r"\x1b\[([0-9;]*)m")
@@ -161,13 +162,39 @@ def box_lines(char, x, y_top, height, char_w, y_mid, row_mid_x):
     return out
 
 
+def auto_colours(raw):
+    """Pick the editor background/foreground from the capture itself.
+
+    The old approach asked a separate headless nvim for `Normal`, which can run
+    under a different XDG config than the tmux pane and return the wrong theme
+    (a dark fallback painted the screenshots black). The captured pane carries
+    the real colours, so take the most common non-empty background and text
+    colour from it.
+    """
+    fgs, bgs = Counter(), Counter()
+    state = {"fg": None, "bg": None, "bold": False, "reverse": False}
+    for line in raw:
+        for ch, fg, bg, _bold, _reverse in parse(line, state):
+            if bg:
+                bgs[bg] += 1
+            if fg and ch.strip():
+                fgs[fg] += 1
+    fg = fgs.most_common(1)[0][0] if fgs else "#2f2a22"
+    bg = bgs.most_common(1)[0][0] if bgs else "#e3d7c7"
+    return fg, bg
+
+
 def main():
     src, dst = sys.argv[1], sys.argv[2]
-    default_fg = sys.argv[3] if len(sys.argv) > 3 else "#2f2a22"
-    default_bg = sys.argv[4] if len(sys.argv) > 4 else "#e3d7c7"
+    default_fg = sys.argv[3] if len(sys.argv) > 3 else "auto"
+    default_bg = sys.argv[4] if len(sys.argv) > 4 else "auto"
     size = int(sys.argv[5]) if len(sys.argv) > 5 else 15
 
     raw = open(src, encoding="utf-8", errors="replace").read().split("\n")
+    if default_fg == "auto" or default_bg == "auto":
+        auto_fg, auto_bg = auto_colours(raw)
+        default_fg = auto_fg if default_fg == "auto" else default_fg
+        default_bg = auto_bg if default_bg == "auto" else default_bg
     state = {"fg": None, "bg": None, "bold": False, "reverse": False}
 
     char_w = size * 0.6

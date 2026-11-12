@@ -27,6 +27,10 @@ layout.
 | `<M-n>` | Cycle the bottom panel (prompt / quickfix / problems) |
 | `<C-h>` `<C-j>` `<C-k>` `<C-l>` | Move between windows, including slots |
 | `<leader>wv` / `<leader>wm` / `<leader>wc` | Compare mode: files, man page, close |
+| `<S-Left>` / `<S-Right>` | Grow / shrink the side columns (layout proportions) |
+| `<S-Up>` / `<S-Down>` | Grow / shrink the bottom panel |
+| `<A-=>` | Equalize: default proportions |
+| `<M-S-Left>` … `<M-Tab>` | Move / swap windows (winshift picker) |
 
 ## Providers
 
@@ -87,6 +91,14 @@ automatic and is not written into the snapshot.
 Verified by `tests/session.sh`: save with `bottom=problems` and
 `right_bottom=prompt`; then a second save with `bottom`/`right_top` closed and
 `right_bottom=problems`; both restores come back exactly.
+
+## Width and height
+
+Side-slot widths and the bottom panel height are proportions of the screen.
+The first open and every later reset use the same basis (`vim.o.columns`), so
+`<A-=>` does not jump the columns; the width keys adjust the left/right
+proportions and the height keys adjust the bottom panel, which is the only
+vertical degree of freedom in the grid.
 
 ## Hardening
 

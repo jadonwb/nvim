@@ -120,9 +120,10 @@ local function file_component()
 end
 
 local function lsp_clients()
-  local names = {}
+  local seen, names = {}, {}
   for _, client in ipairs(vim.lsp.get_clients { bufnr = 0 }) do
-    if client.name and client.name ~= '' then
+    if client.name and client.name ~= '' and not seen[client.name] then
+      seen[client.name] = true
       names[#names + 1] = client.name
     end
   end

@@ -183,7 +183,10 @@ function NVSlots.ensure(name)
     return
   end
 
-  local total_w = vim.api.nvim_win_get_width(center)
+  -- Side-slot widths are proportions of the screen, the same basis the resize
+  -- enforcement uses. Using the centre window's width here made the first open
+  -- and every later reset disagree (28 vs 31 columns on a 120-column screen).
+  local total_w = vim.o.columns
   local total_h = vim.api.nvim_win_get_height(center)
 
   if name == 'left' then
@@ -499,10 +502,26 @@ function NVSlots.resize_width(delta)
   NVSlots.enforce()
 end
 
+--- Grow or shrink the bottom panel by `delta` rows.
+--- The grid has no other vertical degree of freedom, so the height keys act
+--- here instead of trying to resize the content window.
+---@param delta integer
+---@return boolean applied
+function NVSlots.resize_height(delta)
+  if not NVSlots.is_open 'bottom' then
+    return false
+  end
+  local lines = math.max(1, vim.o.lines - vim.o.cmdheight)
+  NVSlots.defs.bottom.height = math.min(0.5, math.max(0.12, NVSlots.defs.bottom.height + delta / lines))
+  NVSlots.enforce()
+  return true
+end
+
 --- Restore the default slot proportions.
 function NVSlots.reset_sizes()
   NVSlots.defs.left.width = 0.20
   NVSlots.defs.right_top.width = 0.26
+  NVSlots.defs.bottom.height = 0.26
   NVSlots.enforce()
 end
 

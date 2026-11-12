@@ -156,13 +156,16 @@ end
 
 ---@param direction "up"|"down"
 function fn.change_window_height(direction)
-  if direction == 'up' then
-    vim.cmd 'resize +3'
-  elseif direction == 'down' then
-    vim.cmd 'resize -3'
-  else
+  if direction ~= 'up' and direction ~= 'down' then
     NVMessages.error('Window Height Change: Unexpected direction: ' .. direction)
+    return
   end
+  -- With the layout applied, the grid owns the vertical space; grow the bottom
+  -- panel instead of asking Neovim to resize a window whose height is derived.
+  if NVSlots and NVSlots.is_applied() and NVSlots.resize_height(direction == 'up' and 2 or -2) then
+    return
+  end
+  vim.cmd(direction == 'up' and 'resize +3' or 'resize -3')
 end
 
 function fn.equalize_layout()

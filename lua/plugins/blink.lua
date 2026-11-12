@@ -18,12 +18,19 @@ NVBlink = {
       documentation = {
         auto_show = false,
         window = {
-          border = NVBorders.padded,
+          border = 'single',
+          winhighlight = 'Normal:BlinkCmpDoc,FloatBorder:NvPanelBorder',
         },
       },
       ghost_text = { enabled = false },
       menu = {
-        border = NVBorders.completion,
+        -- A visible frame: the old space-only border read as a borderless wall
+        -- of text over the code.
+        border = 'single',
+        -- The scrollbar gutter read as a second border; C-n/C-p and the list
+        -- itself are enough, and the frame stays a single clean edge.
+        scrollbar = false,
+        winhighlight = 'Normal:BlinkCmpMenu,FloatBorder:NvPanelBorder,CursorLine:BlinkCmpMenuSelection,Search:None',
         draw = {
           -- We don't need label_description now because label and label_description are already
           -- combined together in label by colorful-menu.nvim.

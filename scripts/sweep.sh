@@ -25,7 +25,7 @@ tmp=$(mktemp -d "${TMPDIR:-/tmp}/nv-sweep.XXXXXX")
 export XDG_CONFIG_HOME="$tmp/xdg"
 export XDG_STATE_HOME="$tmp/state"
 mkdir -p "$XDG_CONFIG_HOME" "$XDG_STATE_HOME" "$out"
-ln -sfn "$root" "$XDG_CONFIG_HOME/nvim"
+# The tmux server keeps its own environment, so the config/state are passed explicitly: the installed config (which chezmoi keeps in sync with this checkout) and an isolated state dir for sessions.
 
 repo="$tmp/repo"
 mkdir -p "$repo"
@@ -38,7 +38,7 @@ git -C "$repo" add -A
 git -C "$repo" commit -qm base
 printf 'b\nc\nb\n' >"$repo/a.txt"
 
-sock="$out/nvim.sock"
+sock="$out/nvim-$$.sock"
 : >"$out/log.txt"
 fail=0
 
@@ -90,7 +90,8 @@ start() {
   for p in $(listener_pids); do kill "$p" 2>/dev/null; done
   for _ in $(seq 1 20); do [ -z "$(listener_pids)" ] && break; sleep 0.2; done
   rm -f "$sock"
-  tmux new-session -d -s "$S" -x "$W" -y "$H" -c "$repo" "nvim --listen $sock"
+  tmux new-session -d -s "$S" -x "$W" -y "$H" -c "$repo" \
+  "XDG_CONFIG_HOME=$HOME/.config XDG_STATE_HOME=$XDG_STATE_HOME nvim --listen $sock"
   for _ in $(seq 1 60); do
     nvim --server "$sock" --remote-expr 1 >/dev/null 2>&1 && break
     sleep 0.25

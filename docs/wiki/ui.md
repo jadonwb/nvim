@@ -97,6 +97,17 @@ A bordered Snacks float anchored to the content window, without a backdrop: the
 layout stays readable around it. The shell starts without the outer terminal's
 integration so OSC sequences do not land in the buffer.
 
+## Diffview and completion
+
+Diffview's base groups (`DiffviewNormal`, `DiffviewEndOfBuffer`,
+`DiffviewFilePanel*`, the diff background groups) are defined from the palette;
+the theme left them empty, which rendered its tab black. Its file panel, diff
+backgrounds and status lines now read like the rest of the UI.
+
+The blink completion menu and documentation windows use a single border with
+`NvPanelBorder`, a selection background, matched-text colour and kind colours;
+the scrollbar is off because the gutter read as a second border.
+
 ## Third-party surfaces
 
 Lazy gets a single border (`ui.border` in `config/lazy.lua`) instead of its
@@ -125,13 +136,21 @@ not a mode; it is pinned over one row of the panel.
 ## Screenshots
 
 `scripts/shot.sh [session] out.png` renders a tmux pane capture to a PNG with
-the theme's real colours: SGR runs become background bands and box-drawing
-characters are drawn as lines, so borders are continuous like the real UI.
+the theme's real colours: SGR runs become background bands, box-drawing
+characters are drawn as lines so borders are continuous, and the default
+foreground/background are derived from the capture itself (a separate headless
+Neovim could run under a different XDG config and paint the shot with the wrong
+theme).
 `scripts/gen-keymaps.sh` regenerates the keymap page.
 
 `scripts/capture-panels.sh [cols] [lines] [tag]` captures the panels the sweep
 does not: hover, Trouble with a long diagnostic, which-key, Lazy, Mason,
 grug-far, the unsaved prompt and the notification centre, at any size.
+
+`scripts/capture-integrations.sh [cols] [lines] [tag]` captures and asserts the
+integration surfaces: signature help (`gK`), code actions (`<leader>ca`) with a
+real lua_ls action, the blink completion menu, diffview, lazygit, and the
+window width/height/swap keys (geometry checked before and after).
 
 `scripts/sweep.sh [cols] [lines] [tag]` runs the end-to-end interaction sweep in
 an isolated tmux session and temporary XDG dirs: layout, window navigation (real

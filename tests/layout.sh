@@ -183,6 +183,15 @@ vim.wait(200, function()
 end)
 add('centre rebuilt=' .. tostring(vim.b[vim.api.nvim_win_get_buf(NVSlots.content_win())].nv_slot == nil))
 
+-- Height keys resize the bottom panel (the grid's only vertical freedom).
+local bottom_win = NVSlots.win 'bottom'
+local bottom_h = vim.api.nvim_win_get_height(bottom_win)
+NVSlots.resize_height(2)
+local bottom_h2 = vim.api.nvim_win_get_height(bottom_win)
+NVSlots.resize_height(-2)
+add('height key=' .. tostring(bottom_h2 > bottom_h))
+NVSlots.reset_sizes()
+
 -- Protection: the configured geometry is re-applied after a manual resize.
 local rw = NVSlots.win 'right_top'
 vim.api.nvim_win_set_width(rw, 12)
@@ -310,6 +319,7 @@ check 'left closed others stay=true'
 check 'buffer delete keeps window=true'
 check 'window repair=true'
 check 'geometry enforced=true'
+check 'height key=true'
 check 'focus providers=problems'
 check 'centre rebuilt=true'
 check 'cheatsheet=true'

@@ -121,6 +121,37 @@ function M.setup()
     MasonError = { fg = red },
     MasonWarning = { fg = yellow },
 
+    -- blink.cmp. The menu's selection, scrollbar, matched text and kind icons
+    -- were unstyled, so the menu read as a flat wall of text.
+    BlinkCmpMenuSelection = { bg = muted_bg },
+    BlinkCmpScrollBarThumb = { bg = blue },
+    BlinkCmpScrollBarGutter = { bg = muted_bg },
+    BlinkCmpLabelMatch = { fg = blue, bold = true },
+    BlinkCmpLabelDescription = { fg = comment },
+    BlinkCmpLabelDetail = { fg = comment },
+    BlinkCmpKind = { fg = blue },
+    BlinkCmpSource = { fg = comment },
+    BlinkCmpDocSeparator = { fg = line },
+    BlinkCmpSignatureHelpActiveParameter = { fg = yellow, bold = true },
+
+    -- Diffview (its own tab). The theme leaves the base groups empty, which
+    -- renders its panes black and its status lines unstyled.
+    DiffviewNormal = { fg = normal_fg, bg = normal_bg },
+    DiffviewEndOfBuffer = { fg = line, bg = normal_bg },
+    DiffviewNonText = { fg = line, bg = normal_bg },
+    DiffviewWinSeparator = { fg = line, bg = normal_bg },
+    DiffviewStatusLine = { fg = normal_fg, bg = muted_bg },
+    DiffviewStatusLineNC = { fg = comment, bg = muted_bg },
+    DiffviewFilePanel = { fg = normal_fg, bg = normal_bg },
+    DiffviewFilePanelCounter = { fg = blue, bg = normal_bg, bold = true },
+    DiffviewFilePanelFileName = { fg = normal_fg, bg = normal_bg },
+    DiffviewFilePanelPath = { fg = comment, bg = normal_bg },
+    DiffviewFilePanelRootPath = { fg = comment, bold = true },
+    DiffviewDiffAdd = { bg = bg('DiffAdd', muted_bg) },
+    DiffviewDiffDelete = { bg = bg('DiffDelete', muted_bg) },
+    DiffviewDiffChange = { bg = bg('DiffChange', muted_bg) },
+    DiffviewCursorLine = { bg = muted_bg },
+
     -- Trouble (diagnostic/symbol lists).
     TroubleNormal = { fg = normal_fg, bg = normal_bg },
     TroubleNormalNC = { fg = normal_fg, bg = normal_bg },
