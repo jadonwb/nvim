@@ -14,6 +14,69 @@ NVBridge = {}
 --- Extmark namespace for decoration (tool lines, later status).
 NVBridge.ns = vim.api.nvim_create_namespace 'nv_bridge'
 
+for name, spec in pairs {
+  NvAgentName = { link = 'Title' },
+  NvAgentState = { link = 'DiagnosticOk' },
+  NvAgentMeta = { link = 'Comment' },
+  NvAgentSep = { link = 'Comment' },
+} do
+  if vim.fn.hlexists(name) == 0 then
+    vim.api.nvim_set_hl(0, name, spec)
+  end
+end
+
+--- The window bar of the transcript: agent state and cost, never part of the
+--- text, so it cannot pollute a yank.
+---@return string
+function NVBridge.winbar()
+  local parts = { '%#NvAgentName# opencode ' }
+  local job = NVBridge.state.job
+  local status = NVBridge.state.status
+
+  parts[#parts + 1] = '%#NvAgentSep#│'
+  parts[#parts + 1] = job and '%#NvAgentState# running ' or '%#NvAgentMeta# idle '
+
+  local session = NVBridge.state.session
+  if session then
+    parts[#parts + 1] = '%#NvAgentSep#│%#NvAgentMeta# ' .. session:sub(-8) .. ' '
+  end
+
+  if status and status.tokens then
+    parts[#parts + 1] = ('%%#NvAgentSep#│%%#NvAgentMeta# %s in / %s out ')
+      :format(status.tokens.input or 0, status.tokens.output or 0)
+  end
+  if status and status.cost then
+    parts[#parts + 1] = ('%%#NvAgentSep#│%%#NvAgentMeta# $%.4f '):format(status.cost)
+  end
+
+  parts[#parts + 1] = '%#NvAgentSep#│%#NvAgentMeta# <M-a> '
+  return table.concat(parts)
+end
+
+--- Apply the bar to every window showing the transcript, and clear it from a
+--- window that moved on to another buffer.
+function NVBridge.update_winbar()
+  local buf = NVBridge.state.buf
+  if not (buf and vim.api.nvim_buf_is_valid(buf)) then
+    return
+  end
+  local bar = NVBridge.winbar()
+  local ours = '%#NvAgentName# opencode'
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    local shows = vim.api.nvim_win_get_buf(win) == buf
+    if shows then
+      pcall(vim.api.nvim_set_option_value, 'winbar', bar, { win = win })
+    else
+      -- Only clear a bar this module set; slot winbars and user winbars belong
+      -- to someone else.
+      local current = vim.api.nvim_get_option_value('winbar', { win = win })
+      if current:sub(1, #ours) == ours then
+        pcall(vim.api.nvim_set_option_value, 'winbar', '', { win = win })
+      end
+    end
+  end
+end
+
 NVBridge.state = {
   job = nil,
   buf = nil,
@@ -70,6 +133,7 @@ function NVBridge.open()
   end
   vim.api.nvim_win_set_buf(win, buf)
   vim.api.nvim_win_set_cursor(win, { vim.api.nvim_buf_line_count(buf), 0 })
+  NVBridge.update_winbar()
   return win
 end
 
@@ -323,6 +387,7 @@ end
 --- Re-render the session panel when it shows agent status.
 function NVBridge.refresh()
   vim.schedule(function()
+    pcall(NVBridge.update_winbar)
     pcall(vim.api.nvim_exec_autocmds, 'User', { pattern = 'NVBridge' })
   end)
 end
@@ -336,6 +401,14 @@ end
 
 function NVBridge.setup()
   require('features.bridge.registry').setup()
+
+  -- A window that stops showing the transcript must not keep its bar.
+  vim.api.nvim_create_autocmd('BufEnter', {
+    group = vim.api.nvim_create_augroup('NV bridge winbar', { clear = true }),
+    callback = function()
+      NVBridge.update_winbar()
+    end,
+  })
 
   vim.api.nvim_create_user_command('NVAgent', function(args)
     if args.args ~= '' then

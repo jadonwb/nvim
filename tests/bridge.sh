@@ -61,6 +61,20 @@ vim.cmd 'normal! yy'
 add('yankable=' .. tostring(vim.fn.getreg '"':find('hello world', 1, true) ~= nil))
 add('editing blocked=' .. tostring(not pcall(vim.api.nvim_buf_set_lines, buf, 0, 0, false, { 'x' })))
 
+-- The transcript window carries agent state in its winbar, not in the text.
+NVBridge.open()
+local bar = vim.wo[vim.api.nvim_get_current_win()].winbar
+add('winbar=' .. tostring(bar:find('opencode', 1, true) ~= nil))
+add('winbar status=' .. tostring(bar:find('10 in / 2 out', 1, true) ~= nil))
+
+-- Another window's bar must survive: the bottom panel draws its own.
+vim.cmd 'NVLayout open'
+local bottom = NVSlots.win 'bottom'
+vim.wo[bottom].winbar = '%#Comment#Prompt test'
+NVBridge.update_winbar()
+add('foreign winbar=' .. tostring(vim.wo[bottom].winbar:find('Prompt test', 1, true) ~= nil))
+vim.cmd 'NVLayout close'
+
 -- The registry is how an external agent finds this editor's socket.
 require('features.bridge.registry').write()
 local entry = vim.fn.glob(vim.env.XDG_RUNTIME_DIR .. '/nvim-bridge/*.json')
@@ -101,6 +115,9 @@ check 'editing blocked=true'
 check 'registry=true'
 check 'open_file=true'
 check 'open_line=2'
+check 'winbar=true'
+check 'winbar status=true'
+check 'foreign winbar=true'
 check 'archived first=true'
 check 'archived when continuing=false'
 
