@@ -67,8 +67,8 @@ The leader is `Space`; the local leader is `\`.
 | `sF` | Find left surrounding | n |
 | `sFl` | Find previous left surrounding | n |
 | `sFn` | Find next left surrounding | n |
-| `sa` | Add surrounding to selection | v |
 | `sa` | Add surrounding | n |
+| `sa` | Add surrounding to selection | v |
 | `sd` | Delete surrounding | n |
 | `sdl` | Delete previous surrounding | n |
 | `sdn` | Delete next surrounding | n |
@@ -145,6 +145,13 @@ The leader is `Space`; the local leader is `\`.
 | --- | --- | --- |
 | `uH` | Toggle Transparency | n |
 | `ut` | Toggle Treesitter Context | n |
+## Windows
+
+| Key | Action | Mode |
+| --- | --- | --- |
+| `wc` | Compare: close and restore layout | n |
+| `wm` | Compare: man page in vertical split | n |
+| `wv` | Compare: file in vertical split | n |
 ## Diagnostics
 
 | Key | Action | Mode |

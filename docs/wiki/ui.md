@@ -68,6 +68,19 @@ its line).
 An inset float over the content window with a dimmed backdrop; the explorer
 drives it only while it is on. `Esc`/`q` close it, `:bd` cannot break it.
 
+## Compare mode (`<leader>wv`, `<leader>wm`, `<leader>wc`)
+
+Two things side by side: two files, or a file and a man page. The layout is
+suspended while compare mode is open (the slots remember their state) and
+restored exactly when `<leader>wc` closes it. Each window's winbar names what it
+shows.
+
+```vim
+:NVCompare               " pick a file for the right split
+:NVCompare close
+:NVCompare man mkdir
+```
+
 ## Terminal (`<C-/>`)
 
 A bordered Snacks float over the content area. The shell starts without the
@@ -83,6 +96,12 @@ layout it falls back to the float.
 
 Mode strip in the winbar: `Prompt │ Quickfix │ Problems`. The command line is
 not a mode; it is pinned over one row of the panel.
+
+## Screenshots
+
+`scripts/shot.sh [session] out.png` renders a tmux pane capture to a PNG with
+the theme's real colours, and `scripts/gen-keymaps.sh` regenerates the keymap
+page. Both are development tools, not loaded by Neovim.
 
 ## Picker
 

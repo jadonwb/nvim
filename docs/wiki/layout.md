@@ -26,6 +26,7 @@ layout.
 | `<M-i>` | Focus mode: hide every slot, restore exactly the previous set |
 | `<M-n>` | Cycle the bottom panel (prompt / quickfix / problems) |
 | `<C-h>` `<C-j>` `<C-k>` `<C-l>` | Move between windows, including slots |
+| `<leader>wv` / `<leader>wm` / `<leader>wc` | Compare mode: files, man page, close |
 
 ## Providers
 
