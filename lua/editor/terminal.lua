@@ -70,6 +70,9 @@ local function shell_env()
     end
   end
   env.TERM_PROGRAM = 'nvim'
+  -- The documented switch for the WezTerm shell integration; if a profile
+  -- still sources it, this keeps its OSC 1337 sequences out of the buffer.
+  env.WEZTERM_SHELL_SKIP_ALL = '1'
   return env
 end
 
