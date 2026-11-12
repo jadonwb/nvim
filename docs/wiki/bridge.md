@@ -17,8 +17,11 @@ NVBridge.submit('refactor this function', { session = 'ses_…' })
 - `:NVAgent new` forgets the session, `:NVAgent stop` cancels the run.
 - The job runs on a pty: `opencode run` blocks without a terminal.
 
-You can drive an existing TUI session by passing its id, which is the same as
-typing the message into the TUI prompt for that session.
+You can drive an existing session by passing its id, which is the same as typing
+the message into the TUI prompt for that session. Verified live: a session was
+created with `opencode run --archived`, then `NVBridge.submit(..., { session = id })`
+continued it and the model recalled a value stored in that session's context
+(`42`), with `NVBridge.state.session` still the same id.
 
 The transcript window is a reading surface: numbers and the sign column are off,
 prose wraps, and the buffer is named `opencode://transcript/<n>` (the statusline
