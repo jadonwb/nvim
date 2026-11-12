@@ -25,7 +25,7 @@ NVSlots = {
     left = { width = 0.20, min_width = 24 },
     right_top = { width = 0.26, min_width = 28 },
     right_bottom = { width = 0.26, min_width = 28 },
-    bottom = { height = 0.30, min_height = 8 },
+    bottom = { height = 0.26, min_height = 7 },
     bottom_left = { height = 0.40, min_height = 6 },
   },
   order = { 'left', 'right_top', 'right_bottom', 'bottom' },

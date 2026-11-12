@@ -79,7 +79,10 @@ function NVUi.float(opts)
     border = opts.border or 'rounded',
     zindex = opts.zindex or 60,
   })
-  vim.api.nvim_win_set_hl_ns(handle.win, ns)
+  -- No window-local highlight namespace: an empty namespace leaves `Normal`
+  -- undefined for the window, so floats paint no background and whatever is
+  -- behind them (a dimmed backdrop) shows through.
+  vim.wo[handle.win].winhighlight = 'Normal:NormalFloat,FloatBorder:NvPanelBorder,EndOfBuffer:NormalFloat'
 
   return handle
 end
@@ -108,7 +111,6 @@ function NVUi.panel(win, opts)
   opts = opts or {}
   local buf = vim.api.nvim_win_get_buf(win)
   local ns = vim.api.nvim_create_namespace('nvui-panel-' .. win)
-  vim.api.nvim_win_set_hl_ns(win, ns)
   vim.wo[win].list = false
   return { buf = buf, win = win, ns = ns, xpad = opts.xpad or 1 }
 end

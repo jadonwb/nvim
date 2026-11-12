@@ -78,6 +78,9 @@ end
 --- File icon plus a shortened name. The directory is in the session panel, so
 --- the statusline keeps the file itself readable instead of repeating a path.
 local function file_component()
+  if vim.bo.filetype == 'snacks_dashboard' then
+    return ' Neovim '
+  end
   local name = vim.api.nvim_buf_get_name(0)
   if name == '' then
     return ' [No Name] '
@@ -119,7 +122,7 @@ return {
       globalstatus = true,
       section_separators = { left = '', right = '' },
       component_separators = { left = '', right = '' },
-      disabled_filetypes = { statusline = { 'snacks_dashboard', 'dashboard', 'nvcheatsheet' } },
+      disabled_filetypes = { statusline = { 'nvcheatsheet' } },
       always_show_tabline = false,
     },
     sections = {
@@ -196,6 +199,9 @@ return {
           colored = false,
           color = 'NvStMuted',
           padding = { left = 1, right = 1 },
+          cond = function()
+            return vim.bo.filetype ~= 'snacks_dashboard'
+          end,
         },
       },
       lualine_z = {

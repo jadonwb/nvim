@@ -46,9 +46,11 @@ return {
         -- the field is narrow. Show the tail of the path instead, which is the
         -- part that identifies the file.
         file = function(item, ctx)
-          local fname = vim.fn.fnamemodify(item.file, ':~')
+          local fname = vim.fn.fnamemodify(item.file, ':~:.')
           if ctx.width and #fname > ctx.width then
-            fname = '…' .. fname:sub(-(ctx.width - 1))
+            -- Keep the two identifying parts instead of an unreadable tail.
+            local parent = vim.fn.fnamemodify(item.file, ':h:t')
+            fname = parent .. '/' .. vim.fn.fnamemodify(item.file, ':t')
           end
           return { { fname, hl = 'file' } }
         end,

@@ -62,6 +62,41 @@ function M.setup()
     NvChipInfo = { fg = normal_bg, bg = blue, bold = true },
     NvChipMuted = { fg = comment, bg = muted_bg },
 
+    -- A bar that reads as a surface instead of blending into the text.
+    StatusLine = { fg = normal_fg, bg = muted_bg },
+    StatusLineNC = { fg = comment, bg = muted_bg },
+    WinBar = { fg = comment, bg = muted_bg },
+    WinBarNC = { fg = comment, bg = muted_bg },
+
+    -- Snacks surface groups. The theme does not define most of them, which made
+    -- pickers and terminals transparent.
+    SnacksPicker = { fg = normal_fg, bg = normal_bg },
+    SnacksPickerBorder = { fg = line, bg = normal_bg },
+    SnacksPickerBoxBorder = { fg = line, bg = normal_bg },
+    SnacksPickerTitle = { fg = normal_fg, bg = normal_bg, bold = true },
+    SnacksPickerInput = { fg = normal_fg, bg = muted_bg },
+    SnacksPickerInputBorder = { fg = line, bg = normal_bg },
+    SnacksPickerInputTitle = { fg = normal_fg, bg = normal_bg, bold = true },
+    SnacksPickerList = { fg = normal_fg, bg = normal_bg },
+    SnacksPickerPreview = { fg = normal_fg, bg = normal_bg },
+    SnacksPickerListCursorLine = { fg = normal_fg, bg = muted_bg },
+    SnacksPickerPreviewCursorLine = { fg = normal_fg, bg = muted_bg },
+    SnacksPickerMatch = { fg = yellow, bold = true },
+    SnacksPickerDir = { fg = comment },
+    SnacksPickerFile = { fg = normal_fg },
+    SnacksPickerIcon = { fg = blue },
+    SnacksPickerDesc = { fg = comment },
+    SnacksPickerLabel = { fg = blue, bold = true },
+    SnacksPickerSearch = { fg = green, bold = true },
+    SnacksPickerBuf = { fg = comment },
+    SnacksWinBar = { fg = comment, bg = normal_bg },
+    SnacksWinBarNC = { fg = comment, bg = normal_bg },
+    SnacksTerminal = { fg = normal_fg, bg = normal_bg },
+    SnacksNotifier = { fg = normal_fg, bg = normal_bg },
+    SnacksNotifierBorder = { fg = line, bg = normal_bg },
+    SnacksNotifierTitle = { fg = normal_fg, bg = normal_bg, bold = true },
+    SnacksNotifierFooter = { fg = comment, bg = normal_bg },
+
     -- Statusline blocks.
     NvStMode = { fg = normal_bg, bg = blue, bold = true },
     NvStModeInsert = { fg = normal_bg, bg = green, bold = true },

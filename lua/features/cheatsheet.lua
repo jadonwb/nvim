@@ -112,9 +112,15 @@ local function block(title, entries, width)
       row = vim.deepcopy(entry.chunks)
     else
       local key = ' ' .. entry.lhs
-      row = { { entry.desc }, { '_pad_' }, { key } }
+      -- Only the description may be cut; the key must stay readable.
+      local room = inner - vim.api.nvim_strwidth(key) - 1
+      local desc = entry.desc
+      if vim.api.nvim_strwidth(desc) > room then
+        desc = vim.fn.strcharpart(desc, 0, math.max(1, room - 1)) .. '…'
+      end
+      row = { { desc }, { '_pad_' }, { key } }
     end
-    lines[#lines + 1] = chrome.fit(voltui.hpad(row, inner), inner)
+    lines[#lines + 1] = voltui.hpad(row, inner)
   end
 
   voltui.border(lines, 'NvPanelBorder')

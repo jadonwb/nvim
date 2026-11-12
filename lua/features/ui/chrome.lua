@@ -43,12 +43,13 @@ function M.fit(chunks, inner)
     for _, chunk in ipairs(chunks) do
       local text = chunk[1]
       local cw = vim.api.nvim_strwidth(text)
+      -- Reserve one cell for the ellipsis so a cut is visible as a cut.
       if used + cw >= inner then
-        local room = inner - used
+        local room = inner - used - 1
         if room > 0 then
-          out[#out + 1] = { vim.fn.strcharpart(text, 0, room), chunk[2] }
+          out[#out + 1] = { vim.fn.strcharpart(text, 0, room) .. '…', chunk[2] }
         end
-        break
+        return out
       end
       out[#out + 1] = chunk
       used = used + cw

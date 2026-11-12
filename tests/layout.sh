@@ -170,7 +170,7 @@ add('geometry enforced=' .. tostring(vim.api.nvim_win_get_width(rw) > 12))
 
 -- Semantic highlight groups exist for every panel colour the UI asks for.
 local hl_ok = true
-for _, name in ipairs { 'ExRed', 'ExGreen', 'ExYellow', 'ExBlue', 'CommentFg', 'NvPanelBorder', 'NvPanelTitle', 'NvChip', 'NvChipMuted', 'NvStMode', 'NvStFile' } do
+for _, name in ipairs { 'ExRed', 'ExGreen', 'ExYellow', 'ExBlue', 'CommentFg', 'NvPanelBorder', 'NvPanelTitle', 'NvChip', 'NvChipMuted', 'NvStMode', 'NvStFile', 'SnacksPicker', 'SnacksPickerList', 'SnacksPickerTitle' } do
   if vim.fn.hlexists(name) == 0 then
     hl_ok = false
     add('missing hl ' .. name)

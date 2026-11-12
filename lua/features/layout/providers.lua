@@ -255,6 +255,7 @@ function M.explorer(win, name)
 
   local buf = vim.api.nvim_win_get_buf(win)
   NVSlots.set_buffer(slot, buf)
+  pcall(vim.api.nvim_set_option_value, 'winbar', '%#NvPanelBorder# Explorer ' .. vim.fn.fnamemodify(dir, ':t') .. ' ', { win = win })
 
   local preview = require 'features.preview'
 
@@ -382,6 +383,13 @@ function M.prompt(win, name)
     vim.bo[buf].filetype = 'nvprompt'
     vim.b[buf].nv_slot = slot
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, { '' })
+    vim.bo[buf].modifiable = true
+    -- A hint line the prompt can show while empty; it is removed on the first
+    -- keystroke (see the BufEnter autocmd below).
+    vim.api.nvim_buf_set_extmark(buf, vim.api.nvim_create_namespace('nvprompt'), 0, 0, {
+      virt_text = { { ' Ask opencode…  <CR> send   <M-a> transcript ', 'CommentFg' } },
+      virt_text_pos = 'overlay',
+    })
 
     local function submit()
       local text = vim.trim(table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), '\n'))
