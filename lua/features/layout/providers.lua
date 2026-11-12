@@ -57,47 +57,53 @@ function M.changes(win, name)
     return 'Normal'
   end
 
+  local chrome = require 'features.ui.chrome'
   local rows = {}
   local paths = {}
   for _, line in ipairs(out) do
     local code, path = line:match '^%s*(%S+)%s+(.*)$'
     if code then
       rows[#rows + 1] = {
-        { (' %-2s '):format(code), status_hl(code) },
-        { path:sub(1, math.max(1, width - 5)) },
+        { ('%-3s'):format(code), status_hl(code) },
+        { path },
       }
       paths[#rows] = path
     end
   end
 
   if #rows == 0 then
-    rows[1] = { { ' clean', 'CommentFg' } }
+    rows[1] = { { 'clean', 'CommentFg' } }
   end
 
-  local title = ' Changes ' .. (#out > 0 and ('(' .. #out .. ')') or '')
-  if #title > width then
-    title = title:sub(1, width)
-  end
+  local lines = chrome.frame {
+    width = width,
+    icon = '',
+    title = 'Changes',
+    meta = #out > 0 and (' ' .. #out .. ' ') or nil,
+    sections = { { rows = rows } },
+  }
 
   local layout = {
-    { name = 'title', lines = function() return { { { title, 'ExLightGrey' } } } end },
-    { name = 'rule', lines = function() return { { { string.rep('─', width), 'CommentFg' } } } end },
-    { name = 'body', lines = function() return rows end },
+    {
+      name = 'body',
+      lines = function()
+        return lines
+      end,
+    },
   }
 
   require('features.ui.window').render(handle, layout, width)
   vim.bo[handle.buf].filetype = 'nvchanges'
 
-  -- Body rows start after the title and the rule, so map buffer lines to paths.
-  local by_line = {}
-  for i, path in ipairs(paths) do
-    by_line[i + 2] = path
-  end
-  vim.b[handle.buf].nv_changes = { paths = paths, by_line = by_line }
+  -- Rows are the last `#rows` lines of the frame. Store the offset rather than
+  -- a sparse map: `vim.b` turns a sparse Lua table into a list padded with
+  -- vim.NIL, so a map with holes would report rows that do not exist.
+  local first = #lines - #rows
+  vim.b[handle.buf].nv_changes = { paths = paths, first = first }
 
   local function open_under_cursor()
     local line = vim.api.nvim_win_get_cursor(0)[1]
-    local path = by_line[line]
+    local path = paths[line - first + 1]
     if not path then
       return
     end
@@ -131,6 +137,7 @@ function M.session(win, _)
 
   local branch = system_lines { 'git', 'branch', '--show-current' }
   local attached = NVOpenCodeSession and NVOpenCodeSession.attached_id and NVOpenCodeSession.attached_id()
+  local profile = require('config.profile').kind or '?'
 
   local label_w = 9
   local function row(label, value)
@@ -142,11 +149,13 @@ function M.session(win, _)
   end
 
   local bridge = NVBridge and NVBridge.state
+  local chrome = require 'features.ui.chrome'
+  local inner = width - 4
   local body = {
     row('cwd', vim.fn.fnamemodify(vim.fn.getcwd(), ':~')),
     row('branch', (branch[1] and branch[1] ~= '') and branch[1] or '(detached)'),
     row('opencode', attached or 'not attached'),
-    row('profile', require('config.profile').kind or '?'),
+    row('profile', profile),
     row('agent', bridge and bridge.job and 'running' or (bridge and bridge.session and 'idle' or 'ready')),
   }
 
@@ -159,31 +168,39 @@ function M.session(win, _)
   end
 
   local progress = NVMessages.progress_current and NVMessages.progress_current()
-
-  local layout = {
-    { name = 'title', lines = function() return { { { ' Session ', 'ExLightGrey' } } } end },
-    { name = 'rule', lines = function() return { { { string.rep('─', width), 'CommentFg' } } } end },
-    { name = 'body', lines = function() return body end },
-  }
+  local sections = { { rows = body } }
 
   if progress then
-    layout[#layout + 1] = { name = 'gap', lines = function() return { {} } end }
-    layout[#layout + 1] = {
-      name = 'progress',
-      lines = function()
-        local label = progress.title or progress.message or 'LSP'
-        return {
-          { { ' ' .. label:sub(1, width - 2), 'CommentFg' } },
-          require('volt.ui').progressbar {
-            w = width,
-            val = progress.percent,
-            icon = { on = '┃', off = '┃' },
-            hl = { on = 'ExGreen', off = 'LineNr' },
-          },
-        }
-      end,
+    local label = (progress.title or progress.message or 'LSP'):sub(1, inner)
+    sections[#sections + 1] = {
+      title = ' ' .. label,
+      rows = {
+        require('volt.ui').progressbar {
+          w = inner,
+          val = progress.percent,
+          icon = { on = '┃', off = '┃' },
+          hl = { on = 'ExGreen', off = 'LineNr' },
+        },
+      },
     }
   end
+
+  local lines = chrome.frame {
+    width = width,
+    icon = '󰒓',
+    title = 'Session',
+    meta = (' %s '):format(profile),
+    sections = sections,
+  }
+
+  local layout = {
+    {
+      name = 'body',
+      lines = function()
+        return lines
+      end,
+    },
+  }
 
   require('features.ui.window').render(handle, layout, width)
   vim.bo[handle.buf].filetype = 'nvsession'

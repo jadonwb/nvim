@@ -98,6 +98,10 @@ local function clean(chunks)
 
   if prose then
     for _, chunk in ipairs(out) do
+      -- Volt cannot conceal, so a markdown link would show its URL. Keep the
+      -- label; the URL is still reachable through the buffer the hover came
+      -- from when it matters.
+      chunk[1] = chunk[1]:gsub('%[([^%]]-)%]%(%S-%)', '%1')
       chunk[1] = chunk[1]:gsub('^[`*_~]+', ''):gsub('[`*_~]+$', '')
     end
   end

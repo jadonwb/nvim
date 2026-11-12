@@ -94,6 +94,8 @@ local function decorate(win)
   vim.wo[win].foldcolumn = '0'
   vim.wo[win].statuscolumn = ''
   vim.wo[win].cursorline = false
+  -- Volt draws padding as spaces; `list` would show every one as a marker.
+  vim.wo[win].list = false
   vim.wo[win].winhighlight = 'Normal:Normal,NormalNC:NormalNC,WinBar:StatusLine'
 end
 

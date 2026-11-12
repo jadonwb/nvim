@@ -240,21 +240,9 @@ function NVLspUi.open(sections)
   local ns = vim.api.nvim_create_namespace('nv-lsp-ui-' .. buf)
   state.buf, state.ns = buf, ns
 
-  -- Dim the editor behind the popup, like typr does.
-  local backdrop_buf = vim.api.nvim_create_buf(false, true)
-  state.backdrop = vim.api.nvim_open_win(backdrop_buf, false, {
-    relative = 'editor',
-    row = 0,
-    col = 0,
-    width = vim.o.columns,
-    height = vim.o.lines - 2,
-    focusable = false,
-    style = 'minimal',
-    border = 'none',
-    zindex = 50,
-  })
-  vim.wo[state.backdrop].winblend = 20
-
+  -- No dim backdrop: a hover belongs to the line it came from, not to a modal
+  -- surface. typr dims its full-screen dashboards; a popup at the cursor would
+  -- just make the surrounding code unreadable.
   local pos = position(MIN_WIDTH, 1)
   state.win = vim.api.nvim_open_win(buf, false, {
     relative = 'win',
@@ -264,10 +252,11 @@ function NVLspUi.open(sections)
     width = MIN_WIDTH,
     height = 1,
     style = 'minimal',
-    border = 'rounded',
+    border = 'single',
     zindex = 60,
   })
   vim.api.nvim_win_set_hl_ns(state.win, ns)
+  vim.wo[state.win].winhighlight = 'FloatBorder:LineNr,Normal:NormalFloat'
 
   NVLspUi.refresh()
 

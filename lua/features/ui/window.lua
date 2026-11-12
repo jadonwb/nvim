@@ -109,6 +109,7 @@ function NVUi.panel(win, opts)
   local buf = vim.api.nvim_win_get_buf(win)
   local ns = vim.api.nvim_create_namespace('nvui-panel-' .. win)
   vim.api.nvim_win_set_hl_ns(win, ns)
+  vim.wo[win].list = false
   return { buf = buf, win = win, ns = ns, xpad = opts.xpad or 1 }
 end
 

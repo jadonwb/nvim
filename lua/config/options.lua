@@ -102,7 +102,7 @@ vim.opt.wrap = false
 vim.opt.linebreak = true
 
 vim.opt.foldenable = true
-vim.opt.foldcolumn = '1'
+vim.opt.foldcolumn = '0'
 vim.opt.foldlevel = 99
 vim.opt.foldlevelstart = 99
 
