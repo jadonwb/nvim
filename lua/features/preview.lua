@@ -76,6 +76,10 @@ local function draw(target)
     vim.bo[buf].swapfile = false
     NVPreview.buf = buf
 
+    -- Close it even if the mouse focuses it; window navigation skips it.
+    vim.keymap.set('n', 'q', NVPreview.hide, { buffer = buf, nowait = true })
+    vim.keymap.set('n', '<Esc>', NVPreview.hide, { buffer = buf, nowait = true })
+
     NVPreview.win = vim.api.nvim_open_win(buf, false, {
       relative = 'win',
       win = target,
@@ -85,6 +89,7 @@ local function draw(target)
       height = geo.height,
       style = 'minimal',
       border = 'single',
+      focusable = false,
       zindex = 41,
       title = ' preview ',
       title_pos = 'center',

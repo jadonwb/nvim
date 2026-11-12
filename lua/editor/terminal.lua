@@ -73,6 +73,18 @@ local function shell_env()
   return env
 end
 
+--- The visible terminal buffer, if one is open.
+---@return BufID|nil buf
+---@return WinID|nil win
+local function find_terminal()
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    local buf = vim.api.nvim_win_get_buf(win)
+    if vim.bo[buf].filetype == 'snacks_terminal' then
+      return buf, win
+    end
+  end
+end
+
 function NVTerminal.toggle()
   Snacks.terminal.toggle(nil, {
     env = shell_env(),
@@ -88,9 +100,9 @@ function NVTerminal.toggle()
 end
 
 function NVTerminal.ensure_hidden()
-  local term = Snacks.terminal.get(nil, { create = false })
-  if term and term:valid() then
-    term:hide()
+  local _, win = find_terminal()
+  if win and vim.api.nvim_win_get_config(win).relative ~= '' then
+    pcall(vim.api.nvim_win_close, win, true)
     return true
   end
   return false
