@@ -45,6 +45,17 @@ local text = table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), '\n')
 add('streamed=' .. tostring(text:find('hello world!', 1, true) ~= nil))
 add('deduped=' .. tostring(text:find('hello hello', 1, true) == nil))
 add('tool line=' .. tostring(text:find('✓ read: note.txt', 1, true) ~= nil))
+
+-- Tool lines are highlighted through extmarks on the text row, not on the
+-- trailing empty line.
+local marked = false
+for _, mark in ipairs(vim.api.nvim_buf_get_extmarks(buf, NVBridge.ns, 0, -1, { details = true })) do
+  local row = vim.api.nvim_buf_get_lines(buf, mark[2], mark[2] + 1, false)[1] or ''
+  if row:find('✓ read: note.txt', 1, true) then
+    marked = true
+  end
+end
+add('tool highlight=' .. tostring(marked))
 add('prompt echoed=' .. tostring(text:find('hi', 1, true) ~= nil))
 add('real lines=' .. tostring(vim.api.nvim_buf_line_count(buf) > 3))
 add('ft=' .. vim.bo[buf].filetype)
@@ -107,6 +118,7 @@ check() { grep -qx -- "$1" <<<"$got" || { printf 'FAIL: missing %s\n' "$1"; fail
 check 'streamed=true'
 check 'deduped=true'
 check 'tool line=true'
+check 'tool highlight=true'
 check 'prompt echoed=true'
 check 'real lines=true'
 check 'ft=markdown'

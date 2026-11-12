@@ -183,7 +183,13 @@ end
 local function append_line_hl(line, hl)
   NVBridge.append(line .. '\n')
   local buf = NVBridge.ensure_buffer()
-  local row = vim.api.nvim_buf_line_count(buf) - 1
+  -- append() leaves the written line above one trailing empty line, so the
+  -- mark belongs one row up; marking the empty row would put `end_col` out of
+  -- range and silently fail.
+  local row = vim.api.nvim_buf_line_count(buf) - 2
+  if row < 0 then
+    return
+  end
   pcall(vim.api.nvim_buf_set_extmark, buf, NVBridge.ns, row, 0, {
     end_row = row,
     end_col = #line,
