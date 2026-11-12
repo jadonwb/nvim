@@ -31,7 +31,8 @@ One line, no tabline (the tab layer is gone). Blocks, no separators:
 - LSP progress, recording indicator, search count, attached clients.
 - Filetype and cursor position.
 
-The session panel owns cwd, branch, profile, agent state, tokens and cost, so the
+The session panel owns cwd, branch, profile, agent state, tokens and cost — plus
+ahead/behind when an upstream exists and the attached LSP clients — so the
 statusline never repeats them.
 
 ## Dashboard

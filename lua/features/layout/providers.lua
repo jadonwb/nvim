@@ -137,6 +137,22 @@ function M.session(win, _)
 
   local branch = system_lines { 'git', 'branch', '--show-current' }
   local attached = NVOpenCodeSession and NVOpenCodeSession.attached_id and NVOpenCodeSession.attached_id()
+
+  -- Ahead/behind from the status header, so the panel says whether the branch
+  -- is in sync without a second command.
+  local sync
+  local head = system_lines { 'git', 'status', '-sb' }[1] or ''
+  local ahead = tonumber(head:match 'ahead (%d+)')
+  local behind = tonumber(head:match 'behind (%d+)')
+  if ahead or behind then
+    sync = ('↑%d ↓%d'):format(ahead or 0, behind or 0)
+  end
+
+  local clients = vim.lsp.get_clients()
+  local client_names = {}
+  for _, client in ipairs(clients) do
+    client_names[#client_names + 1] = client.name
+  end
   local profile = require('config.profile').kind or '?'
 
   local label_w = 9
@@ -160,6 +176,13 @@ function M.session(win, _)
     row('profile', profile),
     row('agent', bridge and bridge.job and 'running' or (bridge and bridge.session and 'idle' or 'ready')),
   }
+
+  if sync then
+    body[#body + 1] = row('sync', sync)
+  end
+  if #client_names > 0 then
+    body[#body + 1] = row('lsp', table.concat(client_names, ', '))
+  end
 
   if bridge and bridge.status then
     local tokens = bridge.status.tokens or {}
