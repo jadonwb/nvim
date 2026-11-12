@@ -120,6 +120,7 @@ end
 
 function M.setup()
   vim.diagnostic.config(diagnostics)
+  require('features.lsp.keymaps').setup()
 
   vim.lsp.config('*', {
     capabilities = {

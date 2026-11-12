@@ -156,7 +156,7 @@ local function review(only, done)
     if ok then
       icon, icon_hl = MiniIcons.get('file', item.name)
     end
-    NVDialogs.select({
+    NVDialogs.select_panel({
       title = 'Unsaved Changes (' .. index .. '/' .. #items .. ')',
       message = item.name == '' and '[No Name]' or vim.fn.fnamemodify(item.name, ':~:.'),
       icon = icon,

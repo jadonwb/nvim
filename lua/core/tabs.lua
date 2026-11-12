@@ -51,37 +51,6 @@ function NVTabs.is_temporary(tabid)
   return false
 end
 
-function NVTabs.keymaps()
-  K.map { NVKeymaps.tab_create, 'New tab', '<Cmd>tabnew<CR>', mode = { 'n', 'i', 'v', 't' } }
-  K.map { NVKeymaps.tab_close, 'Close tab', NVTabs.close, mode = { 'n', 'i', 'v', 't' }, nowait = true }
-  K.map { NVKeymaps.tab_move.right, 'Next tab', '<Cmd>tabnext<CR>', mode = { 'n', 'i', 'v', 't' } }
-  K.map { NVKeymaps.tab_move.left, 'Previous tab', '<Cmd>tabprev<CR>', mode = { 'n', 'i', 'v', 't' } }
-end
-
---- Close the current tab, letting a temporary tab type handle its own teardown.
-function NVTabs.close()
-  local tabid = vim.api.nvim_get_current_tabpage()
-  local tab_type = NVTabs.get_tab_type(tabid)
-
-  if tab_type and tab_type.user_close_hook and tab_type.user_close_hook(tabid) then
-    return
-  end
-  if tab_type and tab_type.close_hook and tab_type.close_hook(tabid) then
-    return
-  end
-
-  -- Closing the final tab of a temporary invocation (difftool, pager, editor
-  -- launched from another program) finishes that invocation.
-  if #vim.api.nvim_list_tabpages() == 1 then
-    if NVEnv.startup.transient then
-      NVQuit.save_and_quit()
-    end
-    return
-  end
-
-  vim.cmd 'tabclose'
-end
-
 --- Close every temporary tab. Used before saving a session so diffview and
 --- focus views never end up in the persisted layout.
 function NVTabs.close_all_temporary()

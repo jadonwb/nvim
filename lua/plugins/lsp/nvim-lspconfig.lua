@@ -9,7 +9,7 @@ return {
     'mason-org/mason-lspconfig.nvim',
   },
   config = function()
-    local lsp = require 'config.lsp'
+    local lsp = require 'features.lsp'
 
     -- Projects may append clangd arguments via .nvim.lua.
     if vim.g.clangd_extra_args then

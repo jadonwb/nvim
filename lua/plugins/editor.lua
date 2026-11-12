@@ -75,8 +75,6 @@ return {
 
         step(function()
           require 'editor.editing'
-          require 'editor.core-keymaps'
-          NVKeymaps.core()
         end)
 
         step(function()
@@ -96,7 +94,6 @@ return {
           NVOpenCodeArtifacts.keymaps()
           NVOpenCodeSession.keymaps()
           NVSLazygit.keymaps()
-          NVTabs.keymaps()
           NVWindows.keymaps()
           NVBuffers.keymaps()
         end)

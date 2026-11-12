@@ -399,6 +399,114 @@ end
 ---
 ---@param opts { prompt?: string, default?: string, multiline?: boolean, width?: integer, height?: integer }
 ---@param callback fun(value: string?)
+--- Choice prompt rendered in the bottom panel.
+---
+--- The unsaved-changes review belongs where the command line and the prompt
+--- live, not in a floating box over the file being reviewed. Falls back to the
+--- float when the layout is not applied.
+---@param opts table same shape as select
+---@param callback fun(choice: string|nil)
+function NVDialogs.select_panel(opts, callback)
+  if not (NVSlots and NVSlots.is_applied and NVSlots.is_applied()) then
+    return NVDialogs.select(opts, callback)
+  end
+
+  if not NVSlots.is_open 'bottom' then
+    NVSlots.ensure 'bottom'
+  end
+  local win = NVSlots.win 'bottom'
+  if not win then
+    return NVDialogs.select(opts, callback)
+  end
+
+  local previous = NVSlots.provider_of 'bottom' or 'prompt'
+  local choices = opts.options or {}
+  local index = opts.initial_index or 1
+
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.bo[buf].buftype = 'nofile'
+  vim.bo[buf].bufhidden = 'wipe'
+  vim.bo[buf].swapfile = false
+  vim.bo[buf].filetype = 'nvdialog'
+  vim.b[buf].nv_slot = 'bottom'
+
+  local function render()
+    local lines = {
+      ' ' .. (opts.title or 'Choose'),
+      ' ' .. (opts.message or ''),
+      '',
+    }
+    for i, choice in ipairs(choices) do
+      lines[#lines + 1] = (' %s %d. %s'):format(i == index and config.indicator or ' ', i, choice)
+    end
+    lines[#lines + 1] = ''
+    lines[#lines + 1] = ' w write   d discard   c cancel   <CR> choose   Esc cancel'
+
+    vim.bo[buf].modifiable = true
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+    vim.bo[buf].modifiable = false
+    vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
+    vim.api.nvim_buf_set_extmark(buf, ns, 2 + index, 0, {
+      end_row = 2 + index,
+      end_col = #lines[2 + index],
+      hl_group = 'Visual',
+    })
+    vim.api.nvim_buf_set_extmark(buf, ns, #lines - 1, 0, {
+      end_row = #lines - 1,
+      end_col = #lines[#lines],
+      hl_group = 'Comment',
+    })
+  end
+
+  local finished = false
+  local function finish(choice)
+    if finished then
+      return
+    end
+    finished = true
+    pcall(vim.api.nvim_buf_delete, buf, { force = true })
+    pcall(NVSlots.set_provider, 'bottom', previous)
+    vim.schedule(function()
+      callback(choice)
+    end)
+  end
+
+  render()
+  NVSlots.set_buffer('bottom', buf)
+  vim.api.nvim_set_current_win(win)
+
+  local map = function(lhs, fn)
+    vim.keymap.set('n', lhs, fn, { buffer = buf, nowait = true, silent = true })
+  end
+  map('j', function()
+    index = math.min(#choices, index + 1)
+    render()
+  end)
+  map('k', function()
+    index = math.max(1, index - 1)
+    render()
+  end)
+  map('<CR>', function()
+    finish(choices[index])
+  end)
+  map('q', function()
+    finish 'Cancel'
+  end)
+  map('<Esc>', function()
+    finish 'Cancel'
+  end)
+  for i, choice in ipairs(choices) do
+    map(tostring(i), function()
+      finish(choice)
+    end)
+  end
+  for key, choice in pairs(opts.shortcuts or {}) do
+    map(key, function()
+      finish(choice)
+    end)
+  end
+end
+
 function NVDialogs.input(opts, callback)
   opts = opts or {}
   local multiline = opts.multiline == true
