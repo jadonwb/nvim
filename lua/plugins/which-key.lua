@@ -57,6 +57,7 @@ return {
             { '=', 'assignment' },
             { 'C', 'comment' },
             { 'a', 'argument' },
+            { 'g', 'entire buffer' },
             { 'u', 'function call' },
             { 'U', 'call (no dot)' },
             { 't', 'tag' },

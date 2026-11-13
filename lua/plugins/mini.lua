@@ -33,6 +33,19 @@ return {
             { '%u[%l%d]+%f[^%l%d]', '%f[%S][%l%d]+%f[^%l%d]', '%f[%P][%l%d]+%f[^%l%d]', '^[%l%d]+%f[^%l%d]' },
             '^().*()$',
           },
+          -- Entire buffer (LazyVim's): `ag` all of it, `ig` without the
+          -- blank lines at either end. yag, vag, dig, …
+          g = function(ai_type)
+            local first, last = 1, vim.fn.line '$'
+            if ai_type == 'i' then
+              local a, b = vim.fn.nextnonblank(first), vim.fn.prevnonblank(last)
+              if a == 0 or b == 0 then
+                return { from = { line = first, col = 1 } }
+              end
+              first, last = a, b
+            end
+            return { from = { line = first, col = 1 }, to = { line = last, col = math.max(#vim.fn.getline(last), 1) } }
+          end,
           u = ai.gen_spec.function_call(),
           U = ai.gen_spec.function_call { name_pattern = '[%w_]' },
         },
