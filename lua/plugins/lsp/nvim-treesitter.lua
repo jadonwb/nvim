@@ -64,6 +64,7 @@ return {
         'vimdoc',
         'xml',
         'yaml',
+        'make',
       },
     },
     config = function(_, opts)
