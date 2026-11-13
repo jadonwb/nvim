@@ -104,6 +104,14 @@ end
 
 function fn.set_session(session_id, location)
   local map = fn.load_attachments()
+  -- The previous target is no longer connected here (unless its transcript
+  -- is open): the agent there loses the `nvim` tool.
+  local previous = map[fn.attachment_key(location)]
+  local S = package.loaded['features.opencode.sessions']
+  local T = package.loaded['features.opencode.transcript']
+  if S and previous and previous ~= session_id and not (T and T.views[previous]) then
+    S.untrack(previous)
+  end
   map[fn.attachment_key(location)] = session_id
   local ok = fn.save_attachments(map)
   local S = package.loaded['features.opencode.sessions']
@@ -116,6 +124,12 @@ end
 
 function fn.clear_session(location)
   local map = fn.load_attachments()
+  local previous = map[fn.attachment_key(location)]
+  local S = package.loaded['features.opencode.sessions']
+  local T = package.loaded['features.opencode.transcript']
+  if S and previous and not (T and T.views[previous]) then
+    S.untrack(previous)
+  end
   map[fn.attachment_key(location)] = nil
   local ok = fn.save_attachments(map)
   changed()

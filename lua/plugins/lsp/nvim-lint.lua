@@ -15,8 +15,7 @@ return {
         args = { '--config', vim.fn.expand '$HOME/.markdownlint.yaml', '--' },
       },
     },
-    linters_by_ft = {
-      bitbake = { 'oelint-adv' },
-    },
+    -- This machine's language extras (config/extras.lua).
+    linters_by_ft = require('config.extras').by_ft 'linters',
   },
 }

@@ -303,6 +303,60 @@ function M.apply_action(title)
   }
 end
 
+--- The git hunk under the cursor (gitsigns), as a diff. `keys` act on it
+--- from the focused popup: s stage, r reset.
+---@return NVLspSection|nil
+function M.hunk()
+  local ok, gs = pcall(require, 'gitsigns')
+  if not ok then
+    return nil
+  end
+  local buf = vim.api.nvim_get_current_buf()
+  local lnum = vim.api.nvim_win_get_cursor(0)[1]
+  local hunks = gs.get_hunks and gs.get_hunks(buf) or nil
+  for _, h in ipairs(hunks or {}) do
+    local first = h.added.start
+    local last = first + math.max(h.added.count, 1) - 1
+    -- A pure deletion sits between lines: count the line it hangs off.
+    if h.added.count == 0 then
+      first, last = math.max(1, first), math.max(1, first)
+    end
+    if lnum >= first and lnum <= last then
+      local lines = { ('%s  -%d +%d'):format(h.type or 'change', h.removed.count, h.added.count) }
+      vim.list_extend(lines, h.lines or {})
+      local function act(fn)
+        return function()
+          local src = vim.fn.bufwinid(buf)
+          NVLspUi.close()
+          if src ~= -1 then
+            vim.api.nvim_set_current_win(src)
+            vim.api.nvim_win_set_cursor(src, { first, 0 })
+          end
+          fn()
+        end
+      end
+      return {
+        name = 'hunk',
+        lines = lines,
+        plain = true,
+        color = 'Orange',
+        keys = {
+          { 's', 'stage', act(gs.stage_hunk) },
+          { 'r', 'reset', act(gs.reset_hunk) },
+        },
+        decorate = function(b, ns)
+          for row, line in ipairs(vim.api.nvim_buf_get_lines(b, 0, -1, false)) do
+            local hl = row == 1 and 'NvMuted' or (line:sub(1, 1) == '+' and 'NvGreen' or (line:sub(1, 1) == '-' and 'NvRed' or nil))
+            if hl then
+              vim.api.nvim_buf_set_extmark(b, ns, row - 1, 0, { end_col = #line, hl_group = hl })
+            end
+          end
+        end,
+      }
+    end
+  end
+end
+
 --- Diagnostics on the cursor line, most severe first.
 ---@return NVLspSection|nil
 function M.diagnostics()

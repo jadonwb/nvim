@@ -24,7 +24,7 @@ local Markup = require 'features.lsp.markup'
 ---@field items? table[] code actions
 ---@field decorate? fun(buf: integer, ns: integer, lines: string[])
 
-local ICONS = { hover = '󰋽', signature = '󰊕', diagnostics = '󰅚', actions = '󰌵', inspect = '󰙅' }
+local ICONS = { hover = '󰋽', signature = '󰊕', diagnostics = '󰅚', hunk = '', actions = '󰌵', inspect = '󰙅' }
 local MAX_WIDTH, MIN_WIDTH = 92, 24
 
 local state = {
@@ -138,7 +138,17 @@ local function draw_menu()
     width = math.max(width, vim.fn.strdisplaywidth(label) + vim.fn.strdisplaywidth(right) + 2)
   end
   local hint = state.overflow and ' Tab · K scroll ' or ' Tab · K focus '
-  width = math.max(width, vim.fn.strdisplaywidth(hint), 16)
+  -- The active section's own keys (the hunk's s / r), on a second line.
+  local active = state.sections[state.index]
+  local extra
+  if active and active.keys then
+    local parts = {}
+    for _, k in ipairs(active.keys) do
+      parts[#parts + 1] = k[1] .. ' ' .. k[2]
+    end
+    extra = ' ' .. table.concat(parts, ' · ') .. ' '
+  end
+  width = math.max(width, vim.fn.strdisplaywidth(hint), extra and vim.fn.strdisplaywidth(extra) or 0, 16)
   local lines = {}
   for _, r in ipairs(rows) do
     local pad = width - vim.fn.strdisplaywidth(r.label) - vim.fn.strdisplaywidth(r.right)
@@ -146,6 +156,9 @@ local function draw_menu()
   end
   lines[#lines + 1] = ''
   lines[#lines + 1] = hint
+  if extra then
+    lines[#lines + 1] = extra
+  end
   local buf = state.menu.buf
   vim.bo[buf].modifiable = true
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
@@ -160,13 +173,25 @@ local function draw_menu()
     end
   end
   -- Byte positions (the `·` is two bytes): keys as key chips, rest muted.
-  local h, last = #lines - 1, lines[#lines]
-  vim.api.nvim_buf_set_extmark(buf, ns, h, 0, { end_col = #last, hl_group = 'NvMuted', priority = 100 })
-  for _, key in ipairs { 'Tab', 'K' } do
-    local s0 = last:find(' ' .. key .. ' ', 1, true)
-    if s0 then
-      vim.api.nvim_buf_set_extmark(buf, ns, h, s0, { end_col = s0 + #key, hl_group = 'NvKey', priority = 300 })
+  local function hint_line(h, keys)
+    local text = lines[h + 1]
+    vim.api.nvim_buf_set_extmark(buf, ns, h, 0, { end_col = #text, hl_group = 'NvMuted', priority = 100 })
+    for _, key in ipairs(keys) do
+      local s0 = text:find(' ' .. key .. ' ', 1, true)
+      if s0 then
+        vim.api.nvim_buf_set_extmark(buf, ns, h, s0, { end_col = s0 + #key, hl_group = 'NvKey', priority = 300 })
+      end
     end
+  end
+  local hint_row = #rows + 1
+  hint_line(hint_row, { 'Tab', 'K' })
+  if extra then
+    hint_line(
+      hint_row + 1,
+      vim.tbl_map(function(k)
+        return k[1]
+      end, active.keys)
+    )
   end
   return width, #lines
 end
@@ -337,6 +362,23 @@ function NVLspUi.open(sections)
   map('<Esc>', NVLspUi.close, 'Close popup')
   map('<Tab>', NVLspUi.next, 'Next section')
   map('<S-Tab>', NVLspUi.prev, 'Previous section')
+  -- Section keys (the hunk's s / r) act only while their section shows.
+  local seen = {}
+  for _, section in ipairs(sections) do
+    for _, k in ipairs(section.keys or {}) do
+      if not seen[k[1]] then
+        seen[k[1]] = true
+        map(k[1], function()
+          local cur = state.sections[state.index]
+          for _, kk in ipairs(cur and cur.keys or {}) do
+            if kk[1] == k[1] then
+              return kk[3]()
+            end
+          end
+        end, k[2])
+      end
+    end
+  end
   map('<CR>', function()
     local section = state.sections[state.index]
     if not (section and section.items) then
@@ -457,9 +499,13 @@ function NVLspUi.show_at_cursor()
   end
   local sections = S()
   local diags = sections.diagnostics()
-  if #vim.lsp.get_clients { bufnr = 0 } == 0 then
-    if diags then
-      NVLspUi.open { diags }
+  local hunk = sections.hunk()
+  if #vim.lsp.get_clients { bufnr = 0, method = 'textDocument/hover' } == 0 then
+    local out = {}
+    out[#out + 1] = diags
+    out[#out + 1] = hunk
+    if #out > 0 then
+      NVLspUi.open(out)
     else
       NVMessages.info 'Nothing at this position'
     end
@@ -476,11 +522,11 @@ function NVLspUi.show_at_cursor()
     end
     -- Not ipairs: any of these may be nil.
     local out = {}
-    for _, s in pairs { [1] = hover, [2] = sig, [3] = diags, [4] = actions } do
+    for _, s in pairs { [1] = hover, [2] = sig, [3] = diags, [4] = hunk, [5] = actions } do
       out[#out + 1] = s
     end
     table.sort(out, function(a, b)
-      local order = { hover = 1, signature = 2, diagnostics = 3, actions = 4 }
+      local order = { hover = 1, signature = 2, diagnostics = 3, hunk = 4, actions = 5 }
       return (order[a.name] or 9) < (order[b.name] or 9)
     end)
     if #out == 0 then

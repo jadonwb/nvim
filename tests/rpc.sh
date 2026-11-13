@@ -14,6 +14,10 @@ ln -sfn "$root" "$XDG_CONFIG_HOME/nvim"
 
 # The layout applies on the first real file.
 export XDG_STATE_HOME="$tmp/state"
+# The OpenCode panel waits for a session unless shown explicitly; show it for
+# this directory (the layout is what is tested here).
+mkdir -p "$XDG_STATE_HOME/nvim"
+printf '{"%s":{"closed":{},"shown":{"right_mid":true},"providers":{}}}' "$PWD" >"$XDG_STATE_HOME/nvim/nv-layout.json"
 printf 'one\n' >"$tmp/a.txt"
 nvim --headless --listen "$sock" --cmd 'set columns=200 lines=50' "$tmp/a.txt" >/dev/null 2>&1 &
 pid=$!

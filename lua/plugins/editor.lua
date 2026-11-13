@@ -23,6 +23,7 @@ return {
       require('features.preview').setup()
       require('features.compare').setup()
       require('features.cheatsheet').setup()
+      require('features.extras').setup()
 
       require 'features.bridge'
       NVBridge.setup()

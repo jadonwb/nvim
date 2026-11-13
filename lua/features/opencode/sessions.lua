@@ -126,6 +126,16 @@ end
 
 function M.untrack(id)
   tracked[id] = nil
+  changed(id)
+end
+
+--- Sessions this editor connected to: tracked ones (the target, and those
+--- whose transcript was opened here). Sorted, for the editor registry.
+---@return string[]
+function M.bound()
+  local out = vim.tbl_keys(tracked)
+  table.sort(out)
+  return out
 end
 
 function M.is_tracked(id)

@@ -44,7 +44,8 @@ function NVNotify.add(level, msg, opts)
     table.remove(NVNotify.store, 1)
   end
   NVNotify.unread = NVNotify.unread + 1
-  if not opts.silent then
+  -- Debug and trace stay in the centre: no toast.
+  if not opts.silent and level >= vim.log.levels.INFO then
     vim.schedule(function()
       NVNotify.toast(entry)
     end)

@@ -198,8 +198,25 @@ local KINDS = {
   ['@'] = ' \u{f0a7c} Input ',
 }
 
+--- Floats whose own search would be lost under a centred prompt (same
+--- surface): the prompt goes to their bottom-right corner instead.
+local CORNER_FT = { lazy = true, mason = true }
+
 --- Screen rectangle of the floating prompt (outer, including the padding).
 local function prompt_rect()
+  local win = vim.api.nvim_get_current_win()
+  local ok, cfg = pcall(vim.api.nvim_win_get_config, win)
+  if ok and cfg.relative ~= '' and CORNER_FT[vim.bo[vim.api.nvim_win_get_buf(win)].filetype] then
+    local pos = vim.api.nvim_win_get_position(win)
+    local fw, fh = vim.api.nvim_win_get_width(win), vim.api.nvim_win_get_height(win)
+    local width = math.min(48, fw - 4)
+    return {
+      -- Inside the float's last rows, flush with its right edge.
+      row = math.max(1, pos[1] + fh - 3),
+      col = pos[2] + fw - width,
+      width = width,
+    }
+  end
   local width = math.min(76, vim.o.columns - 8)
   return {
     row = math.max(1, math.floor((vim.o.lines - 1) * 0.22)),

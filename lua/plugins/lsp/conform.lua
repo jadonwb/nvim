@@ -35,10 +35,8 @@ return {
           },
         },
       },
-      formatters_by_ft = {
-        ['markdown'] = { 'prettier' },
-        ['markdown.mdx'] = { 'prettier' },
-      },
+      -- The base (markdown) and this machine's language extras.
+      formatters_by_ft = require('config.extras').by_ft 'formatters',
     },
   },
 }

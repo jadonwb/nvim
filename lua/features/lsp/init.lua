@@ -57,10 +57,21 @@ M.servers = {
   },
   taplo = {},
   marksman = false,
+  -- Language extras (config/extras.lua) — defined always, enabled per pack.
+  rust_analyzer = {
+    settings = { ['rust-analyzer'] = { check = { command = 'clippy' } } },
+  },
+  basedpyright = {
+    settings = { basedpyright = { analysis = { typeCheckingMode = 'standard' } } },
+  },
+  ruff = {},
+  vtsls = {},
+  eslint = {},
+  bashls = {},
 }
 
---- Servers to enable. A server listed here must also be known to mason.
-M.enabled = { 'clangd', 'lua_ls', 'bitbake_ls', 'neocmake', 'systemd_lsp', 'jsonls', 'yamlls', 'taplo' }
+--- Servers to enable: the base and this machine's language extras.
+M.enabled = require('config.extras').collect 'servers'
 
 local diagnostics = {
   underline = { severity = { min = vim.diagnostic.severity.WARN } },
@@ -251,6 +262,10 @@ function M.setup()
       local client = vim.lsp.get_client_by_id(ev.data.client_id)
       if not client then
         return
+      end
+      -- basedpyright answers hover; ruff's would only repeat its lint.
+      if client.name == 'ruff' then
+        client.server_capabilities.hoverProvider = false
       end
       attach(client, ev.buf)
       folds(client)

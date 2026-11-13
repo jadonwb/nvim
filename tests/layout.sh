@@ -25,6 +25,10 @@ git -C "$repo" -c user.email=t@example.com -c user.name=t commit -q --allow-empt
 printf 'one\n' >"$repo/a.txt"
 printf 'one\n' >"$repo/b.txt"
 cd "$repo" || exit 1
+# The OpenCode panel waits for a session unless shown explicitly; these tests
+# are about the layout, so it is shown for this directory.
+mkdir -p "$XDG_STATE_HOME/nvim"
+printf '{"%s":{"closed":{},"shown":{"right_mid":true},"providers":{}}}' "$repo" >"$XDG_STATE_HOME/nvim/nv-layout.json"
 
 probe=$(cat <<'LUA'
 vim.o.columns, vim.o.lines = 200, 50

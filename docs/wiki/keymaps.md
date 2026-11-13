@@ -284,6 +284,17 @@ Completion after `@` (files), `$` (skills) and `/` (commands, at the start);
 | `gg` | Git changes (diffview) | n |
 | `gh` | File history | n |
 | `gl` | Git log (repository history) | n |
+| `gp` | Preview hunk (inline) | n |
+| `gs` | Stage / unstage hunk (or the selected lines) | n, x |
+| `gr` | Reset hunk (or the selected lines) | n, x |
+| `gS` | Stage file | n |
+| `gb` | Blame line | n |
+
+Hunks (gitsigns, buffer-local): `]h` / `[h` next / previous, `]H` / `[H` last /
+first, `ih` hunk text object. `K` on a changed line adds a **hunk** section to
+the hover menu (the diff; `s` stage, `r` reset when focused); without a
+language server, `K` opens the menu on a hunk or diagnostic, and stays Vim's
+`K` elsewhere.
 ## Layout / panels
 
 | Key | Action | Mode |
@@ -306,6 +317,7 @@ Completion after `@` (files), `$` (skills) and `/` (commands, at the start);
 | `pl` | Lazy | n |
 | `pm` | Mason | n |
 | `pu` | Update plugins | n |
+| `px` | Language extras (this machine's language packs) | n |
 ## Terminals
 
 | Key | Action | Mode |

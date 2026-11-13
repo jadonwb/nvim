@@ -131,11 +131,12 @@ local function store_key()
   return vim.fn.getcwd(-1, -1)
 end
 
---- Per-project memory: which slots the user closed, and each slot's provider.
----@return { closed: table<string, boolean>, providers: table<string, string> }
+--- Per-project memory: which slots the user closed, which they explicitly
+--- showed, and each slot's provider.
+---@return { closed: table<string, boolean>, shown: table<string, boolean>, providers: table<string, string> }
 function NVSlots.memory()
   local entry = store_read()[store_key()] or {}
-  return { closed = entry.closed or {}, providers = entry.providers or {} }
+  return { closed = entry.closed or {}, shown = entry.shown or {}, providers = entry.providers or {} }
 end
 
 local function remember(fn)
@@ -143,8 +144,12 @@ local function remember(fn)
   local key = store_key()
   local entry = data[key] or {}
   entry.closed = entry.closed or {}
+  entry.shown = entry.shown or {}
   entry.providers = entry.providers or {}
   fn(entry)
+  if next(entry.shown) == nil then
+    entry.shown = vim.empty_dict()
+  end
   -- JSON has no empty-object/array distinction; keep tables non-empty-safe.
   if next(entry.closed) == nil then
     entry.closed = vim.empty_dict()
@@ -385,6 +390,7 @@ end
 function NVSlots.hide(name)
   remember(function(entry)
     entry.closed[name] = true
+    entry.shown[name] = nil
   end)
   NVSlots.clear_auto(name)
   close_window(name)
@@ -396,6 +402,7 @@ end
 function NVSlots.show(name)
   remember(function(entry)
     entry.closed[name] = nil
+    entry.shown[name] = true
   end)
   if not NVSlots.is_applied() then
     NVSlots.open()
@@ -484,6 +491,48 @@ local function teardown()
   tab.slots = {}
 end
 
+--- The OpenCode session panel waits for a session: with none attached to
+--- this directory it does not open with the layout, unless the user showed
+--- it here explicitly. It appears once a session is attached (below).
+---@param name string
+---@param mem? table NVSlots.memory()
+function NVSlots.idle_session_panel(name, mem)
+  mem = mem or NVSlots.memory()
+  local provider = mem.providers[name] or NVSlots.defaults[name]
+  if provider ~= 'session' or mem.shown[name] then
+    return false
+  end
+  local ok, id = pcall(function()
+    return require('features.opencode.attach').stored_id(vim.fn.getcwd())
+  end)
+  return not (ok and id)
+end
+
+vim.api.nvim_create_autocmd('User', {
+  pattern = 'NVOpenCodeSession',
+  group = vim.api.nvim_create_augroup('NV slots session panel', { clear = true }),
+  callback = function()
+    if not (NVSlots.is_applied() and not NVSlots.restoring) then
+      return
+    end
+    local mem = NVSlots.memory()
+    for _, name in ipairs(NVSlots.order) do
+      if not mem.closed[name] and not NVSlots.win(name) and not NVSlots.idle_session_panel(name, mem) then
+        local provider = mem.providers[name] or NVSlots.defaults[name]
+        if provider == 'session' then
+          local back = vim.api.nvim_get_current_win()
+          NVSlots.ensure(name)
+          NVSlots.render_slot(name)
+          NVSlots.enforce()
+          if vim.api.nvim_win_is_valid(back) then
+            vim.api.nvim_set_current_win(back)
+          end
+        end
+      end
+    end
+  end,
+})
+
 --- Open the layout.
 ---
 --- Without `only`, opens every slot the user has not hidden in this project.
@@ -502,9 +551,9 @@ function NVSlots.open(only)
       wanted[name] = true
     end
   else
-    local closed = NVSlots.memory().closed
+    local mem = NVSlots.memory()
     for _, name in ipairs(NVSlots.order) do
-      wanted[name] = not closed[name]
+      wanted[name] = not mem.closed[name] and not NVSlots.idle_session_panel(name, mem)
     end
   end
 
@@ -817,10 +866,10 @@ function NVSlots.toggle()
   if NVSlots.is_applied() then
     teardown()
     tab.focus = true
-    NVMessages.info 'Focus mode'
+    NVMessages.debug 'Focus mode'
   else
     NVSlots.open()
-    NVMessages.info 'Layout on'
+    NVMessages.debug 'Layout on'
   end
 end
 

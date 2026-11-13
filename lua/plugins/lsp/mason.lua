@@ -49,13 +49,9 @@ return {
       backdrop = 70,
       icons = { package_installed = '●', package_pending = '󰔟', package_uninstalled = '○' },
     },
-    ensure_installed = {
-      'clang-format',
-      'language-server-bitbake',
-      'oelint-adv',
-      'prettier',
-      'systemd-lsp',
-    },
+    -- Tools that are not language servers (servers install through
+    -- mason-lspconfig, features/lsp): the base and this machine's extras.
+    ensure_installed = require('config.extras').collect 'tools',
   },
   config = function(_, opts)
     require('mason').setup(opts)

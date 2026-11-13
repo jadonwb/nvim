@@ -211,6 +211,21 @@ add('when neq=' .. tostring(R.applies({ when = { { key = 'a', op = 'neq', value 
 add('hidden skipped=' .. tostring(R.applies({ hidden = true }, {})))
 add('describe=' .. R.describe { action = 'edit', resources = { 'a.lua', 'b.lua' } })
 
+-- ── editor-initiated binding: the registry lists connected sessions ─────────
+require('features.bridge.registry').write()
+local entry_file = vim.fn.glob(vim.env.XDG_RUNTIME_DIR .. '/nvim-bridge/*.json', false, true)[1]
+local entry = entry_file and vim.json.decode(table.concat(vim.fn.readfile(entry_file), '\n')) or {}
+add('registry sessions=' .. tostring(type(entry.sessions) == 'table' and vim.tbl_contains(entry.sessions, 'ses_int') and vim.tbl_contains(entry.sessions, 'ses_ext')))
+S.untrack 'ses_ext'
+require('features.bridge.registry').write()
+entry = vim.json.decode(table.concat(vim.fn.readfile(entry_file), '\n'))
+add('untracked leaves registry=' .. tostring(not vim.tbl_contains(entry.sessions, 'ses_ext')))
+
+-- The OpenCode panel waits for a session unless shown explicitly.
+add('idle panel=' .. tostring(NVSlots.idle_session_panel('right_mid', { closed = {}, shown = {}, providers = {} })))
+add('shown panel=' .. tostring(NVSlots.idle_session_panel('right_mid', { closed = {}, shown = { right_mid = true }, providers = {} })))
+add('other slots=' .. tostring(NVSlots.idle_session_panel('left', { closed = {}, shown = {}, providers = {} })))
+
 -- ── agent-facing entry points (nvim tool) ───────────────────────────────────
 local registry = vim.fn.glob(vim.env.XDG_RUNTIME_DIR .. '/nvim-bridge/*.json', false, true)
 add('registry=' .. tostring(#registry == 1))
@@ -271,6 +286,11 @@ check 'when eq=true'
 check 'when neq=false'
 check 'hidden skipped=false'
 check 'describe=edit a.lua (+1)'
+check 'registry sessions=true'
+check 'untracked leaves registry=true'
+check 'idle panel=true'
+check 'shown panel=false'
+check 'other slots=false'
 check 'registry=true'
 check 'open_file=true'
 check 'open_line=2'

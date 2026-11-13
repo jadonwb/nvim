@@ -180,16 +180,30 @@ editor publishes its socket:
 ```
 ${XDG_RUNTIME_DIR}/nvim-bridge/<pid>.json
 { "server": "/run/user/1000/nvim.123.0", "cwd": "/home/me/project",
-  "pid": 123, "profile": "workspace", "updated": 1794442321 }
+  "pid": 123, "profile": "workspace", "updated": 1794442321,
+  "sessions": ["ses_…"] }
 ```
 
 - **Writing it:** `features/bridge/registry.lua` writes the entry and refreshes
   it on directory, buffer and focus changes. `VimLeavePre` removes it, and dead
   entries are pruned.
-- **Choosing an editor:** the plugin (`dot_config/opencode/plugins/
-  nvim-bridge.ts`) skips dead processes (liveness, not age). It picks the
-  editor whose `cwd` best contains the session's directory; ties, and the
-  no-match case, go to the most recently active editor.
+- **Editor-initiated:** `sessions` lists the OpenCode sessions this editor
+  connected to: its prompt target, and sessions whose transcript it shows
+  (`NVOpenCodeSessions.bound()`). Changing the target or detaching removes the
+  old session from the list, unless its transcript is open.
+- **Only those sessions have the tool.** The plugin
+  (`dot_config/opencode/plugins/nvim-bridge.ts`) registers a session `context`
+  hook. Before every model request, it removes `nvim_control` from the tool
+  list unless a live editor lists that session. The tool is a direct tool
+  (`codemode: false`), because the hook sees only direct tools, not Code Mode's
+  catalog.
+- **Exactly that editor:** a call drives the editor bound to its session (the
+  most recently active one if several are bound). Nothing is guessed from the
+  working directory; with no bound editor, the call is refused.
+
+Verified live: a session the dev editor connected to answered that it had
+`nvim_control` and opened a file in that editor. A session created outside
+Neovim answered that it had no such tool.
 
 | Action | Effect (editor function) |
 | --- | --- |

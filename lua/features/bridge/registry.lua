@@ -33,12 +33,20 @@ function M.write()
   end
 
   local profile = require('config.profile').kind or 'unknown'
+  -- The OpenCode sessions this editor connected to (its prompt target and
+  -- the transcripts it shows). The agent's `nvim` tool exists only in those
+  -- sessions and drives only this editor from them (nvim-bridge.ts).
+  local sessions = {}
+  if NVOpenCodeSessions and NVOpenCodeSessions.bound then
+    sessions = NVOpenCodeSessions.bound()
+  end
   local data = {
     server = server,
     cwd = vim.fn.getcwd(),
     pid = vim.fn.getpid(),
     profile = profile,
     updated = os.time(),
+    sessions = #sessions > 0 and sessions or vim.empty_dict(),
   }
 
   pcall(function()
@@ -90,6 +98,23 @@ function M.setup()
     group = group,
     callback = function()
       M.write()
+    end,
+  })
+
+  -- Connecting to or leaving a session changes what the agent may reach.
+  local pending = false
+  vim.api.nvim_create_autocmd('User', {
+    group = group,
+    pattern = 'NVOpenCodeSession',
+    callback = function()
+      if pending then
+        return
+      end
+      pending = true
+      vim.defer_fn(function()
+        pending = false
+        M.write()
+      end, 200)
     end,
   })
 
