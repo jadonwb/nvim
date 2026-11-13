@@ -29,9 +29,9 @@ require('lazy').setup {
   },
   ui = {
     size = { width = 0.7, height = 0.8 },
-    -- The manager is a surface like every other panel; lazy's default is no
-    -- border, which floats a borderless box over the editor.
-    border = 'single',
+    -- Drawn like the editor's dashboards: raised surface, an invisible
+    -- padding border (arrowlake groups/lazy.lua does the colours).
+    border = 'solid',
   },
   defaults = {
     -- By default, only LazyVim plugins will be lazy-loaded. Your custom plugins will load during startup.

@@ -42,8 +42,12 @@ return {
   build = ':MasonUpdate',
   opts = {
     ui = {
-      width = 0.6,
+      width = 0.7,
       height = 0.8,
+      -- Same surface as Lazy and the dashboards (arrowlake groups/mason.lua).
+      border = 'solid',
+      backdrop = 60,
+      icons = { package_installed = '●', package_pending = '󰔟', package_uninstalled = '○' },
     },
     ensure_installed = {
       'clang-format',

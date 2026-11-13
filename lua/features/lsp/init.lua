@@ -39,11 +39,28 @@ M.servers = {
     init_options = { format = { enable = true } },
   },
   systemd_lsp = {},
+  -- JSON / YAML / TOML: schema catalogue from SchemaStore (added in setup), so
+  -- package.json, tsconfig, workflows, compose files… complete and validate.
+  jsonls = {
+    settings = { json = { validate = { enable = true } } },
+  },
+  yamlls = {
+    settings = {
+      yaml = {
+        -- SchemaStore supplies the catalogue; yamlls' own download is off.
+        schemaStore = { enable = false, url = '' },
+        validate = true,
+        keyOrdering = false,
+      },
+      redhat = { telemetry = { enabled = false } },
+    },
+  },
+  taplo = {},
   marksman = false,
 }
 
 --- Servers to enable. A server listed here must also be known to mason.
-M.enabled = { 'clangd', 'lua_ls', 'bitbake_ls', 'neocmake', 'systemd_lsp' }
+M.enabled = { 'clangd', 'lua_ls', 'bitbake_ls', 'neocmake', 'systemd_lsp', 'jsonls', 'yamlls', 'taplo' }
 
 local diagnostics = {
   underline = { severity = { min = vim.diagnostic.severity.WARN } },
@@ -203,6 +220,12 @@ function M.setup()
       workspace = { fileOperations = { didRename = true, willRename = true } },
     },
   })
+
+  local has_store, store = pcall(require, 'schemastore')
+  if has_store then
+    M.servers.jsonls.settings.json.schemas = store.json.schemas()
+    M.servers.yamlls.settings.yaml.schemas = store.yaml.schemas()
+  end
 
   for name, config in pairs(M.servers) do
     if config then

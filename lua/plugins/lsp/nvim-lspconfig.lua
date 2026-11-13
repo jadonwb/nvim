@@ -10,6 +10,8 @@ return {
     { 'aznhe21/actions-preview.nvim', opts = { backend = { 'snacks', 'nui' } } },
     'mason-org/mason.nvim',
     'mason-org/mason-lspconfig.nvim',
+    -- JSON/YAML schema catalogue for jsonls and yamlls (features/lsp).
+    { 'b0o/SchemaStore.nvim', version = false },
   },
   config = function()
     local lsp = require 'features.lsp'
