@@ -8,50 +8,9 @@ NVTrouble = {
     return require('config.profile').wants 'lsp'
   end,
   cmd = { 'Trouble' },
-  keys = function()
-    return {
-      { '<leader>xx', false },
-      { '<leader>xX', false },
-      { '<leader>xl', false },
-      { '<leader>xL', false },
-      { '<leader>xq', false },
-      { '<leader>xQ', false },
-      { '<leader>xt', false },
-      { '<leader>xT', false },
-      {
-        '<leader>xE',
-        function()
-          fn.open_diagnostics { severity = vim.diagnostic.severity.ERROR }
-        end,
-        mode = { 'n', 'i', 'v' },
-        desc = 'Diagnostics: ERROR [workspace]',
-      },
-      {
-        '<leader>xe',
-        function()
-          fn.open_diagnostics { buf = 0, severity = vim.diagnostic.severity.ERROR }
-        end,
-        mode = { 'n', 'i', 'v' },
-        desc = 'Diagnostics: ERROR [current buffer]',
-      },
-      {
-        '<leader>xW',
-        function()
-          fn.open_diagnostics { severity = vim.diagnostic.severity.WARN }
-        end,
-        mode = { 'n', 'i', 'v' },
-        desc = 'Diagnostics: WARN [workspace]',
-      },
-      {
-        '<leader>xw',
-        function()
-          fn.open_diagnostics { buf = 0, severity = vim.diagnostic.severity.WARN }
-        end,
-        mode = { 'n', 'i', 'v' },
-        desc = 'Diagnostics: WARN [current buffer]',
-      },
-    }
-  end,
+  -- No keys for now: the <leader>x group returns once quickfix/problems
+  -- usage is settled (:Trouble still works).
+  keys = {},
   opts = function()
     return {
       auto_close = true, -- auto close when there are no items

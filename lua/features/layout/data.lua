@@ -172,6 +172,28 @@ function M.lsp_clients()
   return out
 end
 
+-- ── code actions at the cursor (for the LSP panel) ─────────────────────────
+--
+-- Asked on CursorHold in the content window only, so moving around costs
+-- nothing; `actions = { count, line }`.
+
+M.actions = { count = 0, line = nil }
+
+function M.refresh_actions()
+  local win = vim.api.nvim_get_current_win()
+  if vim.api.nvim_win_get_config(win).relative ~= '' or (NVSlots and NVSlots.slot_of_win(win)) then
+    return
+  end
+  local line = vim.api.nvim_win_get_cursor(win)[1]
+  require('features.lsp.sections').request_actions(function(section)
+    local n = section and #section.items or 0
+    if n ~= M.actions.count or line ~= M.actions.line then
+      M.actions = { count = n, line = line }
+      emit 'lsp'
+    end
+  end)
+end
+
 --- Workspace diagnostic counts by severity, and the noisiest files.
 function M.diagnostics()
   local sev = vim.diagnostic.severity
@@ -335,6 +357,60 @@ local function read_turns(id, into)
   end)
 end
 
+-- ── OpenCode usage (all sessions, last 7 days) ─────────────────────────────
+--
+-- `opencode stats --json`: steps per day and usage per provider. Remaining
+-- provider balances are not exposed by OpenCode, so this is usage only.
+-- Read at most once a minute, off the main thread.
+
+M.usage = nil
+local usage_at = 0
+
+function M.refresh_usage(force)
+  if vim.fn.executable 'opencode' == 0 then
+    return
+  end
+  local now = vim.uv.now()
+  if not force and now - usage_at < 60000 then
+    return
+  end
+  usage_at = now
+  vim.system({ 'opencode', 'stats', '--days', '6', '--models', '--json' }, { text = true, timeout = 15000 }, function(res)
+    vim.schedule(function()
+      local ok, d = pcall(vim.json.decode, res.stdout or '')
+      if not ok or type(d) ~= 'table' then
+        return
+      end
+      local providers, by = {}, {}
+      for _, m in ipairs(d.models or {}) do
+        local id = m.model and m.model.providerID or '?'
+        local t = m.tokens or {}
+        local p = by[id]
+        if not p then
+          p = { id = id, steps = 0, tokens = 0, cost = 0, models = {} }
+          by[id] = p
+          providers[#providers + 1] = p
+        end
+        p.steps = p.steps + (m.steps or 0)
+        p.tokens = p.tokens + (t.input or 0) + (t.output or 0) + (t.reasoning or 0)
+        p.cost = p.cost + (m.cost or 0)
+        p.models[m.model and m.model.id or '?'] = true
+      end
+      table.sort(providers, function(a, b)
+        return a.steps > b.steps
+      end)
+      M.usage = {
+        days = d.activity or {},
+        providers = providers,
+        cost = d.cost or 0,
+        steps = d.steps or 0,
+        sessions = d.sessions or 0,
+      }
+      emit 'session'
+    end)
+  end)
+end
+
 --- Refresh the followed session's title, model, usage and busy state.
 function M.refresh_opencode()
   local id = M.session_id()
@@ -439,6 +515,14 @@ function M.setup()
     emit 'lsp'
   end)
   vim.api.nvim_create_autocmd({ 'LspAttach', 'LspDetach', 'DiagnosticChanged' }, { group = group, callback = lsp_soon })
+  vim.api.nvim_create_autocmd('CursorHold', {
+    group = group,
+    callback = function()
+      if #vim.lsp.get_clients { bufnr = 0, method = 'textDocument/codeAction' } > 0 then
+        M.refresh_actions()
+      end
+    end,
+  })
   -- Progress is already coalesced by features/lsp/progress.lua.
   vim.api.nvim_create_autocmd('User', {
     group = group,

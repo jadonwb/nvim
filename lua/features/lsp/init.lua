@@ -154,13 +154,6 @@ local keys = {
     method = 'textDocument/codeAction',
   },
   {
-    lhs = '<leader>cd',
-    rhs = function()
-      NVLspUi.show_diagnostics()
-    end,
-    desc = 'Diagnostics',
-  },
-  {
     lhs = ']d',
     rhs = function()
       vim.diagnostic.jump { count = 1, float = false }

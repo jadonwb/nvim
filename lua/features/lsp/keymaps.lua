@@ -7,17 +7,8 @@
 local M = {}
 
 function M.setup()
-  vim.keymap.set('n', ']e', function()
-    vim.diagnostic.jump { count = 1, float = true }
-  end, { desc = 'Next diagnostic' })
-
-  vim.keymap.set('n', '[e', function()
-    vim.diagnostic.jump { count = -1, float = true }
-  end, { desc = 'Previous diagnostic' })
-
-  vim.keymap.set('n', '<leader>cd', function()
-    NVLspUi.show_diagnostics()
-  end, { desc = 'Diagnostics' })
+  -- Diagnostic jumps are Neovim's own ]d / [d (and ]D / [D).
+  -- Line diagnostics are a section of the K popup.
 end
 
 return M

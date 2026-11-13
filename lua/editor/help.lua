@@ -54,6 +54,26 @@ function NVHelp.setup()
   NVClose.register(PANEL_NAME, NVHelp.ensure_hidden)
 end
 
+--- The doc window's top strip: page name, then the reading keys right-aligned
+--- (same style as the bottom panel's tab strip). Line numbers off.
+local function doc_chrome(win, buf)
+  local ft = vim.bo[buf].filetype
+  local icon = ft == 'man' and '\u{f02d}' or '\u{f02d6}'
+  local name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buf), ':t'):gsub('%%', '%%%%')
+  vim.api.nvim_set_option_value(
+    'winbar',
+    ('%%#NvTabStrip# %%#NvIcon#%s %%#NvTabActive#%s%%#NvTabStrip#%%=%%#NvKey# K %%#NvMuted# follow  %%#NvKey# C-o %%#NvMuted# back  %%#NvKey# gO %%#NvMuted# contents  %%#NvKey# q %%#NvMuted# close '):format(
+      icon,
+      name
+    ),
+    { win = win }
+  )
+  vim.w[win].nv_doc_bar = true
+  for opt, value in pairs { number = false, relativenumber = false, signcolumn = 'no', foldcolumn = '0', statuscolumn = '' } do
+    pcall(vim.api.nvim_set_option_value, opt, value, { scope = 'local', win = win })
+  end
+end
+
 function NVHelp.autocmds()
   local group = vim.api.nvim_create_augroup('NVHelpPanel', { clear = true })
 
@@ -66,8 +86,8 @@ function NVHelp.autocmds()
         return
       end
       local win = vim.api.nvim_get_current_win()
-      local bar = vim.api.nvim_get_option_value('winbar', { win = win })
-      if bar:find('Doc ', 1, true) then
+      if vim.w[win].nv_doc_bar then
+        vim.w[win].nv_doc_bar = nil
         pcall(vim.api.nvim_set_option_value, 'winbar', '', { win = win })
       end
     end,
@@ -81,7 +101,8 @@ function NVHelp.autocmds()
       end
 
       local win = vim.fn.bufwinid(ev.buf)
-      if win == -1 or vim.w[win].nvhelp_panel then
+      -- A compare view (features/compare.lua) places its own man page.
+      if win == -1 or vim.w[win].nvhelp_panel or vim.t.nv_compare then
         return
       end
 
@@ -108,16 +129,13 @@ function NVHelp.autocmds()
         end
         win = centre
         vim.api.nvim_set_current_win(win)
-        vim.api.nvim_set_option_value(
-          'winbar',
-          '%#NvPanelBorder# Doc  ' .. vim.fn.fnamemodify(vim.api.nvim_buf_get_name(ev.buf), ':t') .. '  %#NvChipMuted# q back ',
-          { win = win }
-        )
+        doc_chrome(win, ev.buf)
         local function back()
           if not vim.api.nvim_win_is_valid(win) then
             return
           end
           pcall(vim.api.nvim_set_option_value, 'winbar', '', { win = win })
+          vim.w[win].nv_doc_bar = nil
           local previous = vim.w[win].nvhelp_previous
           vim.w[win].nvhelp_previous = nil
           if previous and previous ~= ev.buf and vim.api.nvim_buf_is_valid(previous) then

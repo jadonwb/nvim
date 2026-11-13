@@ -922,7 +922,7 @@ end
 
 function NVSlots.check_room()
   local tab = tab_state()
-  if NVSlots.restoring or tab.focus or (NVCompare and NVCompare.active) then
+  if NVSlots.restoring or tab.focus or vim.t.nv_compare then
     return
   end
   if tab.room then
@@ -1120,7 +1120,7 @@ function NVSlots.setup()
       group = group,
       callback = function(ev)
         local tab = tab_state()
-        if tab.focus or NVSlots.is_applied() or NVSlots.restoring or not is_real_file(ev.buf) then
+        if tab.focus or NVSlots.is_applied() or NVSlots.restoring or not is_real_file(ev.buf) or vim.t.nv_compare then
           return
         end
         if NVTabs and NVTabs.is_temporary and NVTabs.is_temporary(api.nvim_get_current_tabpage()) then

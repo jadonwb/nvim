@@ -1,41 +1,57 @@
--- Unified LSP popup, drawn with volt.
+-- Unified LSP popup: hover, signature, diagnostics, code actions, inspect.
 --
--- The app owns the float (volt draws into a buffer, it does not create
--- windows), so sizing, anchoring and the dim backdrop stay ours. Content is
--- converted from markdown to volt chunks by features/ui/markdown.lua, which
--- keeps the treesitter highlighting from our renderer.
+-- Two floats anchored to the text (they scroll with it): a small menu of the
+-- sections with their counts (nvzone/menu style; left out when there is only
+-- one) and the content beside it, sized to its own content. Content is a real
+-- buffer rendered by features/lsp/markup.lua, so it can be focused, selected
+-- and followed.
 --
--- Sections are tabs: hover, signature, diagnostics. <Tab>/<S-Tab> switch.
+--   K           show what the cursor has
+--   K again     focus the content (select, gx on a link, K on a |tag|,
+--               <CR> on a code action applies it)
+--   Tab / S-Tab next / previous section          q / Esc   close
 
 NVLspUi = {}
 
-local MD = require 'features.ui.markdown'
+local Markup = require 'features.lsp.markup'
+
+---@class NVLspSection
+---@field name string
+---@field lines string[] markdown source (or plain text when `plain`)
+---@field ft? string
+---@field color? string chip colour
+---@field plain? boolean lines are shown as-is
+---@field items? table[] code actions
+---@field decorate? fun(buf: integer, ns: integer, lines: string[])
+
+local ICONS = { hover = '󰋽', signature = '󰊕', diagnostics = '󰅚', actions = '󰌵', inspect = '󰙅' }
+local MAX_WIDTH, MIN_WIDTH = 92, 24
 
 local state = {
-  buf = nil,
-  win = nil,
-  backdrop = nil,
-  ns = nil,
+  menu = nil, ---@type { buf: integer, win: integer }|nil
+  content = nil, ---@type { buf: integer, win: integer }|nil
   sections = {},
-  chunks = {},
   index = 1,
-  width = 40,
   src_buf = nil,
   src_win = nil,
+  anchor = nil,
   group = vim.api.nvim_create_augroup('NV lsp ui', { clear = true }),
 }
+local ns = vim.api.nvim_create_namespace 'nv-lsp-ui'
 
-local MAX_WIDTH = 100
-local MIN_WIDTH = 28
-local PAD = 2
+local function valid(w)
+  return w ~= nil and vim.api.nvim_win_is_valid(w.win)
+end
 
---- The window the popup belongs to: the one `K` was pressed in, unless that
---- is a float or a panel, then the content window.
----@return WinID
-local function source_win()
-  if state.src_win and vim.api.nvim_win_is_valid(state.src_win) then
-    return state.src_win
-  end
+local function is_open()
+  return valid(state.content)
+end
+
+function NVLspUi.is_open()
+  return is_open()
+end
+
+local function pick_source()
   local win = vim.api.nvim_get_current_win()
   if vim.api.nvim_win_get_config(win).relative ~= '' or (NVSlots and NVSlots.slot_of_win and NVSlots.slot_of_win(win)) then
     win = NVSlots and NVSlots.content_win() or win
@@ -43,66 +59,229 @@ local function source_win()
   return win
 end
 
-local function is_open()
-  return state.win ~= nil and vim.api.nvim_win_is_valid(state.win)
-end
-
 local closing = false
-
---- Full teardown: window, backdrop, keymaps, autocmds and volt state. Safe to
---- call from close() and from WinClosed (external `:q`, `<C-w>c`, …).
 local function teardown()
   if closing then
     return
   end
   closing = true
-
+  -- Autocmds first: closing the windows must not schedule another teardown
+  -- that would hit the next popup.
+  pcall(vim.api.nvim_clear_autocmds, { group = state.group })
   if state.src_buf and vim.api.nvim_buf_is_valid(state.src_buf) then
     pcall(vim.keymap.del, 'n', '<Tab>', { buffer = state.src_buf })
     pcall(vim.keymap.del, 'n', '<S-Tab>', { buffer = state.src_buf })
   end
-  state.src_buf = nil
-  state.src_win = nil
-
-  if state.buf then
-    pcall(function()
-      require('volt.state')[state.buf] = nil
-    end)
+  -- Every popup window is marked; sweep them all so none is ever orphaned.
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    if vim.w[win].nv_lsp_popup then
+      pcall(vim.api.nvim_win_close, win, true)
+    end
   end
-
-  if state.win and vim.api.nvim_win_is_valid(state.win) then
-    pcall(vim.api.nvim_win_close, state.win, true)
-  end
-  if state.backdrop and vim.api.nvim_win_is_valid(state.backdrop) then
-    pcall(vim.api.nvim_win_close, state.backdrop, true)
-  end
-
-  pcall(vim.api.nvim_clear_autocmds, { group = state.group })
-
-  state.win = nil
-  state.buf = nil
-  state.backdrop = nil
-  state.sections = {}
-  state.chunks = {}
-  state.index = 1
+  state.menu, state.content, state.src_buf, state.src_win, state.anchor = nil, nil, nil, nil, nil
+  state.sections, state.index = {}, 1
   closing = false
 end
 
-function NVLspUi.is_open()
-  return is_open()
+function NVLspUi.close()
+  teardown()
 end
 
-local function current()
-  return state.sections[state.index]
+-- ── rendering ──────────────────────────────────────────────────────────────
+
+local function float(focusable)
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.bo[buf].bufhidden = 'wipe'
+  local win = vim.api.nvim_open_win(buf, false, {
+    relative = 'win',
+    win = state.src_win,
+    bufpos = state.anchor,
+    row = 1,
+    col = 0,
+    width = 10,
+    height = 1,
+    style = 'minimal',
+    border = 'solid',
+    focusable = focusable,
+    zindex = 60,
+  })
+  vim.wo[win].winhighlight = 'Normal:NvPopup,FloatBorder:NvPopupBorder,EndOfBuffer:NvPopup,CursorLine:NvCursorLine'
+  vim.w[win].nv_lsp_popup = true
+  return { buf = buf, win = win }
 end
 
----@param index integer
+local function count(section)
+  if section.items then
+    return #section.items
+  end
+  if section.name == 'diagnostics' then
+    local n = 0
+    for _, l in ipairs(section.lines) do
+      if l:match '^%a+  %d+:%d+' then
+        n = n + 1
+      end
+    end
+    return n
+  end
+end
+
+--- Menu lines: one row per section, the active one as a solid chip.
+local function draw_menu()
+  local rows, width = {}, 0
+  for _, s in ipairs(state.sections) do
+    local n = count(s)
+    local label = (' %s  %s'):format(ICONS[s.name] or '•', s.name)
+    local right = n and (' ' .. n .. ' ') or ' '
+    rows[#rows + 1] = { label = label, right = right }
+    width = math.max(width, vim.fn.strdisplaywidth(label) + vim.fn.strdisplaywidth(right) + 2)
+  end
+  local hint = state.overflow and ' Tab · K scroll ' or ' Tab · K focus '
+  width = math.max(width, vim.fn.strdisplaywidth(hint), 16)
+  local lines = {}
+  for _, r in ipairs(rows) do
+    local pad = width - vim.fn.strdisplaywidth(r.label) - vim.fn.strdisplaywidth(r.right)
+    lines[#lines + 1] = r.label .. string.rep(' ', pad) .. r.right
+  end
+  lines[#lines + 1] = ''
+  lines[#lines + 1] = hint
+  local buf = state.menu.buf
+  vim.bo[buf].modifiable = true
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  vim.bo[buf].modifiable = false
+  vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
+  for i, s in ipairs(state.sections) do
+    local hl = i == state.index and ('NvChip' .. (s.color or 'Purple')) or nil
+    if hl then
+      vim.api.nvim_buf_set_extmark(buf, ns, i - 1, 0, { end_col = #lines[i], hl_group = hl })
+    else
+      vim.api.nvim_buf_set_extmark(buf, ns, i - 1, #lines[i] - #rows[i].right, { end_col = #lines[i], hl_group = 'NvMuted' })
+    end
+  end
+  -- Byte positions (the `·` is two bytes): keys as key chips, rest muted.
+  local h, last = #lines - 1, lines[#lines]
+  vim.api.nvim_buf_set_extmark(buf, ns, h, 0, { end_col = #last, hl_group = 'NvMuted', priority = 100 })
+  for _, key in ipairs { 'Tab', 'K' } do
+    local s0 = last:find(' ' .. key .. ' ', 1, true)
+    if s0 then
+      vim.api.nvim_buf_set_extmark(buf, ns, h, s0, { end_col = s0 + #key, hl_group = 'NvKey', priority = 300 })
+    end
+  end
+  return width, #lines
+end
+
+--- Content: the active section rendered into the content buffer.
+local function draw_content()
+  local section = state.sections[state.index]
+  local buf = state.content.buf
+  vim.bo[buf].modifiable = true
+  vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
+  local lines
+  if section.plain then
+    lines = section.lines
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  else
+    local marks
+    lines, marks = Markup.prepare(section.lines, { ft = section.ft })
+    Markup.render { bufnr = buf, ns_id = ns, winid = state.content.win, lines = lines, marks = marks }
+  end
+  if section.decorate then
+    pcall(section.decorate, buf, ns, lines)
+  end
+  vim.bo[buf].modifiable = false
+  local width = MIN_WIDTH
+  for _, l in ipairs(lines) do
+    l = l:gsub('%[([^%]]-)%]%(%S-%)', '%1'):gsub('\t', '    ')
+    width = math.max(width, vim.fn.strdisplaywidth(l) + 1)
+  end
+  vim.wo[state.content.win].cursorline = section.items ~= nil
+  return math.min(width, MAX_WIDTH)
+end
+
+--- Rows above / below the anchor line inside the source window, and the
+--- anchor's column in it.
+local function room()
+  local win = state.src_win
+  local pos = vim.fn.screenpos(win, state.anchor[1] + 1, state.anchor[2] + 1)
+  local origin = vim.fn.win_screenpos(win)
+  local row = pos.row - origin[1]
+  local h = vim.api.nvim_win_get_height(win)
+  return math.max(0, row - 2), math.max(0, h - row - 3), math.max(0, pos.col - origin[2])
+end
+
+local function render()
+  if not is_open() then
+    return
+  end
+  local src_w = vim.api.nvim_win_get_width(state.src_win)
+  local menu_w, menu_h = 0, 0
+  -- Always a menu, even for one section: the same shape and hints every time.
+  local multi = #state.sections > 0
+  if multi then
+    if not valid(state.menu) then
+      state.menu = float(false)
+    end
+    menu_w, menu_h = draw_menu()
+  elseif valid(state.menu) then
+    pcall(vim.api.nvim_win_close, state.menu.win, true)
+    state.menu = nil
+  end
+
+  local gap = multi and (menu_w + 3) or 0
+  local width = math.min(draw_content(), math.max(MIN_WIDTH, src_w - gap - 4))
+  local cwin = state.content.win
+  vim.api.nvim_win_set_config(cwin, { relative = 'win', win = state.src_win, bufpos = state.anchor, row = 1, col = 0, width = width, height = 1 })
+  -- Again at the final width: separators are drawn to the window width.
+  draw_content()
+  local text_h = vim.api.nvim_win_text_height(cwin, {}).all
+  local above, below, col0 = room()
+  -- Long docs scroll instead of covering the code: at most 60% of the window.
+  local cap = math.max(6, math.floor(vim.api.nvim_win_get_height(state.src_win) * 0.6))
+  local want = math.min(math.max(text_h, menu_h), cap)
+  local up = want + 2 <= above or (want + 2 > below and above > below)
+  local avail = math.max(3, math.min(cap, up and above or below))
+  local height = math.max(1, math.min(text_h, avail))
+  local overflow = text_h > height
+  if overflow ~= state.overflow then
+    state.overflow = overflow
+    if multi then
+      menu_w, menu_h = draw_menu()
+    end
+  end
+
+  -- Keep the pair inside the source window: shift left when it would overflow.
+  local total = gap + width + 2
+  local shift = math.max(0, col0 + total - src_w)
+  shift = math.min(shift, col0)
+  local base = -1 - shift
+  local function place(w, col, h, wd)
+    vim.api.nvim_win_set_config(w, {
+      relative = 'win',
+      win = state.src_win,
+      bufpos = state.anchor,
+      anchor = up and 'SW' or 'NW',
+      row = up and 0 or 1,
+      col = col,
+      width = wd,
+      height = h,
+    })
+  end
+  if multi then
+    place(state.menu.win, base, math.min(menu_h, avail), menu_w)
+    -- The buffer is rewritten each time; keep the view at its first row.
+    pcall(vim.api.nvim_win_set_cursor, state.menu.win, { 1, 0 })
+    vim.api.nvim_win_call(state.menu.win, function()
+      vim.fn.winrestview { topline = 1 }
+    end)
+  end
+  place(cwin, base + gap, height, width)
+end
+
 local function select(index)
   if #state.sections == 0 then
     return
   end
   state.index = ((index - 1) % #state.sections) + 1
-  NVLspUi.refresh()
+  render()
 end
 
 function NVLspUi.next()
@@ -113,191 +292,95 @@ function NVLspUi.prev()
   select(state.index - 1)
 end
 
---- Layout description handed to volt. Sections read live state.
----@return table
-local function layout()
-  local out = {}
-  if #state.sections > 1 then
-    out[#out + 1] = {
-      name = 'tabs',
-      lines = function()
-        local chunks = {}
-        for i, section in ipairs(state.sections) do
-          if i > 1 then
-            chunks[#chunks + 1] = { '  ' }
-          end
-          local active = i == state.index
-          chunks[#chunks + 1] = { ' ' .. section.name .. ' ', active and 'NvChipPurple' or 'NvChipMuted' }
-        end
-        chunks[#chunks + 1] = { '   Tab', 'NvKey' }
-        return { chunks, {} }
-      end,
-    }
-  end
-  out[#out + 1] = {
-    name = 'body',
-    lines = function()
-      return state.chunks[state.index] or { {} }
-    end,
-  }
-  return out
-end
-
---- `[text](url)` → `text ↗`: links read as links, not as markdown source.
-local function conceal_links(lines)
-  local out = {}
-  for i, line in ipairs(lines or {}) do
-    out[i] = line:gsub('%[([^%]]+)%]%(([^)]+)%)', '%1 ↗')
-  end
-  return out
-end
-
---- Recompute chunks for the current sections.
-local function prepare()
-  state.chunks = {}
-  state.width = MIN_WIDTH
-  for i, section in ipairs(state.sections) do
-    state.chunks[i] = section.chunks or MD.chunks(conceal_links(section.lines), { ft = section.ft })
-    state.width = math.max(state.width, MD.width(state.chunks[i]) + (PAD * 2) + 2)
-  end
-  state.width = math.min(state.width, MAX_WIDTH, math.max(MIN_WIDTH, vim.o.columns - 4))
-
-  -- Volt draws one virtual line per row, so long prose is wrapped by us.
-  local inner = math.max(10, state.width - (PAD * 2) - 2)
-  for i, chunks in pairs(state.chunks) do
-    state.chunks[i] = MD.wrap(chunks, inner)
-  end
-end
-
---- Above the cursor when it fits (the code you are reading stays visible),
---- else below; never over the cursor row, clamped inside the source window.
----@return { row: integer, col: integer }
-local function position(width, height)
-  local win = source_win()
-  local row_in_win, col_in_win
-  vim.api.nvim_win_call(win, function()
-    row_in_win = vim.fn.winline() - 1
-    col_in_win = vim.fn.wincol() - 1
-  end)
-  local win_h = vim.api.nvim_win_get_height(win)
-  local win_w = vim.api.nvim_win_get_width(win)
-  local full = height + 2 -- padding border
-
-  local row
-  if row_in_win - full >= 0 then
-    row = row_in_win - full
-  elseif row_in_win + 1 + full <= win_h then
-    row = row_in_win + 1
-  else
-    -- Neither side fits whole: take the larger side; the popup scrolls.
-    row = (row_in_win > win_h - row_in_win - 1) and 0 or (row_in_win + 1)
-  end
-  return { row = row, col = math.max(0, math.min(col_in_win - 1, win_w - width - 2)) }
-end
-
---- Rows available on the side the popup opens on.
-local function room(height)
-  local win = source_win()
-  local row_in_win
-  vim.api.nvim_win_call(win, function()
-    row_in_win = vim.fn.winline() - 1
-  end)
-  local win_h = vim.api.nvim_win_get_height(win)
-  local above, below = row_in_win - 2, win_h - row_in_win - 3
-  if height <= above or height <= below then
-    return height
-  end
-  return math.max(3, math.max(above, below))
-end
-
---- Redraw the current section set and re-fit the window.
-function NVLspUi.refresh()
+--- Second K: move into the content.
+function NVLspUi.focus()
   if not is_open() then
+    return false
+  end
+  vim.api.nvim_set_current_win(state.content.win)
+  return true
+end
+
+--- Add a section that arrived late (code actions), keeping the order.
+function NVLspUi.add(section)
+  if not (is_open() and section) then
     return
   end
-
-  local volt = require 'volt'
-  local volt_state = require 'volt.state'
-
-  prepare()
-  volt.gen_data { { buf = state.buf, layout = layout(), xpad = PAD, ns = state.ns } }
-  local h = math.max(1, volt_state[state.buf].h)
-  local visible = room(h)
-
-  -- Volt draws virt_text onto real rows, so the buffer has to hold them.
-  pcall(require, 'volt.highlights')
-  volt.set_empty_lines(state.buf, h, state.width)
-  vim.api.nvim_buf_clear_namespace(state.buf, state.ns, 0, -1)
-  volt.redraw(state.buf, 'all')
-
-  local pos = position(state.width, visible)
-  vim.api.nvim_win_set_config(state.win, {
-    relative = 'win',
-    win = source_win(),
-    width = state.width,
-    height = visible,
-    row = pos.row,
-    col = pos.col,
-  })
-end
-
-function NVLspUi.close()
-  teardown()
+  state.sections[#state.sections + 1] = section
+  render()
 end
 
 ---@param sections NVLspSection[]
 function NVLspUi.open(sections)
   if #sections == 0 then
-    NVLspUi.close()
-    return
+    return NVLspUi.close()
   end
-
   NVLspUi.close()
-  state.src_win = nil
-  state.src_win = source_win()
-  state.sections = sections
-  state.index = 1
+  state.src_win = pick_source()
+  state.src_buf = vim.api.nvim_win_get_buf(state.src_win)
+  local cursor = vim.api.nvim_win_get_cursor(state.src_win)
+  state.anchor = { cursor[1] - 1, cursor[2] }
+  state.sections, state.index = sections, 1
 
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.bo[buf].buftype = 'nofile'
-  vim.bo[buf].bufhidden = 'wipe'
-  vim.bo[buf].swapfile = false
+  state.content = float(true)
+  local buf, win = state.content.buf, state.content.win
   vim.bo[buf].filetype = 'nvlsp'
+  vim.wo[win].wrap, vim.wo[win].linebreak, vim.wo[win].breakindent = true, true, true
+  render()
 
-  local ns = vim.api.nvim_create_namespace 'nv-lsp-ui'
-  state.buf, state.ns = buf, ns
+  local function map(lhs, fn, desc)
+    vim.keymap.set('n', lhs, fn, { buffer = buf, nowait = true, desc = desc })
+  end
+  map('q', NVLspUi.close, 'Close popup')
+  map('<Esc>', NVLspUi.close, 'Close popup')
+  map('<Tab>', NVLspUi.next, 'Next section')
+  map('<S-Tab>', NVLspUi.prev, 'Previous section')
+  map('<CR>', function()
+    local section = state.sections[state.index]
+    if not (section and section.items) then
+      return
+    end
+    local item = section.items[vim.api.nvim_win_get_cursor(0)[1]]
+    if item then
+      local src = state.src_win
+      NVLspUi.close()
+      vim.api.nvim_set_current_win(src)
+      require('features.lsp.sections').apply_action(item.title)
+    end
+  end, 'Apply code action')
 
-  -- No dim backdrop: a hover belongs to the line it came from, not to a modal
-  -- surface. typr dims its full-screen dashboards; a popup at the cursor would
-  -- just make the surrounding code unreadable.
-  local pos = position(MIN_WIDTH, 1)
-  state.win = vim.api.nvim_open_win(buf, false, {
-    relative = 'win',
-    win = source_win(),
-    row = pos.row,
-    col = pos.col,
-    width = MIN_WIDTH,
-    height = 1,
-    style = 'minimal',
-    border = 'solid',
-    zindex = 60,
-  })
-  vim.api.nvim_win_set_hl_ns(state.win, ns)
-  vim.wo[state.win].winhighlight = 'Normal:NvPopup,FloatBorder:NvPopupBorder,EndOfBuffer:NvPopup'
-  vim.wo[state.win].wrap = false
-
-  NVLspUi.refresh()
-
-  local src_buf = vim.api.nvim_win_get_buf(source_win())
-  state.src_buf = src_buf
-  vim.keymap.set('n', '<Tab>', NVLspUi.next, { buffer = src_buf, nowait = true, desc = 'Next popup section' })
-  vim.keymap.set('n', '<S-Tab>', NVLspUi.prev, { buffer = src_buf, nowait = true, desc = 'Previous popup section' })
+  vim.keymap.set('n', '<Tab>', NVLspUi.next, { buffer = state.src_buf, nowait = true, desc = 'Popup: next section' })
+  vim.keymap.set('n', '<S-Tab>', NVLspUi.prev, { buffer = state.src_buf, nowait = true, desc = 'Popup: previous section' })
 
   pcall(vim.api.nvim_clear_autocmds, { group = state.group })
-  vim.api.nvim_create_autocmd({ 'CursorMoved', 'CursorMovedI', 'InsertEnter' }, {
+  vim.api.nvim_create_autocmd({ 'CursorMoved', 'InsertEnter' }, {
+    group = state.group,
+    buffer = state.src_buf,
+    callback = function()
+      if is_open() and vim.api.nvim_get_current_win() == state.src_win then
+        NVLspUi.close()
+      end
+    end,
+  })
+  vim.api.nvim_create_autocmd('WinScrolled', {
     group = state.group,
     callback = function()
-      if is_open() and vim.api.nvim_get_current_win() ~= state.win then
+      if not (is_open() and vim.api.nvim_win_is_valid(state.src_win)) then
+        return
+      end
+      local line = state.anchor[1] + 1
+      if line < vim.fn.line('w0', state.src_win) or line > vim.fn.line('w$', state.src_win) then
+        NVLspUi.close()
+      else
+        render()
+      end
+    end,
+  })
+  vim.api.nvim_create_autocmd('WinEnter', {
+    group = state.group,
+    callback = function()
+      local cur = vim.api.nvim_get_current_win()
+      if is_open() and cur ~= state.content.win and cur ~= state.src_win then
         NVLspUi.close()
       end
     end,
@@ -305,16 +388,28 @@ function NVLspUi.open(sections)
   vim.api.nvim_create_autocmd('WinClosed', {
     group = state.group,
     callback = function(ev)
-      if tonumber(ev.match) == state.win then
-        teardown()
+      local id = tonumber(ev.match)
+      local mine = state.content and state.content.win
+      if id == mine or id == state.src_win then
+        vim.schedule(function()
+          -- Only if that popup is still the current one.
+          if state.content == nil or state.content.win == mine then
+            teardown()
+          end
+        end)
       end
     end,
   })
 end
 
---- Show hover in the unified popup.
+-- ── entry points ───────────────────────────────────────────────────────────
+
+local function S()
+  return require 'features.lsp.sections'
+end
+
 function NVLspUi.show_hover()
-  require('features.lsp.sections').request_hover(function(hover)
+  S().request_hover(function(hover)
     if hover then
       NVLspUi.open { hover }
     else
@@ -323,9 +418,11 @@ function NVLspUi.show_hover()
   end)
 end
 
---- Show signature help in the unified popup.
 function NVLspUi.show_signature()
-  require('features.lsp.sections').request_signature(function(sig)
+  if NVLspUi.is_open() then
+    return NVLspUi.focus()
+  end
+  S().request_signature(function(sig)
     if sig then
       NVLspUi.open { sig }
     else
@@ -334,21 +431,30 @@ function NVLspUi.show_signature()
   end)
 end
 
---- Show diagnostics on the cursor line in the unified popup.
 function NVLspUi.show_diagnostics()
-  local diags = require('features.lsp.sections').diagnostics()
+  local diags = S().diagnostics()
   if diags then
     NVLspUi.open { diags }
-  else
-    NVMessages.info 'No diagnostics on this line'
   end
 end
 
---- Everything the cursor has right now, as sections of one popup.
-function NVLspUi.show_at_cursor()
-  local sections = require 'features.lsp.sections'
-  local diags = sections.diagnostics()
+function NVLspUi.show_inspect()
+  local section = S().inspect()
+  if section then
+    NVLspUi.open { section }
+  else
+    NVMessages.info 'No highlights at the cursor'
+  end
+end
 
+--- K: hover, signature (only inside a call's arguments), diagnostics on the
+--- line, then code actions when the servers answer. A second K focuses.
+function NVLspUi.show_at_cursor()
+  if NVLspUi.is_open() and vim.api.nvim_get_current_win() ~= state.content.win then
+    return NVLspUi.focus()
+  end
+  local sections = S()
+  local diags = sections.diagnostics()
   if #vim.lsp.get_clients { bufnr = 0 } == 0 then
     if diags then
       NVLspUi.open { diags }
@@ -358,38 +464,49 @@ function NVLspUi.show_at_cursor()
     return
   end
 
-  -- Both requests are async; open once each has answered so the section order
-  -- is stable (hover, signature, diagnostics).
-  local pending, hover_section, sig_section = 2, nil, nil
+  local want_sig = sections.in_arguments()
+  local pending, hover, sig = want_sig and 2 or 1, nil, nil
+  local actions, opened = nil, false
   local function finish()
     pending = pending - 1
     if pending > 0 then
       return
     end
+    -- Not ipairs: any of these may be nil.
     local out = {}
-    if hover_section then
-      out[#out + 1] = hover_section
+    for _, s in pairs { [1] = hover, [2] = sig, [3] = diags, [4] = actions } do
+      out[#out + 1] = s
     end
-    if sig_section then
-      out[#out + 1] = sig_section
-    end
-    if diags then
-      out[#out + 1] = diags
-    end
+    table.sort(out, function(a, b)
+      local order = { hover = 1, signature = 2, diagnostics = 3, actions = 4 }
+      return (order[a.name] or 9) < (order[b.name] or 9)
+    end)
     if #out == 0 then
-      NVMessages.info 'No hover information'
-      return
+      return NVMessages.info 'No hover information'
     end
+    opened = true
     NVLspUi.open(out)
   end
-
-  sections.request_hover(function(hover)
-    hover_section = hover
+  sections.request_hover(function(h)
+    hover = h
     finish()
   end)
-  sections.request_signature(function(sig)
-    sig_section = sig
-    finish()
+  if want_sig then
+    sections.request_signature(function(s)
+      sig = s
+      finish()
+    end)
+  end
+  -- Actions do not hold the popup back: added when they arrive.
+  sections.request_actions(function(a)
+    if not a then
+      return
+    end
+    if opened then
+      NVLspUi.add(a)
+    else
+      actions = a
+    end
   end)
 end
 

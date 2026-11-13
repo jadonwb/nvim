@@ -117,8 +117,49 @@ function NVWindows.get_tab_windows_with_managed_buffers(options)
 end
 
 ---@param opts {action: "swap" | "move_left" | "move_right" | "move_up" | "move_down"}
+--- With the layout on, panels keep their geometry: moving or swapping a
+--- panel exchanges its contents with the panel in that direction (or the one
+--- picked), never the windows themselves. Returns true when handled.
+function fn.slot_reposition(action)
+  if not (NVSlots and NVSlots.is_applied()) then
+    return false
+  end
+  local cur = vim.api.nvim_get_current_win()
+  local from = NVSlots.slot_of_win(cur)
+  if not from then
+    return false
+  end
+  local target
+  if action == 'swap' then
+    target = NVWinshift.pick_window()
+  else
+    local dir = ({ move_left = 'h', move_right = 'l', move_up = 'k', move_down = 'j' })[action]
+    target = vim.fn.win_getid(vim.fn.winnr(dir))
+  end
+  local to = target and NVSlots.slot_of_win(target)
+  if not to or to == from then
+    NVMessages.info 'Panels swap with panels; no panel there'
+    return true
+  end
+  NVSlots.swap(from, to)
+  local win = NVSlots.win(to)
+  if win then
+    vim.api.nvim_set_current_win(win)
+  end
+  return true
+end
+
+--- Public: move/swap the current window (panels swap contents instead).
+---@param action 'move_left'|'move_right'|'move_up'|'move_down'|'swap'
+function NVWindows.reposition(action)
+  return fn.reposition_windows { action = action }
+end
+
 function fn.reposition_windows(opts)
   local action = opts.action
+  if fn.slot_reposition(action) then
+    return
+  end
 
   local windows = fn.get_normal_tab_windows()
 

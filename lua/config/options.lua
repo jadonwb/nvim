@@ -38,6 +38,19 @@ vim.opt.autowrite = true
 vim.opt.autoread = true
 
 vim.opt.laststatus = 3
+
+-- A start without files shows the dashboard. Until it opens (VimEnter), the
+-- empty buffer would flash with line numbers and a bare statusline; keep that
+-- first window plain. NVSnacksDashboard.unveil() restores the statusline.
+if vim.fn.argc() == 0 then
+  vim.g.nv_startup_veil = vim.o.laststatus
+  vim.o.laststatus = 0
+  -- :setlocal — only this empty buffer in this window; files opened later
+  -- get the normal values.
+  for opt, value in pairs { number = false, relativenumber = false, signcolumn = 'no', cursorline = false } do
+    vim.api.nvim_set_option_value(opt, value, { scope = 'local' })
+  end
+end
 vim.opt.showmode = false
 vim.opt.ruler = false
 vim.opt.showtabline = 0

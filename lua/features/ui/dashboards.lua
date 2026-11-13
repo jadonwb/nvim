@@ -13,7 +13,40 @@ local data = require 'features.layout.data'
 M.views = { 'lsp', 'changes', 'session' }
 M.titles = { lsp = '󰒋 LSP', changes = '󰊢 Git', session = '󰚩 OpenCode' }
 
-local state = { handle = nil, view = 'lsp', timer = nil, details = nil }
+local state = { handle = nil, view = 'lsp', timer = nil, details = nil, rows = {}, expanded = {} }
+M._state = state
+
+-- Rows a view marks as actionable (<CR>): `rows[line] = { kind, … }`. Views
+-- write into `state.collect`, which render() points at a fresh table.
+local function mark(lines, action)
+  if state.collect then
+    state.collect[#lines] = action
+  end
+end
+
+--- Diffview for one path, at the working tree or at a commit (`rev^!`).
+local function diff(path, rev)
+  M.close()
+  vim.schedule(function()
+    require('features.layout.providers').diff(path, rev)
+  end)
+end
+
+--- Files a commit touched, with numstat, cached per hash.
+local function commit_files(hash, cb)
+  vim.system({ 'git', 'show', '--numstat', '--format=', hash }, { text = true }, function(res)
+    local files = {}
+    for line in (res.stdout or ''):gmatch '[^\n]+' do
+      local add, del, path = line:match '^(%S+)%s+(%S+)%s+(.+)$'
+      if path then
+        files[#files + 1] = { path = path, add = tonumber(add) or 0, del = tonumber(del) or 0 }
+      end
+    end
+    vim.schedule(function()
+      cb(files)
+    end)
+  end)
+end
 
 local function vtable(rows, w, title)
   return require 'volt.ui.table'(rows, w, 'NvLabel', title)
@@ -231,7 +264,7 @@ local function view_lsp(w)
   end
   lines[#lines + 1] = P.blank()
 
-  -- This buffer: code actions at the cursor beside its own keymaps.
+  -- This buffer: code actions at the cursor.
   local acts = state.actions or {}
   local buf = acts.buf
   if buf and vim.api.nvim_buf_is_valid(buf) then
@@ -241,7 +274,7 @@ local function view_lsp(w)
       {},
       w
     )
-    local left = { P.row({ { 'CODE ACTIONS', 'NvLabel' } }, { { '@ ' .. (acts.at or ''), 'NvMuted' } }, half) }
+    local left = { P.row({ { 'CODE ACTIONS', 'NvLabel' } }, { { '@ ' .. (acts.at or ''), 'NvMuted' } }, w) }
     if acts.list == nil then
       left[#left + 1] = { { data.spinner_glyph() .. ' asking servers…', 'NvMuted' } }
     elseif #acts.list == 0 then
@@ -250,38 +283,13 @@ local function view_lsp(w)
     for i = 1, math.min(10, #(acts.list or {})) do
       local a = acts.list[i]
       local kind = (a.kind or 'action'):match '^[^.]+'
-      left[#left + 1] = { { ('%-9s'):format(P.trunc(kind, 9)), kind == 'quickfix' and 'NvYellow' or 'NvPurple' }, { P.trunc(a.title, half - 10), 'NvValue' } }
+      left[#left + 1] = { { ('%-9s'):format(P.trunc(kind, 9)), kind == 'quickfix' and 'NvYellow' or 'NvPurple' }, { P.trunc(a.title, w - 12), 'NvValue' } }
     end
     if #(acts.list or {}) > 10 then
       left[#left + 1] = { { ('… %d more   '):format(#acts.list - 10), 'NvMuted' }, { 'gra', 'NvKey' }, { ' to pick', 'NvMuted' } }
     end
 
-    local maps = {}
-    for _, m in ipairs(vim.api.nvim_buf_get_keymap(buf, 'n')) do
-      if m.desc and m.desc ~= '' and not m.lhs:find '<Plug>' and not m.desc:find '^which%-key' then
-        maps[#maps + 1] = m
-      end
-    end
-    table.sort(maps, function(x, y)
-      return x.lhs < y.lhs
-    end)
-    local right = { P.row({ { 'KEYMAPS', 'NvLabel' } }, { { tostring(#maps), 'NvMuted' } }, half) }
-    if #maps == 0 then
-      right[#right + 1] = { { 'no buffer-local keymaps', 'NvMuted' } }
-    end
-    local rows = math.max(#left - 1, 6)
-    for i = 1, math.min(rows, #maps) do
-      local lhs = maps[i].lhs
-      local leader = vim.g.mapleader or '\\'
-      if lhs:sub(1, #leader) == leader then
-        lhs = 'SPC ' .. lhs:sub(#leader + 1)
-      end
-      right[#right + 1] = { { (' %s '):format(P.trunc(lhs, 14)), 'NvKey' }, { ' ' .. P.trunc(maps[i].desc, half - 18), 'NvDim' } }
-    end
-    if #maps > rows then
-      right[#right + 1] = { { ('… %d more'):format(#maps - rows), 'NvMuted' } }
-    end
-    vim.list_extend(lines, columns(left, right, half + 4))
+    vim.list_extend(lines, left)
     lines[#lines + 1] = P.blank()
   end
   return lines
@@ -333,6 +341,7 @@ local function view_git(w)
     table.insert(right, 1, { string.rep(' ', bar_w - math.max(1, n)) })
     right[#right + 1] = { (' %5s %5s'):format('+' .. add, '−' .. del), 'NvMuted' }
     lines[#lines + 1] = P.row(left, right, w)
+    mark(lines, { kind = 'file', path = f.path })
   end
   lines[#lines + 1] = P.blank()
 
@@ -341,8 +350,26 @@ local function view_git(w)
     lines[#lines + 1] = { { 'loading…', 'NvMuted' } }
   end
   for _, c in ipairs(details.log) do
-    lines[#lines + 1] = P.row({ { c.hash .. '  ', 'NvPurple' }, { c.subject, 'NvValue' } }, { { c.author .. '  ', 'NvDim' }, { c.when, 'NvMuted' } }, w)
+    local open = state.expanded[c.hash]
+    lines[#lines + 1] = P.row(
+      { { (open and '▾ ' or '▸ '), 'NvMuted' }, { c.hash .. '  ', 'NvPurple' }, { c.subject, 'NvValue' } },
+      { { c.author .. '  ', 'NvDim' }, { c.when, 'NvMuted' } },
+      w
+    )
+    mark(lines, { kind = 'commit', hash = c.hash })
+    if open == true then
+      lines[#lines + 1] = { { '      loading…', 'NvMuted' } }
+    elseif type(open) == 'table' then
+      for _, f in ipairs(open) do
+        local left = { { '      ' } }
+        vim.list_extend(left, P.path(f.path, w - 24))
+        lines[#lines + 1] = P.row(left, { { '+' .. f.add, 'NvGreen' }, { '  −' .. f.del, 'NvRed' } }, w)
+        mark(lines, { kind = 'file', path = f.path, rev = c.hash })
+      end
+    end
   end
+  lines[#lines + 1] = P.blank()
+  lines[#lines + 1] = P.row({ { 'CR', 'NvKey' }, { ' diff file / expand commit', 'NvMuted' } }, {}, w)
   return lines
 end
 
@@ -420,41 +447,71 @@ local function view_session(w)
     lines[#lines + 1] = P.blank()
   end
 
-  -- Recent turns: generated tokens (stacked) and prompt size, side by side.
+  -- Left: this session's recent turns. Right: OpenCode activity across all
+  -- sessions, steps per day over the last week.
   local turns = oc.turns or {}
-  if #turns > 1 then
-    local gen, ctx = {}, {}
-    for _, tn in ipairs(turns) do
-      gen[#gen + 1] = { { tn.reasoning or 0, 'Purple' }, { tn.output or 0, 'Orange' } }
-      ctx[#ctx + 1] = { { (tn.input or 0) + (tn.cache_read or 0) + (tn.cache_write or 0), 'Cyan' } }
-    end
-    local half = math.floor((w - 4) / 2)
-    local function fit(series)
-      for per = 6, 1, -1 do
-        local rows = P.bars(series, 8, { bar = per, gap = 1 })
-        if P.width(rows[1]) <= half - 1 or per == 1 then
-          return rows
-        end
+  local usage = data.usage
+  local half = math.floor((w - 4) / 2)
+  local function fit(series, axis)
+    for per = 6, 1, -1 do
+      local rows = P.bars(series, 8, { bar = per, gap = 1, label = axis })
+      if P.width(rows[1]) <= half - 1 or per == 1 then
+        return rows
       end
     end
-    local left, right = fit(gen), fit(ctx)
-    lines[#lines + 1] = P.row(
-      { { '󰄨 ', 'NvIcon' }, { 'Generated per turn', 'NvTitle' } },
-      { { 'Prompt size per turn ', 'NvTitle' }, { '󰋙', 'NvIcon' } },
-      w
-    )
-    for i = 1, #left do
-      local row = vim.deepcopy(left[i])
-      local lw = P.width(row)
-      row[#row + 1] = { string.rep(' ', math.max(2, w - lw - P.width(right[i]))) }
-      vim.list_extend(row, right[i])
+  end
+  local left, right = {}, {}
+  if #turns > 1 then
+    local gen = {}
+    for _, tn in ipairs(turns) do
+      gen[#gen + 1] = { { tn.reasoning or 0, 'Purple' }, { tn.output or 0, 'Orange' } }
+    end
+    left = fit(gen)
+  end
+  local days = usage and usage.days or {}
+  if #days > 0 then
+    local series = {}
+    for _, d in ipairs(days) do
+      series[#series + 1] = { { d.steps or 0, 'Cyan' } }
+    end
+    right = fit(series, function(v)
+      return tostring(math.floor(v + 0.5))
+    end)
+  end
+  if #left > 0 or #right > 0 then
+    lines[#lines + 1] = P.row({ { '󰄨 ', 'NvIcon' }, { 'Generated per turn', 'NvTitle' } }, { { 'Steps per day ', 'NvTitle' }, { '󰃭', 'NvIcon' } }, w)
+    for i = 1, math.max(#left, #right) do
+      local row = vim.deepcopy(left[i] or { { string.rep(' ', half) } })
+      local rw = right[i] and P.width(right[i]) or 0
+      row[#row + 1] = { string.rep(' ', math.max(2, w - P.width(row) - rw)) }
+      vim.list_extend(row, right[i] or {})
       lines[#lines + 1] = row
     end
+    local first = days[1] and days[1].date and days[1].date:sub(6) or ''
+    local last = days[#days] and days[#days].date and days[#days].date:sub(6) or ''
     lines[#lines + 1] = P.row(
-      { { '▇ ', 'NvPurple' }, { 'reasoning  ', 'NvMuted' }, { '▇ ', 'NvOrange' }, { 'output', 'NvMuted' } },
-      { { 'last ' .. #turns .. ' turns  ', 'NvMuted' }, { '▇ ', 'NvCyan' }, { 'context', 'NvMuted' } },
+      { { '▇ ', 'NvPurple' }, { 'reasoning  ', 'NvMuted' }, { '▇ ', 'NvOrange' }, { 'output  ', 'NvMuted' }, { 'last ' .. #turns .. ' turns', 'NvMuted' } },
+      { { first .. ' → ' .. last .. '  ', 'NvMuted' }, { '▇ ', 'NvCyan' }, { 'all sessions', 'NvMuted' } },
       w
     )
+    lines[#lines + 1] = P.blank()
+  end
+
+  -- Usage by provider over the same week (OpenCode does not expose balances).
+  if usage and #usage.providers > 0 then
+    lines[#lines + 1] = P.label('Providers · 7 days', usage.sessions .. ' sessions  ' .. P.num(usage.steps) .. ' steps  ' .. ('$%.2f'):format(usage.cost), w)
+    local colors = { 'Purple', 'Cyan', 'Orange', 'Magenta', 'Blue', 'Green' }
+    local bar_w = math.max(10, w - 52)
+    for i, p in ipairs(usage.providers) do
+      local share = usage.steps > 0 and (p.steps / usage.steps * 100) or 0
+      local row = { { ('%-14s'):format(P.trunc(p.id, 13)), 'NvValue' } }
+      vim.list_extend(row, P.meter(bar_w, share, colors[(i - 1) % #colors + 1]))
+      lines[#lines + 1] = P.row(row, {
+        { ('%5s steps  '):format(P.num(p.steps)), 'NvDim' },
+        { ('%7s tok  '):format(P.num(p.tokens)), 'NvMuted' },
+        { p.cost > 0 and ('$%.2f'):format(p.cost) or 'free', p.cost > 0 and 'NvValue' or 'NvMuted' },
+      }, w)
+    end
     lines[#lines + 1] = P.blank()
   end
 
@@ -496,8 +553,26 @@ function M.render()
   local w, max_h = size()
   local inner = w - 4
   local lines = { tabs(inner), P.blank() }
-  vim.list_extend(lines, VIEWS[state.view](inner))
-  local height = math.min(max_h, #lines)
+  local rows = {}
+  state.collect = {}
+  local body = VIEWS[state.view](inner)
+  for line, action in pairs(state.collect) do
+    rows[line + #lines] = action
+  end
+  state.collect = nil
+  state.rows = rows
+  vim.list_extend(lines, body)
+  -- All views share one height (the tallest), so Tab doesn't resize the float.
+  local tallest = #lines
+  for name, view in pairs(VIEWS) do
+    if name ~= state.view then
+      local ok, other = pcall(view, inner)
+      if ok then
+        tallest = math.max(tallest, #other + 2)
+      end
+    end
+  end
+  local height = math.min(max_h, tallest)
   P.draw(h.buf, lines, 2)
   vim.api.nvim_win_set_config(h.win, {
     relative = 'editor',
@@ -539,6 +614,7 @@ function M.open(view)
   state.view = VIEWS[view] and view or 'lsp'
   -- Taken from the content window before the float takes focus.
   fetch_actions()
+  data.refresh_usage()
   if state.handle and vim.api.nvim_win_is_valid(state.handle.win) then
     M.render()
     vim.api.nvim_set_current_win(state.handle.win)
@@ -547,15 +623,39 @@ function M.open(view)
 
   require 'features.ui.window'
   local handle = NVUi.float { enter = true, backdrop = true, zindex = 70, border = 'solid' }
+  handle.on_close = M.close
   state.handle = handle
   local buf = handle.buf
   vim.bo[buf].filetype = 'nvdash'
-  vim.wo[handle.win].cursorline = false
+  vim.wo[handle.win].cursorline = true
+  vim.wo[handle.win].winhighlight = vim.wo[handle.win].winhighlight .. ',CursorLine:NvCursorLine'
   vim.wo[handle.win].wrap = false
 
   local function map(lhs, fn)
     vim.keymap.set('n', lhs, fn, { buffer = buf, nowait = true, silent = true })
   end
+  map('<CR>', function()
+    local action = state.rows[vim.api.nvim_win_get_cursor(0)[1]]
+    if not action then
+      return
+    end
+    if action.kind == 'file' then
+      diff(action.path, action.rev)
+    elseif action.kind == 'commit' then
+      if state.expanded[action.hash] then
+        state.expanded[action.hash] = nil
+        return M.render()
+      end
+      state.expanded[action.hash] = true
+      M.render()
+      commit_files(action.hash, function(files)
+        if state.expanded[action.hash] then
+          state.expanded[action.hash] = files
+          M.render()
+        end
+      end)
+    end
+  end)
   map('q', M.close)
   map('<Esc>', M.close)
   map('E', M.close)

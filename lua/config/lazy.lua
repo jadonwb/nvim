@@ -32,6 +32,7 @@ require('lazy').setup {
     -- Drawn like the editor's dashboards: raised surface, an invisible
     -- padding border (arrowlake groups/lazy.lua does the colours).
     border = 'solid',
+    backdrop = 70, -- shared modal dim (NVUi.BACKDROP_BLEND)
   },
   defaults = {
     -- By default, only LazyVim plugins will be lazy-loaded. Your custom plugins will load during startup.

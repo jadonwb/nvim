@@ -1,9 +1,8 @@
 -- blink.cmp: completion in buffers and on the command line.
 --
 -- Look: NvChad's borderless menu — raised surface, invisible padding border,
--- kind icon + label + kind name. On the command line the menu opens
--- *below* the cmdline, into the bottom panel's space (the cmdline is pinned
--- to the panel's top row, see config/ui2.lua).
+-- kind icon + label + kind name. On the command line the menu opens below
+-- the floating prompt (config/ui2.lua).
 
 local WINHL = 'Normal:NvRaised,FloatBorder:NvRaisedBorder,CursorLine:NvCursorLine,Search:None'
 
@@ -43,8 +42,8 @@ NVBlink = {
         border = 'padded',
         scrollbar = false,
         winhighlight = WINHL,
-        -- Screen position of the command line; the pinned cmdline lives in
-        -- the bottom panel, so the menu can open beneath it.
+        -- Screen position of the floating command line's cursor, so the menu
+        -- opens beneath the prompt.
         cmdline_position = function()
           if NVCmdlinePos then
             local pos = NVCmdlinePos()
@@ -87,6 +86,12 @@ NVBlink = {
           },
         },
       },
+    },
+    -- Signature help while typing: the active parameter is highlighted as
+    -- you fill the call in. Same surface as the completion menu.
+    signature = {
+      enabled = true,
+      window = { border = 'padded', winhighlight = WINHL, show_documentation = false },
     },
     keymap = { preset = 'enter' },
   },

@@ -40,6 +40,30 @@ function NVUi.render(handle, layout, width)
   return height
 end
 
+--- Backdrop opacity shared by our floats, snacks, Lazy and Mason: black at
+--- this winblend (higher is lighter).
+NVUi.BACKDROP_BLEND = 70
+
+--- Open floats by window, so the close key can close any of them through
+--- its owner (`handle.on_close`, e.g. a dashboard stopping its timer).
+---@type table<integer, NVUiHandle>
+NVUi.handles = NVUi.handles or {}
+
+--- Close the float `win` if it is one of ours. True when handled.
+---@param win integer
+function NVUi.close_win(win)
+  local handle = NVUi.handles[win]
+  if not handle then
+    return false
+  end
+  if handle.on_close then
+    handle.on_close()
+  else
+    NVUi.close(handle)
+  end
+  return true
+end
+
 --- Create a float that volt can draw into.
 ---@param opts? { border?: string, zindex?: integer, xpad?: integer, backdrop?: boolean, source?: WinID, enter?: boolean }
 ---@return NVUiHandle
@@ -61,13 +85,15 @@ function NVUi.float(opts)
       row = 0,
       col = 0,
       width = vim.o.columns,
-      height = vim.o.lines - 2,
+      -- Everything above the statusline ('cmdheight' is 0).
+      height = vim.o.lines - 1 - vim.o.cmdheight,
       focusable = false,
       style = 'minimal',
       border = 'none',
       zindex = (opts.zindex or 60) - 10,
     })
-    vim.wo[handle.backdrop].winblend = 20
+    -- One dim for every modal surface (snacks, Lazy, Mason use the same).
+    vim.wo[handle.backdrop].winblend = NVUi.BACKDROP_BLEND
     vim.wo[handle.backdrop].winhighlight = 'Normal:NvBackdrop'
   end
 
@@ -86,6 +112,7 @@ function NVUi.float(opts)
   -- behind them (a dimmed backdrop) shows through.
   -- Raised surface; the border is the surface colour, so it only pads.
   vim.wo[handle.win].winhighlight = 'Normal:NvRaised,NormalNC:NvRaised,FloatBorder:NvRaisedBorder,EndOfBuffer:NvRaised'
+  NVUi.handles[handle.win] = handle
 
   if opts.enter then
     -- Opening from insert mode (a prompt, a grug-far field) must not leave the
@@ -106,6 +133,7 @@ function NVUi.float(opts)
         pcall(vim.api.nvim_win_close, handle.backdrop, true)
       end
       handle.backdrop = nil
+      NVUi.handles[handle.win] = nil
       pcall(vim.api.nvim_del_augroup_by_id, group)
     end,
   })

@@ -120,10 +120,24 @@ return {
         enable = true,
         set_jumps = true,
         keys = {
-          goto_next_start = { [']f'] = '@function.outer', [']c'] = '@class.outer', [']a'] = '@parameter.inner' },
-          goto_next_end = { [']F'] = '@function.outer', [']C'] = '@class.outer', [']A'] = '@parameter.inner' },
-          goto_previous_start = { ['[f'] = '@function.outer', ['[c'] = '@class.outer', ['[a'] = '@parameter.inner' },
-          goto_previous_end = { ['[F'] = '@function.outer', ['[C'] = '@class.outer', ['[A'] = '@parameter.inner' },
+          -- f function, c class (diff mode keeps ]c / [c), a parameter,
+          -- o block / conditional / loop, = assignment. Capitals: the end.
+          goto_next_start = {
+            [']f'] = '@function.outer',
+            [']c'] = '@class.outer',
+            [']a'] = '@parameter.inner',
+            [']o'] = '@block.outer',
+            [']='] = '@assignment.outer',
+          },
+          goto_next_end = { [']F'] = '@function.outer', [']C'] = '@class.outer', [']A'] = '@parameter.inner', [']O'] = '@block.outer' },
+          goto_previous_start = {
+            ['[f'] = '@function.outer',
+            ['[c'] = '@class.outer',
+            ['[a'] = '@parameter.inner',
+            ['[o'] = '@block.outer',
+            ['[='] = '@assignment.outer',
+          },
+          goto_previous_end = { ['[F'] = '@function.outer', ['[C'] = '@class.outer', ['[A'] = '@parameter.inner', ['[O'] = '@block.outer' },
         },
       },
     },
@@ -136,12 +150,26 @@ return {
         end
         for method, keymaps in pairs(vim.tbl_get(opts, 'move', 'keys') or {}) do
           for key, query in pairs(keymaps) do
+            local what = query:match '@(%w+)'
+            local where = method:gsub('goto_', ''):gsub('_', ' ')
             vim.keymap.set({ 'n', 'x', 'o' }, key, function()
+              -- In a diff, ]c / [c are Neovim's next / previous change.
+              if vim.wo.diff and key:lower():match '^[%[%]]c$' then
+                return vim.cmd('normal! ' .. vim.v.count1 .. key)
+              end
               require('nvim-treesitter-textobjects.move')[method](query, 'textobjects')
-            end, { buffer = buf, desc = 'Treesitter ' .. method, silent = true })
+            end, { buffer = buf, desc = ('%s: %s'):format(what, where), silent = true })
           end
         end
       end
+
+      -- Swap the parameter under the cursor with the next / previous one.
+      vim.keymap.set('n', '<leader>c>', function()
+        require('nvim-treesitter-textobjects.swap').swap_next '@parameter.inner'
+      end, { desc = 'Swap parameter with next' })
+      vim.keymap.set('n', '<leader>c<', function()
+        require('nvim-treesitter-textobjects.swap').swap_previous '@parameter.inner'
+      end, { desc = 'Swap parameter with previous' })
 
       vim.api.nvim_create_autocmd('FileType', {
         group = vim.api.nvim_create_augroup('NV treesitter textobjects', { clear = true }),

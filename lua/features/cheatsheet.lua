@@ -1,249 +1,255 @@
--- Keymap cheatsheet, drawn with volt.
+-- Keymap cheatsheet (NvChad-style cards on the dashboard surface).
 --
--- A cheatsheet is a wall of keymaps, so it is laid out like the volt dashboards:
--- framed blocks with a header chip per group, arranged in columns, with the
--- description on the left and the key right-aligned. It is read-only; close it
--- with q or Esc.
+-- One card per group: a coloured header chip with the group's icon and size,
+-- then "description … key" rows with the key in the key style. Leader groups
+-- are read live from the mappings (so the sheet never drifts); the keys that
+-- are not behind the leader are curated below. j/k scroll, q / Esc close.
 
 NVCheatsheet = {}
 
-local GROUP_NAMES = {
-  b = 'buffers',
-  c = 'code',
-  d = 'diffview',
-  f = 'find',
-  g = 'git',
-  q = 'quit / session',
-  s = 'search',
-  u = 'ui',
-  w = 'windows',
-  x = 'diagnostics',
-  a = 'opencode',
+local P = require 'features.ui.panel'
+
+-- Leader groups, in display order: prefix → title, icon.
+local GROUPS = {
+  { ' ', 'general', '󰌌' },
+  { 'l', 'layout / panels', '󰕰' },
+  { 'v', 'views', '󰕮' },
+  { 't', 'terminals', '\u{f018d}' },
+  { 'f', 'find', '󰍉' },
+  { 's', 'search', '󰍉' },
+  { 'g', 'git', '󰊢' },
+  { 'c', 'code', '󰅩' },
+  { 'a', 'opencode', '󰚩' },
+  { 'p', 'plugins', '󰏗' },
+  { 'u', 'ui toggles', '󰙵' },
 }
 
--- Keys that are not behind the leader. Kept as a table so the sheet shows the
--- keys people actually reach for, not every built-in mapping.
-local GENERAL = {
-  { 'Focus mode (layout)', 'layout_toggle' },
-  { 'Cycle bottom panel', 'bottom_cycle' },
-  { 'Agent transcript', 'agent' },
-  { 'Terminal', '<C-/>' },
-  { 'Next / prev diagnostic', ']e [e' },
-  { 'Write buffer', '<C-s>' },
-  { 'Quit window', 'close' },
-  { 'Restart config', 'restart' },
-  { 'Move window', 'C-hjkl' },
-}
-
-local function general_rows()
-  local rows = {}
-  local keys = NVKeymaps or {}
-  for _, item in ipairs(GENERAL) do
-    local key = keys[item[2]] or item[2]
-    rows[#rows + 1] = { { item[1] }, { '_pad_' }, { key } }
-  end
-  return rows
+-- Keys outside the leader: the ones worth knowing, grouped by what they act on.
+local function curated()
+  local k = NVKeymaps or {}
+  return {
+    {
+      'panels',
+      '󰕰',
+      {
+        { 'Focus mode (layout on / off)', k.layout_toggle },
+        { 'Bottom panel show / hide', '<C-/>' },
+        { 'Bottom panel: next mode', k.bottom_cycle },
+        { 'Expand panel → dashboard', 'E (in panel)' },
+        { 'Hide panel', k.close .. ' (in panel)' },
+        { 'Reset sizes', k.layout_equalize },
+        { 'Side columns narrower / wider', '<S-Left> <S-Right>' },
+        { 'Bottom panel taller / shorter', '<S-Up> <S-Down>' },
+        { 'Agent transcript', k.agent },
+      },
+    },
+    {
+      'windows',
+      '󰖲',
+      {
+        { 'Go to window', '<C-h/j/k/l>' },
+        { 'Move window (panels swap)', '<M-S-arrows>' },
+        { 'Swap with picked window', k.window_swap and k.window_swap.swap },
+        { 'Close buffer, keep window', k.close },
+        { 'Close buffer and window', '<M-W>' },
+        { 'Window commands', '<C-w> …' },
+        { 'Alternate buffer', '<M-b>' },
+      },
+    },
+    {
+      'terminal mode',
+      '\u{f018d}',
+      {
+        { 'Leave terminal mode', '<Esc><Esc>' },
+        { 'Back to file (main-window term)', 'q / ' .. k.close },
+        { 'Hide floating terminal', k.close },
+      },
+    },
+    {
+      'hover popup',
+      '󰋽',
+      {
+        { 'Hover / signature / diagnostics', 'K' },
+        { 'Focus the popup', 'K (again)' },
+        { 'Next / previous section', '<Tab> <S-Tab>' },
+        { 'Signature help', 'gK' },
+        { 'Open link in popup', 'gx' },
+      },
+    },
+    {
+      'text objects',
+      '󰊄',
+      {
+        { 'function / class', 'af if  ac ic' },
+        { 'block · loop', 'ao io  aL iL' },
+        { 'argument · call', 'aa ia  au iu' },
+        { 'assignment · comment', 'a= i=  aC iC' },
+        { 'next / last object', 'aN iN  al il' },
+        { 'grow / shrink selection', 'an  in  (visual)' },
+        { 'surround add / del / replace', 'sa  sd  sr' },
+      },
+    },
+    {
+      'moves',
+      '󰆾',
+      {
+        { 'function start / end', ']f [f  ]F [F' },
+        { 'class (diff: change)', ']c [c  ]C [C' },
+        { 'parameter', ']a [a' },
+        { 'block · assignment', ']o [o  ]= [=' },
+        { 'diagnostic', ']d [d' },
+        { 'swap parameter', 'SPC c> c<' },
+      },
+    },
+    {
+      'yank path',
+      '󰆏',
+      {
+        { 'file name', '<M-y>f' },
+        { 'file name, no extension', '<M-y>F' },
+        { 'path relative to cwd', '<M-y>r' },
+        { 'absolute path', '<M-y>a' },
+        { 'working directory', '<M-y>c' },
+      },
+    },
+  }
 end
 
----@return table<string, table[]> groups
-local function collect()
-  local groups = {}
-
-  local seen = {}
-  local function push(name, lhs, desc)
-    -- The same mapping is returned once per mode it is registered in.
-    local key = name .. '\0' .. lhs .. '\0' .. desc
-    if seen[key] then
-      return
-    end
-    seen[key] = true
-    groups[name] = groups[name] or {}
-    groups[name][#groups[name] + 1] = { lhs = lhs, desc = desc }
-  end
-
-  for _, mode in ipairs { 'n', 'v', 'i', 't' } do
-    for _, map in ipairs(vim.api.nvim_get_keymap(mode)) do
-      local lhs, desc = map.lhs, map.desc or ''
-      -- Leader maps are stored with the leader already expanded to a space.
-      local rest = lhs:match '^ (.*)$' or lhs:match '^<Space>(.*)$'
-      if rest and desc ~= '' then
-        -- `<leader><Space>` is the buffer picker.
-        local name = rest == ' ' and 'buffers' or (GROUP_NAMES[rest:sub(1, 1)] or 'other')
-        push(name, rest == ' ' and '<Space>' or rest, desc)
+--- Leader mappings grouped by prefix.
+local function leader_groups()
+  local by, seen = {}, {}
+  for _, mode in ipairs { 'n', 'x' } do
+    for _, m in ipairs(vim.api.nvim_get_keymap(mode)) do
+      local rest = m.lhs:match '^ (.+)$'
+      if rest and m.desc and m.desc ~= '' and not m.desc:find '^which.key' then
+        -- One-key leader maps (buffers, notifications, cheatsheet) share a card.
+        local prefix = (#rest == 1) and ' ' or rest:sub(1, 1)
+        local key = prefix .. rest .. m.desc
+        if not seen[key] then
+          seen[key] = true
+          by[prefix] = by[prefix] or {}
+          local shown = (rest == ' ' and 'SPC' or rest):gsub('<lt>', '<')
+          by[prefix][#by[prefix] + 1] = { m.desc, 'SPC ' .. shown }
+        end
       end
     end
   end
-
-  for _, group in pairs(groups) do
-    table.sort(group, function(a, b)
-      return a.lhs < b.lhs
+  for _, list in pairs(by) do
+    table.sort(list, function(a, b)
+      return a[2] < b[2]
     end)
   end
-
-  groups['general'] = {}
-  for _, row in ipairs(general_rows()) do
-    local chunks = {}
-    for _, chunk in ipairs(row) do
-      chunks[#chunks + 1] = chunk[1]
-    end
-    groups['general'][#groups['general'] + 1] = { lhs = '', chunks = row }
-  end
-
-  return groups
+  return by
 end
 
---- A framed block for one group.
----@param title string
----@param entries table[]
----@param width integer
----@return table[] lines
-local function block(title, entries, width)
-  local voltui = require 'volt.ui'
-  local chrome = require 'features.ui.chrome'
-  local inner = width - 4
-  local lines = {
-    { { ' ' .. title .. ' ', 'NvChipMuted' } },
-    {},
+local ACCENTS = { 'Purple', 'Cyan', 'Blue', 'Magenta', 'Orange', 'Green', 'Yellow' }
+
+--- One card: header chip + rows, `w` cells wide.
+local function card(index, title, icon, rows, w)
+  local accent = ACCENTS[(index - 1) % #ACCENTS + 1]
+  local out = {
+    P.row({ P.chip(icon .. '  ' .. title, accent) }, { { tostring(#rows), 'NvMuted' } }, w),
   }
-
-  local function truncate(desc, room)
-    if vim.api.nvim_strwidth(desc) > room then
-      return vim.fn.strcharpart(desc, 0, math.max(1, room - 1)) .. '…'
-    end
-    return desc
+  for _, r in ipairs(rows) do
+    local key = r[2] or ''
+    local kw = vim.fn.strdisplaywidth(key) + 2
+    out[#out + 1] = P.row({ { P.trunc(r[1], w - kw - 1), 'NvDim' } }, { { ' ' .. key .. ' ', 'NvKey' } }, w)
   end
+  out[#out + 1] = P.blank()
+  return out
+end
 
-  for _, entry in ipairs(entries) do
-    local row
-    if entry.chunks then
-      row = vim.deepcopy(entry.chunks)
-      -- The last chunk is the key; keep it intact and cut the label instead.
-      local key = row[#row] and row[#row][1] or ''
-      local room = inner - vim.api.nvim_strwidth(key) - 1
-      if row[1] then
-        row[1] = { truncate(row[1][1], room), row[1][2] }
+--- Cards packed into `n` columns (each card to the shortest column), joined
+--- row by row.
+local function layout(cards, n, col_w, gap)
+  local cols, heights = {}, {}
+  for i = 1, n do
+    cols[i], heights[i] = {}, 0
+  end
+  for _, c in ipairs(cards) do
+    local s = 1
+    for i = 2, n do
+      if heights[i] < heights[s] then
+        s = i
       end
-    else
-      local key = ' ' .. entry.lhs
-      -- Only the description may be cut; the key must stay readable.
-      local room = inner - vim.api.nvim_strwidth(key) - 1
-      row = { { truncate(entry.desc, room) }, { '_pad_' }, { key } }
     end
-    lines[#lines + 1] = voltui.hpad(row, inner)
+    vim.list_extend(cols[s], c)
+    heights[s] = heights[s] + #c
   end
-
-  voltui.border(lines, 'NvPanelBorder')
+  local lines = {}
+  for r = 1, math.max(unpack(heights)) do
+    local row = {}
+    for i = 1, n do
+      local cell = cols[i][r] or { { '' } }
+      vim.list_extend(row, vim.deepcopy(cell))
+      if i < n then
+        row[#row + 1] = { string.rep(' ', math.max(0, col_w - P.width(cell)) + gap) }
+      end
+    end
+    lines[#lines + 1] = row
+  end
   return lines
 end
 
----@param groups table<string, table[]>
----@param columns integer
----@return table[] lines
-local function compose(groups, columns, total_width)
-  local order = {}
-  for name in pairs(groups) do
-    order[#order + 1] = name
-  end
-  table.sort(order, function(a, b)
-    if a == 'general' then
-      return true
-    end
-    if b == 'general' then
-      return false
-    end
-    return a < b
-  end)
-
-  local col_width = math.floor(total_width / columns) - 6
-  local buckets = {}
-  local heights = {}
-  for i = 1, columns do
-    buckets[i], heights[i] = {}, 0
-  end
-
-  -- Greedy balance: each block goes to the currently shortest column.
-  for _, name in ipairs(order) do
-    local entries = groups[name]
-    if #entries > 0 then
-      local shortest = 1
-      for i = 2, columns do
-        if heights[i] < heights[shortest] then
-          shortest = i
-        end
-      end
-      local b = block(name, entries, col_width)
-      buckets[shortest][#buckets[shortest] + 1] = b
-      buckets[shortest][#buckets[shortest] + 1] = { {} }
-      heights[shortest] = heights[shortest] + #b + 1
-    end
-  end
-
-  local cols = {}
-  for i = 1, columns do
-    local lines = {}
-    for _, b in ipairs(buckets[i]) do
-      vim.list_extend(lines, b)
-    end
-    cols[i] = { lines = lines, w = col_width, pad = 2 }
-  end
-
-  return require('volt.ui').grid_col(cols)
-end
-
 function NVCheatsheet.open()
-  local ui = require 'features.ui.window'
-  local width = math.min(vim.o.columns - 4, 170)
-  local columns = width > 130 and 4 or 3
+  require 'features.ui.window'
+  local width = math.min(vim.o.columns - 6, 176)
+  local n = width >= 150 and 4 or (width >= 110 and 3 or 2)
+  local gap = 4
+  local inner = width - 4
+  local col_w = math.floor((inner - gap * (n - 1)) / n)
 
-  local groups = collect()
-  local body = compose(groups, columns, width - 6)
-
-  local handle = ui.float { border = 'single', zindex = 80, enter = true }
-  local layout = {
-    {
-      name = 'title',
-      lines = function()
-        local row = {
-          { ' C H E A T S H E E T ', 'NvChip' },
-          { '_pad_' },
-          { ' j/k scroll   q close ', 'NvPanelLabel' },
-        }
-        return { require('volt.ui').hpad(row, width - 4), {} }
-      end,
-    },
-    {
-      name = 'body',
-      lines = function()
-        return body
-      end,
-    },
-  }
-
-  local rendered, h = pcall(ui.render, handle, layout, width)
-  if not rendered then
-    ui.close(handle)
-    NVMessages.warn 'Cheatsheet unavailable'
-    return
+  local cards = {}
+  local by = leader_groups()
+  local i = 0
+  for _, g in ipairs(GROUPS) do
+    if by[g[1]] then
+      i = i + 1
+      cards[#cards + 1] = card(i, g[2], g[3], by[g[1]], col_w)
+      by[g[1]] = nil
+    end
   end
-  local total_h = math.min(vim.o.lines - 4, h + 3)
-  ui.resize(handle, width, total_h, {
-    row = math.max(0, math.floor((vim.o.lines - total_h) / 2)),
-    col = math.max(0, math.floor((vim.o.columns - width) / 2)),
-  })
+  for prefix, rows in pairs(by) do
+    i = i + 1
+    cards[#cards + 1] = card(i, 'leader ' .. prefix, '󰌌', rows, col_w)
+  end
+  for _, c in ipairs(curated()) do
+    i = i + 1
+    cards[#cards + 1] = card(i, c[1], c[2], c[3], col_w)
+  end
 
+  local lines = {
+    P.row(
+      { { '󰌌  ', 'NvIcon' }, { 'Keymaps', 'NvTitle' }, { '   leader is ', 'NvMuted' }, { ' SPC ', 'NvKey' } },
+      { { ' j/k ', 'NvKey' }, { ' scroll  ', 'NvMuted' }, { ' q ', 'NvKey' }, { ' close', 'NvMuted' } },
+      inner
+    ),
+    P.blank(),
+  }
+  vim.list_extend(lines, layout(cards, n, col_w, gap))
+
+  local handle = NVUi.float { border = 'solid', zindex = 80, enter = true }
+  local height = math.min(vim.o.lines - 6, #lines)
+  vim.api.nvim_win_set_config(handle.win, {
+    relative = 'editor',
+    width = width,
+    height = height,
+    row = math.floor((vim.o.lines - height) / 2) - 1,
+    col = math.floor((vim.o.columns - width) / 2),
+  })
+  P.draw(handle.buf, lines, 2)
   local buf = handle.buf
-  vim.keymap.set('n', 'q', function()
-    ui.close(handle)
-  end, { buffer = buf, nowait = true })
-  vim.keymap.set('n', '<Esc>', function()
-    ui.close(handle)
-  end, { buffer = buf, nowait = true })
   vim.bo[buf].filetype = 'nvcheatsheet'
+  vim.wo[handle.win].cursorline = false
+  local function close()
+    NVUi.close(handle)
+  end
+  vim.keymap.set('n', 'q', close, { buffer = buf, nowait = true })
+  vim.keymap.set('n', '<Esc>', close, { buffer = buf, nowait = true })
 end
 
 function NVCheatsheet.setup()
   vim.api.nvim_create_user_command('NVCheatsheet', NVCheatsheet.open, { desc = 'Keymap cheatsheet' })
-
   vim.keymap.set('n', '<leader>?', NVCheatsheet.open, { desc = 'Keymap cheatsheet' })
 end
 

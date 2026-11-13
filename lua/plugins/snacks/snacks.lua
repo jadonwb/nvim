@@ -37,7 +37,11 @@ return {
         chunk = { enabled = true, only_current = true, char = { corner_top = '╭', corner_bottom = '╰' } },
       },
       input = { enabled = false },
+      -- One modal dim everywhere: black at winblend 70 (NVUi.BACKDROP_BLEND;
+      -- Lazy and Mason use the same).
+      win = { backdrop = 70 },
       styles = {
+        float = { backdrop = 70 },
         terminal = {
           wo = {
             winhighlight = 'Normal:Normal,WinBar:SnacksWinBar,WinBarNC:SnacksWinBarNC,FloatTitle:SnacksTitle,FloatFooter:SnacksFooter,WinSeparator:SnacksWinSeparator,FloatBorder:Border',

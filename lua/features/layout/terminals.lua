@@ -106,6 +106,9 @@ local function spawn(win, home)
   vim.bo[buf].buflisted = false
   vim.bo[buf].bufhidden = 'hide'
   vim.b[buf].nv_terminal = id
+  -- Quick double <Esc> leaves terminal mode; a single <Esc> still reaches the
+  -- program (after 'timeoutlen').
+  vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { buffer = buf, desc = 'Terminal: normal mode' })
   table.insert(NVTerminals.list, { buf = buf, id = id, home = home })
   NVTerminals.current[home] = buf
   NVTerminals.active = NVTerminals.current.panel
@@ -155,6 +158,12 @@ local function float_show(buf)
     zindex = 50,
   })
   vim.wo[win].winhighlight = 'Normal:NvRaised,NormalNC:NvRaised,FloatBorder:NvRaisedBorder,FloatTitle:NvPopupTitle'
+  -- A float inherits window options from the window it was opened from (the
+  -- bottom panel's tab strip, line numbers…); it has its own title instead.
+  vim.wo[win].winbar = ''
+  vim.wo[win].number = false
+  vim.wo[win].relativenumber = false
+  vim.wo[win].signcolumn = 'no'
   NVTerminals.float = win
   if not buf then
     vim.bo[scratch].bufhidden = 'wipe'

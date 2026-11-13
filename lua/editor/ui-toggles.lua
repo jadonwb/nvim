@@ -44,7 +44,10 @@ function NVUIToggles.keymaps()
 
   local map = vim.keymap.set
 
-  map('n', '<leader>ui', vim.show_pos, { desc = 'Inspect Pos' })
+  map('n', '<leader>ui', function()
+    require 'features.lsp.ui'
+    NVLspUi.show_inspect()
+  end, { desc = 'Inspect highlights at cursor' })
   map('n', '<leader>uI', function()
     vim.treesitter.inspect_tree()
     vim.api.nvim_input 'I'

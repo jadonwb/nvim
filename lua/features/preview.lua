@@ -80,7 +80,8 @@ local function draw(target)
       border = 'none',
       zindex = 40,
     })
-    vim.wo[NVPreview.backdrop].winblend = 40
+    vim.wo[NVPreview.backdrop].winblend = NVUi and NVUi.BACKDROP_BLEND or 70
+    vim.wo[NVPreview.backdrop].winhighlight = 'Normal:NvBackdrop'
 
     local buf = vim.api.nvim_create_buf(false, true)
     vim.bo[buf].buftype = 'nofile'

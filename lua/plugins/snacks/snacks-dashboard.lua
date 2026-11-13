@@ -13,14 +13,27 @@ function NVSnacksDashboard.setup()
     return NVSnacksDashboard.is_active()
   end)
   -- Full screen at startup; the layout applies when a file is opened.
+  -- Opened in VimEnter itself (not scheduled): Neovim draws the first frame
+  -- right after, so the dashboard is what appears, not the empty buffer.
   if vim.v.vim_did_enter == 0 then
     vim.api.nvim_create_autocmd('VimEnter', {
       once = true,
       callback = function()
-        vim.schedule(NVSnacksDashboard.open)
+        NVSnacksDashboard.open()
+        NVSnacksDashboard.unveil()
       end,
     })
   end
+end
+
+--- Restore what config/options.lua hid for a no-file start.
+function NVSnacksDashboard.unveil()
+  local veiled = vim.g.nv_startup_veil
+  if not veiled then
+    return
+  end
+  vim.g.nv_startup_veil = nil
+  vim.o.laststatus = veiled
 end
 
 --- Open the dashboard in the content window (snacks' own autostart is
@@ -106,13 +119,21 @@ return {
         keys = function()
           local items = {}
 
-          if NVLazy.anything_missing() then
+          local missing, updates = NVLazy.anything_missing(), NVLazy.update_count()
+          if missing or updates > 0 then
+            local desc = missing and (updates > 0 and ('Install + update plugins (%d)'):format(updates) or 'Install plugins')
+              or ('Update plugins (%d)'):format(updates)
             table.insert(items, {
               icon = ' ',
               key = 'i',
-              desc = 'Install Plugins',
+              desc = desc,
               action = function()
-                NVLazy.install()
+                -- update() also installs anything missing.
+                if updates > 0 then
+                  require('lazy').update()
+                else
+                  NVLazy.install()
+                end
               end,
             })
           end

@@ -236,33 +236,6 @@ return {
   opts = function()
     local actions = require 'diffview.actions'
 
-    -- Remap default <leader>c* conflict keymaps to <leader>d*
-    local conflict_d = {
-      -- Disable defaults
-      { 'n', '<leader>co', false },
-      { 'n', '<leader>ct', false },
-      { 'n', '<leader>cb', false },
-      { 'n', '<leader>ca', false },
-      { 'n', '<leader>cO', false },
-      { 'n', '<leader>cT', false },
-      { 'n', '<leader>cB', false },
-      { 'n', '<leader>cA', false },
-      -- Replacements: per-hunk
-      { 'n', '<leader>do', actions.conflict_choose 'ours', { desc = 'Choose OURS' } },
-      { 'n', '<leader>dt', actions.conflict_choose 'theirs', { desc = 'Choose THEIRS' } },
-      { 'n', '<leader>db', actions.conflict_choose 'base', { desc = 'Choose BASE' } },
-      { 'n', '<leader>da', actions.conflict_choose 'all', { desc = 'Choose ALL' } },
-      -- Replacements: whole-file
-      { 'n', '<leader>dO', actions.conflict_choose_all 'ours', { desc = 'Choose OURS (whole file)' } },
-      { 'n', '<leader>dT', actions.conflict_choose_all 'theirs', { desc = 'Choose THEIRS (whole file)' } },
-      { 'n', '<leader>dB', actions.conflict_choose_all 'base', { desc = 'Choose BASE (whole file)' } },
-      { 'n', '<leader>dA', actions.conflict_choose_all 'all', { desc = 'Choose ALL (whole file)' } },
-      -- New: whole-buffer side replacement (no default to disable)
-      { 'n', '<leader>dSo', actions.conflict_choose_side 'ours', { desc = 'Replace buffer with OURS' } },
-      { 'n', '<leader>dSt', actions.conflict_choose_side 'theirs', { desc = 'Replace buffer with THEIRS' } },
-      { 'n', '<leader>dSb', actions.conflict_choose_side 'base', { desc = 'Replace buffer with BASE' } },
-    }
-
     return {
       enhanced_diff_hl = true,
       show_help_hints = false,
@@ -280,25 +253,14 @@ return {
           { 'n', NVKeymaps.close, NVDiffview.close, { desc = 'Close Diffview' } },
         },
 
-        -- diff1/diff3/diff4: identical conflict keymaps, only non-conflict extras differ
-        diff1 = conflict_d,
-        diff3 = conflict_d,
-        diff4 = conflict_d,
-
+        -- Conflict resolution keeps diffview's own defaults (<leader>co / ct /
+        -- cb / ca, [x ]x, dx); only the close key is ours.
         -- file_panel: whole-file conflict resolution only
         -- stylua: ignore
         file_panel = {
           -- The close key means "close the diff view" everywhere, in the panel
           -- and in a diff window alike; the panel is not a separate surface.
           { 'n', NVKeymaps.close, NVDiffview.close, { desc = 'Close Diffview' } },
-          { 'n', '<leader>cO', false },
-          { 'n', '<leader>cT', false },
-          { 'n', '<leader>cB', false },
-          { 'n', '<leader>cA', false },
-          { 'n', '<leader>dO', actions.conflict_choose_all('ours'),    { desc = 'Choose OURS (whole file)' } },
-          { 'n', '<leader>dT', actions.conflict_choose_all('theirs'),  { desc = 'Choose THEIRS (whole file)' } },
-          { 'n', '<leader>dB', actions.conflict_choose_all('base'),    { desc = 'Choose BASE (whole file)' } },
-          { 'n', '<leader>dA', actions.conflict_choose_all('all'),     { desc = 'Choose ALL (whole file)' } },
         },
 
         -- stylua: ignore
@@ -387,46 +349,47 @@ return {
     }
   end,
 
+  -- Git views under <leader>g (lazygit is <M-g>).
   keys = {
     {
-      '<Leader>dl',
+      '<Leader>gl',
       function()
         if NVTabs.is_temporary(vim.api.nvim_get_current_tabpage()) then
           return
         end
         vim.cmd 'DiffviewFileHistory'
       end,
-      desc = 'Diffview Log',
+      desc = 'Git log (repository history)',
     },
     {
-      '<Leader>dv',
+      '<Leader>gg',
       function()
         if NVTabs.is_temporary(vim.api.nvim_get_current_tabpage()) then
           return
         end
         vim.cmd 'DiffviewOpen'
       end,
-      desc = 'Diffview',
+      desc = 'Git changes (diffview)',
     },
     {
-      '<Leader>dL',
+      '<Leader>gh',
       function()
         if NVTabs.is_temporary(vim.api.nvim_get_current_tabpage()) then
           return
         end
         vim.cmd 'DiffviewFileHistory %'
       end,
-      desc = 'Diffview Log (This File)',
+      desc = 'File history',
     },
     {
-      '<Leader>dh',
+      '<Leader>gH',
       function()
         if NVTabs.is_temporary(vim.api.nvim_get_current_tabpage()) then
           return
         end
         vim.cmd 'DiffviewFileHistory % --pin-local'
       end,
-      desc = 'File History (Pinned to Working Tree)',
+      desc = 'File history (pinned to working tree)',
     },
   },
 }

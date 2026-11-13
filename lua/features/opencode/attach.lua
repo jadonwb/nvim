@@ -100,16 +100,33 @@ function M.stored_id(location)
   return nil
 end
 
+--- Panels follow the attachment: re-read the session after any change.
+local function changed()
+  vim.schedule(function()
+    local ok, data = pcall(require, 'features.layout.data')
+    if ok then
+      -- Drop the old session at once (a detach has nothing new to read).
+      data.opencode = { id = nil, ready = true }
+      data.emit 'session'
+      data.refresh_opencode()
+    end
+  end)
+end
+
 function fn.set_session(session_id, location)
   local map = fn.load_attachments()
   map[fn.attachment_key(location)] = session_id
-  return fn.save_attachments(map)
+  local ok = fn.save_attachments(map)
+  changed()
+  return ok
 end
 
 function fn.clear_session(location)
   local map = fn.load_attachments()
   map[fn.attachment_key(location)] = nil
-  return fn.save_attachments(map)
+  local ok = fn.save_attachments(map)
+  changed()
+  return ok
 end
 
 --- `opencode session list --format json -n 100` in `cwd`. The CLI is

@@ -11,14 +11,6 @@ function NVBuffers.keymaps()
     mode = 'n',
   }
   K.map { '<A-t>', 'Create new buffer', '<Cmd>enew<CR>', mode = 'n' } -- TODO: just like tab make it ask for buffer name first? also prefill input with cwd path?
-  K.map {
-    '<leader>bd',
-    'Delete buffer',
-    function()
-      NVBuffers.delete_buf(vim.api.nvim_get_current_buf())
-    end,
-    mode = 'n',
-  }
 end
 
 function NVBuffers.autocmds()

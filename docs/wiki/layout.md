@@ -33,20 +33,24 @@ The workspace is a fixed grid of slots around the editing area:
 
 ## Keymaps
 
+Leader groups for the editor's own UI live in `features/layout/keymaps.lua`;
+`<leader>?` shows everything as a cheatsheet.
+
 | Key | Action |
 | --- | --- |
-| `<M-i>` | Focus mode: hide / restore the layout (hidden panels stay hidden) |
+| `<M-i>` / `<leader>li` | Focus mode: hide / restore the layout (hidden panels stay hidden) |
+| `<leader>le` `lc` `lo` `ls` `lb` | Toggle a panel: explorer, changes, OpenCode, LSP, bottom (brings back a hidden one); `<leader>fe` = explorer |
 | `<M-w>` in a panel | Hide that panel |
-| `<A-0>` / `<A-=>` | Restore default sizes |
+| `<A-0>` / `<A-=>` / `<leader>l0` | Restore default sizes |
+| `<M-S-arrows>` in a panel | Swap the panel's contents with the neighbouring panel (layout unchanged); `<leader>lw` / `<M-Tab>` swap with a picked one |
+| `<leader>lv` / `lm` / `lx` | Compare: file side by side, man page side by side, close |
 | `<C-/>` | Show / hide the bottom panel (focuses a terminal or the prompt) |
 | `<M-n>` | Cycle the bottom panel (prompt / terminal / quickfix / problems) |
-| `<leader>tb` / `<leader>tf` / `<leader>tc` | Terminal in the bottom panel / floating (toggle) / main window; inside a terminal, *moves* it there |
-| `<leader>tt` | Pick a terminal (shows each one's home: ▃ panel, ❐ float, ▣ main) |
-| `<leader>tn` | New panel terminal (the picker has "new" for every home) |
-| `<leader>t]` / `<leader>t[` | Next / previous panel terminal |
-| `E` in a panel | Expand into its dashboard (LSP / Git / OpenCode; `Tab` cycles) |
-| `R` in a panel | Refresh |
-| `q` in a panel | Back to the editor |
+| `<leader>tb` / `tf` / `tc` | Terminal in the bottom panel / floating (toggle) / main window; inside a terminal, *moves* it there |
+| `<leader>tt` / `tn` / `t]` `t[` | Pick a terminal (shows its home) / new panel terminal / next, previous |
+| `<Esc><Esc>` (terminal) | Leave terminal mode |
+| `E` in a panel, `<leader>vl` `vg` `vo` | Dashboards: LSP / Git / OpenCode (`Tab` cycles, `<CR>` acts on a row) |
+| `R` / `q` in a panel | Refresh / back to the editor |
 | `<S-Left>` / `<S-Right>` | Narrow / widen the side columns |
 | `<S-Up>` / `<S-Down>` | Grow / shrink the bottom panel |
 | `-` (content) | Edit the directory as a buffer (oil) |
@@ -70,10 +74,9 @@ events. Nothing shells out while drawing.
 
 ## Command line
 
-`:` is drawn on the bottom panel's tab-strip row; the statusline never moves
-(`cmdheight` stays 0). With the bottom panel hidden, `:` opens it for the
-command and closes it after. Completion opens below the command line inside
-the panel.
+`:` (and `/`, `?`, `=`) open a floating prompt in the upper part of the screen,
+titled with the kind of line; completion opens below it. `cmdheight` stays 0,
+so the statusline never moves.
 
 ## Commands
 

@@ -8,14 +8,14 @@ NVSPickerVerticalLayout = {
   width = NVScreen.is_large() and 0.35 or 0.4,
   height = 0.68,
   border = NVBorders.none,
-  backdrop = true,
+  backdrop = 70, -- shared modal dim (NVUi.BACKDROP_BLEND)
 }
 
 NVSPickerHorizontalLayout = {
   width = NVScreen.is_large() and 0.75 or 0.85,
   height = 0.85,
   border = NVBorders.none,
-  backdrop = true,
+  backdrop = 70, -- shared modal dim (NVUi.BACKDROP_BLEND)
 }
 
 function NVSPickerVerticalLayout.build(opts)
@@ -435,10 +435,16 @@ return {
           file = { filename_first = true, truncate = 80 },
         },
         layouts = {
+          -- Snacks' own presets, redrawn in this config's style, so a picker
+          -- that does not name one of ours (todo, registers, …) still matches.
+          default = NVSPickerHorizontalLayout.build(),
+          telescope = NVSPickerHorizontalLayout.build(),
+          vertical = NVSPickerVerticalLayout.build(),
+          dropdown = NVSPickerVerticalLayout.build(),
           select = {
             layout = {
               box = 'vertical',
-              backdrop = true,
+              backdrop = 70,
               width = 0.5,
               height = 0.5,
               border = NVBorders.none,
@@ -449,7 +455,7 @@ return {
           vscode = {
             hidden = { 'preview' },
             layout = {
-              backdrop = true,
+              backdrop = 70,
               row = 1,
               width = 0.4,
               min_width = 80,
@@ -637,6 +643,8 @@ return {
       {
         '<leader>st',
         function()
+          -- The source is registered by todo-comments, which loads lazily.
+          require('lazy').load { plugins = { 'todo-comments.nvim' } }
           Snacks.picker.todo_comments()
         end,
         desc = 'Todo',
@@ -644,6 +652,7 @@ return {
       {
         '<leader>sT',
         function()
+          require('lazy').load { plugins = { 'todo-comments.nvim' } }
           Snacks.picker.todo_comments { keywords = { 'TODO', 'FIX', 'FIXME' } }
         end,
         desc = 'Todo/Fix/Fixme',

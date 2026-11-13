@@ -266,6 +266,22 @@ function NVQuit.close_current(opts)
   if NVClose.consume(pager and { help_docs = true } or nil) then
     return
   end
+  -- A float (dashboard, cheatsheet, notifications, hover, any plugin popup)
+  -- is closed, never treated as "delete this buffer": deleting the buffer
+  -- under a float leaves the float and the editor in a broken state.
+  local cur = vim.api.nvim_get_current_win()
+  if vim.fn.getcmdwintype() ~= '' then
+    vim.cmd 'quit'
+    return
+  end
+  if vim.api.nvim_win_get_config(cur).relative ~= '' then
+    if vim.w[cur].nv_lsp_popup and NVLspUi then
+      NVLspUi.close()
+    elseif not (NVUi and NVUi.close_win(cur)) then
+      pcall(vim.api.nvim_win_close, cur, false)
+    end
+    return
+  end
   -- In a panel the close key hides that panel (remembered per project);
   -- panels never delete buffers or close the editor.
   local slot = NVSlots and NVSlots.slot_of_win and NVSlots.slot_of_win(vim.api.nvim_get_current_win())

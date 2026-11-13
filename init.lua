@@ -9,6 +9,9 @@ require 'core'
 require 'editor'
 
 require 'config.ui2'
+-- vim.notify goes to the notification centre (toasts) from the very start, so
+-- messages sent while plugins load are styled like every other one.
+require('features.ui.notify').install()
 require('config.highlights').setup_autocmds()
 
 require 'config.lazy'

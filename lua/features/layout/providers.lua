@@ -22,6 +22,9 @@ local function show(win, slot, provider, lines, rows, on_open)
   local buf = P.buffer(win, slot, provider)
   P.draw(buf, lines)
   vim.b[buf].nv_rows = rows
+  -- The <CR> handler is looked up per press, so a provider can change it.
+  M.on_open = M.on_open or {}
+  M.on_open[buf] = on_open
   vim.wo[win].cursorline = next(rows) ~= nil
 
   if not vim.b[buf].nv_keys then
@@ -39,14 +42,13 @@ local function show(win, slot, provider, lines, rows, on_open)
     map('q', function()
       vim.api.nvim_set_current_win(NVSlots.content_win())
     end, 'Back to editor')
-    if on_open then
-      map('<CR>', function()
-        local payload = (vim.b[buf].nv_rows or {})[vim.api.nvim_win_get_cursor(0)[1]]
-        if payload ~= nil then
-          on_open(payload)
-        end
-      end, 'Open')
-    end
+    map('<CR>', function()
+      local handler = M.on_open[buf]
+      local payload = (vim.b[buf].nv_rows or {})[vim.api.nvim_win_get_cursor(0)[1]]
+      if handler and payload ~= nil then
+        handler(payload)
+      end
+    end, 'Open')
     -- Rows are drawn as virtual text over empty lines; keep the cursor at col 0.
     vim.api.nvim_create_autocmd('CursorMoved', {
       buffer = buf,
@@ -139,9 +141,32 @@ function M.changes(win, slot)
     end
   end
 
-  return show(win, slot, 'changes', lines, rows, function(path)
-    NVSlots.open_file(vim.fn.getcwd() .. '/' .. path)
+  -- <CR> diffs the file (diffview); `o` opens it in the content window.
+  local ok = show(win, slot, 'changes', lines, rows, function(path)
+    M.diff(path)
   end)
+  local buf = vim.api.nvim_win_get_buf(win)
+  vim.keymap.set('n', 'o', function()
+    local path = (vim.b[buf].nv_rows or {})[vim.api.nvim_win_get_cursor(0)[1]]
+    if path then
+      NVSlots.open_file(vim.fn.getcwd() .. '/' .. path)
+    end
+  end, { buffer = buf, nowait = true, desc = 'Open file' })
+  return ok
+end
+
+--- Diffview for one changed path: the working tree, or `rev` (that commit).
+--- A submodule has no file diff in its parent, so its own working tree is
+--- opened instead (`-C`).
+function M.diff(path, rev)
+  local entry = vim.fn.systemlist({ 'git', 'ls-files', '-s', '--', path })[1] or ''
+  if entry:match '^160000' then
+    if rev then
+      return NVMessages.info(path .. ' is a submodule; that commit only moved its pointer')
+    end
+    return vim.cmd('DiffviewOpen -C' .. vim.fn.fnameescape(vim.fn.fnamemodify(path, ':p')))
+  end
+  vim.cmd('DiffviewOpen ' .. (rev and (rev .. '^! ') or '') .. '-- ' .. vim.fn.fnameescape(path))
 end
 
 -- ── opencode / project ─────────────────────────────────────────────────────
@@ -270,6 +295,17 @@ function M.lsp(win, slot)
     lines[#lines + 1] = P.meter(w, progress.percent, 'Purple')
   end
 
+  -- Code actions where the cursor rests (K shows them).
+  local acts = data.actions
+  if acts.count > 0 then
+    lines[#lines + 1] = P.blank()
+    lines[#lines + 1] = P.row(
+      { { '󰌵 ', 'NvYellow' }, { acts.count .. (acts.count == 1 and ' code action' or ' code actions'), 'NvValue' } },
+      { { 'line ' .. acts.line .. '  ', 'NvMuted' }, { ' K ', 'NvKey' } },
+      w
+    )
+  end
+
   lines[#lines + 1] = P.blank()
   local total = diag.error + diag.warn + diag.info + diag.hint
   lines[#lines + 1] = P.label('Diagnostics', tostring(total), w)
@@ -393,12 +429,14 @@ end
 ---@return boolean
 function M.prompt(win, name)
   local slot = name or 'bottom'
-  -- One prompt buffer per slot, so a draft survives a mode switch.
-  local buf = vim.w[win].nv_prompt_buf
+  -- One prompt buffer per slot, kept by the module (not the window), so a
+  -- draft survives a mode switch and hiding/showing the panel.
+  M.prompt_bufs = M.prompt_bufs or {}
+  local buf = M.prompt_bufs[slot]
 
   if not (buf and vim.api.nvim_buf_is_valid(buf)) then
     buf = vim.api.nvim_create_buf(false, true)
-    vim.w[win].nv_prompt_buf = buf
+    M.prompt_bufs[slot] = buf
     vim.bo[buf].buftype = 'nofile'
     vim.bo[buf].bufhidden = 'hide'
     vim.bo[buf].swapfile = false

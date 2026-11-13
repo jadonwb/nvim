@@ -21,29 +21,33 @@ vim.notify('an error', vim.log.levels.ERROR)
 add('entries=' .. #NVNotify.store)
 add('notify replaced=' .. tostring(vim.g.nv_notify_installed == true))
 
-NVNotify.open()
-
-local function visible()
-  local text = {}
-  for _, win in ipairs(vim.api.nvim_list_wins()) do
-    local cfg = vim.api.nvim_win_get_config(win)
-    if cfg.zindex == 70 then
-      local buf = vim.api.nvim_win_get_buf(win)
-      for _, mark in ipairs(vim.api.nvim_buf_get_extmarks(buf, -1, 0, -1, { details = true })) do
-        if mark[4].virt_text then
-          text[#text + 1] = table.concat(vim.tbl_map(function(c) return c[1] end, mark[4].virt_text))
-        end
-      end
-    end
+-- Each notification shows a toast; <Esc> (NVNotify.dismiss) clears them.
+vim.wait(200)
+local toasts = 0
+for _, w in ipairs(vim.api.nvim_list_wins()) do
+  if vim.api.nvim_win_get_config(w).zindex == 150 then
+    toasts = toasts + 1
   end
-  return table.concat(text, '\n')
 end
+add('toasts=' .. toasts)
+NVNotify.dismiss()
+local after = 0
+for _, w in ipairs(vim.api.nvim_list_wins()) do
+  if vim.api.nvim_win_get_config(w).zindex == 150 then
+    after = after + 1
+  end
+end
+add('dismissed=' .. tostring(after == 0))
 
-local shown = visible()
+-- The centre is a real buffer: entries as text, filters in the winbar.
+NVNotify.open()
+local h = NVNotify.handle
+local shown = table.concat(vim.api.nvim_buf_get_lines(h.buf, 0, -1, false), '\n')
+local bar = vim.wo[h.win].winbar
 add('shows title=' .. tostring(shown:find('Test', 1, true) ~= nil))
 add('shows info=' .. tostring(shown:find('first message', 1, true) ~= nil))
 add('shows error=' .. tostring(shown:find('an error', 1, true) ~= nil))
-add('shows tabs=' .. tostring(shown:find('all', 1, true) ~= nil and shown:find('errors', 1, true) ~= nil))
+add('shows tabs=' .. tostring(bar:find('all', 1, true) ~= nil and bar:find('errors', 1, true) ~= nil))
 add('unread cleared=' .. tostring(NVNotify.unread == 0))
 
 NVNotify.clear()
@@ -56,7 +60,7 @@ end
 add('cleared=' .. tostring(read == #NVNotify.store))
 add('unread after clear=' .. tostring(NVNotify.unread == 0))
 
-io.write(table.concat(out, '\n'))
+io.write('\n' .. table.concat(out, '\n'))
 LUA
 )
 
@@ -67,6 +71,8 @@ fail=0
 check() { grep -qx -- "$1" <<<"$got" || { printf 'FAIL: missing %s\n' "$1"; fail=1; }; }
 check 'entries=2'
 check 'notify replaced=true'
+check 'toasts=2'
+check 'dismissed=true'
 check 'shows title=true'
 check 'shows info=true'
 check 'shows error=true'

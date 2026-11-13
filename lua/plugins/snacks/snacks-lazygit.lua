@@ -88,33 +88,15 @@ function NVSLazygit.setup()
   end)
 end
 
-function NVSLazygit.keymaps()
-  K.map {
-    '<leader>gl',
-    'Lazygit Log',
-    NVSLazygit.log,
-    mode = { 'n' },
-  }
-  K.map {
-    '<leader>gs',
-    'Lazygit Status',
-    NVSLazygit.status,
-    mode = { 'n' },
-  }
-  K.map {
-    '<leader>gt',
-    'Lazygit Stash',
-    NVSLazygit.stash,
-    mode = { 'n' },
-  }
-end
+--- Lazygit lives on <M-g> only (snacks-lazygit spec keys).
+function NVSLazygit.keymaps() end
 
 return {
   'folke/snacks.nvim',
   opts = {
     styles = {
       lazygit = { width = 0, height = 0, backdrop = false },
-      lazygit_view = { width = 0.85, height = 0.85, border = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' }, backdrop = true },
+      lazygit_view = { width = 0.85, height = 0.85, border = { ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ' }, backdrop = 70 },
     },
     lazygit = {
       config = {

@@ -2,17 +2,24 @@
 --
 -- Run through scripts/gen-keymaps.sh so the output uses the same config.
 
+-- Keymaps set on VeryLazy (and in its scheduled step) only exist after
+-- startup settles; headless never reaches it on its own.
+vim.api.nvim_exec_autocmds('User', { pattern = 'VeryLazy', modeline = false })
+vim.wait(1500, function()
+  return vim.fn.maparg('<leader>li', 'n') ~= ''
+end)
+
 local groups = {
-  b = 'buffers',
-  c = 'code',
-  d = 'diffview',
-  f = 'find',
-  q = 'quit / session',
-  s = 'search',
-  u = 'ui',
-  w = 'windows',
-  x = 'diagnostics',
   a = 'opencode',
+  c = 'code',
+  f = 'find',
+  g = 'git',
+  l = 'layout / panels',
+  p = 'plugins',
+  s = 'search',
+  t = 'terminals',
+  u = 'ui',
+  v = 'views (dashboards)',
 }
 
 local rows = {}

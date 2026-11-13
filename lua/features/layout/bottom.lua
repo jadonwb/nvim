@@ -2,8 +2,7 @@
 --
 -- The slot hosts one provider at a time: prompt, terminal, quickfix or
 -- problems. `<C-/>` shows/hides the panel; terminals are managed by
--- layout/terminals.lua. The command line is not a mode: ui2's cmd window is
--- pinned over the slot's tab row while it is open (config/ui2.lua).
+-- layout/terminals.lua. The command line floats (config/ui2.lua).
 --
 -- A window-local winbar (not volt: the content is a real buffer) shows the modes.
 
@@ -26,20 +25,23 @@ local function count(mode)
   return 0
 end
 
---- Tab strip: active tab in the structure colour, underlined; counts muted;
---- key hints right-aligned.
+--- Tab strip: the active tab with its name, the others icon + count only
+--- (room for the key hints); key hints right-aligned.
 ---@param win WinID
 ---@param mode string
 function NVBottom.winbar(win, mode)
   local parts = { '%#NvTabStrip# ' }
   for _, m in ipairs(NVBottom.modes) do
-    local hl = m == mode and 'NvTabActive' or 'NvTabInactive'
     local n = count(m)
-    parts[#parts + 1] = ('%%#%s#%s %s%%#NvTabStrip#'):format(hl, ICONS[m], m:sub(1, 1):upper() .. m:sub(2))
+    if m == mode then
+      parts[#parts + 1] = ('%%#NvTabActive#%s %s%%#NvTabStrip#'):format(ICONS[m], m:sub(1, 1):upper() .. m:sub(2))
+    else
+      parts[#parts + 1] = ('%%#NvTabInactive#%s%%#NvTabStrip#'):format(ICONS[m])
+    end
     if n > 0 then
       parts[#parts + 1] = ('%%#NvTabCount# %d'):format(n)
     end
-    parts[#parts + 1] = '%#NvTabStrip#   '
+    parts[#parts + 1] = '%#NvTabStrip#  '
   end
   parts[#parts + 1] = '%='
   if mode == 'prompt' then
@@ -80,6 +82,33 @@ function NVBottom.set(mode)
   end
   return ok
 end
+
+-- Quickfix and location lists belong in the bottom panel. A list window
+-- opened anywhere else (`:copen`, `gO`'s table of contents, plugins) is
+-- closed and its list shown in the panel's quickfix mode; a location list is
+-- copied to the quickfix list so its entries still jump into the content.
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = 'qf',
+  group = vim.api.nvim_create_augroup('NV bottom qf', { clear = true }),
+  callback = function(ev)
+    vim.schedule(function()
+      if not (NVSlots and NVSlots.is_applied()) then
+        return
+      end
+      local win = vim.fn.bufwinid(ev.buf)
+      if win == -1 or NVSlots.slot_of_win(win) then
+        return
+      end
+      local info = vim.fn.getwininfo(win)[1] or {}
+      if info.loclist == 1 then
+        local list = vim.fn.getloclist(win, { items = 0, title = 0 })
+        vim.fn.setqflist({}, ' ', { items = list.items, title = list.title })
+      end
+      pcall(vim.api.nvim_win_close, win, false)
+      NVBottom.set 'quickfix'
+    end)
+  end,
+})
 
 --- Redraw the tab strip (counts and titles change outside a mode switch).
 function NVBottom.refresh_winbar()
@@ -174,55 +203,7 @@ function NVBottom.setup()
   for _, lhs in ipairs { '<C-/>', '<C-_>' } do
     K.map { lhs, 'Toggle bottom panel', NVBottom.toggle, mode = { 'n', 'v', 'i', 't' } }
   end
-  K.map { '<leader>tt', 'Terminals: pick', NVTerminals.pick, mode = 'n' }
-  K.map {
-    '<leader>tn',
-    'Terminals: new (panel)',
-    function()
-      NVTerminals.new 'panel'
-    end,
-    mode = 'n',
-  }
-  K.map {
-    '<leader>tb',
-    'Terminals: in bottom panel',
-    function()
-      NVTerminals.place 'panel'
-    end,
-    mode = 'n',
-  }
-  K.map {
-    '<leader>tf',
-    'Terminals: floating (toggle)',
-    function()
-      NVTerminals.place 'float'
-    end,
-    mode = 'n',
-  }
-  K.map {
-    '<leader>tc',
-    'Terminals: in main window',
-    function()
-      NVTerminals.place 'content'
-    end,
-    mode = 'n',
-  }
-  K.map {
-    '<leader>t]',
-    'Terminals: next',
-    function()
-      NVTerminals.cycle(1)
-    end,
-    mode = 'n',
-  }
-  K.map {
-    '<leader>t[',
-    'Terminals: previous',
-    function()
-      NVTerminals.cycle(-1)
-    end,
-    mode = 'n',
-  }
+  -- Terminal placement keys: features/layout/keymaps.lua.
 
   -- Terminal titles change as commands run; keep the strip current.
   vim.api.nvim_create_autocmd({ 'TermRequest', 'TermOpen', 'BufEnter' }, {

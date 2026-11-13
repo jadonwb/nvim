@@ -7,15 +7,75 @@ The leader is `Space`; the local leader is `\`.
 
 | Key | Action | Mode |
 | --- | --- | --- |
-| `<C-S>` | vim.lsp.buf.signature_help() | v |
+| `,` | Undo break after comma | i |
+| `-` | Edit directory (oil) | n |
+| `.` | Undo break after period | i |
+| `;` | Undo break after semicolon | i |
+| `<C-/>` | Toggle bottom panel | n |
+| `<C-B>` | Exit terminal mode | t |
+| `<C-D>` | Scroll down | n |
+| `<C-H>` | Move to window on the left | n |
+| `<C-J>` | Move to window below | n |
+| `<C-K>` | Move to window above | n |
+| `<C-L>` | Move to window on the right | n |
+| `<C-S-C>` | Copy selected text | v |
+| `<C-S-S>` | Save all files | n |
+| `<C-S-V>` | Paste text | n |
+| `<C-S>` | Save file | n |
+| `<C-U>` | Scroll up | n |
+| `<C-U>` | Exit terminal mode | t |
 | `<C-W><C-D>` | Show diagnostics under the cursor | n |
 | `<C-W>d` | Show diagnostics under the cursor | n |
+| `<C-_>` | Toggle bottom panel | n |
+| `<Esc>` | Drop all the noise and Esc | n |
+| `<M-0>` | Reset layout sizes | n |
+| `<M-=>` | Reset layout sizes | n |
+| `<M-CR>` | Insert new line above | n |
+| `<M-Down>` | Move selected lines down | v |
+| `<M-Down>` | Move line down | n |
+| `<M-Left>` | Jump one word to the left | i |
+| `<M-Q>` | Force quit all | n |
+| `<M-Right>` | Jump one word to the right | i |
+| `<M-S-Down>` | Move window down | n |
+| `<M-S-Left>` | Move window to the left | n |
+| `<M-S-Right>` | Move window to the right | n |
+| `<M-S-Up>` | Move window up | n |
+| `<M-Space>` | Insert Space | n |
+| `<M-Tab>` | Swap windows | n |
+| `<M-Up>` | Move line up | n |
+| `<M-Up>` | Move selected lines up | v |
+| `<M-W>` | Delete current buffer and close current window if there are multiple | n |
 | `<M-a>` | Agent output | n |
+| `<M-b>` | Toggle most recent buffer | n |
 | `<M-g>` | Lazygit | n |
+| `<M-h>` | Scroll left | n |
 | `<M-i>` | Toggle IDE layout | n |
+| `<M-j>` | Scroll down a bit | n |
+| `<M-k>` | Scroll up a bit | n |
+| `<M-l>` | Scroll right | n |
 | `<M-n>` | Cycle bottom panel | n |
-| `<S-Tab>` | vim.snippet.jump if active, otherwise <S-Tab> | v |
-| `<Tab>` | vim.snippet.jump if active, otherwise <Tab> | v |
+| `<M-q>` | Save all and quit | n |
+| `<M-r>` | Save session and restart | n |
+| `<M-t>` | Create new buffer | n |
+| `<M-w>` | Delete current buffer, but do not close current window if there are multiple | n |
+| `<M-y>F` | Yank filename without extension | n |
+| `<M-y>a` | Yank absolute file path | n |
+| `<M-y>c` | Yank working directory | n |
+| `<M-y>f` | Yank filename | n |
+| `<M-y>r` | Yank file path relative to cwd | n |
+| `<S-CR>` | Insert new line below | n |
+| `<S-Down>` | Decrease window height | n |
+| `<S-Left>` | Increase window width | n |
+| `<S-Right>` | Decrease window width | n |
+| `<S-Space>` | Insert Space | n |
+| `<S-Tab>` | Unindent | v |
+| `<S-Tab>` | vim.snippet.jump if active, otherwise <S-Tab> | i |
+| `<S-Up>` | Increase window height | n |
+| `<Tab>` | vim.snippet.jump if active, otherwise <Tab> | i |
+| `<Tab>` | Indent | v |
+| `J` | Join lines and keep cursor position | n |
+| `U` | Redo | n |
+| `X` | Don't replace clipboard content when deleting | n |
 | `[ ` | Add empty line above cursor | n |
 | `[<C-L>` | :lpfile | n |
 | `[<C-Q>` | :cpfile | n |
@@ -52,8 +112,14 @@ The leader is `Space`; the local leader is `\`.
 | `]n` | Select next node | v |
 | `]q` | :cnext | n |
 | `]t` | :tnext | n |
+| `a` | Around textobject | v |
+| `aN` | Around next textobject | v |
+| `al` | Around last textobject | v |
 | `an` | Select parent (outer) node | v |
+| `c` | Don't replace clipboard content when changing | n |
 | `gO` | vim.lsp.buf.document_symbol() | n |
+| `g[` | Move to left "around" | n |
+| `g]` | Move to right "around" | n |
 | `gc` | Toggle comment | n |
 | `gcc` | Toggle comment line | n |
 | `gra` | vim.lsp.buf.code_action() | n |
@@ -63,12 +129,17 @@ The leader is `Space`; the local leader is `\`.
 | `grt` | vim.lsp.buf.type_definition() | n |
 | `grx` | vim.lsp.codelens.run() | n |
 | `gx` | Opens filepath or URI under cursor with the system handler (file explorer, web browser, …) | n |
+| `i` | Inside textobject | v |
+| `iN` | Inside next textobject | v |
+| `il` | Inside last textobject | v |
 | `in` | Select child (inner) node | v |
+| `p` | Don't replace clipboard content when pasting | v |
+| `s` | Don't replace clipboard content when inserting | v |
 | `sF` | Find left surrounding | n |
 | `sFl` | Find previous left surrounding | n |
 | `sFn` | Find next left surrounding | n |
-| `sa` | Add surrounding to selection | v |
 | `sa` | Add surrounding | n |
+| `sa` | Add surrounding to selection | v |
 | `sd` | Delete surrounding | n |
 | `sdl` | Delete previous surrounding | n |
 | `sdn` | Delete next surrounding | n |
@@ -81,6 +152,7 @@ The leader is `Space`; the local leader is `\`.
 | `sr` | Replace surrounding | n |
 | `srl` | Replace previous surrounding | n |
 | `srn` | Replace next surrounding | n |
+| `x` | Don't replace clipboard content when deleting | n |
 ## Buffers
 
 | Key | Action | Mode |
@@ -90,22 +162,16 @@ The leader is `Space`; the local leader is `\`.
 
 | Key | Action | Mode |
 | --- | --- | --- |
+| `c<lt>` | Swap parameter with previous | n |
+| `c>` | Swap parameter with next | n |
 | `cf` | Format buffer | n |
 | `cj` | Join or Split Code Block | n |
-| `cm` | Mason | n |
-## Diffview
-
-| Key | Action | Mode |
-| --- | --- | --- |
-| `dL` | Diffview Log (This File) | n |
-| `dh` | File History (Pinned to Working Tree) | n |
-| `dl` | Diffview Log | n |
-| `dv` | Diffview | n |
 ## Find
 
 | Key | Action | Mode |
 | --- | --- | --- |
 | `fR` | Search and Replace in project | n |
+| `fe` | File explorer (toggle) | n |
 | `ff` | Find Files (fff) | n |
 | `fl` | Resume Last Picker | n |
 | `fr` | Search and Replace in current buffer | n |
@@ -143,24 +209,40 @@ The leader is `Space`; the local leader is `\`.
 
 | Key | Action | Mode |
 | --- | --- | --- |
+| `u<Tab>` | Toggle tab characters | n |
+| `uA` | Toggle Tabline | n |
+| `uC` | Colorschemes | n |
+| `uD` | Toggle Dimming | n |
+| `uF` | Toggle Auto Format (Buffer) | n |
 | `uH` | Toggle Transparency | n |
+| `uI` | Inspect Tree | n |
+| `uL` | Toggle Relative Number | n |
+| `uS` | Toggle Smooth Scroll | n |
+| `uT` | Toggle Treesitter Highlight | n |
+| `ua` | Toggle Animations | n |
+| `ub` | Toggle Dark Background | n |
+| `uc` | Toggle Conceal Level | n |
+| `ud` | Toggle Diagnostics | n |
+| `uf` | Toggle Auto Format (Global) | n |
+| `ug` | Toggle Indent Guides | n |
+| `uh` | Toggle Inlay Hints | n |
+| `ui` | Inspect highlights at cursor | n |
+| `ul` | Toggle Line Numbers | n |
+| `un` | Clear notifications | n |
+| `up` | Toggle file preview | n |
+| `ur` | Redraw / Clear hlsearch / Diff Update | n |
+| `us` | Toggle Spelling | n |
 | `ut` | Toggle Treesitter Context | n |
-## Windows
+| `uw` | Toggle Wrap | n |
+## Opencode
 
 | Key | Action | Mode |
 | --- | --- | --- |
-| `wc` | Compare: close and restore layout | n |
-| `wm` | Compare: man page in vertical split | n |
-| `wv` | Compare: file in vertical split | n |
-## Diagnostics
-
-| Key | Action | Mode |
-| --- | --- | --- |
-| `xE` | Diagnostics: ERROR [workspace] | n |
-| `xW` | Diagnostics: WARN [workspace] | n |
-| `xe` | Diagnostics: ERROR [current buffer] | n |
-| `xt` | Show TODOs | n |
-| `xw` | Diagnostics: WARN [current buffer] | n |
+| `aa` | Show all OpenCode artifacts | n |
+| `ae` | Show OpenCode evidence | n |
+| `ap` | Show OpenCode plans | n |
+| `ar` | Show OpenCode reviews | n |
+| `as` | Attach OpenCode session | n |
 ## Other
 
 | Key | Action | Mode |
@@ -176,6 +258,54 @@ The leader is `Space`; the local leader is `\`.
 | `:NVBottom` | prompt / quickfix / problems, or cycle |  |
 | `:NVCheatsheet` | this reference, drawn with volt |  |
 | `:NVLayout` | open / close / slot <name> / provider <slot> <name> / swap <a> <b> / status |  |
+## Git
+
+| Key | Action | Mode |
+| --- | --- | --- |
+| `gH` | File history (pinned to working tree) | n |
+| `gg` | Git changes (diffview) | n |
+| `gh` | File history | n |
+| `gl` | Git log (repository history) | n |
+## Layout / panels
+
+| Key | Action | Mode |
+| --- | --- | --- |
+| `l0` | Reset panel sizes | n |
+| `lb` | Panel: bottom | n |
+| `lc` | Panel: changes | n |
+| `le` | Panel: explorer | n |
+| `li` | Focus mode (toggle layout) | n |
+| `lm` | Compare: man page side by side | n |
+| `lo` | Panel: OpenCode | n |
+| `ls` | Panel: LSP | n |
+| `lv` | Compare: file side by side | n |
+| `lw` | Swap this panel with… | n |
+| `lx` | Compare: close | n |
+## Plugins
+
+| Key | Action | Mode |
+| --- | --- | --- |
+| `pl` | Lazy | n |
+| `pm` | Mason | n |
+| `pu` | Update plugins | n |
+## Terminals
+
+| Key | Action | Mode |
+| --- | --- | --- |
+| `t[` | Previous terminal | n |
+| `t]` | Next terminal | n |
+| `tb` | Terminal in bottom panel | n |
+| `tc` | Terminal in main window | n |
+| `tf` | Floating terminal (toggle) | n |
+| `tn` | New terminal (panel) | n |
+| `tt` | Pick terminal | n |
+## Views (dashboards)
+
+| Key | Action | Mode |
+| --- | --- | --- |
+| `vg` | View: Git dashboard | n |
+| `vl` | View: LSP dashboard | n |
+| `vo` | View: OpenCode dashboard | n |
 
 ## Notes
 

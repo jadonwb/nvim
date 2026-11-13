@@ -3,18 +3,8 @@ local Picker = {}
 NVTodoComments = {
   'folke/todo-comments.nvim',
 
-  keys = function()
-    return {
-      {
-        '<leader>xt',
-        function()
-          Picker.list { 'TODO', 'FIXME' }
-        end,
-        mode = 'n',
-        desc = 'Show TODOs',
-      },
-    }
-  end,
+  -- Pickers: <leader>st / <leader>sT (snacks).
+  cmd = { 'TodoTrouble', 'TodoQuickFix' },
   opts = {
     keywords = {
       TODO = { icon = '', color = 'todo' },

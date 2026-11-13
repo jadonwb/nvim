@@ -14,7 +14,7 @@ NVKeymaps = {
   scroll_side = { left = '<A-h>', right = '<A-l>' },
 
   window_move = { up = '<C-k>', down = '<C-j>', left = '<C-h>', right = '<C-l>' },
-  window_swap = { up = '<M-S-Left>', down = '<M-S-Right>', left = '<M-S-Up>', right = '<M-S-Down>', swap = '<M-Tab>' },
+  window_swap = { up = '<M-S-Up>', down = '<M-S-Down>', left = '<M-S-Left>', right = '<M-S-Right>', swap = '<M-Tab>' },
   layout_resize = { up = '<S-Left>', down = '<S-Right>' },
   window_resize = { up = '<S-Up>', down = '<S-Down>' },
   layout_equalize = '<A-=>',

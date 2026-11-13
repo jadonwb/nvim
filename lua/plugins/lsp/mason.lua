@@ -38,7 +38,7 @@ return {
     return require('config.profile').wants 'lsp'
   end,
   cmd = 'Mason',
-  keys = { { '<leader>cm', '<cmd>Mason<cr>', desc = 'Mason' } },
+  keys = { { '<leader>pm', '<cmd>Mason<cr>', desc = 'Mason' } },
   build = ':MasonUpdate',
   opts = {
     ui = {
@@ -46,7 +46,7 @@ return {
       height = 0.8,
       -- Same surface as Lazy and the dashboards (arrowlake groups/mason.lua).
       border = 'solid',
-      backdrop = 60,
+      backdrop = 70,
       icons = { package_installed = '●', package_pending = '󰔟', package_uninstalled = '○' },
     },
     ensure_installed = {

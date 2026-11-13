@@ -28,6 +28,15 @@ function NVLazy.anything_missing()
   return false
 end
 
+--- Plugins the checker found updates for.
+function NVLazy.update_count()
+  local ok, status = pcall(require, 'lazy.status')
+  if not ok or not status.has_updates() then
+    return 0
+  end
+  return tonumber((status.updates() or ''):match '%d+') or 0
+end
+
 function NVLazy.install()
   require('lazy').install()
 end
@@ -45,7 +54,7 @@ end
 
 -- Refresh dashboard items after lazy operations complete
 vim.api.nvim_create_autocmd('User', {
-  pattern = 'LazyInstall',
+  pattern = { 'LazyInstall', 'LazyUpdate', 'LazyCheck' },
   callback = function()
     if NVSnacksDashboard.is_active() then
       vim.cmd 'edit'

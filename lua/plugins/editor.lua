@@ -109,6 +109,10 @@ return {
         end)
 
         step(function()
+          require('features.layout.keymaps').setup()
+        end)
+
+        step(function()
           NVGrugFar.autocmds()
         end)
       end)

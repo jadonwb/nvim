@@ -9,6 +9,9 @@ function NVEditing.esc()
   end
 
   NVSNotifier.hide()
+  if NVNotify and NVNotify.dismiss then
+    NVNotify.dismiss()
+  end
   vim.cmd 'silent noh'
 end
 
@@ -228,7 +231,7 @@ function NVEditing.keymaps()
   K.map { ';', 'Undo break after semicolon', ';<C-g>u', mode = 'i' }
 
   K.map {
-    '<leader>yc',
+    '<M-y>c',
     'Yank working directory',
     function()
       fn.yank_path 'cwd'
@@ -237,7 +240,7 @@ function NVEditing.keymaps()
   }
 
   K.map {
-    '<leader>ya',
+    '<M-y>a',
     'Yank absolute file path',
     function()
       fn.yank_path 'absolute'
@@ -246,7 +249,7 @@ function NVEditing.keymaps()
   }
 
   K.map {
-    '<leader>yr',
+    '<M-y>r',
     'Yank file path relative to cwd',
     function()
       fn.yank_path 'relative'
@@ -255,7 +258,7 @@ function NVEditing.keymaps()
   }
 
   K.map {
-    '<leader>yf',
+    '<M-y>f',
     'Yank filename',
     function()
       fn.yank_path 'filename'
@@ -264,7 +267,7 @@ function NVEditing.keymaps()
   }
 
   K.map {
-    '<leader>yF',
+    '<M-y>F',
     'Yank filename without extension',
     function()
       fn.yank_path 'filestem'
