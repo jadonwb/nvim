@@ -124,6 +124,7 @@ function NVBridge.setup()
   require('features.bridge.registry').setup()
   require('features.opencode.sessions').setup()
   require('features.opencode.transcript').setup()
+  require('features.opencode.requests').setup()
 
   vim.api.nvim_create_user_command('NVAgent', function(args)
     local arg = vim.trim(args.args)

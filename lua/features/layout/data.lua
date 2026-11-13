@@ -152,19 +152,22 @@ end
 function M.lsp_clients()
   local out = {}
   for _, client in ipairs(vim.lsp.get_clients()) do
-    local bufs = vim.tbl_keys(client.attached_buffers or {})
-    out[#out + 1] = {
-      id = client.id,
-      name = client.name,
-      root = client.root_dir or (client.config and client.config.root_dir),
-      filetypes = client.config and client.config.filetypes or {},
-      cmd = client.config and client.config.cmd,
-      settings = client.config and client.config.settings,
-      init_options = client.config and client.config.init_options,
-      bufs = #bufs,
-      offset = client.offset_encoding,
-      caps = client.server_capabilities or {},
-    }
+    -- The prompt panel's in-process server is not a language server to list.
+    if client.name ~= 'opencode_prompt' then
+      local bufs = vim.tbl_keys(client.attached_buffers or {})
+      out[#out + 1] = {
+        id = client.id,
+        name = client.name,
+        root = client.root_dir or (client.config and client.config.root_dir),
+        filetypes = client.config and client.config.filetypes or {},
+        cmd = client.config and client.config.cmd,
+        settings = client.config and client.config.settings,
+        init_options = client.config and client.config.init_options,
+        bufs = #bufs,
+        offset = client.offset_encoding,
+        caps = client.server_capabilities or {},
+      }
+    end
   end
   table.sort(out, function(a, b)
     return a.name < b.name

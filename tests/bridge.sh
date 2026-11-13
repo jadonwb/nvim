@@ -175,6 +175,42 @@ add('rebuilt=' .. tostring(T.views.ses_int ~= nil and text ~= nil and table.conc
 -- Tool detail: plugin tools run through `execute`.
 add('execute detail=' .. tostring(T.tool_detail('execute', { code = 'await tools.nvim.control({ action: "open" })' })))
 
+-- ── context: references, parsing, completion, forms ─────────────────────────
+local ctx = require 'features.opencode.context'
+local L = require 'features.opencode.prompt_lsp'
+local R = require 'features.opencode.requests'
+vim.cmd('edit ' .. vim.fn.fnameescape(vim.env.PROBE_FILE))
+local pbuf = vim.api.nvim_get_current_buf()
+local probe_rel = ctx.relpath(vim.env.PROBE_FILE)
+add('reference=' .. tostring(ctx.reference(pbuf, 1, 2) == '@' .. probe_rel .. ':1-2'))
+local input = ctx.parse('see @' .. probe_rel .. ':1-2, $planning. and @missing.txt', { planning = true }, {})
+local f1 = input.files and input.files[1]
+add('file attachment=' .. tostring(#input.files == 1 and f1.uri:match '%?start=1&end=2$' ~= nil and f1.mention.text == '@' .. probe_rel .. ':1-2'))
+add('skill=' .. tostring(input.skills and input.skills[1].id == 'planning'))
+local cmd = ctx.parse('/review the branch', nil, { review = true })
+add('command=' .. tostring(cmd.command == 'review' and cmd.args == 'the branch'))
+add('path is not a command=' .. tostring(ctx.parse('/home/x is a path', nil, { home = true }).command == nil))
+add('utf16 mention=' .. ctx.parse('é @' .. probe_rel).files[1].mention.start)
+vim.diagnostic.set(vim.api.nvim_create_namespace 'probe', pbuf, { { lnum = 1, col = 0, message = 'bad thing', severity = vim.diagnostic.severity.WARN, source = 'probe' } })
+local block = ctx.diagnostics(pbuf, 1, 2)
+add('diagnostics block=' .. tostring(block[1] == '@' .. probe_rel .. ':1-2 diagnostics:' and block[2] == '- L2 warning [probe]: bad thing'))
+add('whole-file diagnostics not attached=' .. tostring(ctx.diagnostics(pbuf, 1, 2, true)[1]:sub(1, 1) ~= '@'))
+
+ctx.known = { skills = { planning = true }, commands = { review = true }, skill_list = { { id = 'planning', name = 'Planning', description = 'Plans.' } }, command_list = { { name = 'review', description = 'Review.' } } }
+local items = L.complete('use $pla', 8, 0)
+add('complete skill=' .. tostring(items[1] and items[1].textEdit.newText == '$planning '))
+items = L.complete('/re', 3, 0)
+add('complete command=' .. tostring(items[1] and items[1].textEdit.newText == '/review '))
+add('no command mid-line=' .. #L.complete('x /re', 5, 0))
+add('file score=' .. tostring(L.file_score('a/opencode/transcript.lua', 'opencode/trans') == 0 and L.file_score('a/b.lua', 'opencode') == nil))
+local hover = L.hover('see @' .. probe_rel .. ':2', 6)
+add('hover=' .. tostring(hover ~= nil and hover:find('beta', 1, true) ~= nil))
+
+add('when eq=' .. tostring(R.applies({ when = { { key = 'a', op = 'eq', value = true } } }, { a = true })))
+add('when neq=' .. tostring(R.applies({ when = { { key = 'a', op = 'neq', value = true } } }, { a = true })))
+add('hidden skipped=' .. tostring(R.applies({ hidden = true }, {})))
+add('describe=' .. R.describe { action = 'edit', resources = { 'a.lua', 'b.lua' } })
+
 -- ── agent-facing entry points (nvim tool) ───────────────────────────────────
 local registry = vim.fn.glob(vim.env.XDG_RUNTIME_DIR .. '/nvim-bridge/*.json', false, true)
 add('registry=' .. tostring(#registry == 1))
@@ -218,6 +254,23 @@ check 'expanded=true'
 check 'view dropped=true'
 check 'rebuilt=true'
 check 'execute detail=nvim.control open'
+check 'reference=true'
+check 'file attachment=true'
+check 'skill=true'
+check 'command=true'
+check 'path is not a command=true'
+check 'utf16 mention=2'
+check 'diagnostics block=true'
+check 'whole-file diagnostics not attached=true'
+check 'complete skill=true'
+check 'complete command=true'
+check 'no command mid-line=0'
+check 'file score=true'
+check 'hover=true'
+check 'when eq=true'
+check 'when neq=false'
+check 'hidden skipped=false'
+check 'describe=edit a.lua (+1)'
 check 'registry=true'
 check 'open_file=true'
 check 'open_line=2'

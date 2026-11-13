@@ -53,7 +53,9 @@ end
 
 local function pick_source()
   local win = vim.api.nvim_get_current_win()
-  if vim.api.nvim_win_get_config(win).relative ~= '' or (NVSlots and NVSlots.slot_of_win and NVSlots.slot_of_win(win)) then
+  -- A panel with its own language server (the prompt) hovers itself.
+  local own = #vim.lsp.get_clients { bufnr = vim.api.nvim_win_get_buf(win), method = 'textDocument/hover' } > 0
+  if vim.api.nvim_win_get_config(win).relative ~= '' or (not own and NVSlots and NVSlots.slot_of_win and NVSlots.slot_of_win(win)) then
     win = NVSlots and NVSlots.content_win() or win
   end
   return win

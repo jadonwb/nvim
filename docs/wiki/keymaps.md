@@ -242,7 +242,25 @@ The leader is `Space`; the local leader is `\`.
 | `ae` | Show OpenCode evidence | n |
 | `ap` | Show OpenCode plans | n |
 | `ar` | Show OpenCode reviews | n |
+| `a/` | Search inside OpenCode artifacts | n |
 | `as` | Attach OpenCode session | n |
+| `an` | New OpenCode session (nvim) | n |
+| `ax` | Interrupt the OpenCode session | n |
+| `ai` | Prompt: add a reference to this line / these lines | n, x |
+| `aI` | Prompt: add a reference to this file | n |
+| `ad` | Prompt: add diagnostics (line, selection, or file) | n, x |
+| `ao` | Prompt: add a reference to a motion | n |
+| `aw` | Answer what OpenCode is waiting on | n |
+| `am` | OpenCode model (then its variant) | n |
+| `av` | OpenCode variant (thinking level) | n |
+| `ag` | OpenCode agent | n |
+| `ak` | OpenCode skill → prompt | n |
+| `ac` | OpenCode command → prompt | n |
+
+In the prompt panel: `CR` send (accepts a completion when one is selected),
+`M-CR` steer the running turn, `S-CR` / `C-j` new line, `M-a` transcript.
+Completion after `@` (files), `$` (skills) and `/` (commands, at the start);
+`K` previews a reference, `gd` opens it.
 ## Other
 
 | Key | Action | Mode |
@@ -254,7 +272,7 @@ The leader is `Space`; the local leader is `\`.
 | Key | Action | Mode |
 | --- | --- | --- |
 | `:Lazy` | plugin manager |  |
-| `:NVAgent` | open the transcript, or send a prompt; `new` and `stop` |  |
+| `:NVAgent` | open the transcript, or send a prompt; `new`, `stop`, `reconnect` |  |
 | `:NVBottom` | prompt / quickfix / problems, or cycle |  |
 | `:NVCheatsheet` | this reference, drawn with volt |  |
 | `:NVLayout` | open / close / slot <name> / provider <slot> <name> / swap <a> <b> / status |  |

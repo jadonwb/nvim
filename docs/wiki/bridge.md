@@ -101,6 +101,77 @@ The window is a reading surface: no numbers or sign column, wrapped prose, and
 render-markdown only at 110 columns or wider (narrow tables clip). The winbar
 shows the title, state, waiting chip, model and cost.
 
+## Context in the prompt
+
+References are plain text in the draft, so typed, completed and inserted ones
+behave the same. `features/opencode/context.lua` parses them when sending:
+
+| In the draft | Sent as |
+| --- | --- |
+| `@path`, `@path:12`, `@path:12-30` | `files[]`: `file://abs?start=12&end=30` with a mention span; OpenCode inlines that slice (a bare path: the whole file) |
+| `$skill` | `skills[]` (known skill ids only) |
+| `/command args` at the start | the whole prompt runs that command (`POST …/command`) |
+
+Mentions are offsets in UTF-16 code units (JS strings).
+
+| Key | Adds to the draft |
+| --- | --- |
+| `<leader>ai` | `@path:line` (normal) or `@path:a-b` (visual) |
+| `<leader>aI` | `@path` (the whole file) |
+| `<leader>ad` | diagnostics as a block under `@path:a-b`; with none on the line, the file's, under its plain path (not attached) |
+| `<leader>ao{motion}` | `@path:a-b` for the motion's lines |
+| `<leader>ak` / `<leader>ac` | `$skill` / `/command ` (pickers) |
+
+`features/opencode/prompt_lsp.lua` is an in-process language server attached
+to the prompt buffer (`opencode://prompt`). It needs no process and no
+JSON-RPC: `vim.lsp.start` with a Lua `cmd`.
+
+- **Completion** through blink's LSP source:
+  - `@` offers files (open buffers first). They're filtered and ranked on the
+    whole typed path, because blink's own filter only sees the word after the
+    last `/`. The label is the file name followed by its directory.
+  - `$` offers skills, and `/` offers commands at the start of the prompt.
+- **Hover:** `K` previews a reference's lines, or a skill's or command's
+  description.
+- **Go to definition:** `gd` opens the file at the line.
+
+Project files come from `rg --files --hidden`, not `git ls-files`, which lists
+a submodule as a single entry. The LSP panel leaves this server out.
+
+## Permissions and questions
+
+`features/opencode/requests.lua`:
+
+- **Internal sessions:** a permission request opens a select (allow once,
+  always allow, reject, reject with a message). A form (question) is walked
+  field by field:
+  - free text, number or integer, yes/no, options (with "Something else…" when
+    custom answers are allowed), multiselect (Tab marks), external (opens the
+    URL);
+  - `when` conditions and hidden fields are honoured;
+  - cancelling leaves the question open.
+- **External sessions:** the "waiting on you" indicator only.
+- **`<leader>aw`:** answers or dismisses anything any followed session is
+  waiting on.
+- **Answered elsewhere** (the TUI): `permission.replied` / `form.replied` /
+  `form.cancelled` close the prompt.
+- **Edit review**, opt-in: `vim.g.nv_opencode_review_edits = true`. For
+  internal sessions, an edit permission carrying a single-file patch opens as a
+  diff in its own tab: `da` accept, `dr` reject, `q` decide later. Off by
+  default, since edits are reviewed afterwards in the Changes panel.
+
+## Model, variant, agent
+
+`features/opencode/pickers.lua`:
+
+- **`<leader>am` model:** the TUI's favourites (★) and recents (◷) from
+  `~/.local/state/opencode/model.json` come first. Choosing a model that has
+  variants asks for one.
+- **`<leader>av` variant**, **`<leader>ag` agent** (primary, visible).
+
+The choice goes to the target session (`POST …/model`, `…/agent`). With no
+session yet, it applies to the next one the prompt creates.
+
 ## Agent → editor (`nvim` tool)
 
 An OpenCode plugin runs in the service and does not inherit `$NVIM`, so the

@@ -228,6 +228,11 @@ local handlers = {
 --- One toast when a followed session starts waiting on the user. The
 --- indicator in the session panel and prompt strip stays until it is answered.
 function M.notify_waiting(id, what, detail)
+  -- An internal session asks here directly (features/opencode/requests.lua):
+  -- that prompt is the notice.
+  if M.is_internal(id) then
+    return
+  end
   -- Short first line (the toast preview); the detail follows for the centre.
   local info = M.info[id]
   local title = info and info.title or id:sub(1, 12)

@@ -470,6 +470,8 @@ function M.prompt(win, name)
     vim.bo[buf].swapfile = false
     vim.bo[buf].filetype = 'nvprompt'
     vim.b[buf].nv_slot = slot
+    -- A URI for the prompt's language server (features/opencode/prompt_lsp).
+    pcall(vim.api.nvim_buf_set_name, buf, 'opencode://prompt' .. (slot == 'bottom' and '' or ('/' .. slot)))
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, { '' })
     vim.bo[buf].modifiable = true
 
@@ -522,13 +524,24 @@ function M.prompt(win, name)
     -- scratch pad. A busy agent gets it after its turn (queue); <M-CR>
     -- interjects (steer). <S-CR> / <C-j> add a line.
     vim.keymap.set({ 'n', 'i' }, '<CR>', function()
+      -- With a completion selected, Enter accepts it (blink's `enter`
+      -- preset); otherwise it sends.
+      local ok, blink = pcall(require, 'blink.cmp')
+      if ok and vim.fn.mode() == 'i' and blink.is_visible() and blink.get_selected_item() then
+        blink.accept()
+        return
+      end
       submit 'queue'
-    end, { buffer = buf, nowait = true, desc = 'Send prompt to opencode' })
+    end, { buffer = buf, nowait = true, desc = 'Send prompt (or accept the completion)' })
     vim.keymap.set({ 'n', 'i' }, '<M-CR>', function()
       submit 'steer'
     end, { buffer = buf, nowait = true, desc = 'Send prompt now (steer the running turn)' })
     vim.keymap.set('i', '<S-CR>', '<CR>', { buffer = buf, desc = 'New line' })
     vim.keymap.set('i', '<C-j>', '<CR>', { buffer = buf, desc = 'New line' })
+    -- References highlighted; completion, hover and gd from the prompt server.
+    pcall(function()
+      require('features.opencode.context').setup_buffer(buf)
+    end)
   end
 
   vim.wo[win].wrap = true

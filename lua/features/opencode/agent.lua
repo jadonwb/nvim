@@ -25,7 +25,13 @@ end
 ---@param cb fun(id: string|nil, err: string|nil)
 function M.create(cb)
   local cwd = vim.fn.getcwd()
-  C.create_session(cwd, { metadata = { origin = S.ORIGIN } }, function(err, info)
+  -- Model / agent chosen before there was a session (features/opencode/pickers).
+  local opts = { metadata = { origin = S.ORIGIN } }
+  if M.next then
+    opts.model, opts.agent = M.next.model, M.next.agent
+    M.next = nil
+  end
+  C.create_session(cwd, opts, function(err, info)
     if err or type(info) ~= 'table' or not info.id then
       return cb(nil, err or 'no session id')
     end
@@ -54,39 +60,57 @@ function M.target(cb)
   M.create(cb)
 end
 
---- Send `text` to the target. `opts.delivery`: 'steer' to interject while the
---- agent works; otherwise it queues behind the current turn.
+--- Send `text` to the target. References in it (`@path:a-b`, `$skill`)
+--- become attachments; a leading `/command args` runs that command.
+--- `opts.delivery`: 'steer' interjects while the agent works; otherwise it
+--- queues behind the current turn.
 ---@param text string
----@param opts? { delivery?: 'queue'|'steer', files?: table[], on_error?: fun(err: string) }
+---@param opts? { delivery?: 'queue'|'steer', on_error?: fun(err: string) }
 function M.send(text, opts)
   opts = opts or {}
   if not text or vim.trim(text) == '' then
     return
   end
-  M.target(function(id, err)
-    if not id then
-      NVMessages.warn('opencode: ' .. tostring(err))
-      return opts.on_error and opts.on_error(err)
+  local context = require 'features.opencode.context'
+  local function fail(err)
+    NVMessages.warn('opencode: ' .. tostring(err))
+    if opts.on_error then
+      opts.on_error(err)
     end
-    local internal = S.is_internal(id)
-    if internal and not transcript().visible(id) then
-      transcript().open(id)
-    elseif internal then
-      transcript().view(id)
-    end
-    local input = { text = text, delivery = opts.delivery or 'queue' }
-    if opts.files and #opts.files > 0 then
-      input.files = opts.files
-    end
-    C.prompt(id, input, function(perr)
-      if perr then
-        NVMessages.warn('opencode: ' .. perr)
-        return opts.on_error and opts.on_error(perr)
+  end
+  context.with_known(function(known)
+    M.target(function(id, err)
+      if not id then
+        return fail(err)
       end
-      if not internal then
-        local info = S.info[id] or {}
-        vim.notify(('Sent to %s'):format(info.title or id:sub(1, 12)), vim.log.levels.INFO, { title = 'OpenCode' })
+      local internal = S.is_internal(id)
+      if internal and not transcript().visible(id) then
+        transcript().open(id)
+      elseif internal then
+        transcript().view(id)
       end
+      local input = context.parse(text, known.skills, known.commands)
+      local function done(perr)
+        if perr then
+          return fail(perr)
+        end
+        if not internal then
+          local info = S.info[id] or {}
+          vim.notify(('Sent to %s'):format(info.title or id:sub(1, 12)), vim.log.levels.INFO, { title = 'OpenCode' })
+        end
+      end
+      if input.command then
+        C.request('POST', '/api/session/' .. id .. '/command', {
+          name = input.command,
+          text = input.args or '',
+          files = input.files,
+          skills = input.skills,
+          delivery = opts.delivery or 'queue',
+        }, done)
+        return
+      end
+      input.delivery = opts.delivery or 'queue'
+      C.prompt(id, input, done)
     end)
   end)
 end
