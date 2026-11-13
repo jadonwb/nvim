@@ -9,8 +9,8 @@ local base = vim.fs.dirname(vim.fs.dirname(vim.fs.dirname(vim.fs.normalize(scrip
 package.path = base .. '/lua/?.lua;' .. base .. '/lua/?/init.lua;' .. package.path
 vim.opt.runtimepath:prepend(base)
 
-local rpc = require 'editor.features.opencode-rpc'
-local session = require 'editor.features.opencode-session'
+local rpc = require 'features.opencode.rpc'
+local session = require 'features.opencode.attach'
 
 local passed, failed, failures = 0, 0, {}
 

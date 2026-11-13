@@ -191,7 +191,18 @@ end
 --- Project and branch live in the statusline; token totals in the dashboard.
 function M.session(win, slot)
   local w = inner(win)
-  local bridge = NVBridge and NVBridge.state or {}
+  local S = NVOpenCodeSessions
+    or {
+      busy = {},
+      activity = {},
+      since = {},
+      waiting = function()
+        return 0, 0
+      end,
+      is_internal = function()
+        return false
+      end,
+    }
   local lines = {}
 
   local running = data.agent_running()
@@ -201,12 +212,29 @@ function M.session(win, slot)
   lines[#lines + 1] = P.blank()
 
   if not oc.id then
-    lines[#lines + 1] = { { 'attach with ', 'NvMuted' }, { ' <leader>as ', 'NvKey' }, { ' or prompt below', 'NvMuted' } }
+    -- Short rows: the panel is narrow.
+    lines[#lines + 1] = { { ' SPC as ', 'NvKey' }, { ' attach a session', 'NvMuted' } }
+    lines[#lines + 1] = { { ' SPC an ', 'NvKey' }, { ' new nvim session', 'NvMuted' } }
+    lines[#lines + 1] = { { 'or just prompt below', 'NvMuted' } }
     return show(win, slot, 'session', lines, {})
   end
 
+  -- Waiting on you: a permission or a question, until answered anywhere.
+  local perms, forms = S.waiting(oc.id)
+  if perms + forms > 0 then
+    local what = {}
+    if perms > 0 then
+      what[#what + 1] = perms .. (perms == 1 and ' permission' or ' permissions')
+    end
+    if forms > 0 then
+      what[#what + 1] = forms .. (forms == 1 and ' question' or ' questions')
+    end
+    lines[#lines + 1] = P.row({ P.chip('󰂞 waiting on you', 'Yellow', true) }, { { table.concat(what, ', '), 'NvYellow' } }, w)
+    lines[#lines + 1] = P.blank()
+  end
+
   -- Session: title, then model / effort / agent.
-  lines[#lines + 1] = P.label('Session', oc.id:sub(-6), w)
+  lines[#lines + 1] = P.label(S.is_internal(oc.id) and 'Session · nvim' or 'Session · external', oc.id:sub(-6), w)
   lines[#lines + 1] = P.row({ { P.trunc(oc.title or 'untitled', w), 'NvValue' } }, {}, w)
   if oc.model then
     local chips = { P.chip(oc.model, 'Purple', true) }
@@ -237,8 +265,8 @@ function M.session(win, slot)
 
   -- Activity.
   if running then
-    local what = bridge.last_tool and NVBridge.state.job and ('  ' .. bridge.last_tool) or ''
-    local since = (bridge.started and NVBridge.state.job) and (vim.uv.now() - bridge.started) or (oc.time_busy and (os.time() * 1000 - oc.time_busy))
+    local what = S.activity[oc.id] and ('  ' .. S.activity[oc.id]) or ''
+    local since = S.since[oc.id] and (vim.uv.now() - S.since[oc.id]) or (oc.time_busy and (os.time() * 1000 - oc.time_busy))
     lines[#lines + 1] = P.row(
       { { data.spinner_glyph() .. ' ', 'NvSpinner' }, { 'working' .. what, 'NvAI' } },
       { { since and elapsed(since) or '', 'NvMuted' } },
@@ -467,8 +495,10 @@ function M.prompt(win, name)
     })
     sync_hint()
 
-    local function submit()
-      local text = vim.trim(table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), '\n'))
+    ---@param delivery? 'queue'|'steer'
+    local function submit(delivery)
+      local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+      local text = vim.trim(table.concat(lines, '\n'))
       if text == '' then
         return
       end
@@ -477,12 +507,28 @@ function M.prompt(win, name)
         return
       end
       vim.api.nvim_buf_set_lines(buf, 0, -1, false, { '' })
-      NVBridge.submit(text)
+      NVBridge.submit(text, {
+        delivery = delivery,
+        -- Not sent: the draft comes back (unless something new was typed).
+        on_error = function()
+          if vim.api.nvim_buf_is_valid(buf) and vim.trim(table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), '')) == '' then
+            vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+          end
+        end,
+      })
     end
 
     -- Enter sends from normal and insert mode; the panel is a prompt, not a
-    -- scratch pad.
-    vim.keymap.set({ 'n', 'i' }, '<CR>', submit, { buffer = buf, nowait = true, desc = 'Send prompt to opencode' })
+    -- scratch pad. A busy agent gets it after its turn (queue); <M-CR>
+    -- interjects (steer). <S-CR> / <C-j> add a line.
+    vim.keymap.set({ 'n', 'i' }, '<CR>', function()
+      submit 'queue'
+    end, { buffer = buf, nowait = true, desc = 'Send prompt to opencode' })
+    vim.keymap.set({ 'n', 'i' }, '<M-CR>', function()
+      submit 'steer'
+    end, { buffer = buf, nowait = true, desc = 'Send prompt now (steer the running turn)' })
+    vim.keymap.set('i', '<S-CR>', '<CR>', { buffer = buf, desc = 'New line' })
+    vim.keymap.set('i', '<C-j>', '<CR>', { buffer = buf, desc = 'New line' })
   end
 
   vim.wo[win].wrap = true

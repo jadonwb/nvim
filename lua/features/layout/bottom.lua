@@ -45,7 +45,57 @@ function NVBottom.winbar(win, mode)
   end
   parts[#parts + 1] = '%='
   if mode == 'prompt' then
-    parts[#parts + 1] = '%#NvKey# CR %#NvMuted# send  %#NvKey# M-a %#NvMuted# transcript  %#NvKey# M-n %#NvMuted# next '
+    -- Where a prompt goes: the attached session, internal (transcript here)
+    -- or external (a TUI session), and whether it is waiting on you. Fitted
+    -- to the window: the title shortens, then hints drop (least used first).
+    local function width(str)
+      return vim.api.nvim_eval_statusline(str, { winid = win, maxwidth = 1000 }).width
+    end
+    -- (parts ends with the %= filler, which would expand to fill the measure)
+    local room = vim.api.nvim_win_get_width(win) - width(table.concat(parts, '', 1, #parts - 1)) - 1
+    local S = NVOpenCodeSessions
+    local id = S and S.target_id()
+    local status = {}
+    if id then
+      local info = S.info[id] or {}
+      local internal = S.is_internal(id)
+      local perms, forms = S.waiting(id)
+      if perms + forms > 0 then
+        status[#status + 1] = '%#NvChipYellow# 󰂞 waiting on you %#NvTabStrip# '
+      elseif S.busy[id] then
+        status[#status + 1] = '%#NvAI#working '
+      end
+      local C = package.loaded['features.opencode.client']
+      if C and C.state == 'disconnected' and C.last_error then
+        status[#status + 1] = '%#NvRed#offline '
+      end
+      status.chip = ('%%#%s# %s '):format(internal and 'NvChipPurple' or 'NvChipBlue', internal and 'nvim' or 'external')
+      status.title = info.title or id:sub(1, 12)
+    else
+      status.chip = '%#NvChipMuted# new session '
+    end
+    local hints = {
+      '%#NvKey# CR %#NvMuted# send ',
+      ' %#NvKey# M-a %#NvMuted# transcript ',
+      ' %#NvKey# M-CR %#NvMuted# steer ',
+      ' %#NvKey# SPC as %#NvMuted# session ',
+    }
+    local fixed = width(status.chip .. table.concat(status) .. ' ')
+    -- The title keeps up to 16 columns before any hint but `send` gives way.
+    local keep = status.title and (math.min(16, vim.fn.strchars(status.title)) + 3) or 0
+    while #hints > 1 and fixed + width(table.concat(hints)) + keep > room do
+      hints[#hints] = nil
+    end
+    local title = ''
+    if status.title then
+      local max = math.max(0, math.min(32, room - fixed - width(table.concat(hints)) - 3))
+      title = status.title
+      if vim.fn.strchars(title) > max then
+        title = max > 1 and (vim.fn.strcharpart(title, 0, max - 1) .. '…') or ''
+      end
+      title = title ~= '' and ('%#NvDim# ' .. title:gsub('%%', '%%%%') .. ' ') or ''
+    end
+    parts[#parts + 1] = status.chip .. title .. table.concat(status) .. ' ' .. table.concat(hints)
   elseif mode == 'terminal' and NVTerminals and NVTerminals.active then
     for _, t in ipairs(NVTerminals.list) do
       if t.buf == NVTerminals.active then
@@ -107,6 +157,17 @@ vim.api.nvim_create_autocmd('FileType', {
       pcall(vim.api.nvim_win_close, win, false)
       NVBottom.set 'quickfix'
     end)
+  end,
+})
+
+-- The prompt strip follows the target session (title, busy, waiting).
+vim.api.nvim_create_autocmd('User', {
+  pattern = { 'NVOpenCodeSession', 'NVOpenCodeState' },
+  group = vim.api.nvim_create_augroup('NV bottom opencode', { clear = true }),
+  callback = function()
+    if NVSlots and NVSlots.is_applied() and NVSlots.provider_of 'bottom' == 'prompt' then
+      NVBottom.refresh_winbar()
+    end
   end,
 })
 

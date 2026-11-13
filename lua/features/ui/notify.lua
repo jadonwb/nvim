@@ -56,7 +56,10 @@ end
 
 local toasts = {} ---@type { win: integer, timer: uv.uv_timer_t }[]
 local TOAST_W = 40
-local TOAST_ROWS = 3
+-- Every toast is TOAST_W wide and shows at most TOAST_ROWS rows of message:
+-- a preview; the centre has the full text.
+local TOAST_ROWS = 2
+local TOAST_GAP = 1
 local toast_ns = vim.api.nvim_create_namespace 'nv-toast'
 local TOAST_CHIP = { trace = 'Muted', debug = 'Muted', info = 'Blue', warn = 'Yellow', error = 'Red' }
 
@@ -76,7 +79,8 @@ local function restack()
   for _, t in ipairs(toasts) do
     if vim.api.nvim_win_is_valid(t.win) then
       pcall(vim.api.nvim_win_set_config, t.win, { relative = 'editor', anchor = 'NE', row = row, col = col - 1 })
-      row = row + vim.api.nvim_win_get_height(t.win) + 2
+      -- Height plus the solid border (2 rows), then a gap.
+      row = row + vim.api.nvim_win_get_height(t.win) + 2 + TOAST_GAP
     end
   end
 end
@@ -111,7 +115,11 @@ function NVNotify.toast(entry)
   end
   local info = level_info(entry.level)
   local label = (' %s '):format(info.label)
-  local head = label .. (entry.title and ('  ' .. entry.title) or '')
+  local title = entry.title
+  if title and vim.fn.strdisplaywidth(label .. '  ' .. title) > TOAST_W then
+    title = vim.fn.strcharpart(title, 0, TOAST_W - vim.fn.strdisplaywidth(label) - 3) .. '…'
+  end
+  local head = label .. (title and ('  ' .. title) or '')
   -- Wrap the message to the toast width; past TOAST_ROWS rows the rest is
   -- in the notification centre.
   local rows = {}
@@ -141,13 +149,10 @@ function NVNotify.toast(entry)
     lines[#lines + 1] = rows[i]
   end
   if more then
-    lines[#lines + 1] = '… more · SPC , notifications'
+    lines[#lines + 1] = '… more in notifications · SPC ,'
   end
-  local width = 20
-  for _, l in ipairs(lines) do
-    width = math.max(width, vim.fn.strdisplaywidth(l))
-  end
-  width = math.min(width, TOAST_W)
+  -- One width for every toast, so a stack lines up.
+  local width = TOAST_W
   local buf = vim.api.nvim_create_buf(false, true)
   vim.bo[buf].bufhidden = 'wipe'
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)

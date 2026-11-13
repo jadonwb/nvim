@@ -220,12 +220,9 @@ M.opencode = { id = nil, ready = false }
 
 local DB = (vim.env.XDG_DATA_HOME or (vim.env.HOME .. '/.local/share')) .. '/opencode/opencode.db'
 
---- The session this editor follows: the bridge's own run, else the session
---- attached for this directory.
+--- The session this editor follows: the one attached for this directory
+--- (the prompt panel's target).
 function M.session_id()
-  if NVBridge and NVBridge.state and NVBridge.state.session then
-    return NVBridge.state.session
-  end
   local ok, id = pcall(function()
     return require('features.opencode.attach').stored_id(vim.fn.getcwd())
   end)
@@ -468,10 +465,13 @@ end
 
 -- ── agent spinner ──────────────────────────────────────────────────────────
 
---- An agent is working: our own bridge run, or the followed session is busy.
+--- The followed session is working. Live from the event stream when
+--- connected, else from the last database read.
 function M.agent_running()
-  if NVBridge ~= nil and NVBridge.state ~= nil and NVBridge.state.job ~= nil then
-    return true
+  local S, C = NVOpenCodeSessions, package.loaded['features.opencode.client']
+  local id = M.session_id()
+  if S and C and C.state == 'connected' and id and S.busy[id] ~= nil then
+    return S.busy[id] == true
   end
   return M.opencode.busy == true
 end
@@ -534,10 +534,31 @@ function M.setup()
 
   vim.api.nvim_create_autocmd('User', {
     group = group,
-    pattern = 'NVBridge',
+    pattern = { 'NVOpenCodeSession', 'NVOpenCodeState' },
     callback = function()
       M.start_spinner()
       emit 'session'
+    end,
+  })
+  -- Usage and context change at the end of each step: re-read then, instead
+  -- of polling (the poll below stays as the fallback when disconnected).
+  local opencode_soon = debounce(400, function()
+    M.refresh_opencode()
+  end)
+  vim.api.nvim_create_autocmd('User', {
+    group = group,
+    pattern = {
+      'NVOpenCode:session.step.ended',
+      'NVOpenCode:session.renamed',
+      'NVOpenCode:session.model.selected',
+      'NVOpenCode:session.agent.selected',
+      'NVOpenCode:session.execution.succeeded',
+      'NVOpenCode:session.execution.failed',
+    },
+    callback = function(ev)
+      if require('features.opencode.client').session_of(ev.data) == M.session_id() then
+        opencode_soon()
+      end
     end,
   })
 
@@ -552,7 +573,8 @@ function M.setup()
     2000,
     vim.schedule_wrap(function()
       elapsed = elapsed + 2000
-      if M.opencode.busy or elapsed >= 15000 then
+      local live = package.loaded['features.opencode.client'] and require('features.opencode.client').state == 'connected'
+      if (M.opencode.busy and not live) or elapsed >= 15000 then
         elapsed = 0
         M.refresh_opencode()
       end

@@ -1,8 +1,8 @@
 -- NVOpenCodeSession: which OpenCode session a Neovim tab is attached to.
 --
 -- This is frontend state, not artifact state. It owns the per-directory
--- attachment map, session listing/creation through the `opencode` CLI, and the
--- attach/switch/detach picker. Feature modules ask it for the current session
+-- attachment map, session listing/creation (service API, through
+-- features/opencode/client.lua), and the attach/switch/detach picker. Feature modules ask it for the current session
 -- and use the result for their own scoping.
 --
 -- Transport mechanics live in editor.features.opencode-rpc; everything here is
@@ -12,8 +12,6 @@ local M = NVOpenCodeSession
 
 local rpc = require 'features.opencode.rpc'
 local fn = {}
-
-local TIMEOUT_MS = rpc.timeout_ms
 
 local function notify(msg, level)
   vim.notify(msg, level, { title = 'OpenCodeSession' })
@@ -31,15 +29,6 @@ end
 M.attachments_path = vim.fn.stdpath 'state' .. '/opencode-artifacts/attachments.json'
 
 local attachments = { path = nil, map = nil }
-
---- Default CLI runner for `opencode` subcommands. Kept separate from the RPC
---- transport (whose tests return RPC JSON): the session flow talks to
---- `opencode session`/`opencode api` directly. Tests replace M.cli. `opts` must
---- support `cwd`.
-function M.cli(argv, opts, on_exit)
-  local system_opts = vim.tbl_extend('force', { text = true, timeout = TIMEOUT_MS }, opts or {})
-  return vim.system(argv, system_opts, on_exit)
-end
 
 --- Read the persisted attachments map, tolerating a missing or invalid file.
 function fn.read_attachments()
@@ -117,6 +106,10 @@ function fn.set_session(session_id, location)
   local map = fn.load_attachments()
   map[fn.attachment_key(location)] = session_id
   local ok = fn.save_attachments(map)
+  local S = package.loaded['features.opencode.sessions']
+  if S and session_id then
+    S.track(session_id)
+  end
   changed()
   return ok
 end
@@ -129,68 +122,36 @@ function fn.clear_session(location)
   return ok
 end
 
---- `opencode session list --format json -n 100` in `cwd`. The CLI is
---- cwd-scoped (no directory argument), so the process cwd is the location.
---- Callback receives the bare decoded array or an error message.
+--- Root sessions for `cwd`, newest first, through the service API (each
+--- carries `metadata`, so internal sessions can be told apart). Callback
+--- receives the array or an error message.
 function fn.session_list(cwd, callback)
-  local argv = { rpc.exe, 'session', 'list', '--format', 'json', '-n', '100' }
-  local ok, err = pcall(M.cli, argv, { cwd = cwd }, function(result)
-    vim.schedule(function()
-      if result.code ~= 0 then
-        callback(nil, rpc._internal.cli_failure('session list', result))
-        return
+  require('features.opencode.client').sessions(cwd, function(err, list)
+    if err then
+      return callback(nil, 'opencode session list: ' .. err)
+    end
+    local out = {}
+    for _, session in ipairs(list or {}) do
+      if not (session.time and session.time.archived) then
+        session.updated = session.time and session.time.updated
+        out[#out + 1] = session
       end
-      local decoded = rpc._internal.decode(result.stdout)
-      if type(decoded) ~= 'table' then
-        callback(nil, 'opencode session list returned non-JSON output')
-        return
-      end
-      callback(decoded, nil)
-    end)
+    end
+    callback(out, nil)
   end)
-  if not ok then
-    vim.schedule(function()
-      callback(nil, ('opencode session list transport failed: %s'):format(tostring(err)))
-    end)
-  end
 end
 
---- Create a session for `cwd` through `POST /api/session` with an explicit
---- location.directory. Callback receives { id, title } or an error message.
+--- Create an internal session (tagged `metadata.origin = "nvim"`) for `cwd`.
+--- Callback receives { id, title } or an error message.
 function fn.session_create(cwd, callback)
-  local argv = {
-    rpc.exe,
-    'api',
-    'post',
-    '/api/session',
-    '--data',
-    vim.json.encode { location = { directory = cwd } },
-  }
-  local ok, err = pcall(M.cli, argv, { cwd = cwd }, function(result)
-    vim.schedule(function()
-      if result.code ~= 0 then
-        callback(nil, rpc._internal.cli_failure('session create', result))
-        return
-      end
-      local decoded = rpc._internal.decode(result.stdout)
-      -- The API CLI wraps the payload as { data: ... } and some responses
-      -- arrive unwrapped as { output: { data: ... } }; unwrap `.output` the
-      -- same way rpc_done does.
-      local payload = type(decoded) == 'table' and decoded.output or decoded
-      local data = type(payload) == 'table' and payload.data or nil
-      local id = type(data) == 'table' and data.id or nil
-      if type(id) ~= 'string' or id == '' then
-        callback(nil, 'opencode session create returned no session id')
-        return
-      end
-      callback({ id = id, title = data.title }, nil)
-    end)
+  local S = require 'features.opencode.sessions'
+  require('features.opencode.client').create_session(cwd, { metadata = { origin = S.ORIGIN } }, function(err, info)
+    if err or type(info) ~= 'table' or not info.id then
+      return callback(nil, 'opencode session create: ' .. tostring(err or 'no session id'))
+    end
+    S.info[info.id] = info
+    callback({ id = info.id, title = info.title }, nil)
   end)
-  if not ok then
-    vim.schedule(function()
-      callback(nil, ('opencode session create transport failed: %s'):format(tostring(err)))
-    end)
-  end
 end
 
 --- Shared "new session" tail for ensure and open_picker: notify a create
@@ -201,7 +162,7 @@ local function with_created_session(location, on_success)
       notify(create_err or 'Could not create an OpenCode session', vim.log.levels.ERROR)
       return
     end
-    fn.set_session(session.id)
+    fn.set_session(session.id, location)
     on_success(session)
   end)
 end
@@ -256,28 +217,43 @@ function M.label(session)
   return nil
 end
 
---- One prompt shared by the attach flow and the session command: the listed
---- sessions in server order (newest first), optionally a Detach row, and a
---- final New session row. on_choice receives the row table, or nil on cancel.
+--- Internal sessions were created here (full transcript); external ones
+--- belong to the TUI or another client.
+function fn.is_internal(session)
+  return type(session) == 'table' and type(session.metadata) == 'table' and session.metadata.origin == 'nvim'
+end
+
+--- One picker shared by the attach flow and the session command: internal
+--- sessions first, then external ones (each newest first), optionally a
+--- Detach row, and New session. on_choice receives the row, or nil on cancel.
 function fn.session_select(sessions, stored_id, allow_detach, on_choice)
-  local items = {}
+  local items = { { kind = 'new' } }
+  local internal, external = {}, {}
   for _, session in ipairs(sessions or {}) do
-    items[#items + 1] = { kind = 'session', session = session, id = session.id, title = session.title }
+    local row = { kind = 'session', session = session, id = session.id, title = session.title, internal = fn.is_internal(session) }
+    table.insert(row.internal and internal or external, row)
   end
+  vim.list_extend(items, internal)
+  vim.list_extend(items, external)
   if allow_detach and type(stored_id) == 'string' and stored_id ~= '' then
     items[#items + 1] = { kind = 'detach', id = stored_id }
   end
-  items[#items + 1] = { kind = 'new' }
   vim.ui.select(items, {
-    prompt = 'OpenCode session for ' .. rpc.location() .. ':',
+    prompt = 'OpenCode session',
     format_item = function(item)
       if item.kind == 'session' then
-        return fn.session_item_label(item.session)
+        local busy = NVOpenCodeSessions and NVOpenCodeSessions.busy[item.id] and '  ● working' or ''
+        return ('%s %s%s%s'):format(
+          item.internal and '󰚩 nvim    ' or '󰆍 external',
+          fn.session_item_label(item.session),
+          item.id == stored_id and '  (attached)' or '',
+          busy
+        )
       end
       if item.kind == 'detach' then
-        return ('Detach session %s'):format(tostring(item.id):sub(1, 12))
+        return ('󰅖 Detach %s'):format(tostring(item.id):sub(1, 12))
       end
-      return 'New session'
+      return '󰐕 New nvim session'
     end,
   }, on_choice)
 end
@@ -311,7 +287,7 @@ function M.ensure(callback)
         return
       end
       if choice.kind == 'session' then
-        fn.set_session(choice.id)
+        fn.set_session(choice.id, location)
         callback { id = choice.id, title = choice.title }
         return
       end
@@ -344,8 +320,8 @@ function M.open_picker()
         return
       end
       if choice.kind == 'session' then
-        fn.set_session(choice.id)
-        notify(('Attached OpenCode session %s'):format(fn.session_item_label(choice.session)), vim.log.levels.INFO)
+        fn.set_session(choice.id, location)
+        notify(('Attached %s session %s'):format(choice.internal and 'nvim' or 'external', fn.session_item_label(choice.session)), vim.log.levels.INFO)
         return
       end
       with_created_session(location, function(session)
@@ -368,6 +344,8 @@ end
 -- stylua: ignore
 function M.keymaps()
   K.map { '<leader>as', 'Attach OpenCode session', function() M.open_picker() end, mode = { 'n', 'v' } }
+  K.map { '<leader>an', 'New OpenCode session (nvim)', function() require('features.opencode.agent').new() end, mode = 'n' }
+  K.map { '<leader>ax', 'Interrupt the OpenCode session', function() require('features.opencode.agent').stop() end, mode = 'n' }
 end
 
 --- Test surface: internals used by tests/.

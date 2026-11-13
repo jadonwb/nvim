@@ -1,5 +1,5 @@
 -- Minimal transport contract tests for
--- lua/editor/features/opencode-artifacts.lua (NVOpenCodeArtifacts).
+-- lua/features/opencode/artifacts.lua (NVOpenCodeArtifacts).
 -- Run: nvim --headless -u NONE -l /path/to/nvim/tests/opencode/artifacts.lua
 -- No user config, no service call, no model request, no UI.
 
@@ -8,7 +8,7 @@ local base = vim.fs.dirname(vim.fs.dirname(vim.fs.dirname(vim.fs.normalize(scrip
 package.path = base .. '/lua/?.lua;' .. base .. '/lua/?/init.lua;' .. package.path
 vim.opt.runtimepath:prepend(base)
 
-local M = require 'editor.features.opencode-artifacts'
+local M = require 'features.opencode.artifacts'
 local fn = M._internal
 
 local passed, failed, failures = 0, 0, {}
@@ -138,11 +138,13 @@ test('filter_for hides read evidence and reviews unless the finished toggle is o
   local shown = fn.filter_for(all, { show_finished = true })
   eq(shown({ status = 'read', kind = 'evidence' }), true, 'read evidence included by toggle')
 
-  local plans = fn.filter_for(fn.entry_for('plans'), { show_finished = false })
-  eq(plans({ status = 'draft', kind = 'plan' }), true, 'plans entry shows plans')
+  local plans = fn.filter_for(fn.entry_for('plans'), { show_finished = false, kind = 'plan' })
+  eq(plans({ status = 'draft', kind = 'plan' }), true, 'plans filter shows plans')
+  eq(plans({ status = 'draft', kind = 'evidence' }), false, 'plans filter hides evidence')
 
-  eq(fn.picker_title(all, nil, false):match('%([^)]*%)'), '(read hidden)', 'title hides finished')
-  eq(fn.picker_title(all, nil, true):match('%([^)]*%)'), '(read included)', 'title includes finished')
+  eq(fn.picker_title(nil, false), 'Artifacts · all kinds · unread', 'title: all, unread')
+  eq(fn.picker_title('plan', true), 'Artifacts · plans · incl. read', 'title: plans, incl. read')
+  eq(fn.entry_for('reviews').kind, 'review', 'entry point sets the starting kind')
 end)
 
 test('mark_read records no delivery for evidence and reviews', function()
@@ -202,7 +204,7 @@ test('draft evidence/review rows are visible and untouched by the finished toggl
   eq(hidden({ status = 'draft', kind = 'evidence' }), true, 'draft evidence visible by default')
   local shown = fn.filter_for(evidence, { show_finished = true })
   eq(shown({ status = 'draft', kind = 'evidence' }), true, 'draft evidence stays visible when finished are included')
-  local reviews = fn.filter_for(fn.entry_for('reviews'), { show_finished = false })
+  local reviews = fn.filter_for(fn.entry_for('reviews'), { show_finished = false, kind = 'review' })
   eq(reviews({ status = 'draft', kind = 'review' }), true, 'draft review visible by default')
 end)
 
@@ -352,7 +354,10 @@ test('show_picker resolves the session label module instead of the session param
   NVSPickerHorizontalLayout = old_layout
 
   assert(ok, tostring(err))
-  eq(picker_opts.title, 'OpenCode Artifacts · Test session (read hidden)', 'title uses the session label')
+  -- The title carries the filters; the session label moved to the preview.
+  eq(picker_opts.title, 'Artifacts · all kinds · unread', 'title shows the filters')
+  local keys = picker_opts.win.input.keys
+  eq(keys['<M-p>'][1] .. keys['<M-e>'][1] .. keys['<M-r>'][1] .. keys['<M-g>'][1], 'opencode_plansopencode_evidenceopencode_reviewsopencode_grep', 'filter and grep keys')
 end)
 
 test('picker_items carries the primary author label and item_format renders it instead of the owner session', function()

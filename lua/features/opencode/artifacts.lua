@@ -250,12 +250,16 @@ end
 -- Picker
 --------------------------------------------------------------------------------
 
+-- One picker; an entry point only sets its starting kind filter. Inside the
+-- picker <M-p> / <M-e> / <M-r> switch the kind (again: all kinds), <M-a>
+-- includes read ones, <M-g> greps inside the artifacts.
 local ENTRY_POINTS = {
-  plans = { title = 'OpenCode Plans', kinds = { plan = true }, empty = 'No plans for ' },
-  evidence = { title = 'OpenCode Evidence', kinds = { evidence = true }, empty = 'No evidence for ' },
-  reviews = { title = 'OpenCode Reviews', kinds = { review = true }, empty = 'No reviews for ' },
-  all = { title = 'OpenCode Artifacts', empty = 'No artifacts for ' },
+  plans = { kind = 'plan', empty = 'No plans for ' },
+  evidence = { kind = 'evidence', empty = 'No evidence for ' },
+  reviews = { kind = 'review', empty = 'No reviews for ' },
+  all = { empty = 'No artifacts for ' },
 }
+local KIND_LABEL = { plan = 'plans', evidence = 'evidence', review = 'reviews' }
 
 --- Entry-point configuration (picker filter closure input).
 function fn.entry_for(entry_key)
@@ -266,10 +270,7 @@ end
 --- include-finished toggle includes them. Plans stay visible after completion.
 function fn.filter_for(entry, state)
   return function(item)
-    if entry.kinds and not entry.kinds[item.kind] then
-      return false
-    end
-    if entry.exclude and entry.exclude[item.kind] then
+    if state.kind and item.kind ~= state.kind then
       return false
     end
     if item.status == 'read' then
@@ -279,13 +280,10 @@ function fn.filter_for(entry, state)
   end
 end
 
---- Picker title: "<entry> · <session label> (finished hidden|included)".
-function fn.picker_title(entry, label, show_finished)
-  local title = entry.title
-  if label then
-    title = title .. ' · ' .. label
-  end
-  return title .. (show_finished and ' (read included)' or ' (read hidden)')
+--- Picker title: "Artifacts · <kind> · unread|all" (the session is in the
+--- preview, not the title).
+function fn.picker_title(kind, show_finished)
+  return ('Artifacts · %s · %s'):format(kind and KIND_LABEL[kind] or 'all kinds', show_finished and 'incl. read' or 'unread')
 end
 
 --- Flat picker records for artifact summaries; both `file` and `path` are set
@@ -345,24 +343,101 @@ end
 
 --- <M-a>: include/leave out read evidence and reviews. Flips the captured filter state, relabels the picker
 --- title, and re-runs the finder so the rows are recomputed.
-function fn.toggle_finished(picker, state, entry)
-  state.show_finished = not state.show_finished
-  if picker then
-    -- The picker copies the title at construction; opts.title is never read
-    -- again, so the rendered title must be set (and re-rendered) directly.
-    -- Keep the same " · <session>" prefix while flipping included/hidden.
-    picker.title = fn.picker_title(entry, state.session_label, state.show_finished)
-    if picker.update_titles then
-      picker:update_titles()
-    end
-    -- Reset the selection like the built-in toggle actions do.
-    if picker.list and picker.list.set_target then
-      picker.list:set_target()
-    end
-    picker:find()
+--- Re-title and re-run the picker after a filter change. The picker copies
+--- the title at construction, so it is set (and re-rendered) directly.
+function fn.refilter(picker, state)
+  if not picker then
+    return
   end
-  notify(state.show_finished and 'Including read artifacts' or 'Hiding read artifacts', vim.log.levels.INFO)
+  picker.title = fn.picker_title(state.kind, state.show_finished)
+  if picker.update_titles then
+    picker:update_titles()
+  end
+  if picker.list and picker.list.set_target then
+    picker.list:set_target()
+  end
+  picker:find()
+end
+
+--- <M-a>: include / leave out read artifacts.
+function fn.toggle_finished(picker, state)
+  state.show_finished = not state.show_finished
+  fn.refilter(picker, state)
   return state.show_finished
+end
+
+--- <M-p> / <M-e> / <M-r>: only that kind; the same key again shows all kinds.
+function fn.toggle_kind(picker, state, kind)
+  state.kind = state.kind ~= kind and kind or nil
+  fn.refilter(picker, state)
+end
+
+--- Grep inside artifacts (`items`), opening a hit as the read-only artifact
+--- buffer at its line.
+function fn.grep(items, query)
+  local by_path, dirs = {}, {}
+  for _, it in ipairs(items) do
+    if type(it.path) == 'string' then
+      by_path[vim.fn.fnamemodify(it.path, ':p')] = it
+      dirs[#dirs + 1] = vim.fn.fnamemodify(it.path, ':h')
+    end
+  end
+  if #dirs == 0 then
+    return notify('No artifact files to search', vim.log.levels.WARN)
+  end
+  require('snacks').picker.grep {
+    title = 'Search artifacts',
+    dirs = dirs,
+    -- The rendered text only, not each artifact's record.json.
+    glob = vim.tbl_map(function(path)
+      return vim.fn.fnamemodify(path, ':t')
+    end, vim.tbl_keys(by_path)),
+    search = query,
+    hidden = true,
+    ignored = true,
+    layout = NVSPickerHorizontalLayout.build(),
+    -- Rows show the artifact title instead of …/art_xxx/current.md.
+    transform = function(item)
+      local art = by_path[vim.fn.fnamemodify(item.file, ':p')]
+      if art then
+        item.artifact = art
+      end
+    end,
+    format = function(item, picker)
+      local art = item.artifact
+      if not art then
+        return require('snacks').picker.format.file(item, picker)
+      end
+      return {
+        { '[' .. tostring(art.kind) .. '] ', 'Comment' },
+        { art.title or art.artifact_id, 'SnacksPickerFile' },
+        { ':' .. tostring(item.pos and item.pos[1] or ''), 'LineNr' },
+        { '  ' },
+        { vim.trim(item.line or ''), 'Comment' },
+      }
+    end,
+    confirm = function(picker, item)
+      picker:close()
+      if not (item and item.artifact) then
+        return
+      end
+      fn.open_artifact_buffer(item.artifact)
+      if item.pos then
+        pcall(vim.api.nvim_win_set_cursor, 0, { item.pos[1], item.pos[2] or 0 })
+        vim.cmd 'normal! zz'
+      end
+    end,
+  }
+end
+
+function fn.picker_keys()
+  return {
+    ['<M-a>'] = { 'opencode_toggle_finished', mode = { 'n', 'i' }, desc = 'include read' },
+    ['<M-p>'] = { 'opencode_plans', mode = { 'n', 'i' }, desc = 'plans' },
+    ['<M-e>'] = { 'opencode_evidence', mode = { 'n', 'i' }, desc = 'evidence' },
+    ['<M-r>'] = { 'opencode_reviews', mode = { 'n', 'i' }, desc = 'reviews' },
+    ['<M-g>'] = { 'opencode_grep', mode = { 'n', 'i' }, desc = 'search inside' },
+  }
 end
 
 function fn.show_picker(artifacts, entry_key, session_info)
@@ -374,9 +449,9 @@ function fn.show_picker(artifacts, entry_key, session_info)
   if type(session_info) == 'table' and type(session_info.id) == 'string' and session_info.id ~= '' then
     session_id = session_info.id
   end
-  local state = { show_finished = false, session_id = session_id, session_label = label }
+  local state = { show_finished = false, kind = entry.kind, session_id = session_id, session_label = label }
   Snacks.picker {
-    title = fn.picker_title(entry, label, false),
+    title = fn.picker_title(state.kind, false),
     -- Keep the picker open when the default filter hides every row (e.g. all
     -- read evidence or reviews): the <M-a> include-finished toggle must be able
     -- to reach those records from the empty default view.
@@ -402,6 +477,7 @@ function fn.show_picker(artifacts, entry_key, session_info)
         return
       end
       ctx.preview:set_lines {
+        'Session: ' .. tostring(label),
         'Title: ' .. tostring(ctx.item.title),
         'Kind: ' .. tostring(ctx.item.kind),
         'Status: ' .. tostring(ctx.item.status),
@@ -420,20 +496,30 @@ function fn.show_picker(artifacts, entry_key, session_info)
     end,
     actions = {
       opencode_toggle_finished = function(picker)
-        fn.toggle_finished(picker, state, entry)
+        fn.toggle_finished(picker, state)
+      end,
+      opencode_plans = function(picker)
+        fn.toggle_kind(picker, state, 'plan')
+      end,
+      opencode_evidence = function(picker)
+        fn.toggle_kind(picker, state, 'evidence')
+      end,
+      opencode_reviews = function(picker)
+        fn.toggle_kind(picker, state, 'review')
+      end,
+      opencode_grep = function(picker)
+        -- Search what the filters currently show.
+        local shown = vim.tbl_filter(fn.filter_for(entry, state), items)
+        -- What was typed into the list filter becomes the search.
+        local f = picker:filter()
+        local query = (f.search ~= '' and f.search) or f.pattern or ''
+        picker:close()
+        fn.grep(shown, query ~= '' and query or nil)
       end,
     },
     win = {
-      input = {
-        keys = {
-          ['<M-a>'] = { 'opencode_toggle_finished', mode = { 'n', 'i' } },
-        },
-      },
-      list = {
-        keys = {
-          ['<M-a>'] = { 'opencode_toggle_finished', mode = { 'n', 'i' } },
-        },
-      },
+      input = { keys = fn.picker_keys() },
+      list = { keys = fn.picker_keys() },
     },
   }
 end
@@ -719,6 +805,22 @@ function M.keymaps()
   K.map { '<leader>ae', 'Show OpenCode evidence', function() M.open_picker('evidence') end, mode = { 'n', 'v' } }
   K.map { '<leader>ar', 'Show OpenCode reviews', function() M.open_picker('reviews') end, mode = { 'n', 'v' } }
   K.map { '<leader>aa', 'Show all OpenCode artifacts', function() M.open_picker('all') end, mode = { 'n', 'v' } }
+  K.map { '<leader>a/', 'Search inside OpenCode artifacts', M.grep, mode = 'n' }
+end
+
+--- Grep inside this project's artifacts.
+function M.grep()
+  session.ensure(function(sess)
+    if not sess then
+      return
+    end
+    M.list(function(artifacts, err)
+      if err then
+        return notify(err, vim.log.levels.ERROR)
+      end
+      fn.grep(fn.picker_items(artifacts or {}))
+    end)
+  end)
 end
 
 --- Test surface: internals used by tests/.

@@ -35,13 +35,13 @@ nvim --server "$NVIM" --remote-expr 'v:lua.NVSlots.toggle_slot("bottom")'
 | `NVSlots.set_buffer(slot, buf)` | show an arbitrary buffer in a slot |
 | `NVSlots.win(name)` | window id, for `nvim_win_call` |
 | `:NVLayout status` / `slot <name> [open\|close\|toggle]` / `swap <a> <b>` | the same from Ex or vimscript |
-| `NVBridge.open()` | show the agent transcript in the editing area |
-| `NVBridge.submit(text)` | send a prompt; the answer streams into the transcript |
-| `NVBridge.cancel()` | stop the running `opencode run` |
-| `NVBridge.state` | `{ job, session, status = { cost, tokens }, buf, win }` |
-| `NVBridge.append(text)` | append a line to the transcript from outside |
+| `NVBridge.open()` | show the target session's transcript in the editing area |
+| `NVBridge.submit(text, opts?)` | send a prompt to the target session (`opts.delivery = 'steer'` interjects) |
+| `NVBridge.append(text)` | a note in the transcript (a toast for an external target) |
 | `NVBridge.open_file(path, line)` | show a file in the editing area, optionally at a line |
-| `:NVAgent [text]` | open the transcript, or send `text` |
+| `NVBridge.show_text(title, text)` | show read-only text in the editing area |
+| `NVOpenCodeSessions` | followed sessions: `info`, `busy`, `waiting(id)`, `target_id()`, `is_internal(id)` |
+| `:NVAgent [text]` | open the transcript, or send `text`; `new`, `stop`, `reconnect` |
 
 Slot names: `left`, `bottom_left`, `right_top`, `right_bottom`, `bottom`.
 Built-in providers: `terminal`, `quickfix`, `problems`, `explorer`, `preview`,
@@ -49,14 +49,11 @@ Built-in providers: `terminal`, `quickfix`, `problems`, `explorer`, `preview`,
 
 ## Agent transcript
 
-The transcript is a real, listed buffer (`opencode://<id>`, `markdown`) with
-`modifiable = false`: motions, visual selection and `y` work; editing does not.
-That is deliberate — the streamed answer has to be selectable, so it cannot be
-virtual text.
-
-Streaming is `opencode run --format json`, whose NDJSON events are appended by
-`NVBridge.on_event`. A new session is created with `--archived` so scripted runs
-stay out of the session list; continuing one passes `--session <id>`.
+A transcript is a real, listed buffer (`opencode://session/<id>`, `markdown`)
+with `modifiable = false`: motions, visual selection and `y` work; editing does
+not. It is a view of the session's history (`GET /message`) kept current from
+the service's event stream, so deleting it loses nothing. Details:
+`docs/wiki/bridge.md`.
 
 An external process that did not inherit `$NVIM` (an opencode plugin runs in the
 OpenCode server) finds the socket in the editor registry:
@@ -66,8 +63,8 @@ ${XDG_RUNTIME_DIR}/nvim-bridge/<pid>.json
 { "server": "…", "cwd": "…", "pid": 123, "profile": "workspace", "updated": 1794442321 }
 ```
 
-Entries are refreshed while the editor runs and removed on exit; readers ignore
-entries older than five minutes.
+Entries are refreshed while the editor runs and removed on exit; readers skip
+entries whose process is gone and prefer the most recently active editor.
 
 Inbound control uses the same entry points as any external tool:
 

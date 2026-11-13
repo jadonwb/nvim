@@ -1,53 +1,110 @@
 # Agent bridge
 
-Three directions between Neovim and OpenCode. The transport is OpenCode's own
-CLI (`run --format json`) in one direction and Neovim's RPC socket in the other;
-everything else is a thin layer on top.
+Neovim and OpenCode talk in both directions:
 
-## 1. Prompt out (Neovim → OpenCode)
+- **Editor → agent:** OpenCode's background service API (HTTP plus one event
+  stream), through `features/opencode/client.lua`.
+- **Agent → editor:** Neovim's RPC socket, driven by the agent's `nvim` tool.
 
-The bottom panel's `prompt` provider (or `:NVAgent <text>`) submits a draft.
+## The service client
 
-```lua
-NVBridge.submit('refactor this function', { session = 'ses_…' })
-```
+OpenCode v2 runs one background service for every client (TUI, desktop, this
+editor). It registers itself in `$XDG_STATE_HOME/opencode/service.json` (or
+`service-<channel>.json`) with its URL and a password; requests use HTTP basic
+auth as `opencode:<password>`.
 
-- New sessions use `--archived` so scripted runs stay out of the session list.
-- Continuing passes `--session <id>`.
-- `:NVAgent new` forgets the session, `:NVAgent stop` cancels the run.
-- The job runs on a pty: `opencode run` blocks without a terminal.
+`features/opencode/client.lua`:
 
-You can drive an existing session by passing its id, which is the same as typing
-the message into the TUI prompt for that session. Verified live: a session was
-created with `opencode run --archived`, then `NVBridge.submit(..., { session = id })`
-continued it and the model recalled a value stored in that session's context
-(`42`), with `NVBridge.state.session` still the same id.
+- **Discovery:** registrations newest first, each verified with
+  `GET /api/info`. A connection failure forgets the server so the next request
+  re-discovers it (a restarted service moves port and password).
+- **Requests:** `curl` jobs. The credentials and the JSON body go to curl on
+  stdin (`-K -`), never on the command line where `ps` would show them.
+- **Events:** one long-lived `GET /api/event` stream, re-emitted as
+  `User NVOpenCode:<type>` autocmds with `data = event`. `User NVOpenCodeState`
+  fires on connection changes.
+- **Heartbeat:** the service sends `: heartbeat` every 15 s. 20 s of silence
+  drops the stream, which reconnects with backoff (1 s doubling to 30 s).
 
-The transcript window is a reading surface: numbers and the sign column are off,
-prose wraps, and the buffer is named `opencode://transcript/<n>` (the statusline
-shows `Agent`). Markdown renders through render-markdown: headings as blocks,
-tables with borders, fenced code with a language icon and syntax colours, while
-the underlying text stays plain markdown and selectable.
+The stream is **global** in 2.2.x: it carries every session of every project,
+and `x-opencode-directory` does not filter it (verified: identical captures
+with and without the header). Every consumer filters by session id
+(`client.session_of(event)`).
 
-## 2. Content back (OpenCode → Neovim)
+## Sessions: internal and external
 
-`opencode run --format json` emits NDJSON; `NVBridge.on_event` appends to a real
-markdown buffer (`opencode://…`, `modifiable=false`):
+The **target** is the session attached to the current directory
+(`features/opencode/attach.lua`, `<leader>as`); the prompt panel sends to it.
 
-- `text` parts append (delta-guarded by part id),
-- `tool_use` becomes one highlighted line; OpenCode's `execute` wrapper is
-  resolved to the inner tool (`vim_control status`),
-- `step_finish` carries tokens/cost into the session panel and the transcript
-  winbar.
+- **Internal**: created by Neovim and tagged `metadata.origin = "nvim"`. Their
+  conversation shows here, in the transcript.
+- **External**: any other session, such as one started in the TUI. The prompt
+  panel can send to it; its conversation shows where it lives.
 
-Motions, visual selection, yanks, folds, search and `:g` work on the transcript;
-editing does not. Status (running, tokens, cost) lives in the window bar, not in
-the text.
+Without a target, the first prompt creates an internal session and attaches it.
+`<leader>an` starts a new one, and `<leader>ax` interrupts the target's turn.
 
-## 3. Control back (OpenCode → Neovim)
+`features/opencode/sessions.lua` (`NVOpenCodeSessions`) follows the tracked
+sessions from events:
 
-An OpenCode plugin runs in the OpenCode server and does not inherit `$NVIM`, so
-the editor publishes its socket:
+- **Info:** title, model, agent, metadata, cost.
+- **Busy:** busy or idle, with the running tool.
+- **Waiting on you:** permission requests and forms (questions), until they're
+  answered anywhere, the TUI included. Reading `GET …/permission` and
+  `…/form` on attach and after every reconnect catches up on missed events.
+
+`User NVOpenCodeSession` (`data = { id }`) fires on every change.
+
+When a followed session starts waiting, one toast appears. The session panel
+(`󰂞 waiting on you`) and the prompt strip keep an indicator until it's
+answered.
+
+## Prompt panel
+
+| Key | Action |
+| --- | --- |
+| `<CR>` | send (queued behind the current turn if the agent is busy) |
+| `<M-CR>` | send now: steer the running turn |
+| `<S-CR>` / `<C-j>` | new line |
+| `<M-a>` | transcript (and back) |
+
+The strip shows the target, a `nvim` or `external` chip with its title, and its
+state (`working`, `waiting on you`, `offline`). It fits the window: the title
+shortens first, then hints drop, least used first.
+
+## Transcript
+
+`features/opencode/transcript.lua` keeps a model of the conversation: entries
+for prompts, answers and notes.
+
+- **Rebuilt from history:** it loads from `GET /api/session/<id>/message`,
+  newest 120 messages, with older ones a `<CR>` away.
+- **Kept current from events:**
+  - `session.inbox.*` add prompts.
+  - `session.text.*` / `session.reasoning.*` add text, keyed by message and
+    ordinal.
+  - `session.tool.*` update tool lines.
+  - Execution, retry, compaction and skill events become notes.
+- **The buffer is only a view:** one per session, `opencode://session/<id>`,
+  read-only markdown. Deleting it (`Alt+w`) loses nothing; `<M-a>` rebuilds it.
+- **Cheap redraws:** each entry renders to its own lines and an update redraws
+  only that entry, coalesced to one redraw per 40 ms, so streaming stays cheap
+  on long sessions.
+- **One header per turn:** a turn's steps (several assistant messages) share a
+  header.
+- **Reasoning:** one dimmed line; `<CR>` expands it.
+- **Tools:** one line each: status mark, name, and what the tool touched.
+  OpenCode's `execute` wrapper is resolved to the inner tool
+  (`nvim.control open`).
+
+The window is a reading surface: no numbers or sign column, wrapped prose, and
+render-markdown only at 110 columns or wider (narrow tables clip). The winbar
+shows the title, state, waiting chip, model and cost.
+
+## Agent → editor (`nvim` tool)
+
+An OpenCode plugin runs in the service and does not inherit `$NVIM`, so the
+editor publishes its socket:
 
 ```
 ${XDG_RUNTIME_DIR}/nvim-bridge/<pid>.json
@@ -55,44 +112,47 @@ ${XDG_RUNTIME_DIR}/nvim-bridge/<pid>.json
   "pid": 123, "profile": "workspace", "updated": 1794442321 }
 ```
 
-`features/bridge/registry.lua` writes it and refreshes it on
-directory/buffer/focus changes; `VimLeavePre` removes it. Readers ignore entries
-older than five minutes.
+- **Writing it:** `features/bridge/registry.lua` writes the entry and refreshes
+  it on directory, buffer and focus changes. `VimLeavePre` removes it, and dead
+  entries are pruned.
+- **Choosing an editor:** the plugin (`dot_config/opencode/plugins/
+  nvim-bridge.ts`) skips dead processes (liveness, not age). It picks the
+  editor whose `cwd` best contains the session's directory; ties, and the
+  no-match case, go to the most recently active editor.
 
-The OpenCode-side plugin (`dot_config/opencode/plugins/nvim-bridge.ts`) picks the
-entry whose `cwd` contains the session directory and registers `nvim_control`:
-
-| Action | Effect |
+| Action | Effect (editor function) |
 | --- | --- |
-| `open` | open a file (and line) in the content window |
-| `transcript` | show the agent transcript |
+| `open` | open a file at a line (`NVBridge.open_file`) |
+| `transcript` | show the target's transcript (`NVBridge.open`) |
 | `slot` | point a slot at a provider |
-| `layout` / `status` | read layout state as JSON |
-| `append` | add a note line to the transcript |
-| `show` | display arbitrary text (an artifact, a report) in the editing area |
+| `layout` / `status` | layout state as JSON |
+| `append` | a note in the transcript, or a toast for an external target (`NVBridge.append`) |
+| `show` | read-only text in the editing area (`NVBridge.show_text`) |
 
-All of it goes through `nvim --server … --remote-expr` against the documented
-editor API (`docs/editor-api.md`); there is no custom protocol.
-
-`show` renders the text as a read-only markdown buffer in the content window with
-a `q back` winbar, so an agent can put an artifact in front of the user without
-taking over the editor. Verified live: an OpenCode run called
-`nvim_control { action = "show", title = "Artifact test", text = "…" }` and the
-content appeared in Neovim.
-
-## Extending it
-
-- Add a Neovim-side command surface (`NVSlots`, `NVBridge`) first.
-- Expose it through `nvim_control` if an agent should be able to call it.
-- Keep features on top of these two layers: the bridge stays transport, the
-  features orchestrate.
+All of it goes through `nvim --server … --remote-expr` against the editor API
+(`docs/editor-api.md`).
 
 ## Tests
 
-`tests/bridge.sh` uses a fake `opencode` binary and asserts the NDJSON handling,
-part de-duplication, tool lines and their extmarks, read-only + yankable
-transcript, registry file, `open_file`, winbar, and the archived flag.
+`tests/bridge.sh` replaces the client's transport with a fake that answers the
+API paths. It asserts:
 
-Live verification: a prompt typed into the bottom panel streams into the centre
-buffer; a prompt sent from Neovim makes the agent call `nvim_control` and
-change a slot / open a file.
+- credentials and body travel on stdin, never argv;
+- SSE framing (split chunks, heartbeats, multi-line data);
+- busy and waiting states, with catch-up and replies from elsewhere;
+- events from untracked sessions are ignored;
+- the transcript built from history, then live deltas, tool lines (including a
+  failure) and one header per turn;
+- reasoning expands with `<CR>`;
+- the transcript is rebuilt after its buffer is deleted;
+- the registry file, `open_file` and `show_text` work.
+
+Verified live against OpenCode 2.2.7, with throwaway sessions on a cheap model,
+deleted afterwards:
+
+- A prompt typed into the panel streamed into the transcript.
+- A tool call showed as one line.
+- `Alt+w` and `<M-a>` rebuilt the transcript from history.
+- An external session with a shell "ask" rule raised the waiting indicator, and
+  answering through the API cleared it.
+- Killing the stream reconnected within seconds.

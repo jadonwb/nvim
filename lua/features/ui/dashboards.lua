@@ -234,18 +234,20 @@ local function view_lsp(w)
     local row, used = {}, 0
     local nrows = 0
     for _, f in ipairs(diag.files) do
-      local item = { { vim.fn.fnamemodify(f.name, ':t') .. ' ', 'NvDim' } }
+      -- Icons draw wider than their cell: a space on each side keeps them
+      -- off the name and the count.
+      local item = { { vim.fn.fnamemodify(f.name, ':t') .. '  ', 'NvDim' } }
       if (f[sv.ERROR] or 0) > 0 then
-        item[#item + 1] = { '󰅚' .. f[sv.ERROR] .. ' ', 'NvRed' }
+        item[#item + 1] = { '󰅚 ' .. f[sv.ERROR] .. ' ', 'NvRed' }
       end
       if (f[sv.WARN] or 0) > 0 then
-        item[#item + 1] = { '󰀪' .. f[sv.WARN] .. ' ', 'NvYellow' }
+        item[#item + 1] = { '󰀪 ' .. f[sv.WARN] .. ' ', 'NvYellow' }
       end
       local rest = f.total - (f[sv.ERROR] or 0) - (f[sv.WARN] or 0)
       if rest > 0 then
-        item[#item + 1] = { '·' .. rest .. ' ', 'NvMuted' }
+        item[#item + 1] = { '· ' .. rest .. ' ', 'NvMuted' }
       end
-      item[#item + 1] = { '  ' }
+      item[#item + 1] = { '   ' }
       local iw = P.width(item)
       if used + iw > w and used > 0 then
         lines[#lines + 1] = row
@@ -376,7 +378,7 @@ end
 local function view_session(w)
   local lines = {}
   local oc = data.opencode
-  local bridge = NVBridge and NVBridge.state or {}
+  local S = NVOpenCodeSessions
   local running = data.agent_running()
 
   lines[#lines + 1] = P.header('󰚩', oc.title or 'OpenCode', {
@@ -410,8 +412,8 @@ local function view_session(w)
     { 'Started', since(oc.time_created) },
     { 'Last activity', since(oc.time_updated) },
   }
-  if bridge.job and bridge.last_tool then
-    facts[#facts + 1] = { 'Current tool', bridge.last_tool }
+  if running and S and S.activity[oc.id] then
+    facts[#facts + 1] = { 'Current tool', S.activity[oc.id] }
   end
   local fl, fr = {}, {}
   for i, r in ipairs(facts) do
