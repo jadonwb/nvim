@@ -65,6 +65,7 @@ return {
         'xml',
         'yaml',
         'make',
+        'asm',
       },
     },
     config = function(_, opts)
