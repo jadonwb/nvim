@@ -96,7 +96,6 @@ local SPECIAL = {
   nvdash = ' Dashboard ',
   qf = ' Quickfix ',
   pager = ' Messages ',
-  trouble = ' Trouble ',
   snacks_terminal = ' Terminal ',
   nvdialog = ' Dialog ',
   nvdialog_input = ' Input ',

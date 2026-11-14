@@ -106,7 +106,7 @@ file; feature code never lives in a plugin spec.
 | `files/` | nvim-tree, oil, yazi, fff, chezmoi, grug-far |
 | `snacks/` | snacks core, picker, dashboard, lazygit |
 | `git/` | gitsigns, diffview |
-| `lsp/` | lspconfig, mason, conform, nvim-lint, treesitter, trouble, lazydev |
+| `lsp/` | lspconfig, mason, conform, nvim-lint, treesitter, lazydev |
 | `lsp/languages/` | per-language specs (C/C++, git, markdown, Rust) |
 
 ## `lua/types.lua`

@@ -41,7 +41,6 @@ local function should_filter_message(kind, content, id)
   return false
 end
 
--- TODO: actually sit down and read and configure what I want
 local function setup()
   local ui2 = require 'vim._core.ui2'
   ui2.enable {

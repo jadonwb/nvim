@@ -98,7 +98,6 @@ NVSPickers.actions = {
   end,
 }
 
--- FIXME: still showing current buffer after refresh
 function NVSPickers.bufdelete(picker)
   picker.preview:reset()
   local bufs = {}
@@ -108,7 +107,13 @@ function NVSPickers.bufdelete(picker)
     end
   end
   NVQuit.delete_buffers(bufs, function()
-    pcall(picker.refresh, picker)
+    if picker.closed then
+      -- A modified buffer's Write / Discard review took focus, which closes
+      -- the picker; bring it back once the delete is done.
+      vim.schedule(NVSPickers.buffers)
+    else
+      pcall(picker.refresh, picker)
+    end
   end)
 end
 
@@ -124,18 +129,39 @@ function NVSPickers.copy_path(item, fmt)
   end
 end
 
+--- Buffers other than the one you are in, most recently used first.
+---
+--- The list is built here rather than by snacks' own options, which go
+--- wrong once the picker refreshes after a delete: "current" is whatever
+--- buffer is current when the finder runs (the picker's input by then), and
+--- last-used times move when buffers are previewed or deleted. So the buffer
+--- to leave out is captured when the picker opens, and the order is the
+--- editor's own recent list (NVBuffers: files you entered, nothing else).
 function NVSPickers.buffers()
+  local origin = vim.api.nvim_get_current_buf()
   Snacks.picker.buffers {
     hidden = false,
     unloaded = true,
-    current = false,
-    sort_lastused = true,
+    current = true,
+    sort_lastused = false,
+    finder = function(opts, ctx)
+      local items = require('snacks.picker.source.buffers').buffers(opts, ctx)
+      local rank = {}
+      for i, info in ipairs(NVBuffers.get_managed { sort_lastused = true }) do
+        rank[info.bufnr] = i
+      end
+      local out = {}
+      for _, item in ipairs(items) do
+        if item.buf and item.buf ~= origin and rank[item.buf] then
+          out[#out + 1] = item
+        end
+      end
+      table.sort(out, function(a, b)
+        return rank[a.buf] < rank[b.buf]
+      end)
+      return out
+    end,
     layout = NVSPickerVerticalLayout.build(),
-    filter = {
-      filter = function(item, _)
-        return item.buf and NVBuffers.is_managed(item.buf)
-      end,
-    },
     win = {
       input = {
         keys = {

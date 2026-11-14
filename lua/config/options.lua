@@ -7,9 +7,8 @@ vim.g.maplocalleader = '\\'
 -- config is updated, not while editing.
 vim.g.deprecation_warnings = false
 
--- Global settings that snacks and trouble read on load.
+-- Global settings that snacks reads on load.
 vim.g.snacks_animate = true
-vim.g.trouble_lualine = true
 
 require('config.remote_clipboard').setup()
 

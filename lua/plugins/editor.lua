@@ -50,7 +50,6 @@ return {
 
       NVSession.autocmds()
       NVMason.setup()
-      NVTrouble.setup()
       NVGrugFar.setup()
       NVLazy.setup()
       NVSnacksDashboard.setup()

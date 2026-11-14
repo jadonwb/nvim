@@ -1,6 +1,12 @@
 NVQuit = {}
 
 local busy = false
+
+--- True while the unsaved-changes review runs (it shows each buffer in turn).
+---@return boolean
+function NVQuit.is_reviewing()
+  return busy
+end
 local function report(err)
   vim.notify(tostring(err), vim.log.levels.ERROR, { title = 'Editor' })
 end

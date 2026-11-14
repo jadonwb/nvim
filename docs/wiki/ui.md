@@ -181,7 +181,6 @@ The layout is tested at 120x36 as well as full width:
   readable and copyable either way. Tables are not rendered at any width for the
   same reason: pipe lines wrap predictably.
 - Heading blocks have no fixed minimum width, so they fit a split.
-- Trouble floats at 90% x 60%, which fits a typical diagnostic message.
 - Pickers use the vertical layout (input, list, preview) and keep their chips.
 - The notification centre sizes to the editor and wraps long messages.
 

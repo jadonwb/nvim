@@ -43,8 +43,8 @@ The leader is `Space`; the local leader is `\`.
 | `<M-S-Up>` | Move window up | n |
 | `<M-Space>` | Insert Space | n |
 | `<M-Tab>` | Swap windows | n |
-| `<M-Up>` | Move line up | n |
 | `<M-Up>` | Move selected lines up | v |
+| `<M-Up>` | Move line up | n |
 | `<M-W>` | Delete current buffer and close current window if there are multiple | n |
 | `<M-a>` | Agent transcript | n |
 | `<M-b>` | Toggle most recent buffer | n |

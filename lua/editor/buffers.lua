@@ -16,10 +16,17 @@ end
 function NVBuffers.autocmds()
   vim.api.nvim_create_autocmd('BufEnter', {
     callback = function(args)
-      if NVBuffers.is_managed(args.buf) then
-        clock = clock + 1
-        recent[args.buf] = clock
+      -- Recent order is what you chose to look at: not a float (previews,
+      -- popups), and not the unsaved-changes review stepping through
+      -- buffers.
+      if not NVBuffers.is_managed(args.buf) or vim.api.nvim_win_get_config(0).relative ~= '' then
+        return
       end
+      if NVQuit and NVQuit.is_reviewing and NVQuit.is_reviewing() then
+        return
+      end
+      clock = clock + 1
+      recent[args.buf] = clock
     end,
   })
   -- TODO: nvim 13 has better handling for this

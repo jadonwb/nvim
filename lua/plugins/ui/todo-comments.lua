@@ -1,5 +1,3 @@
-local Picker = {}
-
 NVTodoComments = {
   'folke/todo-comments.nvim',
 
@@ -7,7 +5,7 @@ NVTodoComments = {
   -- (VimEnter), not on first use of a todo command. Pickers: <leader>st /
   -- <leader>sT (snacks).
   event = 'VimEnter',
-  cmd = { 'TodoTrouble', 'TodoQuickFix' },
+  cmd = { 'TodoQuickFix' },
   opts = {
     keywords = {
       TODO = { icon = '', color = 'todo' },
@@ -34,21 +32,5 @@ NVTodoComments = {
     merge_keywords = false,
   },
 }
-
----@param types ("TODO" | "FIXME" )[]
-function Picker.list(types)
-  local trouble = require 'trouble'
-
-  trouble.open {
-    mode = 'todo',
-    focus = true,
-    filter = { tag = types },
-    win = { position = 'top', size = 0.4 },
-    groups = {
-      { 'directory' },
-      { 'filename', format = '{file_icon} {basename} {count}' },
-    },
-  }
-end
 
 return { NVTodoComments }

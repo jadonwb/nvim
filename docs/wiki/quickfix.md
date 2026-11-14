@@ -29,7 +29,6 @@ An empty result is a notification, and the previous list stays.
 | `<` / `>` in the list | older / newer list (`:colder` / `:cnewer`) |
 
 The panel strip shows the list's title (what produced it) and these keys.
-Trouble (`:Trouble`) still works, but has no keys.
 
 ## Future option: quicker.nvim
 
@@ -38,3 +37,28 @@ editable in place: delete entries with `dd`, edit the lines and write them back
 to the files, and expand context around an item. It replaces the `qf` buffer's
 rendering, so it has to be checked against the panel provider
 (`layout/providers.lua`, `show_qflist`) before adopting it. Not used yet.
+
+## Ideas from Trouble (removed)
+
+trouble.nvim was removed once the list lived in the panel. What it did that the
+panel could copy later:
+
+- **Grouped by file:** items under a file header with a count, folding per
+  file (`zo` / `zc`), instead of repeating the file name on every line.
+- **Auto-preview:** moving the cursor in the list shows that item in the
+  content window without leaving the list (`auto_preview`), restored on close.
+- **Follow:** the list's cursor tracks the item nearest the cursor in the
+  content window.
+- **Live refresh:** a diagnostics list updates as diagnostics change instead of
+  being a snapshot (`auto_refresh`).
+- **Filters:** by severity, by buffer, or diagnostics only from the servers
+  attached to the current buffer (the config had a custom
+  `diagnostics_per_ft` source for this).
+- **Open in a split:** jump to an item in a horizontal / vertical split.
+- **Message trimming:** long messages cut to the window width with an
+  ellipsis rather than at the edge.
+- **Document symbols** as a list, and the statusline symbol path
+  (`trouble_lualine`); the LSP panel or a picker would cover these.
+
+quicker.nvim (above) covers grouping-like context and editing; auto-preview,
+follow and live refresh would be panel work.
