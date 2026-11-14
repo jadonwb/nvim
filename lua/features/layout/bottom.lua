@@ -1,7 +1,7 @@
 -- Bottom panel modes.
 --
 -- The slot hosts one provider at a time: prompt, terminal or quickfix. `<C-/>` shows/hides the panel; terminals are managed by
--- layout/terminals.lua. The command line floats (config/ui2.lua).
+-- layout/terminals.lua. The command line floats (features/ui/ui2.lua).
 --
 -- A window-local winbar (not volt: the content is a real buffer) shows the modes.
 
@@ -100,6 +100,13 @@ function NVBottom.winbar(win, mode)
       end
     end
     parts[#parts + 1] = '%#NvKey# SPC tt %#NvMuted# pick  %#NvKey# SPC tn %#NvMuted# new  %#NvKey# C-/ %#NvMuted# hide '
+  elseif mode == 'quickfix' then
+    -- What the list is (its producer's title) and how to walk it.
+    local title = vim.fn.getqflist({ title = 0 }).title or ''
+    if title ~= '' then
+      parts[#parts + 1] = '%#NvDim#' .. vim.fn.strcharpart(title, 0, 40):gsub('%%', '%%%%') .. '   '
+    end
+    parts[#parts + 1] = '%#NvKey# ]q [q %#NvMuted# next / prev  %#NvKey# < > %#NvMuted# older / newer  %#NvKey# SPC xx %#NvMuted# hide '
   else
     parts[#parts + 1] = '%#NvKey# M-n %#NvMuted# next '
   end

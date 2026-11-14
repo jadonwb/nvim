@@ -21,4 +21,3 @@ require 'core.environment'
 
 require 'core.close'
 require 'core.tabs'
-require 'core.dialogs'

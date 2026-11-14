@@ -27,6 +27,7 @@ The leader is `Space`; the local leader is `\`.
 | `<C-W><C-D>` | Show diagnostics under the cursor | n |
 | `<C-W>d` | Show diagnostics under the cursor | n |
 | `<C-_>` | Toggle bottom panel | n |
+| `<CR>` | Run (quit / close commands take the editor close path) | c |
 | `<Esc>` | Drop all the noise and Esc | n |
 | `<M-0>` | Reset layout sizes | n |
 | `<M-=>` | Reset layout sizes | n |
@@ -45,7 +46,7 @@ The leader is `Space`; the local leader is `\`.
 | `<M-Up>` | Move line up | n |
 | `<M-Up>` | Move selected lines up | v |
 | `<M-W>` | Delete current buffer and close current window if there are multiple | n |
-| `<M-a>` | Agent output | n |
+| `<M-a>` | Agent transcript | n |
 | `<M-b>` | Toggle most recent buffer | n |
 | `<M-g>` | Lazygit | n |
 | `<M-h>` | Scroll left | n |
@@ -71,8 +72,8 @@ The leader is `Space`; the local leader is `\`.
 | `<S-Tab>` | Unindent | v |
 | `<S-Tab>` | vim.snippet.jump if active, otherwise <S-Tab> | i |
 | `<S-Up>` | Increase window height | n |
-| `<Tab>` | vim.snippet.jump if active, otherwise <Tab> | i |
 | `<Tab>` | Indent | v |
+| `<Tab>` | vim.snippet.jump if active, otherwise <Tab> | i |
 | `J` | Join lines and keep cursor position | n |
 | `U` | Redo | n |
 | `X` | Don't replace clipboard content when deleting | n |
@@ -85,14 +86,14 @@ The leader is `Space`; the local leader is `\`.
 | `[D` | Jump to the first diagnostic in the current buffer | n |
 | `[L` | :lrewind | n |
 | `[N` | Select previous sibling node | v |
-| `[Q` | :crewind | n |
+| `[Q` | First quickfix item | n |
 | `[T` | :trewind | n |
 | `[a` | :previous | n |
 | `[b` | :bprevious | n |
 | `[d` | Jump to the previous diagnostic in the current buffer | n |
 | `[l` | :lprevious | n |
 | `[n` | Select previous node | v |
-| `[q` | :cprevious | n |
+| `[q` | Previous quickfix item | n |
 | `[t` | :tprevious | n |
 | `] ` | Add empty line below cursor | n |
 | `]<C-L>` | :lnfile | n |
@@ -103,14 +104,14 @@ The leader is `Space`; the local leader is `\`.
 | `]D` | Jump to the last diagnostic in the current buffer | n |
 | `]L` | :llast | n |
 | `]N` | Select next sibling node | v |
-| `]Q` | :clast | n |
+| `]Q` | Last quickfix item | n |
 | `]T` | :tlast | n |
 | `]a` | :next | n |
 | `]b` | :bnext | n |
 | `]d` | Jump to the next diagnostic in the current buffer | n |
 | `]l` | :lnext | n |
 | `]n` | Select next node | v |
-| `]q` | :cnext | n |
+| `]q` | Next quickfix item | n |
 | `]t` | :tnext | n |
 | `a` | Around textobject | v |
 | `aN` | Around next textobject | v |
@@ -153,11 +154,13 @@ The leader is `Space`; the local leader is `\`.
 | `srl` | Replace previous surrounding | n |
 | `srn` | Replace next surrounding | n |
 | `x` | Don't replace clipboard content when deleting | n |
+
 ## Buffers
 
 | Key | Action | Mode |
 | --- | --- | --- |
 | `<Space>` | Buffers | n |
+
 ## Code
 
 | Key | Action | Mode |
@@ -166,6 +169,7 @@ The leader is `Space`; the local leader is `\`.
 | `c>` | Swap parameter with next | n |
 | `cf` | Format buffer | n |
 | `cj` | Join or Split Code Block | n |
+
 ## Find
 
 | Key | Action | Mode |
@@ -177,6 +181,45 @@ The leader is `Space`; the local leader is `\`.
 | `fr` | Search and Replace in current buffer | n |
 | `fs` | Live Grep (fff) | n |
 | `fw` | Grep Word (fff) | n |
+
+## Git
+
+| Key | Action | Mode |
+| --- | --- | --- |
+| `]H / [H` | Last / first hunk (file buffers) | n |
+| `]h / [h` | Next / previous hunk (file buffers) | n |
+| `gH` | File history (pinned to working tree) | n |
+| `gS` | Stage file | n |
+| `gb` | Blame line | n |
+| `gg` | Git changes (diffview) | n |
+| `gh` | File history | n |
+| `gl` | Git log (repository history) | n |
+| `gp` | Preview hunk (inline) | n |
+| `gr` | Reset hunk (or the selected lines) | n, x |
+| `gs` | Stage / unstage hunk (or the selected lines) | n, x |
+| `ih` | Hunk text object | o, x |
+
+`K` on a changed line adds a **hunk** section to the hover menu: adjacent
+hunks show as one, `s` stages and `r` resets the group. Without a language
+server, `K` opens the menu on a hunk or diagnostic and stays Vim's `K`
+elsewhere.
+
+## Quickfix
+
+| Key | Action | Mode |
+| --- | --- | --- |
+| `< / >` | Older / newer list (in the list) | n |
+| `xD` | Diagnostics (workspace) | n |
+| `xd` | Diagnostics (buffer) | n |
+| `xh` | Git hunks (all files) | n |
+| `xr` | LSP references | n |
+| `xs` | Search the list | n |
+| `xt` | Todo comments | n |
+| `xx` | Quickfix list (show / hide) | n |
+
+The list fills only when asked and shows in the bottom panel; see
+[quickfix](quickfix.md).
+
 ## Search
 
 | Key | Action | Mode |
@@ -205,6 +248,7 @@ The leader is `Space`; the local leader is `\`.
 | `st` | Todo | n |
 | `su` | Undotree | n |
 | `sz` | Chezmoi files | n |
+
 ## Ui
 
 | Key | Action | Mode |
@@ -234,67 +278,7 @@ The leader is `Space`; the local leader is `\`.
 | `us` | Toggle Spelling | n |
 | `ut` | Toggle Treesitter Context | n |
 | `uw` | Toggle Wrap | n |
-## Opencode
 
-| Key | Action | Mode |
-| --- | --- | --- |
-| `aa` | Show all OpenCode artifacts | n |
-| `ae` | Show OpenCode evidence | n |
-| `ap` | Show OpenCode plans | n |
-| `ar` | Show OpenCode reviews | n |
-| `a/` | Search inside OpenCode artifacts | n |
-| `as` | Attach OpenCode session | n |
-| `an` | New OpenCode session (nvim) | n |
-| `ax` | Interrupt the OpenCode session | n |
-| `ai` | Prompt: add a reference to this line / these lines | n, x |
-| `aI` | Prompt: add a reference to this file | n |
-| `ad` | Prompt: add diagnostics (line, selection, or file) | n, x |
-| `ao` | Prompt: add a reference to a motion | n |
-| `aw` | Answer what OpenCode is waiting on | n |
-| `am` | OpenCode model (then its variant) | n |
-| `av` | OpenCode variant (thinking level) | n |
-| `ag` | OpenCode agent | n |
-| `ak` | OpenCode skill → prompt | n |
-| `ac` | OpenCode command → prompt | n |
-
-In the prompt panel: `CR` send (accepts a completion when one is selected),
-`M-CR` steer the running turn, `S-CR` / `C-j` new line, `M-a` transcript.
-Completion after `@` (files), `$` (skills) and `/` (commands, at the start);
-`K` previews a reference, `gd` opens it.
-## Other
-
-| Key | Action | Mode |
-| --- | --- | --- |
-| `,` | Notification centre | n |
-| `?` | Keymap cheatsheet | n |
-## Commands
-
-| Key | Action | Mode |
-| --- | --- | --- |
-| `:Lazy` | plugin manager |  |
-| `:NVAgent` | open the transcript, or send a prompt; `new`, `stop`, `reconnect` |  |
-| `:NVBottom` | prompt / terminal / quickfix, or cycle |  |
-| `:NVCheatsheet` | this reference, drawn with volt |  |
-| `:NVLayout` | open / close / slot <name> / provider <slot> <name> / swap <a> <b> / status |  |
-## Git
-
-| Key | Action | Mode |
-| --- | --- | --- |
-| `gH` | File history (pinned to working tree) | n |
-| `gg` | Git changes (diffview) | n |
-| `gh` | File history | n |
-| `gl` | Git log (repository history) | n |
-| `gp` | Preview hunk (inline) | n |
-| `gs` | Stage / unstage hunk (or the selected lines) | n, x |
-| `gr` | Reset hunk (or the selected lines) | n, x |
-| `gS` | Stage file | n |
-| `gb` | Blame line | n |
-
-Hunks (gitsigns, buffer-local): `]h` / `[h` next / previous, `]H` / `[H` last /
-first, `ih` hunk text object. `K` on a changed line adds a **hunk** section to
-the hover menu (the diff; `s` stage, `r` reset when focused); without a
-language server, `K` opens the menu on a hunk or diagnostic, and stays Vim's
-`K` elsewhere.
 ## Layout / panels
 
 | Key | Action | Mode |
@@ -310,14 +294,7 @@ language server, `K` opens the menu on a hunk or diagnostic, and stays Vim's
 | `lv` | Compare: file side by side | n |
 | `lw` | Swap this panel with… | n |
 | `lx` | Compare: close | n |
-## Plugins
 
-| Key | Action | Mode |
-| --- | --- | --- |
-| `pl` | Lazy | n |
-| `pm` | Mason | n |
-| `pu` | Update plugins | n |
-| `px` | Language extras (this machine's language packs) | n |
 ## Terminals
 
 | Key | Action | Mode |
@@ -329,6 +306,7 @@ language server, `K` opens the menu on a hunk or diagnostic, and stays Vim's
 | `tf` | Floating terminal (toggle) | n |
 | `tn` | New terminal (panel) | n |
 | `tt` | Pick terminal | n |
+
 ## Views (dashboards)
 
 | Key | Action | Mode |
@@ -337,10 +315,68 @@ language server, `K` opens the menu on a hunk or diagnostic, and stays Vim's
 | `vl` | View: LSP dashboard | n |
 | `vo` | View: OpenCode dashboard | n |
 
+## Plugins
+
+| Key | Action | Mode |
+| --- | --- | --- |
+| `pl` | Lazy | n |
+| `pm` | Mason | n |
+| `pu` | Update plugins | n |
+| `px` | Language extras | n |
+
+## Opencode
+
+| Key | Action | Mode |
+| --- | --- | --- |
+| `a/` | Search inside OpenCode artifacts | n |
+| `aI` | Prompt: add a reference to this file | n |
+| `aa` | Show all OpenCode artifacts | n |
+| `ac` | OpenCode command → prompt | n |
+| `ad` | Prompt: add diagnostics | n |
+| `ae` | Show OpenCode evidence | n |
+| `ag` | OpenCode agent | n |
+| `ai` | Prompt: add a reference to this line | n |
+| `ai` | Prompt: add a reference to these lines | v |
+| `ak` | OpenCode skill → prompt | n |
+| `am` | OpenCode model | n |
+| `an` | New OpenCode session (nvim) | n |
+| `ao` | Prompt: add a reference to a motion | n |
+| `ap` | Show OpenCode plans | n |
+| `ar` | Show OpenCode reviews | n |
+| `as` | Attach OpenCode session | n |
+| `av` | OpenCode variant (thinking level) | n |
+| `aw` | Answer what OpenCode is waiting on | n |
+| `ax` | Interrupt the OpenCode session | n |
+
+In the prompt panel: `CR` send (accepts a completion when one is selected),
+`M-CR` steer the running turn, `S-CR` / `C-j` new line, `M-a` transcript.
+Completion after `@` (files), `$` (skills) and `/` (commands, at the start);
+`K` previews a reference, `gd` opens it.
+
+## Other
+
+| Key | Action | Mode |
+| --- | --- | --- |
+| `,` | Notification centre | n |
+| `?` | Keymap cheatsheet | n |
+
+## Commands
+
+| Key | Action | Mode |
+| --- | --- | --- |
+| `:Lazy` | plugin manager |  |
+| `:NVAgent` | open the transcript, or send a prompt; `new`, `stop`, `reconnect` |  |
+| `:NVBottom` | prompt / terminal / quickfix, or cycle |  |
+| `:NVCheatsheet` | this reference, drawn with volt |  |
+| `:NVExtras` | language extras dashboard, or `<pack> [on\|off]` |  |
+| `:NVLayout` | open / close / slot <name> / provider <slot> <name> / swap <a> <b> / status |  |
+
 ## Notes
 
 - `<M-i>` toggles focus mode; the layout restores exactly the slots that were open.
 - `<M-n>` cycles the bottom panel modes.
 - `<M-a>` opens the agent transcript.
 - Window navigation is `<C-h>/<C-j>/<C-k>/<C-l>` everywhere, including the explorer.
-- `q`/`<Esc>` close floats and panels; the command line lives in the bottom slot.
+- `q`/`<Esc>` close floats and panels; the command line floats in the upper third.
+- While the layout is up, typed `:q`, `:wq`, `:bd`, `:qa` take the same path as `<M-w>` / `<A-q>`.
+- Dialogs: `CR` accepts, `Esc` / `q` / `<M-w>` cancel; option keys are shown as chips.

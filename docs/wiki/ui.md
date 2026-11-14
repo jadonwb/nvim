@@ -124,10 +124,10 @@ insert-mode field still closes on `q`/`Esc`.
 
 ## Dialogs
 
-Every dialog (`core/dialogs.lua`) is the floating command line's surface: a
+Every dialog (`features/ui/dialogs.lua`) is the floating command line's surface: a
 raised panel with solid padding, a title chip (`NvPopupTitle`), and its keys as
 chips in the footer. Dialogs open where the command line does, upper third and
-centred (`NVPromptRect` in `config/ui2.lua`), so a prompt never moves around.
+centred (`NVPromptRect` in `features/ui/ui2.lua`), so a prompt never moves around.
 
 | Dialog | Use | Keys |
 | --- | --- | --- |

@@ -20,6 +20,7 @@ local groups = {
   t = 'terminals',
   u = 'ui',
   v = 'views (dashboards)',
+  x = 'quickfix',
 }
 
 local rows = {}
@@ -50,12 +51,29 @@ end
 -- Global commands that are not keymaps but belong in the same reference.
 for _, cmd in ipairs {
   { ':NVLayout', 'open / close / slot <name> / provider <slot> <name> / swap <a> <b> / status' },
-  { ':NVBottom', 'prompt / quickfix / problems, or cycle' },
-  { ':NVAgent', 'open the transcript, or send a prompt; `new` and `stop`' },
+  { ':NVBottom', 'prompt / terminal / quickfix, or cycle' },
+  { ':NVAgent', 'open the transcript, or send a prompt; `new`, `stop`, `reconnect`' },
+  { ':NVExtras', 'language extras dashboard, or `<pack> [on|off]`' },
   { ':NVCheatsheet', 'this reference, drawn with volt' },
   { ':Lazy', 'plugin manager' },
 } do
   add('commands', cmd[1], cmd[2], '')
+end
+
+-- Buffer-local keys: set when a buffer of that kind opens, so the global
+-- dump above cannot see them.
+for _, k in ipairs {
+  { 'git', ']h / [h', 'Next / previous hunk (file buffers)', 'n' },
+  { 'git', ']H / [H', 'Last / first hunk (file buffers)', 'n' },
+  { 'git', 'gp', 'Preview hunk (inline)', 'n' },
+  { 'git', 'gs', 'Stage / unstage hunk (or the selected lines)', 'n, x' },
+  { 'git', 'gr', 'Reset hunk (or the selected lines)', 'n, x' },
+  { 'git', 'gS', 'Stage file', 'n' },
+  { 'git', 'gb', 'Blame line', 'n' },
+  { 'git', 'ih', 'Hunk text object', 'o, x' },
+  { 'quickfix', '< / >', 'Older / newer list (in the list)', 'n' },
+} do
+  add(k[1], k[2], k[3], k[4])
 end
 
 table.sort(rows, function(a, b)
@@ -65,7 +83,47 @@ table.sort(rows, function(a, b)
   return a.group < b.group
 end)
 
-local order = { 'general', 'buffers', 'code', 'diffview', 'find', 'quit / session', 'search', 'ui', 'windows', 'diagnostics', 'opencode', 'other', 'commands' }
+local order = {
+  'general',
+  'buffers',
+  'code',
+  'diffview',
+  'find',
+  'git',
+  'quickfix',
+  'quit / session',
+  'search',
+  'ui',
+  'windows',
+  'diagnostics',
+  'layout / panels',
+  'terminals',
+  'views (dashboards)',
+  'plugins',
+  'opencode',
+  'other',
+  'commands',
+}
+
+-- Prose under a group's table.
+local after = {
+  git = {
+    '`K` on a changed line adds a **hunk** section to the hover menu: adjacent',
+    'hunks show as one, `s` stages and `r` resets the group. Without a language',
+    "server, `K` opens the menu on a hunk or diagnostic and stays Vim's `K`",
+    'elsewhere.',
+  },
+  quickfix = {
+    'The list fills only when asked and shows in the bottom panel; see',
+    '[quickfix](quickfix.md).',
+  },
+  opencode = {
+    'In the prompt panel: `CR` send (accepts a completion when one is selected),',
+    '`M-CR` steer the running turn, `S-CR` / `C-j` new line, `M-a` transcript.',
+    'Completion after `@` (files), `$` (skills) and `/` (commands, at the start);',
+    '`K` previews a reference, `gd` opens it.',
+  },
+}
 local index = {}
 for i, name in ipairs(order) do
   index[name] = i
@@ -88,8 +146,18 @@ local out = {
 }
 
 local current = nil
+local function close_group()
+  if current and after[current] then
+    out[#out + 1] = ''
+    vim.list_extend(out, after[current])
+  end
+end
 for _, row in ipairs(rows) do
   if row.group ~= current then
+    close_group()
+    if current then
+      out[#out + 1] = ''
+    end
     current = row.group
     out[#out + 1] = '## ' .. current:gsub('^%l', string.upper)
     out[#out + 1] = ''
@@ -98,6 +166,7 @@ for _, row in ipairs(rows) do
   end
   out[#out + 1] = ('| `%s` | %s | %s |'):format(row.lhs, row.desc:gsub('|', '\\|'), row.modes)
 end
+close_group()
 
 out[#out + 1] = ''
 out[#out + 1] = '## Notes'
@@ -106,7 +175,9 @@ out[#out + 1] = '- `<M-i>` toggles focus mode; the layout restores exactly the s
 out[#out + 1] = '- `<M-n>` cycles the bottom panel modes.'
 out[#out + 1] = '- `<M-a>` opens the agent transcript.'
 out[#out + 1] = '- Window navigation is `<C-h>/<C-j>/<C-k>/<C-l>` everywhere, including the explorer.'
-out[#out + 1] = '- `q`/`<Esc>` close floats and panels; the command line lives in the bottom slot.'
+out[#out + 1] = '- `q`/`<Esc>` close floats and panels; the command line floats in the upper third.'
+out[#out + 1] = '- While the layout is up, typed `:q`, `:wq`, `:bd`, `:qa` take the same path as `<M-w>` / `<A-q>`.'
+out[#out + 1] = '- Dialogs: `CR` accepts, `Esc` / `q` / `<M-w>` cancel; option keys are shown as chips.'
 
 local script = debug.getinfo(1, 'S').source:sub(2)
 local root = vim.fs.dirname(vim.fs.dirname(script))

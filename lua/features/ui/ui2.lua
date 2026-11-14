@@ -225,7 +225,7 @@ local function prompt_rect()
   }
 end
 
---- The prompt's screen rectangle, shared with dialogs (core/dialogs.lua) so
+--- The prompt's screen rectangle, shared with dialogs (features/ui/dialogs.lua) so
 --- an input box sits exactly where the command line does.
 NVPromptRect = prompt_rect
 

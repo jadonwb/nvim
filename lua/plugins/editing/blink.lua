@@ -2,7 +2,7 @@
 --
 -- Look: NvChad's borderless menu — raised surface, invisible padding border,
 -- kind icon + label + kind name. On the command line the menu opens below
--- the floating prompt (config/ui2.lua).
+-- the floating prompt (features/ui/ui2.lua).
 
 local WINHL = 'Normal:NvRaised,FloatBorder:NvRaisedBorder,CursorLine:NvCursorLine,Search:None'
 

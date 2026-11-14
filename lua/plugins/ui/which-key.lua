@@ -44,9 +44,10 @@ return {
         { '<leader>t', group = 'terminals', icon = '\u{f018d}' },
         { '<leader>u', group = 'ui toggles', icon = '󰙵' },
         { '<leader>v', group = 'views (dashboards)', icon = '󰕮' },
+        { '<leader>x', group = 'quickfix', icon = '\u{f0279}' },
         { '<M-y>', group = 'yank path', icon = '󰆏' },
 
-        -- Text objects (mini.ai + treesitter, plugins/mini.lua) after a / i
+        -- Text objects (mini.ai + treesitter, plugins/editing/mini.lua) after a / i
         -- in operator-pending and visual mode: `via`, `daf`, `ci=`, …
         (function()
           local objects = {

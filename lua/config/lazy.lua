@@ -22,6 +22,9 @@ local theme = require 'config.theme'
 require('lazy').setup {
   spec = {
     { import = 'plugins' },
+    { import = 'plugins/ui' },
+    { import = 'plugins/editing' },
+    { import = 'plugins/files' },
     { import = 'plugins/snacks' },
     { import = 'plugins/git' },
     { import = 'plugins/lsp' },

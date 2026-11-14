@@ -8,8 +8,8 @@ NVTrouble = {
     return require('config.profile').wants 'lsp'
   end,
   cmd = { 'Trouble' },
-  -- No keys for now: the <leader>x group returns once quickfix/problems
-  -- usage is settled (:Trouble still works).
+  -- No keys: <leader>x is the quickfix list (features/quickfix.lua).
+  -- :Trouble still works.
   keys = {},
   opts = function()
     return {

@@ -3,103 +3,111 @@
 Every Lua file in the config, grouped by responsibility. One plugin per spec
 file; feature code never lives in a plugin spec.
 
+| Directory | Holds |
+| --- | --- |
+| `lua/config/` | decisions made once at startup |
+| `lua/core/` | building blocks with no UI or feature knowledge |
+| `lua/editor/` | editing behaviour: buffers, windows, saving and quitting |
+| `lua/features/` | subsystems: layout, LSP UI, OpenCode, UI surfaces |
+| `lua/plugins/` | lazy.nvim specs, one plugin per file, in folders by area |
+
 ## Entry point
 
 | File | Role |
 | --- | --- |
-| `init.lua` | load order: options → autocmds → core → editor → ui2 → highlights → lazy |
+| `init.lua` | load order: options → autocmds → core → dialogs → editor → ui2 → notifications → highlights → lazy |
 
-## `lua/config/` — decisions made once at startup
+## `lua/config/`
 
 | File | Role |
 | --- | --- |
 | `options.lua` | leader keys, editing defaults, listchars/folds, filetype additions |
 | `autocmds.lua` | small global autocmds (checktime, yank highlight, last cursor, q-closes) |
-| `lazy.lua` | lazy.nvim bootstrap and import of `lua/plugins` |
+| `lazy.lua` | lazy.nvim bootstrap and the spec imports (`lua/plugins/**`) |
 | `profile.lua` | launch-profile classification and feature gating |
-| `highlights.lua` | semantic palette (Ex*, Nv*, Snacks*, Trouble*) derived from the theme |
-| `ui2.lua` | `vim._core.ui2` setup, pinned command line, pager close keys |
+| `extras.lua` | language packs and the always-on base (data; see [extras](extras.md)) |
+| `highlights.lua` | links into the theme's Nv*/Ex* vocabulary, fallbacks |
 | `remote_clipboard.lua` | OSC 52 clipboard behaviour over SSH |
-| `theme.lua` | deployed by Omarchy (generated), colourscheme name |
+| `theme.lua` | the Omarchy-generated colourscheme spec |
 
-## `lua/core/` — primitives with no feature knowledge
+## `lua/core/`
 
 | File | Role |
 | --- | --- |
-| `core.lua` | requires the primitives in order |
+| `core.lua` | requires the building blocks in order |
 | `keymap.lua` | `K.map` and the `NVKeymaps` key constants (single registry) |
-| `messages.lua` | notification/pager/echo API (LSP progress lives in features) |
-| `screen.lua`, `borders.lua`, `icons.lua`, `fs.lua`, `clipboard.lua`, `keys.lua` | geometry, border styles, icon lookups, path/clipboard helpers, key helpers |
-| `environment.lua` | startup facts (purpose, host, files, policy) |
+| `messages.lua` | `NVMessages`: notify / pager / echo API |
+| `screen.lua`, `borders.lua`, `icons.lua`, `fs.lua`, `clipboard.lua`, `keys.lua` | geometry, border styles, icon lookups, path / clipboard / key helpers |
+| `environment.lua` | startup facts (purpose, host, files, close policy) |
 | `close.lua` | cooperative close chain with a priority order |
 | `tabs.lua` | tab-type registry (diffview's temporary tab) |
-| `dialogs.lua` | select / input / info dialogs on the command line's surface |
 | `class.lua` | tiny class helper |
 
-## `lua/editor/` — editing behaviour
+## `lua/editor/`
 
 | File | Role |
 | --- | --- |
 | `editor.lua` | requires session and the panel registry |
 | `buffers.lua` | managed buffers, MRU, delete, toggle, keymaps |
-| `editing.lua` | insert/visual editing, scroll, move lines, surround glue |
+| `editing.lua` | editing keys, save / Save As, typed `:q`/`:wq` routing |
 | `navigation.lua` | jumps, diagnostics navigation, popup dismissal |
-| `windows.lua` | window navigation/swap/size keymaps |
-| `format.lua` | format-on-save toggles and `conform` glue |
-| `terminal.lua` | `<C-/>` terminal surface and terminal-mode keys |
-| `help.lua` | help/man open as a doc pane in the content window |
-| `quit.lua` | write/discard review, save-and-quit, restart |
+| `windows.lua` | window navigation / swap / size keys |
+| `format.lua` | format-on-save toggles and conform glue |
+| `help.lua` | help / man open as a doc pane in the content window |
+| `quit.lua` | write / discard review, save-and-quit, restart |
 | `session.lua` | workspace snapshot: files, active view and the slot layout |
-| `ui-toggles.lua` | `<leader>u` toggles (snacks toggles, preview, format) |
+| `ui-toggles.lua` | `<leader>u` toggles |
 
-## `lua/features/` — subsystems
+## `lua/features/`
 
 | File | Role |
 | --- | --- |
-| `layout/slots.lua` | slot registry, open/close/swap/providers, repair/enforce, focus mode, session hooks |
-| `layout/providers.lua` | explorer, changes, session, prompt, quickfix providers |
-| `layout/bottom.lua` | bottom panel modes, winbar strip, cycling |
-| `layout/panels.lua` | companion-panel registry used by help/grug-far/terminal |
-| `lsp/init.lua` | server list, diagnostics config, mason, attach |
-| `lsp/keymaps.lua` | global diagnostic keymaps |
-| `lsp/ui.lua` | unified cursor popup (hover/signature/diagnostics) |
-| `lsp/sections.lua` | hover/signature/diagnostics content as volt sections |
-| `lsp/markup.lua` | markdown renderer behind the chunk adapter |
-| `lsp/progress.lua` | LSP progress state, statusline bar, debounce/GC |
-| `ui/window.lua` | volt float/panel plumbing and render cycle |
-| `ui/chrome.lua` | framed panel composition (header, chips, sections, fill) |
-| `ui/markdown.lua` | markdown/source → volt chunks, wrapping |
-| `ui/notify.lua` | notification store and centre |
-| `bridge/init.lua` | prompt → opencode stream, transcript surface, show_text |
-| `bridge/registry.lua` | editor socket registry for external agents |
-| `opencode/attach.lua` | attach/list opencode sessions |
-| `opencode/artifacts.lua` | opencode artifacts in the editor |
-| `opencode/rpc.lua` | opencode RPC helpers |
+| `layout/slots.lua` | slot registry: open / close / swap / providers, repair, enforce, focus mode, reading room |
+| `layout/memory.lua` | per-project layout memory (closed / shown slots, providers) |
+| `layout/geometry.lua` | slot sizes (pure) |
+| `layout/providers.lua` | explorer, changes, session, LSP, prompt, quickfix providers |
+| `layout/bottom.lua` | bottom panel modes and their strip |
+| `layout/terminals.lua` | terminals (panel, float, content), terminal-mode keys |
+| `layout/panels.lua` | companion-panel registry (help, grug-far, terminal) |
+| `layout/data.lua` | data behind the panels (git changes, LSP state) |
+| `layout/keymaps.lua` | leader keys for layout, panels and dashboards |
+| `lsp/init.lua` | server list (from extras), diagnostics config, attach |
+| `lsp/keymaps.lua` | global LSP / diagnostic keys |
+| `lsp/ui.lua` | the `K` popup: menu + content |
+| `lsp/sections.lua` | popup sections: hover, signature, diagnostics, hunk, actions, inspect |
+| `lsp/markup.lua` | markdown renderer behind the popup |
+| `lsp/progress.lua` | LSP progress state and the statusline bar |
+| `ui/ui2.lua` | `vim._core.ui2` setup, the floating command line (`NVPromptRect`) |
+| `ui/dialogs.lua` | input / select / info dialogs on the command line's surface |
+| `ui/notify.lua` | notification store, toasts and centre |
+| `ui/window.lua`, `ui/panel.lua`, `ui/markdown.lua` | volt window plumbing, panel kit, markdown → chunks |
+| `ui/dashboards.lua` | expanded panel dashboards |
+| `bridge/init.lua`, `bridge/registry.lua` | editor ↔ agent bridge, socket registry ([OpenCode](opencode.md)) |
+| `opencode/client.lua` | service client: discovery, requests, the event stream |
+| `opencode/sessions.lua`, `attach.lua` | followed sessions, the tab's attached session |
+| `opencode/agent.lua`, `transcript.lua` | sending prompts, the transcript view |
+| `opencode/context.lua`, `prompt_lsp.lua` | prompt references and its in-process language server |
+| `opencode/requests.lua`, `pickers.lua` | permission / form answers; model, agent, skill pickers |
+| `opencode/artifacts.lua`, `rpc.lua` | plans / evidence / reviews, the RPC transport |
+| `quickfix.lua` | the quickfix list: producers, navigation ([quickfix](quickfix.md)) |
+| `extras.lua` | language extras dashboard |
 | `preview.lua` | inset file preview float |
-| `compare.lua` | two-column files/man compare with layout suspend |
-| `cheatsheet.lua` | volt keymap cheatsheet |
+| `compare.lua` | two-column file / man compare |
+| `cheatsheet.lua` | keymap cheatsheet |
 
-## `lua/plugins/` — one plugin per file
+## `lua/plugins/`
 
-| File | Plugin |
+| Path | Plugins |
 | --- | --- |
-| `lazy.lua` | lazy.nvim bootstrap |
-| `editor.lua` | startup wiring (virtual spec: order matters, no plugin) |
-| `arrowlake.lua` | colourscheme |
-| `volt.lua` | drawing layer |
-| `lualine.lua` | statusline |
-| `which-key.lua` | key hints popup |
-| `mini.lua`, `mini-icons.lua`, `mini-hipatterns.lua` | mini modules |
-| `snacks/snacks.lua`, `snacks-picker.lua`, `snacks-dashboard.lua`, `snacks-lazygit.lua` | snacks surfaces |
-| `oil.lua` | explorer |
-| `fff.lua` | fast finder |
-| `grug-far.lua` | search & replace |
-| `yazi.lua` | external browser |
-| `lsp/nvim-lspconfig.lua`, `mason.lua`, `conform.lua`, `nvim-lint.lua`, `nvim-treesitter.lua`, `trouble.lua` | LSP/tooling |
-| `lsp/languages/{cpp,git,markdown}.lua` | language extras |
-| `git/gitsigns.lua`, `git/diffview.lua` | git |
-| `blink.lua` | completion |
-| `todo-comments.lua`, `ts-comments.lua`, `ufo.lua`, `guess-indent.lua`, `nvim-spider.lua`, `winshift.lua`, `lazydev.lua`, `chezmoi.lua`, `plenary.lua` | focused single-purpose plugins |
+| `editor.lua` | startup wiring (virtual specs: order matters, no plugin) |
+| `lazy.lua`, `plenary.lua` | lazy.nvim's own settings, the utility library |
+| `ui/` | arrowlake, volt, lualine, which-key, mini.icons, mini.hipatterns, todo-comments |
+| `editing/` | blink.cmp, mini.ai, nvim-spider, ts-comments, guess-indent, ufo, winshift |
+| `files/` | nvim-tree, oil, yazi, fff, chezmoi, grug-far |
+| `snacks/` | snacks core, picker, dashboard, lazygit |
+| `git/` | gitsigns, diffview |
+| `lsp/` | lspconfig, mason, conform, nvim-lint, treesitter, trouble, lazydev |
+| `lsp/languages/` | per-language specs (C/C++, git, markdown, Rust) |
 
 ## `lua/types.lua`
 
@@ -111,7 +119,7 @@ Global LuaLS annotations for the `NV*` globals.
 | --- | --- |
 | `scripts/gen-keymaps.sh`, `scripts/gen-keymaps.lua` | regenerate `docs/wiki/keymaps.md` |
 | `scripts/shot.sh`, `scripts/ansi2svg.py` | tmux pane → PNG with theme colours |
-| `tests/{layout,session,notify,lsp-ui,bridge,rpc,launch}.sh` | headless behaviour suites |
+| `tests/*.sh` | headless suites: layout, session, notify, lsp-ui, bridge, rpc, launch, extras |
+| `tests/opencode/*.lua` | OpenCode artifacts and bridge units |
 | `docs/wiki/` | this wiki |
-| `docs/refactor/` | design notes and review history |
-| `docs/editor-api.md` | external API for agents/tools |
+| `docs/archive/` | refactor design notes and review history |

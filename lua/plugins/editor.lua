@@ -19,6 +19,7 @@ return {
 
       require 'features.layout.bottom'
       NVBottom.setup()
+      require('features.quickfix').setup()
 
       require('features.preview').setup()
       require('features.compare').setup()
@@ -32,8 +33,8 @@ return {
       NVHelp.setup()
       NVHelp.autocmds()
 
-      require 'editor.terminal'
-      NVTerminal.setup()
+      require 'features.layout.terminals'
+      NVTerminals.setup()
 
       require 'editor.format'
       NVFormat.setup()
@@ -109,7 +110,7 @@ return {
         end)
 
         step(function()
-          NVTerminal.keymaps()
+          NVTerminals.mode_keymaps()
         end)
 
         step(function()

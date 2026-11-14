@@ -1,7 +1,7 @@
 -- Notification centre.
 --
 -- One owner for user-facing notifications: vim.notify (and ui2's errors and
--- warnings, config/ui2.lua) land in this store. Each one shows a toast at
+-- warnings, features/ui/ui2.lua) land in this store. Each one shows a toast at
 -- the top-right of the editing area (left of the right panels) for 3 s
 -- (errors 5 s); <Esc> dismisses them. `NVNotify.open()` is the centre, where
 -- everything can be read again and copied.

@@ -2,7 +2,7 @@
 --- vim.ui.input.
 ---
 --- Every dialog is the same surface as the floating command line
---- (config/ui2.lua): a raised panel with solid padding, a title chip, and the
+--- (features/ui/ui2.lua): a raised panel with solid padding, a title chip, and the
 --- keys it takes as chips in its footer. Dialogs open where the command line
 --- does (upper third, centred), so a prompt never jumps around the screen.
 ---
@@ -79,7 +79,7 @@ local function footer(keys)
   return chunks
 end
 
---- The command line's rectangle (config/ui2.lua), or the same formula.
+--- The command line's rectangle (features/ui/ui2.lua), or the same formula.
 local function prompt_rect()
   if NVPromptRect then
     local ok, r = pcall(NVPromptRect)

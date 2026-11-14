@@ -53,7 +53,7 @@ A transcript is a real, listed buffer (`opencode://session/<id>`, `markdown`)
 with `modifiable = false`: motions, visual selection and `y` work; editing does
 not. It is a view of the session's history (`GET /message`) kept current from
 the service's event stream, so deleting it loses nothing. Details:
-`docs/wiki/bridge.md`.
+[OpenCode](opencode.md).
 
 An external process that did not inherit `$NVIM` (an opencode plugin runs in the
 OpenCode server) finds the socket in the editor registry:
