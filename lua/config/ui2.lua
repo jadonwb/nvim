@@ -225,6 +225,10 @@ local function prompt_rect()
   }
 end
 
+--- The prompt's screen rectangle, shared with dialogs (core/dialogs.lua) so
+--- an input box sits exactly where the command line does.
+NVPromptRect = prompt_rect
+
 --- 0-indexed screen position of the cmdline cursor, for blink's menu.
 function NVCmdlinePos()
   local ui2 = require 'vim._core.ui2'

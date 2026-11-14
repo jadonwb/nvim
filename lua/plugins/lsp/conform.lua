@@ -7,6 +7,14 @@ return {
       return require('config.profile').wants 'format'
     end,
     event = { 'BufWritePre' },
+    -- Formatters are Mason tools. Mason (LSP-only) puts its bin on PATH; a
+    -- host's editor without LSP still formats, so add it here too.
+    init = function()
+      local bin = vim.fn.stdpath 'data' .. '/mason/bin'
+      if vim.uv.fs_stat(bin) and not vim.env.PATH:find(bin, 1, true) then
+        vim.env.PATH = bin .. ':' .. vim.env.PATH
+      end
+    end,
     keys = {
       {
         '<leader>cf',

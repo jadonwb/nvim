@@ -15,8 +15,17 @@ function NVEditing.esc()
   vim.cmd 'silent noh'
 end
 
--- FIXME: doesn't set ft after save, is there
--- a way to make it detect?
+--- Name the current (unnamed) buffer and write it; the filetype is then
+--- detected from the new name. Shared by save and the quit review.
+---@param filename string
+function NVEditing.save_as(filename)
+  vim.api.nvim_buf_set_name(0, vim.fn.fnamemodify(filename, ':p'))
+  vim.cmd 'silent write'
+  if vim.bo.filetype == '' then
+    vim.cmd 'filetype detect'
+  end
+end
+
 -- TODO: make this handle permissions / detect writeability
 -- with my own dialog instead of letting it get to vim.fn.confirm
 -- e.g. 'this buffer is marked as readonly, write anyway?' type stuff
@@ -25,12 +34,17 @@ function fn.save()
   NVEditing.esc()
   local name = vim.api.nvim_buf_get_name(0)
   if name == '' then
+    local buf = vim.api.nvim_get_current_buf()
     NVDialogs.input({
       prompt = 'Save As',
     }, function(filename)
-      if filename and filename ~= '' then
-        pcall(vim.api.nvim_buf_set_name, 0, filename)
-        vim.cmd 'silent w'
+      if filename and filename ~= '' and vim.api.nvim_buf_is_valid(buf) then
+        local ok, err = pcall(vim.api.nvim_buf_call, buf, function()
+          NVEditing.save_as(filename)
+        end)
+        if not ok then
+          NVMessages.error('Save failed: ' .. tostring(err))
+        end
       end
     end)
   else
@@ -113,6 +127,97 @@ function fn.toggle_tabs()
       tab = '» ',
     }
   end
+end
+
+-- ── typed quit / close commands ────────────────────────────────────────────
+--
+-- `:q`, `:bd`, `:wq`, `:x`, `:qa`, `:wqa` typed in a file window take the
+-- same path as the keys (<M-w>, <A-q>) while the layout is up: the Write /
+-- Discard / Cancel review, and the layout kept intact. Without this, `:q`
+-- closes the content window (hidden buffers never prompt) and leaves only
+-- panels. Forced forms (`:q!`, `:qa!`), commands with arguments, and every
+-- launch without the layout stay Vim's.
+local COMMAND_ROUTES = {
+  q = 'close',
+  quit = 'close',
+  bd = 'close',
+  bdelete = 'close',
+  wq = 'write_close',
+  x = 'write_close',
+  xit = 'write_close',
+  exit = 'write_close',
+  qa = 'quit_all',
+  qall = 'quit_all',
+  quitall = 'quit_all',
+  quita = 'quit_all',
+  wqa = 'write_quit_all',
+  wqall = 'write_quit_all',
+  xa = 'write_quit_all',
+  xall = 'write_quit_all',
+}
+
+local route_actions = {
+  close = function()
+    NVQuit.close_current()
+  end,
+  write_close = function()
+    if vim.api.nvim_buf_get_name(0) == '' then
+      -- Like `:wq` on a new buffer, but asking for the name.
+      local buf = vim.api.nvim_get_current_buf()
+      return NVDialogs.input({ prompt = 'Save As' }, function(filename)
+        if filename and filename ~= '' and vim.api.nvim_buf_is_valid(buf) then
+          local ok, err = pcall(vim.api.nvim_buf_call, buf, function()
+            NVEditing.save_as(filename)
+          end)
+          if not ok then
+            return NVMessages.error('Save failed: ' .. tostring(err))
+          end
+          NVQuit.close_current()
+        end
+      end)
+    end
+    local ok, err = pcall(vim.cmd, 'silent write')
+    if not ok then
+      return NVMessages.error(tostring(err):gsub('^Vim[^:]*:', ''))
+    end
+    NVQuit.close_current()
+  end,
+  quit_all = function()
+    NVQuit.save_and_quit()
+  end,
+  write_quit_all = function()
+    pcall(vim.cmd, 'silent! wall')
+    NVQuit.save_and_quit()
+  end,
+}
+
+--- The route for the command line being run, if it should be routed.
+---@return string|nil
+function NVEditing.command_route()
+  if vim.fn.getcmdtype() ~= ':' then
+    return nil
+  end
+  local route = COMMAND_ROUTES[vim.trim(vim.fn.getcmdline())]
+  if not route then
+    return nil
+  end
+  -- Only with the layout up: that is where `:q` strands the panels. Without
+  -- it (a commit message, a host's editor, a single file), `:q` / `:wq` stay
+  -- Vim's and quit the editor as a caller expects.
+  if not (NVSlots and NVSlots.is_applied and NVSlots.is_applied()) then
+    return nil
+  end
+  local win, buf = vim.api.nvim_get_current_win(), vim.api.nvim_get_current_buf()
+  if vim.api.nvim_win_get_config(win).relative ~= '' or vim.w[win].nv_slot ~= nil then
+    return nil
+  end
+  if vim.bo[buf].buftype ~= '' or not vim.bo[buf].buflisted or vim.wo[win].diff then
+    return nil
+  end
+  if NVDiffview and NVDiffview.is_diffview_tab and NVDiffview.is_diffview_tab(vim.api.nvim_get_current_tabpage()) then
+    return nil
+  end
+  return route
 end
 
 function NVEditing.keymaps()
@@ -223,6 +328,16 @@ function NVEditing.keymaps()
   }
 
   K.map { '<leader>u<tab>', 'Toggle tab characters', fn.toggle_tabs, mode = 'n' }
+
+  vim.keymap.set('c', '<CR>', function()
+    local route = NVEditing.command_route()
+    if not route then
+      return '<CR>'
+    end
+    vim.fn.histadd(':', vim.fn.getcmdline())
+    vim.schedule(route_actions[route])
+    return '<C-c>'
+  end, { expr = true, desc = 'Run (quit / close commands take the editor close path)' })
 
   -- Undo break-points: punctuation ends an undo block, so `u` after typing a
   -- sentence rewinds one word instead of the whole insertion.

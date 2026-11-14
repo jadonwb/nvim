@@ -442,15 +442,6 @@ function M.quickfix(win, name)
   return show_qflist(win, name)
 end
 
---- Diagnostics as a quickfix list in the panel.
----@param win WinID
----@param name string
----@return boolean
-function M.problems(win, name)
-  vim.diagnostic.setqflist { open = false }
-  return show_qflist(win, name)
-end
-
 --- Prompt surface. Editable for now; the real prompt buffer arrives with the
 --- bridge work.
 ---@param win WinID
@@ -558,7 +549,6 @@ M.by_name = {
   lsp = M.lsp,
   prompt = M.prompt,
   quickfix = M.quickfix,
-  problems = M.problems,
   terminal = function(win, slot)
     return require('features.layout.terminals').provider(win, slot)
   end,

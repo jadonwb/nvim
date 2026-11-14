@@ -99,6 +99,7 @@ local SPECIAL = {
   trouble = ' Trouble ',
   snacks_terminal = ' Terminal ',
   nvdialog = ' Dialog ',
+  nvdialog_input = ' Input ',
   lazy = ' Plugins ',
   mason = ' Mason ',
   ['grug-far'] = ' Search & Replace ',

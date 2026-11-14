@@ -33,7 +33,7 @@ file; feature code never lives in a plugin spec.
 | `environment.lua` | startup facts (purpose, host, files, policy) |
 | `close.lua` | cooperative close chain with a priority order |
 | `tabs.lua` | tab-type registry (diffview's temporary tab) |
-| `dialogs.lua` | select/input floats and the bottom-panel unsaved-changes prompt |
+| `dialogs.lua` | select / input / info dialogs on the command line's surface |
 | `class.lua` | tiny class helper |
 
 ## `lua/editor/` — editing behaviour
@@ -57,7 +57,7 @@ file; feature code never lives in a plugin spec.
 | File | Role |
 | --- | --- |
 | `layout/slots.lua` | slot registry, open/close/swap/providers, repair/enforce, focus mode, session hooks |
-| `layout/providers.lua` | explorer, changes, session, prompt, quickfix, problems providers |
+| `layout/providers.lua` | explorer, changes, session, prompt, quickfix providers |
 | `layout/bottom.lua` | bottom panel modes, winbar strip, cycling |
 | `layout/panels.lua` | companion-panel registry used by help/grug-far/terminal |
 | `lsp/init.lua` | server list, diagnostics config, mason, attach |

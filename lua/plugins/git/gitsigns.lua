@@ -26,20 +26,35 @@ NVGitsigns = {
       local function map(mode, lhs, rhs, desc)
         vim.keymap.set(mode, lhs, rhs, { buffer = buf, desc = desc, silent = true })
       end
+      -- "No hunks" goes through our notifications (a toast, dismissed with
+      -- Esc) instead of gitsigns' own message.
+      local function has_hunks()
+        local staged = gs.get_hunks and #(gs.get_hunks(buf) or {}) or 0
+        if staged > 0 then
+          return true
+        end
+        local cache = require('gitsigns.cache').cache[buf]
+        return cache ~= nil and cache.hunks_staged ~= nil and #cache.hunks_staged > 0
+      end
+      local function nav(dir)
+        return function()
+          if not pcall(has_hunks) or not has_hunks() then
+            return NVMessages.info 'No hunks in this file'
+          end
+          gs.nav_hunk(dir, { target = 'all' })
+        end
+      end
       -- In diff mode ]c / [c stay Neovim's; ]h / [h are always hunks.
-      map('n', ']h', function()
-        gs.nav_hunk('next', { target = 'all' })
-      end, 'Next hunk')
-      map('n', '[h', function()
-        gs.nav_hunk('prev', { target = 'all' })
-      end, 'Previous hunk')
-      map('n', ']H', function()
-        gs.nav_hunk('last', { target = 'all' })
-      end, 'Last hunk')
-      map('n', '[H', function()
-        gs.nav_hunk('first', { target = 'all' })
-      end, 'First hunk')
-      map('n', '<leader>gp', gs.preview_hunk_inline, 'Preview hunk')
+      map('n', ']h', nav 'next', 'Next hunk')
+      map('n', '[h', nav 'prev', 'Previous hunk')
+      map('n', ']H', nav 'last', 'Last hunk')
+      map('n', '[H', nav 'first', 'First hunk')
+      map('n', '<leader>gp', function()
+        if not require('features.lsp.sections').hunk() then
+          return NVMessages.info 'No hunk on this line'
+        end
+        gs.preview_hunk_inline()
+      end, 'Preview hunk')
       map({ 'n', 'x' }, '<leader>gs', function()
         if vim.fn.mode():match '[vV]' then
           gs.stage_hunk { vim.fn.line '.', vim.fn.line 'v' }

@@ -1,39 +1,42 @@
---- Custom floating dialog UI for select and input.
---- Also implements vim.ui.input. Uses rounded-border floating window dialogs.
+--- Dialogs: choice (select), text input, and info boxes. Also implements
+--- vim.ui.input.
+---
+--- Every dialog is the same surface as the floating command line
+--- (config/ui2.lua): a raised panel with solid padding, a title chip, and the
+--- keys it takes as chips in its footer. Dialogs open where the command line
+--- does (upper third, centred), so a prompt never jumps around the screen.
+---
+--- Keys are the same everywhere: <CR> accepts, <Esc> / q / <M-w> cancel, and
+--- leaving the dialog cancels. An input starts in insert mode; <Esc> first
+--- returns to normal mode (Vim editing), a second <Esc> cancels.
 
 NVDialogs = {}
 
 local ns = vim.api.nvim_create_namespace 'nv-dialog'
-local ns_disabled = vim.api.nvim_create_namespace 'nv-dialog-disabled'
--- Separate namespace so highlight_selection (which clears `ns`) never wipes it.
-local ns_divider = vim.api.nvim_create_namespace 'nv-dialog-divider'
--- Message decoration (icon color); separate from `ns` for the same reason.
-local ns_message = vim.api.nvim_create_namespace 'nv-dialog-message'
 
-local config = {
-  border = NVBorders.rounded,
-  max_width = 0.6,
-  max_height = 0.6,
-  indicator = '▸',
+local WINHIGHLIGHT = table.concat({
+  'Normal:NvRaised',
+  'NormalFloat:NvRaised',
+  'FloatBorder:NvRaisedBorder',
+  'FloatTitle:NvPopupTitle',
+  'FloatFooter:NvDialogHint',
+  'CursorLine:NvRaised',
+}, ',')
+
+local ICON = {
+  input = '\u{f03eb}', -- pencil
+  select = '\u{f0349}',
+  info = '\u{f02fc}',
 }
-
-vim.api.nvim_set_hl(0, 'NVDialogFloat', { link = 'Normal' })
-vim.api.nvim_set_hl(0, 'NVDialogFloatBorder', { link = 'Border' })
-vim.api.nvim_set_hl(0, 'NVDialogTitle', { link = 'Title' })
-vim.api.nvim_set_hl(0, 'NVDialogSelected', { link = 'Normal' })
-vim.api.nvim_set_hl(0, 'NVDialogDisabled', { link = 'Comment' })
-vim.api.nvim_set_hl(0, 'NVDialogIcon', { link = 'Normal' })
-
-local WINHIGHLIGHT = 'NormalFloat:NVDialogFloat,FloatBorder:NVDialogFloatBorder,FloatTitle:NVDialogTitle'
 
 ---@return boolean
 local function is_insert()
   return vim.fn.mode():match '^i' ~= nil
 end
 
---- Post-close step shared by select, input, and info: exactly one schedule
---- boundary that restores insert mode when the dialog was opened from insert
---- mode, then runs the optional callback (used by select/input).
+--- Post-close step shared by every dialog: one schedule boundary that
+--- restores insert mode when the dialog was opened from insert mode, then
+--- runs the callback.
 ---@param was_insert boolean
 ---@return fun(fn?: fun())
 local function make_restore_insert(was_insert)
@@ -49,567 +52,353 @@ local function make_restore_insert(was_insert)
   end
 end
 
----@param win integer
----@return integer
-local function usable_width(win)
-  -- textoff excludes the sign column, which sits inside the window width;
-  -- content must fit this inner text area to avoid soft-wrapping.
-  return vim.api.nvim_win_get_width(win) - vim.fn.getwininfo(win)[1].textoff
+--- Footer hint text: muted, on the surface's own background (NvMuted has no
+--- background, so in a footer it would sit on a block of Normal).
+local function hint_hl()
+  local muted = vim.api.nvim_get_hl(0, { name = 'NvMuted', link = false })
+  local raised = vim.api.nvim_get_hl(0, { name = 'NvRaised', link = false })
+  vim.api.nvim_set_hl(0, 'NvDialogHint', { fg = muted.fg, bg = raised.bg })
+end
+hint_hl()
+vim.api.nvim_create_autocmd('ColorScheme', {
+  group = vim.api.nvim_create_augroup('NV dialogs', { clear = true }),
+  callback = hint_hl,
+})
+
+--- Footer chips: { { key, label }, … } → ` key  label ` chunks.
+---@param keys string[][]
+local function footer(keys)
+  local chunks = {}
+  for i, k in ipairs(keys) do
+    if i > 1 then
+      chunks[#chunks + 1] = { ' ', 'NvDialogHint' }
+    end
+    chunks[#chunks + 1] = { ' ' .. k[1] .. ' ', 'NvKey' }
+    chunks[#chunks + 1] = { ' ' .. k[2] .. ' ', 'NvDialogHint' }
+  end
+  return chunks
 end
 
+--- The command line's rectangle (config/ui2.lua), or the same formula.
+local function prompt_rect()
+  if NVPromptRect then
+    local ok, r = pcall(NVPromptRect)
+    if ok and r then
+      return r
+    end
+  end
+  local width = math.min(76, vim.o.columns - 8)
+  return { row = math.max(1, math.floor((vim.o.lines - 1) * 0.22)), col = math.floor((vim.o.columns - width) / 2), width = width }
+end
+
+--- Open the dialog surface for `lines`.
 ---@param lines string[]
----@param title string
----@param opts? { modifiable?: boolean, min_width?: integer, width?: integer, height?: integer }
+---@param opts { title: string, icon?: string, keys: string[][], width?: integer, height?: integer, modifiable?: boolean, filetype?: string }
 ---@return { buf: integer, win: integer }
-local function create_float(lines, title, opts)
-  opts = opts or {}
+local function surface(lines, opts)
   local buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   vim.bo[buf].buftype = 'nofile'
-  vim.bo[buf].filetype = 'nv-dialog'
+  vim.bo[buf].bufhidden = 'wipe'
+  vim.bo[buf].swapfile = false
+  vim.bo[buf].filetype = opts.filetype or 'nvdialog'
   vim.bo[buf].modifiable = opts.modifiable or false
 
-  local max_width = opts.min_width or 0
-  for _, line in ipairs(lines) do
-    max_width = math.max(max_width, vim.fn.strdisplaywidth(line))
-  end
-  max_width = math.max(max_width, vim.fn.strdisplaywidth(title) + 4)
-
-  local pad = 4
-  local editor_w = vim.o.columns
-  local editor_h = vim.o.lines - vim.o.cmdheight
-  local cap_w = config.max_width < 1 and math.floor(editor_w * config.max_width) or config.max_width
-  local cap_h = config.max_height < 1 and math.floor(editor_h * config.max_height) or config.max_height
-  local width = math.max(1, math.min(max_width + pad, cap_w))
-  local height = math.max(1, math.min(#lines, cap_h))
-  -- Opt-in explicit size, still clamped to the screen (used by the multiline
-  -- artifact feedback input, which requests 74x6 regardless of its short
-  -- default text). Unset opts keep the computed sizing byte-identical.
-  if opts.width then
-    width = math.max(1, math.min(opts.width, cap_w))
-  end
-  if opts.height then
-    height = math.max(1, math.min(opts.height, cap_h))
-  end
-
-  local row = math.floor((editor_h - height) / 2)
-  local col = math.floor((editor_w - width) / 2)
+  local r = prompt_rect()
+  local max_w = vim.o.columns - 6
+  local width = math.max(1, math.min(opts.width or r.width - 2, max_w))
+  local height = math.max(1, math.min(opts.height or #lines, vim.o.lines - r.row - 4))
+  local title = ' ' .. (opts.icon or ICON.select) .. ' ' .. opts.title .. ' '
 
   local win = vim.api.nvim_open_win(buf, true, {
     relative = 'editor',
-    row = row,
-    col = col,
+    row = r.row,
+    col = math.floor((vim.o.columns - width - 2) / 2),
     width = width,
     height = height,
     style = 'minimal',
-    border = config.border,
-    title = ' ' .. title .. ' ',
+    border = 'solid',
+    title = { { title, 'NvPopupTitle' } },
     title_pos = 'center',
+    footer = footer(opts.keys),
+    footer_pos = 'right',
+    zindex = 250,
   })
   vim.wo[win].winhighlight = WINHIGHLIGHT
-  vim.wo[win].signcolumn = 'yes'
-  vim.wo[win].cursorline = false
   vim.wo[win].wrap = true
-
+  vim.wo[win].cursorline = false
   return { buf = buf, win = win }
 end
 
+--- Cancel keys and leave-to-cancel, shared by every dialog.
 ---@param buf integer
----@param row integer 0-indexed
----@param inline boolean  overlay virt_text arrow (no sign gutter) instead of a sign
-local function highlight_selection(buf, row, inline)
-  vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
-  if row >= 0 then
-    if inline then
-      -- Overlay the arrow on the first of the option line's two leading
-      -- spaces; the second keeps separation before the option text. It stays
-      -- in `ns` so every move clears the previous arrow, and default hl_mode
-      -- 'replace' keeps the pure NVDialogSelected look of the old sign.
-      vim.api.nvim_buf_set_extmark(buf, ns, row, 0, {
-        virt_text = { { config.indicator, 'NVDialogSelected' } },
-        virt_text_pos = 'overlay',
-      })
-    else
-      vim.api.nvim_buf_set_extmark(buf, ns, row, 0, {
-        sign_text = config.indicator,
-        sign_hl_group = 'NVDialogSelected',
-      })
-    end
+---@param cancel fun()
+---@param insert boolean also cancel from insert mode with <M-w>
+local function cancel_keys(buf, cancel, insert)
+  for _, lhs in ipairs { '<Esc>', 'q' } do
+    vim.keymap.set('n', lhs, cancel, { buffer = buf, nowait = true })
   end
+  vim.keymap.set(insert and { 'n', 'i' } or 'n', NVKeymaps.close, cancel, { buffer = buf, nowait = true })
+  vim.api.nvim_create_autocmd('BufLeave', { buffer = buf, once = true, callback = cancel })
 end
 
---- Picker-style select dialog.
+--- Choice dialog.
 ---
---- Options can be plain strings or tables: { text = "label", disabled?: boolean, reason?: string }.
---- Disabled options are shown grayed out, skipped during navigation, and show a
---- notification if selected via <CR> or shortcut.
+--- Options are strings or { text, disabled?, reason? }. Each option shows its
+--- key: the `shortcuts` key that picks it, else its number. Disabled options
+--- are muted and refuse with their `reason`.
 ---
---- With `divider`, a border-colored rule spanning the float's full inner text
---- width separates the message from the options, with a blank row on each side.
---- `min_width` is forwarded to the float sizing.
+--- `message` (one or more lines) is centred above the options; `icon` with
+--- `icon_hl` prefixes its first line (a file icon from mini.icons).
 ---
---- With `icon` and `icon_hl`, the icon prefixes the first message line and is
---- colored with `icon_hl` (e.g. the `MiniIcons*` group returned by
---- `mini.icons`). With `center_message`, each message line (icon included on
---- the first) is horizontally centered within the float's usable text width,
---- and only when it fits, so centering never introduces wrapping. With
---- `inline_indicator`, the float reserves no sign
---- column: the selection arrow is drawn as overlay virtual text over the
---- option prefix instead, so the divider and centered message span the
---- float's full inner width.
----
----@param opts { title: string, message?: string, icon?: string, icon_hl?: string, center_message?: boolean, inline_indicator?: boolean, options: (string|{text:string,disabled?:boolean,reason?:string})[], shortcuts?: table<string,string>, initial_index?: integer, divider?: boolean, min_width?: integer }
+---@param opts { title: string, title_icon?: string, message?: string, icon?: string, icon_hl?: string, options: (string|{text:string,disabled?:boolean,reason?:string})[], shortcuts?: table<string,string>, initial_index?: integer, min_width?: integer }
 ---@param callback fun(choice: string?)
 function NVDialogs.select(opts, callback)
-  -- Normalize options to { text, disabled, reason } tables
-  local norm_options = {}
+  local options = {}
   for _, raw in ipairs(opts.options or {}) do
     if type(raw) == 'string' then
-      table.insert(norm_options, { text = raw, disabled = false })
+      options[#options + 1] = { text = raw }
     else
-      table.insert(norm_options, {
-        text = raw.text,
-        disabled = raw.disabled or false,
-        reason = raw.reason,
-      })
+      options[#options + 1] = { text = raw.text, disabled = raw.disabled, reason = raw.reason }
     end
   end
-
-  if #norm_options == 0 then
-    callback(nil)
-    return
+  if #options == 0 then
+    return callback(nil)
   end
 
-  local lines = {}
-  local option_offset = 0
-  local option_rows = {} -- maps 0-indexed option index → line index
-  local divider_row = nil -- 0-indexed divider placeholder row, filled after the float is created
-  local message_rows = 0 -- number of buffer rows holding the message (icon included)
+  -- The key that picks each option.
+  local key_of = {}
+  for key, value in pairs(opts.shortcuts or {}) do
+    key_of[value] = key
+  end
+  for i, o in ipairs(options) do
+    o.key = key_of[o.text] or tostring(i)
+  end
 
+  local message = {}
   if opts.message and opts.message ~= '' then
-    for i, line in ipairs(vim.split(opts.message, '\n', { plain = true })) do
-      -- The icon is part of the first message line so it is sized and centered
-      -- together with the message as one `icon + space + message` unit.
-      if i == 1 and opts.icon then
-        line = opts.icon .. ' ' .. line
-      end
-      message_rows = message_rows + 1
-      table.insert(lines, line)
+    message = vim.split(opts.message, '\n', { plain = true })
+    if opts.icon then
+      message[1] = opts.icon .. '  ' .. message[1]
     end
-    table.insert(lines, '')
-    if opts.divider then
-      -- Divider placeholder plus a blank row on its far side; the regular
-      -- message spacer is the blank above. This runs before option_offset is
-      -- computed, so option rows, cursor, and sign math stay on the options.
-      divider_row = #lines
-      table.insert(lines, '')
-      table.insert(lines, '')
-    end
-    option_offset = #lines
   end
 
-  for i, opt in ipairs(norm_options) do
-    table.insert(lines, '  ' .. opt.text)
-    option_rows[i - 1] = #lines - 1
+  local width = math.max(opts.min_width or 36, vim.fn.strdisplaywidth(opts.title) + 8)
+  for _, l in ipairs(message) do
+    width = math.max(width, vim.fn.strdisplaywidth(l) + 6)
   end
+  for _, o in ipairs(options) do
+    width = math.max(width, vim.fn.strdisplaywidth(o.text) + #o.key + 10)
+  end
+
+  local lines, option_row = {}, {}
+  for _, l in ipairs(message) do
+    local pad = math.max(0, math.floor((width - vim.fn.strdisplaywidth(l)) / 2))
+    lines[#lines + 1] = string.rep(' ', pad) .. l
+  end
+  if #message > 0 then
+    lines[#lines + 1] = ''
+  end
+  for i, o in ipairs(options) do
+    lines[#lines + 1] = ('  %s  %s'):format(o.key, o.text)
+    option_row[i] = #lines - 1
+  end
+  -- Room between the options and the footer's key hints.
+  lines[#lines + 1] = ''
 
   local was_insert = is_insert()
   vim.cmd 'stopinsert'
   local restore_insert = make_restore_insert(was_insert)
 
-  local float = create_float(lines, opts.title or 'Select', { min_width = opts.min_width })
-  local buf, win = float.buf, float.win
+  local f = surface(lines, {
+    title = opts.title or 'Choose',
+    icon = opts.title_icon,
+    width = width,
+    keys = { { 'j k', 'move' }, { 'CR', 'choose' }, { 'Esc', 'cancel' } },
+  })
+  local buf, win = f.buf, f.win
 
-  -- Inline-indicator mode drops the reserved sign gutter and draws the arrow
-  -- as overlay virtual text instead (see highlight_selection). Set through the
-  -- API like winhighlight above: on 0.12 `vim.wo[win]` assigns `:set`-style,
-  -- which would change the global signcolumn template for every window. This
-  -- must run before the divider fill and message centering below, both of
-  -- which size against usable_width() and therefore need textoff to already
-  -- be 0.
-  local inline = opts.inline_indicator and true or false
-  if inline then
-    vim.api.nvim_set_option_value('signcolumn', 'no', { win = win, scope = 'local' })
+  -- Message: the first line is the subject (bold), the rest muted.
+  for row = 0, #message - 1 do
+    local text = lines[row + 1]
+    vim.api.nvim_buf_set_extmark(buf, ns, row, 0, { end_col = #text, hl_group = row == 0 and 'NvTitle' or 'NvMuted' })
   end
-
-  -- Fill the divider placeholder after the float exists so the rule spans the
-  -- window's full inner text width without inflating the pre-create sizing.
-  -- A rule as long as the raw window width would soft-wrap (see usable_width).
-  if divider_row then
-    local rule = string.rep('─', usable_width(win))
-    local was_modifiable = vim.bo[buf].modifiable
-    vim.bo[buf].modifiable = true
-    vim.api.nvim_buf_set_lines(buf, divider_row, divider_row + 1, false, { rule })
-    vim.bo[buf].modifiable = was_modifiable
-    vim.api.nvim_buf_set_extmark(buf, ns_divider, divider_row, 0, {
-      end_col = #rule,
-      hl_group = 'NVDialogFloatBorder',
-    })
-  end
-
-  -- Center each message line (opt-in) inside the float's usable text width.
-  -- Padding happens after the float exists so it cannot inflate the sizing,
-  -- and it is applied only when the line fits, so it never soft-wraps.
-  local icon_col = 0
-  if opts.center_message and message_rows > 0 then
-    local usable = usable_width(win)
-    local was_modifiable = vim.bo[buf].modifiable
-    vim.bo[buf].modifiable = true
-    for row = 0, message_rows - 1 do
-      local line = lines[row + 1]
-      local line_w = vim.fn.strdisplaywidth(line)
-      if line_w < usable then
-        local pad = string.rep(' ', math.floor((usable - line_w) / 2))
-        vim.api.nvim_buf_set_lines(buf, row, row + 1, false, { pad .. line })
-        lines[row + 1] = pad .. line
-        if row == 0 then
-          icon_col = #pad -- spaces are one byte/cell each
-        end
-      end
-    end
-    vim.bo[buf].modifiable = was_modifiable
-  end
-
-  -- The icon keeps its provider color through selection redraws by living in
-  -- `ns_message` (selection redraws clear only `ns`). Extmark columns are
-  -- byte-based, so the icon's multibyte length is used directly for end_col.
-  if opts.icon and message_rows > 0 then
-    vim.api.nvim_buf_set_extmark(buf, ns_message, 0, icon_col, {
-      end_col = icon_col + #opts.icon,
-      hl_group = opts.icon_hl or 'NVDialogIcon',
-    })
-  end
-
-  -- Gray out disabled options
-  for i, opt in ipairs(norm_options) do
-    if opt.disabled then
-      vim.api.nvim_buf_set_extmark(buf, ns_disabled, option_rows[i - 1], 0, {
-        end_col = #lines[option_rows[i - 1] + 1],
-        hl_group = 'NVDialogDisabled',
-      })
+  if opts.icon and #message > 0 then
+    local s0 = lines[1]:find(opts.icon, 1, true)
+    if s0 then
+      vim.api.nvim_buf_set_extmark(buf, ns, 0, s0 - 1, { end_col = s0 - 1 + #opts.icon, hl_group = opts.icon_hl or 'NvIcon', priority = 300 })
     end
   end
 
-  -- Start on the first non-disabled option
-  local selected = math.max(0, math.min(#norm_options - 1, (opts.initial_index or 1) - 1))
-  while selected < #norm_options - 1 and norm_options[selected + 1].disabled do
+  local sel_ns = vim.api.nvim_create_namespace 'nv-dialog-selection'
+  local selected = math.max(1, math.min(#options, opts.initial_index or 1))
+  while options[selected].disabled and selected < #options do
     selected = selected + 1
   end
-  while selected > 0 and norm_options[selected + 1].disabled do
-    selected = selected - 1
-  end
 
-  vim.api.nvim_win_set_cursor(win, { option_offset + selected + 1, 0 })
-  highlight_selection(buf, option_offset + selected, inline)
+  local function draw()
+    vim.api.nvim_buf_clear_namespace(buf, sel_ns, 0, -1)
+    for i, o in ipairs(options) do
+      local row, text = option_row[i], lines[option_row[i] + 1]
+      if i == selected then
+        vim.api.nvim_buf_set_extmark(buf, sel_ns, row, 0, { line_hl_group = 'NvChipPurple' })
+      elseif o.disabled then
+        vim.api.nvim_buf_set_extmark(buf, sel_ns, row, 0, { end_col = #text, hl_group = 'NvMuted' })
+      else
+        vim.api.nvim_buf_set_extmark(buf, sel_ns, row, 1, { end_col = 3 + #o.key, hl_group = 'NvKey' })
+      end
+    end
+    vim.api.nvim_win_set_cursor(win, { option_row[selected] + 1, 0 })
+  end
+  draw()
 
   local responded = false
-
-  local function close()
-    if vim.api.nvim_win_is_valid(win) then
-      vim.api.nvim_win_close(win, true)
-    end
-    if vim.api.nvim_buf_is_valid(buf) then
-      vim.api.nvim_buf_delete(buf, { force = true })
-    end
-  end
-
   local function resolve(choice)
     if responded then
       return
     end
     responded = true
-    close()
+    if vim.api.nvim_win_is_valid(win) then
+      vim.api.nvim_win_close(win, true)
+    end
     restore_insert(function()
       callback(choice)
     end)
   end
 
+  local function pick(i)
+    local o = options[i]
+    if o.disabled then
+      return NVMessages.warn(o.reason or 'This option is not available')
+    end
+    resolve(o.text)
+  end
+
   local function move(delta)
-    selected = math.max(0, math.min(#norm_options - 1, selected + delta))
-    vim.api.nvim_win_set_cursor(win, { option_offset + selected + 1, 0 })
-    highlight_selection(buf, option_offset + selected, inline)
-  end
-
-  local function confirm_selection()
-    local opt = norm_options[selected + 1]
-    if opt.disabled then
-      vim.notify(opt.reason or 'This option is not available', vim.log.levels.WARN, { title = opts.title })
-      return
-    end
-    resolve(opt.text)
-  end
-
-  for _, lhs in ipairs { 'j', '<Down>' } do
-    vim.keymap.set('n', lhs, function()
-      move(1)
-    end, { buffer = buf, nowait = true })
-  end
-  for _, lhs in ipairs { 'k', '<Up>' } do
-    vim.keymap.set('n', lhs, function()
-      move(-1)
-    end, { buffer = buf, nowait = true })
-  end
-
-  vim.keymap.set('n', '<CR>', confirm_selection, { buffer = buf, nowait = true })
-  vim.keymap.set('i', '<CR>', confirm_selection, { buffer = buf, nowait = true })
-
-  for _, lhs in ipairs { '<Esc>', 'q' } do
-    vim.keymap.set('n', lhs, function()
-      resolve(nil)
-    end, { buffer = buf, nowait = true })
-  end
-  vim.keymap.set('i', '<Esc>', function()
-    resolve(nil)
-  end, { buffer = buf, nowait = true })
-
-  if opts.shortcuts then
-    for key, value in pairs(opts.shortcuts) do
-      for _, opt in ipairs(norm_options) do
-        if opt.text == value then
-          vim.keymap.set('n', key, function()
-            if opt.disabled then
-              vim.notify(opt.reason or 'This option is not available', vim.log.levels.WARN, { title = opts.title })
-            else
-              resolve(value)
-            end
-          end, { buffer = buf, nowait = true })
-          break
-        end
-      end
+    local i = selected
+    repeat
+      i = i + delta
+    until i < 1 or i > #options or not options[i].disabled
+    if i >= 1 and i <= #options then
+      selected = i
+      draw()
     end
   end
 
-  vim.api.nvim_create_autocmd('BufLeave', {
-    buffer = buf,
-    once = true,
-    callback = function()
-      resolve(nil)
-    end,
-  })
-end
-
---- Text input dialog with a modifiable field.
----
---- With `multiline`, Enter inserts a newline (natively in insert mode, and in
---- normal mode by splitting the line at the cursor) while Alt+Enter submits
---- from insert and normal mode. The explicit `width`/`height` opts size the
---- float (clamped to the screen); without them the computed sizing applies.
---- Cancellation (Escape, q, <M-w>, buffer leave, exactly-once callback) is
---- identical in both modes, and the default single-line path is unchanged.
----
----@param opts { prompt?: string, default?: string, multiline?: boolean, width?: integer, height?: integer }
----@param callback fun(value: string?)
---- Choice prompt rendered in the bottom panel.
----
---- The unsaved-changes review belongs where the command line and the prompt
---- live, not in a floating box over the file being reviewed. Falls back to the
---- float when the layout is not applied.
----@param opts table same shape as select
----@param callback fun(choice: string|nil)
-function NVDialogs.select_panel(opts, callback)
-  if not (NVSlots and NVSlots.is_applied and NVSlots.is_applied()) then
-    return NVDialogs.select(opts, callback)
-  end
-
-  if not NVSlots.is_open 'bottom' then
-    NVSlots.ensure 'bottom'
-  end
-  local win = NVSlots.win 'bottom'
-  if not win then
-    return NVDialogs.select(opts, callback)
-  end
-
-  local previous = NVSlots.provider_of 'bottom' or 'prompt'
-  local choices = opts.options or {}
-  local index = opts.initial_index or 1
-
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.bo[buf].buftype = 'nofile'
-  vim.bo[buf].bufhidden = 'wipe'
-  vim.bo[buf].swapfile = false
-  vim.bo[buf].filetype = 'nvdialog'
-  vim.b[buf].nv_slot = 'bottom'
-
-  local function render()
-    local lines = { '' }
-    for i, choice in ipairs(choices) do
-      lines[#lines + 1] = ('  %s %d. %s'):format(i == index and config.indicator or ' ', i, choice)
-    end
-    lines[#lines + 1] = ''
-    lines[#lines + 1] = '  w write   d discard   c cancel   <CR> choose   Esc cancel'
-
-    vim.bo[buf].modifiable = true
-    vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-    vim.bo[buf].modifiable = false
-    vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
-
-    -- The title and file live in the winbar; the body is the choice list.
-    -- Option `i` is buffer line `i` (line 0 is the blank spacer).
-    vim.api.nvim_buf_set_extmark(buf, ns, index, 0, {
-      end_row = index,
-      end_col = #lines[index],
-      hl_group = 'Visual',
-    })
-    vim.api.nvim_buf_set_extmark(buf, ns, #lines - 1, 0, {
-      end_row = #lines - 1,
-      end_col = #lines[#lines],
-      hl_group = 'Comment',
-    })
-  end
-
-  local finished = false
-  local function finish(choice)
-    if finished then
-      return
-    end
-    finished = true
-    pcall(vim.api.nvim_buf_delete, buf, { force = true })
-    pcall(NVSlots.set_provider, 'bottom', previous)
-    vim.schedule(function()
-      callback(choice)
-    end)
-  end
-
-  render()
-  NVSlots.set_buffer('bottom', buf)
-  pcall(
-    vim.api.nvim_set_option_value,
-    'winbar',
-    '%#NvPanelTitle# ' .. (opts.title or 'Choose') .. '  %#NvPanelLabel#' .. (opts.message or '') .. ' ',
-    { win = win }
-  )
-  vim.api.nvim_set_current_win(win)
-  vim.cmd 'stopinsert'
-
-  local map = function(lhs, fn, modes)
-    vim.keymap.set(modes or 'n', lhs, fn, { buffer = buf, nowait = true, silent = true })
+  local function map(lhs, fn)
+    vim.keymap.set('n', lhs, fn, { buffer = buf, nowait = true })
   end
   map('j', function()
-    index = math.min(#choices, index + 1)
-    render()
+    move(1)
+  end)
+  map('<Down>', function()
+    move(1)
+  end)
+  map('<Tab>', function()
+    move(1)
   end)
   map('k', function()
-    index = math.max(1, index - 1)
-    render()
+    move(-1)
+  end)
+  map('<Up>', function()
+    move(-1)
+  end)
+  map('<S-Tab>', function()
+    move(-1)
   end)
   map('<CR>', function()
-    finish(choices[index])
+    pick(selected)
   end)
-  map('q', function()
-    finish 'Cancel'
-  end)
-  map('<Esc>', function()
-    finish 'Cancel'
-  end, { 'n', 'i' })
-  for i, choice in ipairs(choices) do
-    map(tostring(i), function()
-      finish(choice)
+  for i, o in ipairs(options) do
+    map(o.key, function()
+      pick(i)
     end)
   end
-  for key, choice in pairs(opts.shortcuts or {}) do
-    map(key, function()
-      finish(choice)
-    end)
-  end
+  cancel_keys(buf, function()
+    resolve(nil)
+  end, false)
 end
 
+--- Kept for callers: the unsaved-changes review is a floating dialog again.
+NVDialogs.select_panel = NVDialogs.select
+
+--- Text input.
+---
+--- Sits exactly where the command line does, at its width. With `multiline`,
+--- <CR> inserts a newline and <M-CR> submits (insert and normal mode);
+--- `width` / `height` size it (clamped to the screen).
+---
+---@param opts { prompt?: string, default?: string, multiline?: boolean, width?: integer, height?: integer, icon?: string }
+---@param callback fun(value: string?)
 function NVDialogs.input(opts, callback)
   opts = opts or {}
   local multiline = opts.multiline == true
-  local prompt = opts.prompt
-  if type(prompt) ~= 'string' then
-    prompt = 'Input'
-  end
-  -- Strip trailing colon and whitespace (common in vim.ui.input prompts like "foo: ")
+  local prompt = type(opts.prompt) == 'string' and opts.prompt or ''
+  -- "Rename to: " → "Rename to" (vim.ui.input prompts end in a colon).
   prompt = prompt:gsub(':%s*$', ''):gsub('%s+$', '')
   if prompt == '' then
     prompt = 'Input'
   end
 
   local default = opts.default or ''
-  local lines = #default > 0 and vim.split(default, '\n', { plain = true }) or { '' }
-  if #lines == 0 then
-    lines = { '' }
-  end
+  local lines = default ~= '' and vim.split(default, '\n', { plain = true }) or { '' }
 
   local was_insert = is_insert()
   local restore_insert = make_restore_insert(was_insert)
 
-  local float = create_float(lines, prompt, { modifiable = true, min_width = 40, width = opts.width, height = opts.height })
-  local buf, win = float.buf, float.win
+  local f = surface(lines, {
+    title = prompt,
+    icon = opts.icon or ICON.input,
+    width = opts.width,
+    height = multiline and (opts.height or math.max(#lines, 4)) or 1,
+    modifiable = true,
+    filetype = 'nvdialog_input',
+    keys = multiline and { { 'M-CR', 'submit' }, { 'Esc', 'cancel' } } or { { 'CR', 'submit' }, { 'Esc', 'cancel' } },
+  })
+  local buf, win = f.buf, f.win
+  vim.wo[win].wrap = multiline
 
-  -- Place cursor at end and enter insert mode
-  local last_line = lines[#lines]
-  vim.api.nvim_win_set_cursor(win, { #lines, #last_line })
+  vim.api.nvim_win_set_cursor(win, { #lines, #lines[#lines] })
   vim.cmd 'startinsert!'
 
   local responded = false
-
-  local function close()
-    vim.cmd 'stopinsert'
-    if vim.api.nvim_win_is_valid(win) then
-      vim.api.nvim_win_close(win, true)
-    end
-    if vim.api.nvim_buf_is_valid(buf) then
-      vim.api.nvim_buf_delete(buf, { force = true })
-    end
-  end
-
   local function resolve(value)
     if responded then
       return
     end
     responded = true
-    close()
+    vim.cmd 'stopinsert'
+    if vim.api.nvim_win_is_valid(win) then
+      vim.api.nvim_win_close(win, true)
+    end
     restore_insert(function()
       callback(value)
     end)
   end
 
   local function submit()
-    local buf_lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-    resolve(table.concat(buf_lines, '\n'))
-  end
-
-  -- Multiline: Enter inserts a newline; only Alt+Enter submits (from insert
-  -- and normal mode). Insert mode keeps its native <CR> (no mapping), so the
-  -- newline lands exactly where the cursor is.
-  local function insert_newline_normal()
-    local row, col = unpack(vim.api.nvim_win_get_cursor(win)) -- row is 1-based
-    local line = vim.api.nvim_buf_get_lines(buf, row - 1, row, false)[1] or ''
-    vim.api.nvim_buf_set_lines(buf, row - 1, row, false, { line:sub(1, col), line:sub(col + 1) })
-    vim.api.nvim_win_set_cursor(win, { row + 1, 0 })
+    resolve(table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), '\n'))
   end
 
   if multiline then
-    vim.keymap.set('n', '<CR>', insert_newline_normal, { buffer = buf, nowait = true })
+    -- Insert mode keeps its native <CR>; normal mode splits the line.
+    vim.keymap.set('n', '<CR>', function()
+      local row, col = unpack(vim.api.nvim_win_get_cursor(win))
+      local line = vim.api.nvim_buf_get_lines(buf, row - 1, row, false)[1] or ''
+      vim.api.nvim_buf_set_lines(buf, row - 1, row, false, { line:sub(1, col), line:sub(col + 1) })
+      vim.api.nvim_win_set_cursor(win, { row + 1, 0 })
+    end, { buffer = buf, nowait = true })
     vim.keymap.set({ 'i', 'n' }, '<A-CR>', submit, { buffer = buf, nowait = true })
   else
-    vim.keymap.set('n', '<CR>', submit, { buffer = buf, nowait = true })
-    vim.keymap.set('i', '<CR>', submit, { buffer = buf, nowait = true })
+    vim.keymap.set({ 'i', 'n' }, '<CR>', submit, { buffer = buf, nowait = true })
   end
-  vim.keymap.set('n', '<Esc>', function()
+  cancel_keys(buf, function()
     resolve(nil)
-  end, { buffer = buf, nowait = true })
-  vim.keymap.set({ 'i', 'n' }, NVKeymaps.close, function()
-    resolve(nil)
-  end, { buffer = buf, nowait = true })
-  vim.keymap.set('n', 'q', function()
-    resolve(nil)
-  end, { buffer = buf, nowait = true })
-
-  vim.api.nvim_create_autocmd('BufLeave', {
-    buffer = buf,
-    once = true,
-    callback = function()
-      resolve(nil)
-    end,
-  })
+  end, true)
 end
 
--- Implement vim.ui.input using NVDialogs.input.
--- This makes our input live before plugins (loaded early via editor.lua).
--- Snacks input is disabled separately.
+-- vim.ui.input is ours (LSP rename, plugins). Live before plugins load
+-- (loaded early via editor.lua); snacks' input is disabled separately.
 vim.ui.input = function(opts, on_confirm)
   opts = opts or {}
   assert(type(on_confirm) == 'function', 'on_confirm must be a function')
@@ -620,24 +409,19 @@ end
 ---@param opts { title: string, lines: string[] }
 function NVDialogs.info(opts)
   local lines = vim.deepcopy(opts.lines or {})
-  table.insert(lines, '')
-  table.insert(lines, 'Close: <Esc>, q, <CR>')
-  local footer_row = #lines - 1
+  local width = 40
+  for _, l in ipairs(lines) do
+    width = math.max(width, vim.fn.strdisplaywidth(l) + 2)
+  end
 
   local was_insert = is_insert()
   vim.cmd 'stopinsert'
   local restore_insert = make_restore_insert(was_insert)
 
-  local float = create_float(lines, opts.title or 'Info', { min_width = 40 })
-  local buf, win = float.buf, float.win
-
-  vim.api.nvim_buf_set_extmark(buf, ns, footer_row, 0, {
-    end_col = #lines[#lines],
-    hl_group = 'Comment',
-  })
+  local f = surface(lines, { title = opts.title or 'Info', icon = ICON.info, width = width, keys = { { 'Esc', 'close' } } })
+  local buf, win = f.buf, f.win
 
   local closed = false
-
   local function close()
     if closed then
       return
@@ -646,19 +430,10 @@ function NVDialogs.info(opts)
     if vim.api.nvim_win_is_valid(win) then
       vim.api.nvim_win_close(win, true)
     end
-    if vim.api.nvim_buf_is_valid(buf) then
-      vim.api.nvim_buf_delete(buf, { force = true })
-    end
     restore_insert()
   end
-
-  for _, lhs in ipairs { '<Esc>', 'q', '<CR>' } do
-    vim.keymap.set('n', lhs, close, { buffer = buf, nowait = true })
-  end
-
-  vim.api.nvim_create_autocmd('BufLeave', {
-    buffer = buf,
-    once = true,
-    callback = close,
-  })
+  vim.keymap.set('n', '<CR>', close, { buffer = buf, nowait = true })
+  cancel_keys(buf, close, false)
 end
+
+return NVDialogs

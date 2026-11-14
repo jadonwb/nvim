@@ -20,6 +20,8 @@ local links = {
   NvPanelLabel = 'NvLabel',
   NvPanelSection = 'NvIcon',
   NvChip = 'NvChipPurple',
+  -- Title chip of every prompt surface: the command line, dialogs.
+  NvPopupTitle = 'NvChipPurple',
   NvChipInfo = 'NvChipBlue',
   NvChipOk = 'NvChipGreen',
   NvChipWarn = 'NvChipYellow',

@@ -705,7 +705,20 @@ function NVSlots.repair()
       end
     end
     if not center_win() then
-      -- Only slots left: give the layout a content window back.
+      -- Only slots left (`:q!`, `:close`, a plugin closed the content
+      -- window): make a new content window first, showing the buffer that
+      -- was there, so no panel is mistaken for the content.
+      local buf = tab.last_buf
+      if not (buf and api.nvim_buf_is_valid(buf) and vim.bo[buf].buflisted) then
+        local managed = NVBuffers and NVBuffers.get_managed and NVBuffers.get_managed { sort_lastused = true } or {}
+        buf = managed[1] and managed[1].bufnr or api.nvim_create_buf(true, false)
+      end
+      local content
+      busy(function()
+        content = api.nvim_open_win(buf, true, { split = 'left', win = -1 })
+      end)
+      tab.content = content
+      tab.last_buf = nil
       local providers = {}
       for name, slot in pairs(tab.slots) do
         providers[name] = slot.provider
@@ -1103,6 +1116,10 @@ function NVSlots.setup()
         return
       end
       local win = tonumber(ev.match)
+      if win == tab_state().content then
+        -- Remembered so repair can show it again in a new content window.
+        tab_state().last_buf = ev.buf
+      end
       local name = NVSlots.slot_of_win(win)
       if name and win == api.nvim_get_current_win() then
         remember(function(entry)

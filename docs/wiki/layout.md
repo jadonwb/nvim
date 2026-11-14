@@ -45,7 +45,7 @@ Leader groups for the editor's own UI live in `features/layout/keymaps.lua`;
 | `<M-S-arrows>` in a panel | Swap the panel's contents with the neighbouring panel (layout unchanged); `<leader>lw` / `<M-Tab>` swap with a picked one |
 | `<leader>lv` / `lm` / `lx` | Compare: file side by side, man page side by side, close |
 | `<C-/>` | Show / hide the bottom panel (focuses a terminal or the prompt) |
-| `<M-n>` | Cycle the bottom panel (prompt / terminal / quickfix / problems) |
+| `<M-n>` | Cycle the bottom panel (prompt / terminal / quickfix) |
 | `<leader>tb` / `tf` / `tc` | Terminal in the bottom panel / floating (toggle) / main window; inside a terminal, *moves* it there |
 | `<leader>tt` / `tn` / `t]` `t[` | Pick a terminal (shows its home) / new panel terminal / next, previous |
 | `<Esc><Esc>` (terminal) | Leave terminal mode |
@@ -65,7 +65,7 @@ Leader groups for the editor's own UI live in `features/layout/keymaps.lua`;
 | `lsp` | attached servers, live progress, diagnostic counts; the dashboard adds each server's command, settings and init options, code actions at the cursor, buffer keymaps, and diagnostics per file |
 | `prompt` | the OpenCode prompt; Enter sends |
 | `terminal` | the panel's terminal; any number of terminals can run, each with a home (panel, float, main window); `<M-w>` hides a float or sends a main-window terminal back to its file (also `q` in terminal-normal mode); the shell keeps running |
-| `quickfix` / `problems` | quickfix list / diagnostics |
+| `quickfix` | the quickfix list |
 
 Panels draw from cached data (`features/layout/data.lua`): git is read
 asynchronously on focus/write/dir change, the OpenCode session from OpenCode's
@@ -86,7 +86,7 @@ so the statusline never moves.
 :NVLayout slot <name> [open|close|toggle]
 :NVLayout provider <slot> <provider>
 :NVLayout swap <a> <b>
-:NVBottom [prompt|quickfix|problems]
+:NVBottom [prompt|terminal|quickfix]
 ```
 
 ## External API

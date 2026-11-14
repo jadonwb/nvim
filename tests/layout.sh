@@ -99,6 +99,15 @@ vim.api.nvim_win_set_width(NVSlots.win 'left', 50) wait()
 pcall(NVSlots.reset_sizes or function() vim.cmd 'NVLayout reset' end) wait(300)
 add('reset=' .. tostring(sizes() == before))
 
+-- The content window closing (`:q!`, `:close`) rebuilds the layout around a
+-- new content window with the same buffer; no panel becomes the content.
+vim.api.nvim_set_current_win(NVSlots.content_win())
+local shown = vim.api.nvim_get_current_buf()
+vim.api.nvim_win_close(0, true)
+wait(500)
+local cw = NVSlots.content_win()
+add('content rebuilt=' .. tostring(NVSlots.slot_of_win(cw) == nil and vim.api.nvim_win_get_buf(cw) == shown) .. ' sides=' .. tostring(sides_open()))
+
 pcall(vim.cmd, 'silent! messages clear')
 io.write('\n' .. table.concat(out, '\n'))
 LUA
@@ -122,5 +131,6 @@ check 'room sides back=true'
 check 'help in content=true'
 check 'help back=true'
 check 'reset=true'
+check 'content rebuilt=true sides=true'
 
 [ "$fail" = 0 ] && echo 'layout: pass' || { echo 'layout: FAIL'; exit 1; }

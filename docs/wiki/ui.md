@@ -122,17 +122,39 @@ every split (grug-far, compare) look like one buffer.
 grug-far's split carries a `Search & Replace` winbar with `q close`, and its
 insert-mode field still closes on `q`/`Esc`.
 
+## Dialogs
+
+Every dialog (`core/dialogs.lua`) is the floating command line's surface: a
+raised panel with solid padding, a title chip (`NvPopupTitle`), and its keys as
+chips in the footer. Dialogs open where the command line does, upper third and
+centred (`NVPromptRect` in `config/ui2.lua`), so a prompt never moves around.
+
+| Dialog | Use | Keys |
+| --- | --- | --- |
+| `NVDialogs.input` | `vim.ui.input` (LSP rename, plugins), Save As, agent feedback (multiline) | `CR` submit (`M-CR` multiline); `Esc` to normal mode, `Esc` again cancels |
+| `NVDialogs.select` | unsaved changes (Write / Discard / Cancel) | each option's key chip, `j`/`k`, `CR`; `Esc` cancels |
+| `NVDialogs.info` | static text | `Esc`, `q`, `CR` |
+
+`q` and `<M-w>` cancel every dialog, and leaving it cancels. A dialog opened
+from insert mode returns to insert mode. `vim.ui.select` is the snacks picker.
+
 ## Unsaved changes
 
-`NVDialogs.select_panel` renders the review in the bottom panel: a winbar with
-the title and the buffer being reviewed, the option list with the selected row
-highlighted, and `w`/`d`/`c`/`<CR>`/`Esc`. Opening it leaves insert mode (so
-`Esc` and the option keys work even if the previous surface was a search
-field). Without a layout it falls back to the float.
+Closing a modified file (`<M-w>`, `<A-q>`, buffer delete from a picker) asks
+once per file: Write, Discard or Cancel. Cancel changes nothing; an unnamed
+buffer asks for a name (Save As, the filetype is detected from it).
+
+While the layout is up, typed `:q`, `:bd`, `:wq`, `:x`, `:qa` and `:wqa` take the
+same path as the keys (`NVEditing.command_route`). Plain Vim would close the
+content window (a hidden buffer never prompts) and strand the panels.
+Forced forms (`:q!`), commands with arguments, and every launch without the
+layout (a commit message, a host's editor) keep Vim's behaviour. If the content
+window does close (`:q!`, `:close`, a plugin), the layout rebuilds around a new
+one showing the same buffer.
 
 ## Bottom panel
 
-Mode strip in the winbar: `Prompt │ Quickfix │ Problems`. The command line is
+Mode strip in the winbar: `Prompt │ Terminal │ Quickfix`. The command line is
 not a mode; it is pinned over one row of the panel.
 
 ## Screenshots

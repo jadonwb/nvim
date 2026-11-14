@@ -25,12 +25,15 @@ M.is_workspace = M.kind == 'workspace'
 --- for every other profile unless it is added to `allowed` below.
 -- `ui` stays available everywhere: the notification centre and the popup need
 -- it, and a difftool launch still has to report what went wrong.
+-- `format` stays on where a file is edited and saved: a host's editor (the
+-- OpenCode prompt, yazi) and a one-off launch format markdown with prettier
+-- like a workspace does.
 local allowed = {
   difftool = { ui = true },
   mergetool = { ui = true },
   pager = { ui = true },
-  transient = { ui = true },
-  embedded = { ui = true },
+  transient = { ui = true, format = true },
+  embedded = { ui = true, format = true },
 }
 
 ---@param feature string

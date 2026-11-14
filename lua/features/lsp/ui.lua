@@ -113,6 +113,9 @@ local function float(focusable)
 end
 
 local function count(section)
+  if section.count then
+    return section.count
+  end
   if section.items then
     return #section.items
   end
@@ -138,17 +141,7 @@ local function draw_menu()
     width = math.max(width, vim.fn.strdisplaywidth(label) + vim.fn.strdisplaywidth(right) + 2)
   end
   local hint = state.overflow and ' Tab · K scroll ' or ' Tab · K focus '
-  -- The active section's own keys (the hunk's s / r), on a second line.
-  local active = state.sections[state.index]
-  local extra
-  if active and active.keys then
-    local parts = {}
-    for _, k in ipairs(active.keys) do
-      parts[#parts + 1] = k[1] .. ' ' .. k[2]
-    end
-    extra = ' ' .. table.concat(parts, ' · ') .. ' '
-  end
-  width = math.max(width, vim.fn.strdisplaywidth(hint), extra and vim.fn.strdisplaywidth(extra) or 0, 16)
+  width = math.max(width, vim.fn.strdisplaywidth(hint), 16)
   local lines = {}
   for _, r in ipairs(rows) do
     local pad = width - vim.fn.strdisplaywidth(r.label) - vim.fn.strdisplaywidth(r.right)
@@ -156,9 +149,6 @@ local function draw_menu()
   end
   lines[#lines + 1] = ''
   lines[#lines + 1] = hint
-  if extra then
-    lines[#lines + 1] = extra
-  end
   local buf = state.menu.buf
   vim.bo[buf].modifiable = true
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
@@ -183,16 +173,7 @@ local function draw_menu()
       end
     end
   end
-  local hint_row = #rows + 1
-  hint_line(hint_row, { 'Tab', 'K' })
-  if extra then
-    hint_line(
-      hint_row + 1,
-      vim.tbl_map(function(k)
-        return k[1]
-      end, active.keys)
-    )
-  end
+  hint_line(#rows + 1, { 'Tab', 'K' })
   return width, #lines
 end
 
@@ -301,6 +282,19 @@ local function render()
     end)
   end
   place(cwin, base + gap, height, width)
+  -- A section's own keys (the hunk's s / r) sit above its popup, as the
+  -- popup's title.
+  local active = state.sections[state.index]
+  if active and active.keys then
+    local title = {}
+    for _, k in ipairs(active.keys) do
+      title[#title + 1] = { ' ' .. k[1] .. ' ', 'NvKey' }
+      title[#title + 1] = { ' ' .. k[2] .. ' ', 'NvMuted' }
+    end
+    pcall(vim.api.nvim_win_set_config, cwin, { title = title, title_pos = 'right' })
+  else
+    pcall(vim.api.nvim_win_set_config, cwin, { title = '' })
+  end
 end
 
 local function select(index)
@@ -359,6 +353,23 @@ function NVLspUi.open(sections)
     vim.keymap.set('n', lhs, fn, { buffer = buf, nowait = true, desc = desc })
   end
   map('q', NVLspUi.close, 'Close popup')
+  -- K inside the popup follows a |help-tag|; anywhere else it does nothing
+  -- (Vim's K would run :Man on the word under the cursor).
+  map('K', function()
+    local line = vim.api.nvim_get_current_line()
+    local col = vim.api.nvim_win_get_cursor(0)[2] + 1
+    local init = 1
+    while true do
+      local s0, e0, tag = line:find('|([^|%s]+)|', init)
+      if not s0 then
+        return
+      end
+      if col >= s0 and col <= e0 then
+        return pcall(vim.cmd.help, tag)
+      end
+      init = e0 + 1
+    end
+  end, 'Follow a |help-tag|')
   map('<Esc>', NVLspUi.close, 'Close popup')
   map('<Tab>', NVLspUi.next, 'Next section')
   map('<S-Tab>', NVLspUi.prev, 'Previous section')

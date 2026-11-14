@@ -60,8 +60,9 @@ local function open_tab()
         if
           vim.api.nvim_tabpage_is_valid(tab)
           and #vim.tbl_filter(function(w)
-            return vim.api.nvim_win_get_config(w).relative == ''
-          end, vim.api.nvim_tabpage_list_wins(tab)) < 2
+              return vim.api.nvim_win_get_config(w).relative == ''
+            end, vim.api.nvim_tabpage_list_wins(tab))
+            < 2
         then
           NVCompare.close(tab)
         end
@@ -105,11 +106,19 @@ end
 ---@param page? string
 function NVCompare.man(page)
   if not page or page == '' then
-    vim.ui.input({ prompt = 'Man page: ' }, function(input)
-      if input and input ~= '' then
-        NVCompare.man(input)
-      end
-    end)
+    -- The same flow as a file: pick (snacks' man page picker, with preview),
+    -- then open it beside the current buffer.
+    require('snacks').picker.man {
+      title = 'Compare with man page',
+      confirm = function(picker, item)
+        picker:close()
+        if item and item.ref then
+          vim.schedule(function()
+            NVCompare.man(item.ref)
+          end)
+        end
+      end,
+    }
     return
   end
   open_tab()

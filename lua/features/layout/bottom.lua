@@ -1,7 +1,6 @@
 -- Bottom panel modes.
 --
--- The slot hosts one provider at a time: prompt, terminal, quickfix or
--- problems. `<C-/>` shows/hides the panel; terminals are managed by
+-- The slot hosts one provider at a time: prompt, terminal or quickfix. `<C-/>` shows/hides the panel; terminals are managed by
 -- layout/terminals.lua. The command line floats (config/ui2.lua).
 --
 -- A window-local winbar (not volt: the content is a real buffer) shows the modes.
@@ -10,15 +9,13 @@ NVBottom = {}
 
 require 'features.layout.terminals'
 
-NVBottom.modes = { 'prompt', 'terminal', 'quickfix', 'problems' }
+NVBottom.modes = { 'prompt', 'terminal', 'quickfix' }
 
-local ICONS = { prompt = '󰚩', terminal = '\u{f018d}', quickfix = '\u{f0279}', problems = '\u{f05d6}' }
+local ICONS = { prompt = '󰚩', terminal = '\u{f018d}', quickfix = '\u{f0279}' }
 
 local function count(mode)
   if mode == 'quickfix' then
     return #vim.fn.getqflist()
-  elseif mode == 'problems' then
-    return #vim.diagnostic.get()
   elseif mode == 'terminal' and NVTerminals then
     return NVTerminals.count()
   end

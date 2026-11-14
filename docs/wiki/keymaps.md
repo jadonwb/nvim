@@ -273,7 +273,7 @@ Completion after `@` (files), `$` (skills) and `/` (commands, at the start);
 | --- | --- | --- |
 | `:Lazy` | plugin manager |  |
 | `:NVAgent` | open the transcript, or send a prompt; `new`, `stop`, `reconnect` |  |
-| `:NVBottom` | prompt / quickfix / problems, or cycle |  |
+| `:NVBottom` | prompt / terminal / quickfix, or cycle |  |
 | `:NVCheatsheet` | this reference, drawn with volt |  |
 | `:NVLayout` | open / close / slot <name> / provider <slot> <name> / swap <a> <b> / status |  |
 ## Git

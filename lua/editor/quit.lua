@@ -120,11 +120,12 @@ local function review(only, done)
     for _, decision in ipairs(decisions) do
       if decision.action == 'write' then
         local ok, err = pcall(function()
-          if decision.filename then
-            vim.api.nvim_buf_set_name(decision.buf, decision.filename)
-          end
           vim.api.nvim_buf_call(decision.buf, function()
-            vim.cmd 'write'
+            if decision.filename then
+              NVEditing.save_as(decision.filename)
+            else
+              vim.cmd 'silent write'
+            end
           end)
           if vim.bo[decision.buf].modified then
             error 'Buffer remains modified after write'
@@ -168,17 +169,15 @@ local function review(only, done)
     if ok then
       icon, icon_hl = MiniIcons.get('file', item.name)
     end
-    NVDialogs.select_panel({
-      title = 'Unsaved Changes (' .. index .. '/' .. #items .. ')',
+    NVDialogs.select({
+      title = #items > 1 and ('Unsaved changes  %d/%d'):format(index, #items) or 'Unsaved changes',
+      title_icon = '\u{f0193}',
       message = item.name == '' and '[No Name]' or vim.fn.fnamemodify(item.name, ':~:.'),
       icon = icon,
       icon_hl = icon_hl,
-      center_message = true,
-      inline_indicator = true,
       options = { 'Write', 'Discard', 'Cancel' },
       shortcuts = { w = 'Write', d = 'Discard', c = 'Cancel' },
       initial_index = 1,
-      divider = true,
       min_width = 40,
     }, function(choice)
       if choice == 'Write' then
