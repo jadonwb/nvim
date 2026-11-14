@@ -119,7 +119,7 @@ Global LuaLS annotations for the `NV*` globals.
 | --- | --- |
 | `scripts/gen-keymaps.sh`, `scripts/gen-keymaps.lua` | regenerate `docs/wiki/keymaps.md` |
 | `scripts/shot.sh`, `scripts/ansi2svg.py` | tmux pane → PNG with theme colours |
-| `tests/*.sh` | headless suites: layout, session, notify, lsp-ui, bridge, rpc, launch, extras |
+| `tests/*.sh` | headless suites: layout, session, notify, lsp-ui, bridge, rpc, launch, extras, ui2 |
 | `tests/opencode/*.lua` | OpenCode artifacts and bridge units |
 | `docs/wiki/` | this wiki |
 | `docs/archive/` | refactor design notes and review history |

@@ -352,7 +352,10 @@ function NVQuit.restart()
     -- Explicitly write the current state even when workspace sessions are off.
     local file = NVSession.save_restart()
     NVEnv.restarting = true
-    local command = 'restart lua require("editor.session").restore_restart(' .. string.format('%q', file) .. ')'
+    -- 0.13's plain :restart also saves and restores a native session; the
+    -- snapshot above is the whole state, so use the old behaviour (`!`).
+    local cmd = vim.fn.has 'nvim-0.13' == 1 and 'restart!' or 'restart'
+    local command = cmd .. ' lua require("editor.session").restore_restart(' .. string.format('%q', file) .. ')'
     local ok, err = pcall(vim.cmd, command)
     if not ok then
       NVEnv.restarting = false
