@@ -3,7 +3,10 @@ local Picker = {}
 NVTodoComments = {
   'folke/todo-comments.nvim',
 
-  -- Pickers: <leader>st / <leader>sT (snacks).
+  -- Highlighting is part of the first screen: loaded with the dashboard
+  -- (VimEnter), not on first use of a todo command. Pickers: <leader>st /
+  -- <leader>sT (snacks).
+  event = 'VimEnter',
   cmd = { 'TodoTrouble', 'TodoQuickFix' },
   opts = {
     keywords = {
