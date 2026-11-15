@@ -22,8 +22,8 @@ The leader is `Space`; the local leader is `\`.
 | `<C-S-S>` | Save all files | n |
 | `<C-S-V>` | Paste text | n |
 | `<C-S>` | Save file | n |
-| `<C-U>` | Scroll up | n |
 | `<C-U>` | Exit terminal mode | t |
+| `<C-U>` | Scroll up | n |
 | `<C-W><C-D>` | Show diagnostics under the cursor | n |
 | `<C-W>d` | Show diagnostics under the cursor | n |
 | `<C-_>` | Toggle bottom panel | n |
@@ -32,8 +32,8 @@ The leader is `Space`; the local leader is `\`.
 | `<M-0>` | Reset layout sizes | n |
 | `<M-=>` | Reset layout sizes | n |
 | `<M-CR>` | Insert new line above | n |
-| `<M-Down>` | Move selected lines down | v |
 | `<M-Down>` | Move line down | n |
+| `<M-Down>` | Move selected lines down | v |
 | `<M-Left>` | Jump one word to the left | i |
 | `<M-Q>` | Force quit all | n |
 | `<M-Right>` | Jump one word to the right | i |
@@ -43,8 +43,8 @@ The leader is `Space`; the local leader is `\`.
 | `<M-S-Up>` | Move window up | n |
 | `<M-Space>` | Insert Space | n |
 | `<M-Tab>` | Swap windows | n |
-| `<M-Up>` | Move selected lines up | v |
 | `<M-Up>` | Move line up | n |
+| `<M-Up>` | Move selected lines up | v |
 | `<M-W>` | Delete current buffer and close current window if there are multiple | n |
 | `<M-a>` | Agent transcript | n |
 | `<M-b>` | Toggle most recent buffer | n |
@@ -69,8 +69,8 @@ The leader is `Space`; the local leader is `\`.
 | `<S-Left>` | Increase window width | n |
 | `<S-Right>` | Decrease window width | n |
 | `<S-Space>` | Insert Space | n |
-| `<S-Tab>` | Unindent | v |
 | `<S-Tab>` | vim.snippet.jump if active, otherwise <S-Tab> | i |
+| `<S-Tab>` | Unindent | v |
 | `<S-Up>` | Increase window height | n |
 | `<Tab>` | Indent | v |
 | `<Tab>` | vim.snippet.jump if active, otherwise <Tab> | i |
@@ -335,8 +335,8 @@ The list fills only when asked and shows in the bottom panel; see
 | `ad` | Prompt: add diagnostics | n |
 | `ae` | Show OpenCode evidence | n |
 | `ag` | OpenCode agent | n |
-| `ai` | Prompt: add a reference to this line | n |
 | `ai` | Prompt: add a reference to these lines | v |
+| `ai` | Prompt: add a reference to this line | n |
 | `ak` | OpenCode skill → prompt | n |
 | `am` | OpenCode model | n |
 | `an` | New OpenCode session (nvim) | n |

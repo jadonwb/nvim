@@ -77,6 +77,11 @@ its line).
 An inset float over the content window with a dimmed backdrop; the explorer
 drives it only while it is on. `Esc`/`q` close it, `:bd` cannot break it.
 
+PNG files preview as the image (Neovim 0.13, `vim.ui.img`): scaled to fit
+with their aspect kept, under a caption with the pixel size. It needs a
+terminal with the Kitty graphics protocol; WezTerm has
+`enable_kitty_graphics`. Elsewhere, and in tmux, the caption says so.
+
 ## Compare mode (`<leader>wv`, `<leader>wm`, `<leader>wc`)
 
 Two things side by side: two files, or a file and a man page (`:Man` with

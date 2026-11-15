@@ -41,6 +41,26 @@ local function parse_numstat(out, into, staged)
   end
 end
 
+--- Run commands at once and wait for all of them (inside a vim.async task).
+--- Returns each one's vim.system result under its key, back on the main loop.
+---@param cmds table<string, string[]>
+---@param opts? vim.SystemOpts
+---@return table<string, vim.SystemCompleted>
+local function system_all(cmds, opts)
+  local tasks = {}
+  for key, cmd in pairs(cmds) do
+    tasks[key] = vim.async.run(function()
+      return vim.async.await(3, vim.system, cmd, opts)
+    end)
+  end
+  local results = {}
+  for key, task in pairs(tasks) do
+    results[key] = vim.async.await(task)
+  end
+  vim.async.await(1, vim.schedule)
+  return results
+end
+
 local running = false
 
 function M.refresh_git()
@@ -49,13 +69,12 @@ function M.refresh_git()
   end
   running = true
   local cwd = vim.fn.getcwd()
-  local results = {}
-  local pending = 3
-  local function done()
-    pending = pending - 1
-    if pending > 0 then
-      return
-    end
+  vim.async.run(function()
+    local results = system_all({
+      status = { 'git', 'status', '--porcelain=v1', '-b', '--untracked-files=normal' },
+      unstaged = { 'git', 'diff', '--numstat' },
+      staged = { 'git', 'diff', '--cached', '--numstat' },
+    }, { cwd = cwd, text = true })
     running = false
     local status = results.status
     if not status or status.code ~= 0 then
@@ -98,51 +117,31 @@ function M.refresh_git()
     M.git = git
     emit 'changes'
     emit 'session'
-  end
-  local function run(key, cmd)
-    vim.system(cmd, { cwd = cwd, text = true }, function(res)
-      results[key] = res
-      vim.schedule(done)
-    end)
-  end
-  run('status', { 'git', 'status', '--porcelain=v1', '-b', '--untracked-files=normal' })
-  run('unstaged', { 'git', 'diff', '--numstat' })
-  run('staged', { 'git', 'diff', '--cached', '--numstat' })
+  end)
 end
 
 --- Extra git facts for the dashboard, fetched on demand.
 ---@param cb fun(info: { log: string[], stashes: integer, remote?: string })
 function M.git_details(cb)
-  local info = { log = {}, stashes = 0 }
-  local pending = 3
-  local function done()
-    pending = pending - 1
-    if pending == 0 then
-      vim.schedule(function()
-        cb(info)
-      end)
-    end
-  end
-  vim.system({ 'git', 'log', '-n', '12', '--format=%h%x09%cr%x09%an%x09%s' }, { text = true }, function(res)
-    for line in (res.stdout or ''):gmatch '[^\n]+' do
+  vim.async.run(function()
+    local r = system_all({
+      log = { 'git', 'log', '-n', '12', '--format=%h%x09%cr%x09%an%x09%s' },
+      stashes = { 'git', 'stash', 'list' },
+      remote = { 'git', 'remote', 'get-url', 'origin' },
+    }, { text = true })
+    local info = { log = {}, stashes = 0 }
+    for line in (r.log.stdout or ''):gmatch '[^\n]+' do
       local hash, when, author, subject = line:match '^(%S+)\t([^\t]*)\t([^\t]*)\t(.*)$'
       if hash then
         info.log[#info.log + 1] = { hash = hash, when = when, author = author, subject = subject }
       end
     end
-    done()
-  end)
-  vim.system({ 'git', 'stash', 'list' }, { text = true }, function(res)
-    local n = 0
-    for _ in (res.stdout or ''):gmatch '[^\n]+' do
-      n = n + 1
+    for _ in (r.stashes.stdout or ''):gmatch '[^\n]+' do
+      info.stashes = info.stashes + 1
     end
-    info.stashes = n
-    done()
-  end)
-  vim.system({ 'git', 'remote', 'get-url', 'origin' }, { text = true }, function(res)
-    info.remote = vim.trim(res.stdout or '') ~= '' and vim.trim(res.stdout) or nil
-    done()
+    local remote = vim.trim(r.remote.stdout or '')
+    info.remote = remote ~= '' and remote or nil
+    cb(info)
   end)
 end
 

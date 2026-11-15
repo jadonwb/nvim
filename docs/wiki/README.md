@@ -12,7 +12,7 @@ This wiki documents the configuration as it behaves, not as it was planned.
 - [Language extras](extras.md) — per-machine language packs.
 - [OpenCode](opencode.md) — the service client, sessions, prompt, transcript, the `nvim` tool, artifacts.
 - [Editor API](editor-api.md) — the external API for agents and tools.
-- [Neovim 0.13](nvim-0.13.md) — compatibility status and what the next release offers this config.
+- [Neovim 0.13](nvim-0.13.md) — the 0.13 features in use, and how 0.12 support is kept (and dropped).
 
 Design notes from the refactor, which explain *why* some decisions were made,
 are archived in `docs/archive/`; this wiki is the user-facing reference.

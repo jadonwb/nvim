@@ -19,7 +19,7 @@ function NVBuffers.autocmds()
       -- Recent order is what you chose to look at: not a float (previews,
       -- popups), and not the unsaved-changes review stepping through
       -- buffers.
-      if not NVBuffers.is_managed(args.buf) or vim.api.nvim_win_get_config(0).relative ~= '' then
+      if not NVBuffers.is_managed(args.buf) or vim.api.nvim_win_get_config(args.win).relative ~= '' then
         return
       end
       if NVQuit and NVQuit.is_reviewing and NVQuit.is_reviewing() then
@@ -27,16 +27,6 @@ function NVBuffers.autocmds()
       end
       clock = clock + 1
       recent[args.buf] = clock
-    end,
-  })
-  -- TODO: nvim 13 has better handling for this
-  -- Auto-reload files when they change externally
-  vim.api.nvim_create_autocmd({ 'BufEnter', 'FocusGained', 'CursorHold', 'CursorHoldI' }, {
-    pattern = '*',
-    callback = function()
-      if vim.api.nvim_get_option_value('buftype', { buf = 0 }) == '' then
-        vim.cmd 'checktime'
-      end
     end,
   })
 end

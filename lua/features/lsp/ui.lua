@@ -443,7 +443,7 @@ function NVLspUi.open(sections)
   vim.api.nvim_create_autocmd('WinClosed', {
     group = state.group,
     callback = function(ev)
-      local id = tonumber(ev.match)
+      local id = ev.win
       local mine = state.content and state.content.win
       if id == mine or id == state.src_win then
         vim.schedule(function()

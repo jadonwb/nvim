@@ -21,34 +21,38 @@ end
 
 -- ── files ──────────────────────────────────────────────────────────────────
 
-local files_cache = { cwd = nil, at = 0, list = {} }
+local files_cache = { cwd = nil, at = 0, list = {}, listing = nil }
 
---- Project files, cached for 30 s. The first read for a
---- directory waits (briefly) so the first completion is not empty; later
---- refreshes run in the background.
-local function project_files()
-  local cwd = vim.fn.getcwd()
-  local now = vim.uv.now()
-  if files_cache.cwd == cwd and now - files_cache.at <= 30000 then
-    return files_cache.list
-  end
+--- One `rg --files` run for `cwd`, stored in the cache (inside a task).
+local function list_files(cwd)
   -- rg, not `git ls-files`: it follows .gitignore but also lists files in
   -- submodules (git lists a submodule as one entry) and untracked ones.
-  local cmd = { 'rg', '--files', '--hidden', '--glob', '!.git' }
-  local first = files_cache.cwd ~= cwd
-  files_cache.cwd, files_cache.at = cwd, now
-  local function store(res)
-    if res.code == 0 then
-      files_cache.list = vim.split(res.stdout or '', '\n', { trimempty = true })
-    end
+  local ok, res = vim.async.pawait(3, vim.system, { 'rg', '--files', '--hidden', '--glob', '!.git' }, { cwd = cwd, text = true })
+  vim.async.await(1, vim.schedule)
+  if ok and res.code == 0 and files_cache.cwd == cwd then
+    files_cache.list = vim.split(res.stdout or '', '\n', { trimempty = true })
   end
-  local ok, proc = pcall(vim.system, cmd, { cwd = cwd, text = true }, not first and store or nil)
-  if ok and first then
-    files_cache.list = {}
-    local res = proc:wait(1500)
-    if res then
-      store(res)
-    end
+  return files_cache.list
+end
+
+--- Project files, cached for 30 s (call inside a vim.async task). The first
+--- listing for a directory is awaited, without blocking the editor; requests
+--- made meanwhile wait for that same listing. Later refreshes run in the
+--- background while the cached list answers.
+local function project_files()
+  local cwd = vim.fn.getcwd()
+  if files_cache.cwd ~= cwd then
+    files_cache.cwd, files_cache.at, files_cache.list = cwd, vim.uv.now(), {}
+    -- Detached: the listing is shared, not owned by the request that
+    -- started it (a parent task waits for its children).
+    files_cache.listing = vim.async.run(list_files, cwd):detach()
+  elseif vim.uv.now() - files_cache.at > 30000 then
+    files_cache.at = vim.uv.now()
+    vim.async.run(list_files, cwd):detach()
+  end
+  if files_cache.listing then
+    vim.async.await(files_cache.listing)
+    files_cache.listing = nil
   end
   return files_cache.list
 end
@@ -89,7 +93,7 @@ local function token_at(line, col)
 end
 
 local function bufnr_of(params)
-  return vim.uri_to_bufnr(params.textDocument.uri)
+  return vim.uri.to_buf(params.textDocument.uri)
 end
 
 -- ── handlers ───────────────────────────────────────────────────────────────
@@ -143,6 +147,7 @@ M.MAX_FILES = 60
 
 --- Completion for the word being typed, by its sigil.
 --- Returns items and whether the list is incomplete (refetch as you type).
+--- `@` lists project files, so it must run inside a vim.async task.
 function M.complete(line, col, row)
   -- The token start: the nearest sigil before the cursor with no space after.
   local before = line:sub(1, col)
@@ -237,8 +242,12 @@ handlers[ms.textDocument_completion] = function(params, cb)
   if not ctx().known then
     ctx().load_known()
   end
-  local items, incomplete = M.complete(line, col, row)
-  cb(nil, { isIncomplete = incomplete, items = items })
+  -- In a task: the first `@` completion awaits the file listing instead of
+  -- blocking the editor while rg runs.
+  vim.async.run(function()
+    local ok, items, incomplete = pcall(M.complete, line, col, row)
+    cb(nil, { isIncomplete = ok and incomplete or false, items = ok and items or {} })
+  end)
 end
 
 --- Hover text for the token at a position (markdown), or nil.
@@ -292,7 +301,7 @@ handlers[ms.textDocument_definition] = function(params, cb)
     return cb(nil, nil)
   end
   local row = math.max(0, (t.from or 1) - 1)
-  cb(nil, { uri = vim.uri_from_fname(t.abs), range = { start = { line = row, character = 0 }, ['end'] = { line = row, character = 0 } } })
+  cb(nil, { uri = vim.uri.from_fname(t.abs), range = { start = { line = row, character = 0 }, ['end'] = { line = row, character = 0 } } })
 end
 
 -- ── client ─────────────────────────────────────────────────────────────────

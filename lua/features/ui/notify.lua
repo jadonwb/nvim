@@ -179,7 +179,7 @@ function NVNotify.toast(entry)
     noautocmd = true,
   })
   vim.wo[win].winhighlight = 'Normal:NvRaised,FloatBorder:NvRaisedBorder'
-  vim.api.nvim_win_set_height(win, #lines)
+  vim.api.nvim_win_resize(win, -1, #lines, {})
   local t = { win = win, timer = vim.uv.new_timer() }
   table.insert(toasts, 1, t)
   while #toasts > 4 do

@@ -126,7 +126,7 @@ function NVUi.float(opts)
   vim.api.nvim_create_autocmd('WinClosed', {
     group = group,
     callback = function(ev)
-      if tonumber(ev.match) ~= handle.win then
+      if ev.win ~= handle.win then
         return
       end
       if handle.backdrop and vim.api.nvim_win_is_valid(handle.backdrop) then

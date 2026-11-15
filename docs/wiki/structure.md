@@ -15,7 +15,7 @@ file; feature code never lives in a plugin spec.
 
 | File | Role |
 | --- | --- |
-| `init.lua` | load order: options → autocmds → core → dialogs → editor → ui2 → notifications → highlights → lazy |
+| `init.lua` | load order: compat → options → autocmds → core → dialogs → editor → ui2 → notifications → highlights → lazy |
 
 ## `lua/config/`
 
@@ -34,6 +34,7 @@ file; feature code never lives in a plugin spec.
 
 | File | Role |
 | --- | --- |
+| `compat.lua` | Neovim 0.12 support: polyfills for the 0.13 APIs used elsewhere ([0.13](nvim-0.13.md)) |
 | `core.lua` | requires the building blocks in order |
 | `keymap.lua` | `K.map` and the `NVKeymaps` key constants (single registry) |
 | `messages.lua` | `NVMessages`: notify / pager / echo API |
@@ -119,7 +120,7 @@ Global LuaLS annotations for the `NV*` globals.
 | --- | --- |
 | `scripts/gen-keymaps.sh`, `scripts/gen-keymaps.lua` | regenerate `docs/wiki/keymaps.md` |
 | `scripts/shot.sh`, `scripts/ansi2svg.py` | tmux pane → PNG with theme colours |
-| `tests/*.sh` | headless suites: layout, session, notify, lsp-ui, bridge, rpc, launch, extras, ui2 |
+| `tests/*.sh` | headless suites: layout, session, notify, lsp-ui, bridge, rpc, launch, extras, ui2, compat |
 | `tests/opencode/*.lua` | OpenCode artifacts and bridge units |
 | `docs/wiki/` | this wiki |
 | `docs/archive/` | refactor design notes and review history |

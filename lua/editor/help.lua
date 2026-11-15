@@ -26,7 +26,7 @@ function NVHelp.reposition()
   vim.cmd 'wincmd L' -- far right, full height
   vim.wo[win].winfixwidth = true -- layout manager recognizes this as a companion panel
   local width = math.floor(vim.o.columns * NVCompanionPanels.width())
-  vim.api.nvim_win_set_width(win, width)
+  vim.api.nvim_win_resize(win, width, -1, { anchor = 'right' })
 end
 
 --- Close the doc panel in the current tab, if present.

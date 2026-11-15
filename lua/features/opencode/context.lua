@@ -311,7 +311,7 @@ function M.parse(text, skills, commands)
   for _, t in ipairs(M.tokens(text, skills)) do
     local mention = { start = u16(text, t.s - 1), ['end'] = u16(text, t.e), text = text:sub(t.s, t.e) }
     if t.kind == 'file' then
-      local uri = vim.uri_from_fname(t.abs)
+      local uri = vim.uri.from_fname(t.abs)
       if t.from then
         uri = uri .. ('?start=%d&end=%d'):format(t.from, t.to or t.from)
       end

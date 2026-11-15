@@ -45,14 +45,10 @@ local function script_transport(module, handler)
   return captured
 end
 
-local EXE = (vim.fn.exepath('opencode') ~= '' and vim.fn.exepath('opencode')) or 'opencode'
+local EXE = (vim.fn.exepath 'opencode' ~= '' and vim.fn.exepath 'opencode') or 'opencode'
 
 test('rpc_path percent-encodes the location deepObject query on personal.artifacts', function()
-  eq(
-    M.rpc_path('list', '/tmp/a b/x'),
-    '/api/rpc/personal.artifacts/list?location%5Bdirectory%5D=%2Ftmp%2Fa%20b%2Fx',
-    'encoded path'
-  )
+  eq(M.rpc_path('list', '/tmp/a b/x'), '/api/rpc/personal.artifacts/list?location%5Bdirectory%5D=%2Ftmp%2Fa%20b%2Fx', 'encoded path')
 end)
 
 test('build_argv builds the executable/argv envelope and normalizes empty inputs', function()
@@ -67,7 +63,7 @@ test('build_argv builds the executable/argv envelope and normalizes empty inputs
     artifactID = 'art_x000000000000000000',
     question = 'q with "quotes"\nand newline',
   })[6]
-  assert(body:match('"input":%s*{'), 'nonempty input stays an object')
+  assert(body:match '"input":%s*{', 'nonempty input stays an object')
   local decoded = vim.json.decode(body)
   eq(decoded.input.artifactID, 'art_x000000000000000000', 'field preserved')
   eq(decoded.input.question, 'q with "quotes"\nand newline', 'special characters preserved')
@@ -82,18 +78,18 @@ test('RPC decoding unwraps {output} and surfaces RpcError payloads', function()
 
   fn.rpc_done('mark_read', { code = 0, stdout = '{"_tag":"RpcError","type":"validation","message":"no"}' }, function(out, err)
     eq(out, nil, 'no output on RPC error')
-    assert(err:match('validation'), 'typed error surfaced: ' .. tostring(err))
-    assert(err:match('no'), 'error message surfaced')
+    assert(err:match 'validation', 'typed error surfaced: ' .. tostring(err))
+    assert(err:match 'no', 'error message surfaced')
   end)
 
   fn.rpc_done('get', { code = 7, stdout = '{"_tag":"RpcError","type":"not_found","message":"missing"}', stderr = '' }, function(out, err)
     eq(out, nil, 'no output on CLI failure')
-    assert(err:match('not_found') and err:match('missing'), 'typed decode of failed body')
+    assert(err:match 'not_found' and err:match 'missing', 'typed decode of failed body')
   end)
 
   fn.rpc_done('get', { code = 0, stdout = 'not json' }, function(out, err)
     eq(out, nil, 'no output on non-JSON')
-    assert(err:match('non%-JSON'), 'non-JSON surfaced')
+    assert(err:match 'non%-JSON', 'non-JSON surfaced')
   end)
 end)
 
@@ -106,7 +102,9 @@ test('list resolves output.artifacts and get resolves output.artifact', function
     done = true
     result = { artifacts = artifacts, err = err }
   end)
-  wait_for(function() return done end)
+  wait_for(function()
+    return done
+  end)
   eq(result.err, nil, 'no error')
   eq(result.artifacts[1].id, 'art_list1', 'artifacts list')
 
@@ -118,29 +116,31 @@ test('list resolves output.artifacts and get resolves output.artifact', function
     done = true
     result = { artifact = artifact, err = err }
   end)
-  wait_for(function() return done end)
+  wait_for(function()
+    return done
+  end)
   eq(result.err, nil, 'no error')
   eq(result.artifact.id, 'art_get1', 'artifact view')
 end)
 
 test('read_label names the evidence and review dismissal', function()
-  eq(fn.read_label('evidence'), 'Mark this evidence read', 'evidence label')
-  eq(fn.read_label('review'), 'Mark this review read', 'review label')
+  eq(fn.read_label 'evidence', 'Mark this evidence read', 'evidence label')
+  eq(fn.read_label 'review', 'Mark this review read', 'review label')
 end)
 
 test('filter_for hides read evidence and reviews unless the finished toggle is on', function()
-  local all = fn.entry_for('all')
+  local all = fn.entry_for 'all'
   local hidden = fn.filter_for(all, { show_finished = false })
-  eq(hidden({ status = 'read', kind = 'evidence' }), false, 'read evidence hidden by default')
-  eq(hidden({ status = 'draft', kind = 'plan' }), true, 'draft plan visible')
-  eq(hidden({ status = 'published', kind = 'review' }), true, 'published review visible')
+  eq(hidden { status = 'read', kind = 'evidence' }, false, 'read evidence hidden by default')
+  eq(hidden { status = 'draft', kind = 'plan' }, true, 'draft plan visible')
+  eq(hidden { status = 'published', kind = 'review' }, true, 'published review visible')
 
   local shown = fn.filter_for(all, { show_finished = true })
-  eq(shown({ status = 'read', kind = 'evidence' }), true, 'read evidence included by toggle')
+  eq(shown { status = 'read', kind = 'evidence' }, true, 'read evidence included by toggle')
 
-  local plans = fn.filter_for(fn.entry_for('plans'), { show_finished = false, kind = 'plan' })
-  eq(plans({ status = 'draft', kind = 'plan' }), true, 'plans filter shows plans')
-  eq(plans({ status = 'draft', kind = 'evidence' }), false, 'plans filter hides evidence')
+  local plans = fn.filter_for(fn.entry_for 'plans', { show_finished = false, kind = 'plan' })
+  eq(plans { status = 'draft', kind = 'plan' }, true, 'plans filter shows plans')
+  eq(plans { status = 'draft', kind = 'evidence' }, false, 'plans filter hides evidence')
 
   eq(fn.picker_title(nil, false), 'Artifacts · all kinds · unread', 'title: all, unread')
   eq(fn.picker_title('plan', true), 'Artifacts · plans · incl. read', 'title: plans, incl. read')
@@ -155,10 +155,14 @@ test('mark_read records no delivery for evidence and reviews', function()
     selected = items
     cb(items[1])
   end
-  NVBuffers = { delete_buf = function(_, _, cb) cb(true) end }
+  NVBuffers = {
+    delete_buf = function(_, _, cb)
+      cb(true)
+    end,
+  }
   M.transport = function(argv, on_exit)
     captured[#captured + 1] = argv
-    local method = argv[4]:match('/personal%.artifacts/([^?]+)')
+    local method = argv[4]:match '/personal%.artifacts/([^?]+)'
     if method == 'get' then
       on_exit { code = 0, stdout = vim.json.encode { output = { artifact = { title = 'Note', kind = 'evidence', status = 'published' } } } }
     elseif method == 'mark_read' then
@@ -181,14 +185,20 @@ test('mark_read records no delivery for evidence and reviews', function()
   }
 
   local done = false
-  vim.schedule(function() fn.mark_read(buf) end)
+  vim.schedule(function()
+    fn.mark_read(buf)
+  end)
   wait_for(function()
     return done or #captured >= 2
   end)
   -- Let the async callback finish delivering its notify/close.
-  vim.wait(200, function() return #captured >= 2 end)
+  vim.wait(200, function()
+    return #captured >= 2
+  end)
 
-  local methods = vim.tbl_map(function(argv) return argv[4]:match('/personal%.artifacts/([^?]+)') end, captured)
+  local methods = vim.tbl_map(function(argv)
+    return argv[4]:match '/personal%.artifacts/([^?]+)'
+  end, captured)
   eq(methods[1], 'get', 'mark_read fetches the record first')
   eq(methods[2], 'mark_read', 'mark_read calls the mark_read RPC method')
   eq(selected[1], 'Mark this evidence read', 'confirm label is the mark-read label')
@@ -199,13 +209,13 @@ test('mark_read records no delivery for evidence and reviews', function()
 end)
 
 test('draft evidence/review rows are visible and untouched by the finished toggle', function()
-  local evidence = fn.entry_for('evidence')
+  local evidence = fn.entry_for 'evidence'
   local hidden = fn.filter_for(evidence, { show_finished = false })
-  eq(hidden({ status = 'draft', kind = 'evidence' }), true, 'draft evidence visible by default')
+  eq(hidden { status = 'draft', kind = 'evidence' }, true, 'draft evidence visible by default')
   local shown = fn.filter_for(evidence, { show_finished = true })
-  eq(shown({ status = 'draft', kind = 'evidence' }), true, 'draft evidence stays visible when finished are included')
-  local reviews = fn.filter_for(fn.entry_for('reviews'), { show_finished = false, kind = 'review' })
-  eq(reviews({ status = 'draft', kind = 'review' }), true, 'draft review visible by default')
+  eq(shown { status = 'draft', kind = 'evidence' }, true, 'draft evidence stays visible when finished are included')
+  local reviews = fn.filter_for(fn.entry_for 'reviews', { show_finished = false, kind = 'review' })
+  eq(reviews { status = 'draft', kind = 'review' }, true, 'draft review visible by default')
 end)
 
 local function with_artifact_buf(meta_overrides)
@@ -243,7 +253,7 @@ local function buf_has_keymap(buf, lhs)
 end
 
 test('draft evidence buffer exposes Feedback only: no mark-read, no leader-ay', function()
-  local buf, meta = with_artifact_buf({ kind = 'evidence', status = 'draft' })
+  local buf, meta = with_artifact_buf { kind = 'evidence', status = 'draft' }
   fn.attach_artifact_commands(buf, meta)
   assert(buf_has_command(buf, 'OpenCodeArtifactFeedback'), 'feedback attached')
   eq(buf_has_command(buf, 'OpenCodeArtifactMarkRead'), false, 'no mark-read on a draft evidence')
@@ -252,7 +262,7 @@ test('draft evidence buffer exposes Feedback only: no mark-read, no leader-ay', 
 end)
 
 test('published evidence buffer exposes Mark read and the leader-ay keymap', function()
-  local buf, meta = with_artifact_buf({ kind = 'evidence', status = 'published' })
+  local buf, meta = with_artifact_buf { kind = 'evidence', status = 'published' }
   fn.attach_artifact_commands(buf, meta)
   assert(buf_has_command(buf, 'OpenCodeArtifactMarkRead'), 'mark-read attached on published evidence')
   assert(buf_has_keymap(buf, '<leader>ay'), 'mark-read keymap attached on published evidence')
@@ -260,14 +270,14 @@ test('published evidence buffer exposes Mark read and the leader-ay keymap', fun
 end)
 
 test('review buffers reuse the generic non-plan gates: draft hides mark-read, published exposes it', function()
-  local draft, draft_meta = with_artifact_buf({ kind = 'review', status = 'draft' })
+  local draft, draft_meta = with_artifact_buf { kind = 'review', status = 'draft' }
   fn.attach_artifact_commands(draft, draft_meta)
   assert(buf_has_command(draft, 'OpenCodeArtifactFeedback'), 'feedback attached on draft review')
   eq(buf_has_command(draft, 'OpenCodeArtifactMarkRead'), false, 'no mark-read on a draft review')
   eq(buf_has_keymap(draft, '<leader>ay'), false, 'no mark-read keymap on a draft review')
   vim.api.nvim_buf_delete(draft, { force = true })
 
-  local published, published_meta = with_artifact_buf({ artifact_id = 'art_review02', kind = 'review', status = 'published' })
+  local published, published_meta = with_artifact_buf { artifact_id = 'art_review02', kind = 'review', status = 'published' }
   fn.attach_artifact_commands(published, published_meta)
   assert(buf_has_command(published, 'OpenCodeArtifactMarkRead'), 'mark-read attached on a published review')
   assert(buf_has_keymap(published, '<leader>ay'), 'mark-read keymap attached on a published review')
@@ -280,7 +290,7 @@ test('mark_read guards drafts for reviews: a draft review sends no mark_read RPC
     captured[#captured + 1] = argv
     on_exit { code = 0, stdout = '{}' }
   end
-  local buf, meta = with_artifact_buf({ kind = 'review', status = 'draft' })
+  local buf, meta = with_artifact_buf { kind = 'review', status = 'draft' }
   fn.mark_read(buf)
   eq(#captured, 0, 'draft review cannot be marked read; no RPC is sent')
   vim.api.nvim_buf_delete(buf, { force = true })
@@ -295,22 +305,35 @@ test('feedback on a published review sends an explicit owner recipient', functio
     selected = items
     cb(items[1])
   end
-  NVBuffers = { delete_buf = function(_, _, cb) cb(true) end }
+  NVBuffers = {
+    delete_buf = function(_, _, cb)
+      cb(true)
+    end,
+  }
   M.transport = function(argv, on_exit)
     captured[#captured + 1] = argv
-    local method = argv[4]:match('/personal%.artifacts/([^?]+)')
+    local method = argv[4]:match '/personal%.artifacts/([^?]+)'
     if method == 'get' then
       on_exit { code = 0, stdout = vim.json.encode { output = { artifact = { title = 'Review', kind = 'review', status = 'published' } } } }
     elseif method == 'mark_read' then
-      on_exit { code = 0, stdout = vim.json.encode { output = { requestID = 'req_mark_review', kind = 'read', deduplicated = false, artifact = { status = 'read' } } } }
+      on_exit {
+        code = 0,
+        stdout = vim.json.encode { output = { requestID = 'req_mark_review', kind = 'read', deduplicated = false, artifact = { status = 'read' } } },
+      }
     else
       on_exit { code = 0, stdout = '{}' }
     end
   end
-  local buf, meta = with_artifact_buf({ kind = 'review', status = 'published' })
-  vim.schedule(function() fn.mark_read(buf) end)
-  wait_for(function() return #captured >= 2 end)
-  vim.wait(200, function() return #captured >= 2 end)
+  local buf, meta = with_artifact_buf { kind = 'review', status = 'published' }
+  vim.schedule(function()
+    fn.mark_read(buf)
+  end)
+  wait_for(function()
+    return #captured >= 2
+  end)
+  vim.wait(200, function()
+    return #captured >= 2
+  end)
   eq(selected[1], 'Mark this review read', 'the confirm label is the review mark-read label')
   vim.api.nvim_buf_delete(buf, { force = true })
   vim.ui.select = orig_select
@@ -327,12 +350,16 @@ test('feedback on a published review sends an explicit owner recipient', functio
   vim.ui.input = function(_opts, cb)
     cb 'About the review?'
   end
-  local buf2, meta2 = with_artifact_buf({ artifact_id = 'art_review03', kind = 'review', status = 'published' })
+  local buf2, meta2 = with_artifact_buf { artifact_id = 'art_review03', kind = 'review', status = 'published' }
   vim.schedule(function()
     fn.feedback(buf2)
   end)
-  wait_for(function() return #captured_fb >= 1 end)
-  vim.wait(200, function() return #captured_fb >= 1 end)
+  wait_for(function()
+    return #captured_fb >= 1
+  end)
+  vim.wait(200, function()
+    return #captured_fb >= 1
+  end)
   local decoded = vim.json.decode(captured_fb[1][6])
   eq(decoded.input.artifactID, meta2.artifact_id, 'review artifact id passed')
   eq(decoded.input.recipient, 'owner', 'review feedback explicitly targets the owner')
@@ -346,8 +373,16 @@ test('show_picker resolves the session label module instead of the session param
   local picker_opts
   local old_snacks = package.loaded.snacks
   local old_layout = NVSPickerHorizontalLayout
-  package.loaded.snacks = { picker = function(opts) picker_opts = opts end }
-  NVSPickerHorizontalLayout = { build = function() return {} end }
+  package.loaded.snacks = {
+    picker = function(opts)
+      picker_opts = opts
+    end,
+  }
+  NVSPickerHorizontalLayout = {
+    build = function()
+      return {}
+    end,
+  }
 
   local ok, err = pcall(fn.show_picker, {}, 'all', { id = 'ses_test123456', title = 'Test session' })
   package.loaded.snacks = old_snacks
@@ -357,11 +392,15 @@ test('show_picker resolves the session label module instead of the session param
   -- The title carries the filters; the session label moved to the preview.
   eq(picker_opts.title, 'Artifacts · all kinds · unread', 'title shows the filters')
   local keys = picker_opts.win.input.keys
-  eq(keys['<M-p>'][1] .. keys['<M-e>'][1] .. keys['<M-r>'][1] .. keys['<M-g>'][1], 'opencode_plansopencode_evidenceopencode_reviewsopencode_grep', 'filter and grep keys')
+  eq(
+    keys['<M-p>'][1] .. keys['<M-e>'][1] .. keys['<M-r>'][1] .. keys['<M-g>'][1],
+    'opencode_plansopencode_evidenceopencode_reviewsopencode_grep',
+    'filter and grep keys'
+  )
 end)
 
 test('picker_items carries the primary author label and item_format renders it instead of the owner session', function()
-  local items = fn.picker_items({
+  local items = fn.picker_items {
     {
       id = 'art_picker1',
       title = 'Shared plan',
@@ -375,17 +414,22 @@ test('picker_items carries the primary author label and item_format renders it i
       createdAt = '2026-09-16T00:00:00.000Z',
       updatedAt = '2026-09-16T00:00:00.000Z',
     },
-  })
+  }
   eq(items[1].primary_author, 'Planner', 'picker item carries the primary author label')
   eq(items[1].owner, 'ses_planner00000000000000000', 'feedback-routing metadata stays in the picker item')
   local rendered = fn.item_format(items[1])
-  local flat = vim.iter(rendered):map(function(part) return part[1] end):totable()
-  assert(table.concat(flat, ''):match('Planner'), 'row provenance renders the primary author label')
-  assert(not table.concat(flat, ''):match('ses_planner'), 'row provenance never renders the owner session id')
+  local flat = vim
+    .iter(rendered)
+    :map(function(part)
+      return part[1]
+    end)
+    :totable()
+  assert(table.concat(flat, ''):match 'Planner', 'row provenance renders the primary author label')
+  assert(not table.concat(flat, ''):match 'ses_planner', 'row provenance never renders the owner session id')
 end)
 
 test('plan buffers expose feedback only', function()
-  local buf, meta = with_artifact_buf({ kind = 'plan', status = 'draft' })
+  local buf, meta = with_artifact_buf { kind = 'plan', status = 'draft' }
   fn.attach_artifact_commands(buf, meta)
   assert(buf_has_command(buf, 'OpenCodeArtifactFeedback'), 'feedback attached on a plan')
   eq(buf_has_command(buf, 'OpenCodeArtifactMarkRead'), false, 'no mark-read on a plan')
@@ -400,7 +444,7 @@ test('mark_read guards drafts: a draft evidence sends no mark_read RPC', functio
     captured[#captured + 1] = argv
     on_exit { code = 0, stdout = '{}' }
   end
-  local buf, meta = with_artifact_buf({ kind = 'evidence', status = 'draft' })
+  local buf, meta = with_artifact_buf { kind = 'evidence', status = 'draft' }
   fn.mark_read(buf)
   eq(#captured, 0, 'draft evidence cannot be marked read; no RPC is sent')
   vim.api.nvim_buf_delete(buf, { force = true })
@@ -417,12 +461,16 @@ test('feedback sends an explicit owner recipient from the Neovim UI', function()
   vim.ui.input = function(_opts, cb)
     cb 'Is this complete?'
   end
-  local buf, meta = with_artifact_buf({ kind = 'plan', status = 'draft', finalized = true })
+  local buf, meta = with_artifact_buf { kind = 'plan', status = 'draft', finalized = true }
   vim.schedule(function()
     fn.feedback(buf)
   end)
-  wait_for(function() return #captured >= 1 end)
-  vim.wait(200, function() return #captured >= 1 end)
+  wait_for(function()
+    return #captured >= 1
+  end)
+  vim.wait(200, function()
+    return #captured >= 1
+  end)
 
   eq(#captured, 1, 'one feedback RPC call')
   local decoded = vim.json.decode(captured[1][6])
@@ -462,7 +510,7 @@ test('on_file_changed refreshes metadata and re-attaches mark read', function()
 
   local get_calls = 0
   M.transport = function(argv, on_exit)
-    local method = argv[4]:match('/personal%.artifacts/([^?]+)')
+    local method = argv[4]:match '/personal%.artifacts/([^?]+)'
     if method == 'get' then
       get_calls = get_calls + 1
       on_exit {

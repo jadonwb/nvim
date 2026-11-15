@@ -43,19 +43,12 @@ end
 
 local function setup()
   local ui2 = require 'vim._core.ui2'
-  -- 0.13 moved the message timeout and the cmdline's maximum height from
-  -- ui2's config to 'messagesopt' (the old keys are errors there), and the
-  -- default target from `target` to `targets.default`. 0.12 knows only the
-  -- old keys; `targets.default` is harmless there.
-  local nvim_013 = vim.fn.has 'nvim-0.13' == 1
-  if nvim_013 then
-    vim.opt.messagesopt:append { 'timeout:4000', 'maxheight:50' }
-  end
+  -- Messages stay 4 s; the expanded cmdline takes at most half the screen.
+  NVCompat.messagesopt { 'timeout:4000', 'maxheight:50' }
   ui2.enable {
     msg = {
       -- With 'cmdheight' 0 the cmd target draws over the statusline; plain
       -- messages go to the corner popup instead.
-      target = 'msg',
       targets = {
         default = 'msg',
         echo = 'msg',
@@ -85,9 +78,8 @@ local function setup()
         empty = 'msg',
         [''] = 'msg',
       },
-      cmd = not nvim_013 and { height = 0.5 } or nil,
       dialog = { height = 0.5 },
-      msg = { height = 0.3, timeout = not nvim_013 and 4000 or nil },
+      msg = { height = 0.3 },
       pager = { height = 0.5 },
     },
   }
@@ -170,7 +162,7 @@ local function setup()
           vim.wo[win].winhighlight = 'Normal:NvRaised,FloatBorder:NvRaisedBorder'
           local ok_h, th = pcall(vim.api.nvim_win_text_height, win, {})
           if ok_h then
-            pcall(vim.api.nvim_win_set_height, win, math.min(th.all, math.floor(vim.o.lines * 0.3)))
+            pcall(vim.api.nvim_win_resize, win, -1, math.min(th.all, math.floor(vim.o.lines * 0.3)), {})
           end
         end
       end

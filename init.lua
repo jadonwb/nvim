@@ -3,6 +3,10 @@
 -- references, dialogs take over vim.ui.input before any plugin can capture
 -- it, editor brings the session and panel registry, ui2 patches the message
 -- layer, and lazy.nvim starts last.
+-- Neovim 0.12 support: polyfills for the 0.13 APIs the rest of the config
+-- uses. First, so everything after it is written for 0.13 only.
+require 'core.compat'
+
 require 'config.options'
 require 'config.autocmds'
 

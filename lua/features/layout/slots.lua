@@ -180,6 +180,9 @@ local function register(name, win)
     pcall(api.nvim_buf_delete, inherited, { force = true })
   end
   vim.w[win].nv_slot = name
+  -- `:only`, `<C-w>o` and plugins that clear the tab leave panels standing;
+  -- this module closes them by targeting the window.
+  NVCompat.pin(win)
   decorate(win)
   local remembered = NVSlots.memory().providers[name]
   tab_state().slots[name] = {
@@ -504,17 +507,20 @@ function NVSlots.enforce()
         vim.wo[win].winfixheight = false
       end
     end
-    -- Widths first (columns), then heights top to bottom.
+    -- Widths first (columns), then heights top to bottom. Each slot keeps
+    -- the screen edge it sits on, so a resize trades space with the content
+    -- window, not with the slot on the far side.
     for _, name in ipairs(NVSlots.order) do
       local g, win = geo[name], existing(name)
       if g and win and g.width then
-        pcall(api.nvim_win_set_width, win, g.width)
+        pcall(api.nvim_win_resize, win, g.width, -1, { anchor = name == 'left' and 'left' or 'right' })
       end
     end
     for _, name in ipairs(NVSlots.order) do
       local g, win = geo[name], existing(name)
       if g and win and g.height then
-        pcall(api.nvim_win_set_height, win, g.height)
+        local bottom = name == 'bottom' or name == 'right_bottom'
+        pcall(api.nvim_win_resize, win, -1, g.height, { anchor = bottom and 'bottom' or 'top' })
       end
     end
     for _, name in ipairs(NVSlots.order) do
@@ -1013,7 +1019,7 @@ function NVSlots.setup()
       if applying > 0 or NVSlots.restoring or exiting then
         return
       end
-      local win = tonumber(ev.match)
+      local win = ev.win
       if win == tab_state().content then
         -- Remembered so repair can show it again in a new content window.
         tab_state().last_buf = ev.buf

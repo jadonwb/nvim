@@ -202,6 +202,19 @@ add('complete skill=' .. tostring(items[1] and items[1].textEdit.newText == '$pl
 items = L.complete('/re', 3, 0)
 add('complete command=' .. tostring(items[1] and items[1].textEdit.newText == '/review '))
 add('no command mid-line=' .. #L.complete('x /re', 5, 0))
+-- `@` files: the first listing runs rg without blocking; the answer arrives
+-- when it finishes.
+local answered
+vim.async.run(function()
+  answered = L.complete('@' .. probe_rel, #probe_rel + 1, 0)
+end)
+local waited = answered == nil
+vim.wait(3000, function() return answered ~= nil end)
+local listed = false
+for _, it in ipairs(answered or {}) do
+  listed = listed or it.textEdit.newText == '@' .. probe_rel .. ' '
+end
+add('file completion non-blocking=' .. tostring(waited) .. ' listed=' .. tostring(listed))
 add('file score=' .. tostring(L.file_score('a/opencode/transcript.lua', 'opencode/trans') == 0 and L.file_score('a/b.lua', 'opencode') == nil))
 local hover = L.hover('see @' .. probe_rel .. ':2', 6)
 add('hover=' .. tostring(hover ~= nil and hover:find('beta', 1, true) ~= nil))
@@ -280,6 +293,7 @@ check 'whole-file diagnostics not attached=true'
 check 'complete skill=true'
 check 'complete command=true'
 check 'no command mid-line=0'
+check 'file completion non-blocking=true listed=true'
 check 'file score=true'
 check 'hover=true'
 check 'when eq=true'

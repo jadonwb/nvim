@@ -3,26 +3,14 @@
 -- Kept deliberately small: each entry has a visible effect. Anything that only
 -- made LazyVim's own plugins behave is gone with LazyVim.
 
--- Reload files changed on disk when focus returns to Neovim. The buffer-level
--- checktime in editor/buffers.lua covers the editing buffer; this covers the
--- rest after a terminal command or a window switch.
-vim.api.nvim_create_autocmd({ 'FocusGained', 'TermClose', 'TermLeave' }, {
-  group = vim.api.nvim_create_augroup('NV checktime', { clear = true }),
-  callback = function()
-    if vim.o.buftype ~= 'nofile' then
-      vim.cmd 'checktime'
-    end
-  end,
-})
+-- Files changed on disk reload by themselves: 'autoread' watches them
+-- (Neovim 0.13), so there is no checktime autocmd here.
 
-vim.api.nvim_create_autocmd('TextYankPost', {
+-- Yanked and put text flash briefly.
+vim.api.nvim_create_autocmd(NVCompat.events { 'TextYankPost', 'TextPutPost' }, {
   group = vim.api.nvim_create_augroup('NV highlight_yank', { clear = true }),
   callback = function()
-    if vim.fn.has 'nvim-0.13' == 1 then
-      vim.hl.hl_op()
-    else
-      (vim.hl or vim.highlight).on_yank()
-    end
+    vim.hl.hl_op()
   end,
 })
 

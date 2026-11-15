@@ -155,27 +155,14 @@ local function review(only, done)
       report(err)
     end
   end
-  local function step(index)
-    local item = items[index]
-    if not item then
-      apply()
-      return
-    end
-    if not vim.api.nvim_buf_is_valid(item.buf) then
-      abort 'Buffer changed during review'
-      return
-    end
-    local shown, show_error = pcall(show_buffer, item.buf)
-    if not shown then
-      abort(show_error)
-      return
-    end
+  --- Ask about one buffer: its decision, or nil when the review is cancelled.
+  local function decide(index, item)
     local icon, icon_hl
     local ok, MiniIcons = pcall(require, 'mini.icons')
     if ok then
       icon, icon_hl = MiniIcons.get('file', item.name)
     end
-    NVDialogs.select({
+    local choice = vim.async.await(2, NVDialogs.select, {
       title = #items > 1 and ('Unsaved changes  %d/%d'):format(index, #items) or 'Unsaved changes',
       title_icon = '\u{f0193}',
       message = item.name == '' and '[No Name]' or vim.fn.fnamemodify(item.name, ':~:.'),
@@ -185,30 +172,42 @@ local function review(only, done)
       shortcuts = { w = 'Write', d = 'Discard', c = 'Cancel' },
       initial_index = 1,
       min_width = 40,
-    }, function(choice)
-      if choice == 'Write' then
-        if item.name == '' then
-          NVDialogs.input({ prompt = 'Save As' }, function(filename)
-            if not filename or filename == '' then
-              abort()
-              return
-            end
-            decisions[#decisions + 1] = { buf = item.buf, action = 'write', filename = filename }
-            step(index + 1)
-          end)
-        else
-          decisions[#decisions + 1] = { buf = item.buf, action = 'write' }
-          step(index + 1)
-        end
-      elseif choice == 'Discard' then
-        decisions[#decisions + 1] = { buf = item.buf, action = 'discard' }
-        step(index + 1)
-      else
-        abort()
-      end
-    end)
+    })
+    if choice == 'Discard' then
+      return { buf = item.buf, action = 'discard' }
+    elseif choice ~= 'Write' then
+      return nil
+    elseif item.name ~= '' then
+      return { buf = item.buf, action = 'write' }
+    end
+    local filename = vim.async.await(2, NVDialogs.input, { prompt = 'Save As' })
+    if not filename or filename == '' then
+      return nil
+    end
+    return { buf = item.buf, action = 'write', filename = filename }
   end
-  step(1)
+
+  -- One question per modified buffer, in order; nothing is written until all
+  -- are answered. A failure anywhere ends the review without changes.
+  vim.async.run(function()
+    local ok, err = pcall(function()
+      for index, item in ipairs(items) do
+        if not vim.api.nvim_buf_is_valid(item.buf) then
+          return abort 'Buffer changed during review'
+        end
+        show_buffer(item.buf)
+        local decision = decide(index, item)
+        if not decision then
+          return abort()
+        end
+        decisions[#decisions + 1] = decision
+      end
+      apply()
+    end)
+    if not ok then
+      abort(err)
+    end
+  end)
 end
 
 function NVQuit.save_and_quit()
@@ -352,10 +351,8 @@ function NVQuit.restart()
     -- Explicitly write the current state even when workspace sessions are off.
     local file = NVSession.save_restart()
     NVEnv.restarting = true
-    -- 0.13's plain :restart also saves and restores a native session; the
-    -- snapshot above is the whole state, so use the old behaviour (`!`).
-    local cmd = vim.fn.has 'nvim-0.13' == 1 and 'restart!' or 'restart'
-    local command = cmd .. ' lua require("editor.session").restore_restart(' .. string.format('%q', file) .. ')'
+    -- `restart!`: no native session; the snapshot above is the whole state.
+    local command = NVCompat.restart .. ' lua require("editor.session").restore_restart(' .. string.format('%q', file) .. ')'
     local ok, err = pcall(vim.cmd, command)
     if not ok then
       NVEnv.restarting = false
