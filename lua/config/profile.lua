@@ -27,13 +27,15 @@ M.is_workspace = M.kind == 'workspace'
 -- it, and a difftool launch still has to report what went wrong.
 -- `format` stays on where a file is edited and saved: a host's editor (the
 -- OpenCode prompt, yazi) and a one-off launch format markdown with prettier
--- like a workspace does.
+-- like a workspace does. `markdown` stays on for the same buffers: without the
+-- renderer, treesitter hides fence lines with `conceal_lines`, which removes
+-- the line from the screen and makes the cursor skip over it.
 local allowed = {
   difftool = { ui = true },
   mergetool = { ui = true },
   pager = { ui = true },
-  transient = { ui = true, format = true },
-  embedded = { ui = true, format = true },
+  transient = { ui = true, format = true, markdown = true },
+  embedded = { ui = true, format = true, markdown = true },
 }
 
 ---@param feature string
