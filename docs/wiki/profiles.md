@@ -1,7 +1,10 @@
 # Launch profiles
 
-`config/profile.lua` classifies the session once, from the real invocation
-(`NVEnv.startup`), and plugin specs ask whether their feature is wanted.
+`config/profile.lua` classifies the session from the real invocation
+(`NVEnv.startup`), and plugin specs ask whether their feature is wanted. The
+classification is read on every use, not cached: a restart restores the original
+invocation after startup, and the restored launch decides panels and plugins
+from then on.
 
 | Profile | Trigger | What loads |
 | --- | --- | --- |
@@ -16,9 +19,10 @@
 still report errors inside a difftool.
 
 The layout opens at `VimEnter` for profiles that want it (`workspace`); a
-difftool or pager does not get panels.
+difftool, pager, transient or embedded launch does not get panels, though the
+last two get the empty inset column (`docs/wiki/layout.md`).
 
 ```lua
 require('config.profile').wants 'lsp'   -- true only in a workspace
-require('config.profile').kind          -- 'workspace' | 'difftool' | …
+require('config.profile').kind()        -- 'workspace' | 'difftool' | …
 ```

@@ -14,12 +14,22 @@ local M = {}
 if not (NVEnv and NVEnv.startup) then
   require 'core.environment'
 end
-local startup = NVEnv.startup
 
----@type 'workspace'|'difftool'|'mergetool'|'pager'|'transient'|'embedded'
-M.kind = startup.purpose or (startup.host and 'embedded') or (startup.transient and 'transient') or 'workspace'
+--- The classification, read from the live startup record on every use. A
+--- restart replaces that record when it restores the original invocation,
+--- which happens after this module and the plugins have loaded: a value cached
+--- here would leave a restarted transient or embedded session a workspace, and
+--- the layout would open panels it had no business opening.
+---@return 'workspace'|'difftool'|'mergetool'|'pager'|'transient'|'embedded'
+function M.kind()
+  local startup = NVEnv.startup
+  return startup.purpose or (startup.host and 'embedded') or (startup.transient and 'transient') or 'workspace'
+end
 
-M.is_workspace = M.kind == 'workspace'
+---@return boolean
+function M.is_workspace()
+  return M.kind() == 'workspace'
+end
 
 --- Features that only a workspace launch needs. Everything listed here is off
 --- for every other profile unless it is added to `allowed` below.
@@ -43,16 +53,17 @@ local allowed = {
 ---@param feature string
 ---@return boolean
 function M.wants(feature)
-  if M.is_workspace then
+  if M.is_workspace() then
     return true
   end
-  local list = allowed[M.kind]
+  local list = allowed[M.kind()]
   return list ~= nil and list[feature] == true
 end
 
 ---@return string
 function M.describe()
-  return ('%s (purpose=%s host=%s transient=%s)'):format(M.kind, tostring(startup.purpose), tostring(startup.host), tostring(startup.transient))
+  local startup = NVEnv.startup
+  return ('%s (purpose=%s host=%s transient=%s)'):format(M.kind(), tostring(startup.purpose), tostring(startup.host), tostring(startup.transient))
 end
 
 return M

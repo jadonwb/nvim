@@ -203,6 +203,10 @@ end
 NVEnv.startup = capture_startup()
 NVEnv.workspace_activated = false
 NVEnv.restoring = false
+-- True while a restart still has to restore the original invocation. The
+-- startup record of that process describes the restart command, not the session
+-- being resumed, so launch-time decisions (the slot layout) wait for it.
+NVEnv.restart_pending = NVEnv.startup.restarted
 NVEnv.completed = {}
 local target_buffers = {}
 
@@ -219,6 +223,7 @@ function NVEnv.restore_context(context)
   NVEnv.startup = startup
   NVEnv.completed = vim.deepcopy(context.completed or {})
   NVEnv.workspace_activated = context.workspace_activated == true
+  NVEnv.restart_pending = false
   target_buffers = {}
 end
 

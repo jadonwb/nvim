@@ -44,6 +44,11 @@ is remembered: hiding it in a prompt never hides the explorer in a workspace
 session, and the workspace's remembered explorer preference does not follow into
 the prompt.
 
+A restart (`<A-r>`) starts a process that looks like a workspace and then
+restores the original invocation. The profile is read from that restored record,
+so the inset — and the layout key — survive a restart; the layout is rebuilt by
+the restore itself, never by the placeholder classification.
+
 ## Keymaps
 
 Leader groups for the editor's own UI live in `features/layout/keymaps.lua`;

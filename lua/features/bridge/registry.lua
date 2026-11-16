@@ -32,7 +32,7 @@ function M.write()
     return
   end
 
-  local profile = require('config.profile').kind or 'unknown'
+  local profile = require('config.profile').kind() or 'unknown'
   -- The OpenCode sessions this editor connected to (its prompt target and
   -- the transcripts it shows). The agent's `nvim` tool exists only in those
   -- sessions and drives only this editor from them (nvim-bridge.ts).

@@ -350,6 +350,9 @@ function M.restore_restart(file)
     load_snapshot(file, true)
   end, debug.traceback)
   if not ok then
+    -- The process keeps the placeholder (workspace-like) launch: let the layout
+    -- behave like one instead of waiting for a restore that will not happen.
+    NVEnv.restart_pending = false
     vim.notify('Restart restore failed (' .. file .. '): ' .. tostring(err), vim.log.levels.ERROR)
     return false
   end

@@ -79,7 +79,7 @@ return {
         function()
           local version = vim.version()
           local branch = vim.fn.systemlist({ 'git', 'branch', '--show-current' })[1]
-          local profile = require('config.profile').kind or 'workspace'
+          local profile = require('config.profile').kind() or 'workspace'
           return {
             align = 'center',
             padding = 0,

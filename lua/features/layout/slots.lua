@@ -100,18 +100,23 @@ function NVSlots.provider_default(name)
 end
 
 --- The provider a slot gets when it opens: the remembered choice, else the
---- default. The inset column ignores memory so a workspace session's explorer
---- preference does not follow it into a prompt.
+--- default. The inset column ignores memory both ways: a workspace's explorer
+--- preference does not follow it into a prompt, and a remembered `empty` left
+--- behind by an inset session does not leave a workspace with a blank panel.
 ---@param name string
 ---@param mem? table NVSlots.memory()
 ---@return string|nil
 function NVSlots.provider_for(name, mem)
   mem = mem or NVSlots.memory()
-  if name == 'left' and gutter_launch() then
-    return NVSlots.provider_default(name)
+  local default = NVSlots.provider_default(name)
+  if name == 'left' and default == 'empty' then
+    return default
   end
   local remembered = mem.providers[name]
-  return (remembered and NVSlots.providers[remembered]) and remembered or NVSlots.provider_default(name)
+  if name == 'left' and remembered == 'empty' then
+    remembered = nil
+  end
+  return (remembered and NVSlots.providers[remembered]) and remembered or default
 end
 
 ---@param win WinID?
@@ -1130,12 +1135,23 @@ function NVSlots.setup()
   -- screen, the first file opened in this tab brings the panels in. A launch
   -- with no layout instead opens its inset column immediately, so the text is
   -- off the screen edge before anything is opened.
-  if require('config.profile').wants 'layout' then
+  --
+  -- Both decisions are made again at event time: a restart restores the
+  -- original invocation after startup, so the classification this process
+  -- began with can be the wrong one by the time a file is opened.
+  local profile = require 'config.profile'
+  local layout_launch, gutter_launch_now = profile.wants 'layout', profile.wants 'gutter'
+  if layout_launch or gutter_launch_now then
     vim.api.nvim_create_autocmd('BufWinEnter', {
       group = group,
       callback = function(ev)
         local tab = tab_state()
         if tab.focus or NVSlots.is_applied() or NVSlots.restoring or not is_real_file(ev.buf) or vim.t.nv_compare then
+          return
+        end
+        -- A restart restores the original launch (and its layout) itself; until
+        -- then this process looks like a workspace and must not build panels.
+        if NVEnv.restart_pending then
           return
         end
         if NVTabs and NVTabs.is_temporary and NVTabs.is_temporary(api.nvim_get_current_tabpage()) then
@@ -1153,7 +1169,8 @@ function NVSlots.setup()
         end)
       end,
     })
-  elseif require('config.profile').wants 'gutter' then
+  end
+  if gutter_launch_now and not layout_launch then
     -- No layout, but the text should not start at the screen edge: open the
     -- empty left column straight away. Scheduled rather than on VimEnter,
     -- because plugins can load from that event, after it has already fired.

@@ -26,9 +26,10 @@ printf 'one\n' >"$repo/a.txt"
 printf 'one\n' >"$repo/b.txt"
 cd "$repo" || exit 1
 # The OpenCode panel waits for a session unless shown explicitly; these tests
-# are about the layout, so it is shown for this directory.
+# are about the layout, so it is shown for this directory. `left` remembers
+# `empty`, the provider of an inset column: a workspace must not open blank.
 mkdir -p "$XDG_STATE_HOME/nvim"
-printf '{"%s":{"closed":{},"shown":{"right_mid":true},"providers":{}}}' "$repo" >"$XDG_STATE_HOME/nvim/nv-layout.json"
+printf '{"%s":{"closed":{},"shown":{"right_mid":true},"providers":{"left":"empty"}}}' "$repo" >"$XDG_STATE_HOME/nvim/nv-layout.json"
 
 probe=$(cat <<'LUA'
 vim.o.columns, vim.o.lines = 200, 50
@@ -167,6 +168,10 @@ add('gutter returns=' .. tostring(NVSlots.is_open 'left'))
 NVSlots.show 'right_top' wait(300)
 add('gutter panel=' .. tostring(NVSlots.is_open 'right_top' and count() == 2))
 
+NVSlots.toggle() wait(300)
+NVSlots.toggle() wait(300)
+add('gutter reset=' .. tostring(NVSlots.is_applied()) .. ' slots=' .. count())
+
 pcall(vim.cmd, 'silent! messages clear')
 io.write('\n' .. table.concat(out, '\n'))
 LUA
@@ -181,5 +186,45 @@ check 'gutter back=true slots=1'
 check 'gutter hidden=true remembered=false'
 check 'gutter returns=true'
 check 'gutter panel=true'
+check 'gutter reset=true slots=1'
+
+# ── a restart restores the launch ──────────────────────────────────────────
+# A restart starts a fresh process, which looks like a workspace, and then
+# restores the original invocation. The profile and the layout must follow the
+# restored launch, or the layout key opens workspace panels in a prompt.
+
+restart_probe=$(cat <<'LUA'
+vim.o.columns, vim.o.lines = 200, 50
+local out = {}
+local function add(s) out[#out + 1] = s end
+local function wait(ms) vim.wait(ms or 200) end
+
+vim.cmd 'edit a.txt' wait(600)
+add('restart before=' .. require('config.profile').kind())
+
+local ctx = { startup = vim.deepcopy(NVEnv.startup), completed = {}, workspace_activated = false }
+ctx.startup.purpose, ctx.startup.host, ctx.startup.transient = nil, nil, true
+NVEnv.restore_context(ctx) wait(300)
+local profile = require 'config.profile'
+add('restart after=' .. profile.kind() .. ' layout=' .. tostring(profile.wants 'layout') .. ' gutter=' .. tostring(profile.wants 'gutter'))
+
+-- The restore path rebuilds the layout for the restored launch.
+NVSlots.open() wait(500)
+add('restart layout=' .. table.concat(vim.tbl_keys(NVSlots.status()), ',') .. ' provider=' .. tostring(NVSlots.status().left and NVSlots.status().left.provider))
+NVSlots.toggle() wait(300)
+NVSlots.toggle() wait(300)
+add('restart toggle=' .. table.concat(vim.tbl_keys(NVSlots.status()), ',') .. ' applied=' .. tostring(NVSlots.is_applied()))
+
+pcall(vim.cmd, 'silent! messages clear')
+io.write('\n' .. table.concat(out, '\n'))
+LUA
+)
+
+got=$(XDG_STATE_HOME="$tmp/restart-state" nvim --headless "+lua $restart_probe" +qa 2>&1)
+printf '%s\n' "$got"
+check 'restart before=workspace'
+check 'restart after=transient layout=false gutter=true'
+check 'restart layout=left provider=empty'
+check 'restart toggle=left applied=true'
 
 [ "$fail" = 0 ] && echo 'layout: pass' || { echo 'layout: FAIL'; exit 1; }
