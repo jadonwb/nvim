@@ -31,6 +31,19 @@ The workspace is a fixed grid of slots around the editing area:
   step aside; they return when the content is one column again. Help and man
   pages open in the content window (`q` goes back).
 
+## Inset in transient and embedded launches
+
+A launch without the layout (a transient pane, the OpenCode prompt, a host's
+editor) still opens `left` — empty, at the explorer's width — so the text does
+not start at the screen edge. `<M-i>` / `<leader>li` hides and shows it, the
+same as focus mode; `<leader>le` / `<leader>fe` do the same for this column.
+Any other panel can be opened on demand and behaves as usual.
+
+`gutter` in `config/profile.lua` is what enables this. Nothing about the column
+is remembered: hiding it in a prompt never hides the explorer in a workspace
+session, and the workspace's remembered explorer preference does not follow into
+the prompt.
+
 ## Keymaps
 
 Leader groups for the editor's own UI live in `features/layout/keymaps.lua`;
@@ -60,6 +73,7 @@ Leader groups for the editor's own UI live in `features/layout/keymaps.lua`;
 | Provider | What it shows |
 | --- | --- |
 | `explorer` | nvim-tree; files open in the content window, `P` preview, `f` filter |
+| `empty` | nothing: the inset column in launches that have no layout |
 | `changes` | staged / changes / untracked with diff stats; `<CR>` opens |
 | `session` | the followed OpenCode session: title, model, effort, context meter with a red tick where OpenCode compacts (from `compaction.buffer` in `opencode.json[c]`), activity; tokens and charts are in the dashboard (`E`). Project and ahead/behind are in the statusline |
 | `lsp` | attached servers, live progress, diagnostic counts; the dashboard adds each server's command, settings and init options, code actions at the cursor, buffer keymaps, and diagnostics per file |

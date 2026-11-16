@@ -540,6 +540,15 @@ function M.prompt(win, name)
   return true
 end
 
+-- ── empty ──────────────────────────────────────────────────────────────────
+
+--- A panel with nothing in it. The window keeps the placeholder buffer it was
+--- opened with; launches without a layout show this in `left`, so the editor
+--- text sits off the screen edge (docs/wiki/layout.md).
+function M.empty()
+  return true
+end
+
 -- Registry keyed by provider name: any slot can show any provider
 -- (`NVSlots.set_provider(slot, provider)`).
 M.by_name = {
@@ -549,6 +558,7 @@ M.by_name = {
   lsp = M.lsp,
   prompt = M.prompt,
   quickfix = M.quickfix,
+  empty = M.empty,
   terminal = function(win, slot)
     return require('features.layout.terminals').provider(win, slot)
   end,

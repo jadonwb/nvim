@@ -29,13 +29,15 @@ M.is_workspace = M.kind == 'workspace'
 -- OpenCode prompt, yazi) and a one-off launch format markdown with prettier
 -- like a workspace does. `markdown` stays on for the same buffers: without the
 -- renderer, treesitter hides fence lines with `conceal_lines`, which removes
--- the line from the screen and makes the cursor skip over it.
+-- the line from the screen and makes the cursor skip over it. `gutter` gives
+-- these launches the empty left column (see docs/wiki/layout.md), so the text
+-- does not start at the screen edge.
 local allowed = {
   difftool = { ui = true },
   mergetool = { ui = true },
   pager = { ui = true },
-  transient = { ui = true, format = true, markdown = true },
-  embedded = { ui = true, format = true, markdown = true },
+  transient = { ui = true, format = true, markdown = true, gutter = true },
+  embedded = { ui = true, format = true, markdown = true, gutter = true },
 }
 
 ---@param feature string

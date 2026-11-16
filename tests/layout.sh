@@ -56,6 +56,7 @@ vim.cmd 'edit a.txt'
 wait(500)
 add('applied=' .. tostring(NVSlots.is_applied()) .. ' sides=' .. tostring(sides_open()) .. ' bottom=' .. tostring(NVSlots.is_open 'bottom'))
 add('left narrower=' .. tostring(NVSlots.status().left.width < vim.o.columns / 4))
+add('left provider=' .. tostring(NVSlots.status().left.provider))
 
 -- Sizes are stable across focus mode.
 local before = sizes()
@@ -120,6 +121,7 @@ fail=0
 check() { if ! grep -qx -- "$1" <<<"$got"; then printf 'FAIL: missing %s\n' "$1"; fail=1; fi; }
 check 'applied=true sides=true bottom=true'
 check 'left narrower=true'
+check 'left provider=explorer'
 check 'focus off=true'
 check 'toggle stable=true'
 check 'hidden kept=true remembered=true'
@@ -132,5 +134,52 @@ check 'help in content=true'
 check 'help back=true'
 check 'reset=true'
 check 'content rebuilt=true sides=true'
+
+# ── inset in launches without a layout ─────────────────────────────────────
+# A transient (and embedded) launch gets no panels: only the empty left
+# column, at the explorer's width, toggled like any other panel and never
+# remembered, so hiding it in a prompt cannot hide the explorer later.
+
+gutter_probe=$(cat <<'LUA'
+vim.o.columns, vim.o.lines = 200, 50
+local out = {}
+local function add(s) out[#out + 1] = s end
+local function wait(ms) vim.wait(ms or 200) end
+local function count() return vim.tbl_count(NVSlots.status()) end
+local function left() return NVSlots.status().left end
+local function content_x() return vim.api.nvim_win_get_position(NVSlots.content_win())[2] end
+
+vim.cmd 'edit a.txt' wait(600)
+add('gutter applied=' .. tostring(NVSlots.is_applied()) .. ' slots=' .. count() .. ' provider=' .. tostring(left() and left().provider))
+add('gutter width=' .. tostring(left() and left().width) .. ' content_x=' .. content_x())
+
+NVSlots.toggle() wait(300)
+add('gutter off=' .. tostring(not NVSlots.is_applied()) .. ' x=' .. content_x())
+NVSlots.toggle() wait(300)
+add('gutter back=' .. tostring(NVSlots.is_applied()) .. ' slots=' .. count())
+
+NVSlots.hide 'left' wait(200)
+local mem = NVSlots.memory()
+add('gutter hidden=' .. tostring(not NVSlots.is_open 'left') .. ' remembered=' .. tostring(mem.closed.left == true or mem.providers.left ~= nil))
+NVSlots.toggle() wait(300)
+add('gutter returns=' .. tostring(NVSlots.is_open 'left'))
+
+NVSlots.show 'right_top' wait(300)
+add('gutter panel=' .. tostring(NVSlots.is_open 'right_top' and count() == 2))
+
+pcall(vim.cmd, 'silent! messages clear')
+io.write('\n' .. table.concat(out, '\n'))
+LUA
+)
+
+got=$(NVIM_LAUNCH_MODE=transient XDG_STATE_HOME="$tmp/gutter-state" nvim --headless "+lua $gutter_probe" +qa 2>&1)
+printf '%s\n' "$got"
+check 'gutter applied=true slots=1 provider=empty'
+check 'gutter width=34 content_x=35'
+check 'gutter off=true x=0'
+check 'gutter back=true slots=1'
+check 'gutter hidden=true remembered=false'
+check 'gutter returns=true'
+check 'gutter panel=true'
 
 [ "$fail" = 0 ] && echo 'layout: pass' || { echo 'layout: FAIL'; exit 1; }

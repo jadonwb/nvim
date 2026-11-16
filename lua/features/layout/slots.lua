@@ -80,6 +80,40 @@ local function tab_state(tabid)
   return NVSlots._tabs[tabid]
 end
 
+--- A launch that gets no layout (a transient pane, the OpenCode prompt, a
+--- host's editor) still opens `left`, empty, at the explorer's width: the text
+--- does not start at the screen edge. Nothing about that column is remembered,
+--- so hiding it in a prompt never hides the explorer in a workspace session.
+local function gutter_launch()
+  local profile = require 'config.profile'
+  return profile.wants 'gutter' and not profile.wants 'layout'
+end
+
+--- The provider a slot shows when the user has not chosen one.
+---@param name string
+---@return string|nil
+function NVSlots.provider_default(name)
+  if name == 'left' and gutter_launch() then
+    return 'empty'
+  end
+  return NVSlots.defaults[name]
+end
+
+--- The provider a slot gets when it opens: the remembered choice, else the
+--- default. The inset column ignores memory so a workspace session's explorer
+--- preference does not follow it into a prompt.
+---@param name string
+---@param mem? table NVSlots.memory()
+---@return string|nil
+function NVSlots.provider_for(name, mem)
+  mem = mem or NVSlots.memory()
+  if name == 'left' and gutter_launch() then
+    return NVSlots.provider_default(name)
+  end
+  local remembered = mem.providers[name]
+  return (remembered and NVSlots.providers[remembered]) and remembered or NVSlots.provider_default(name)
+end
+
 ---@param win WinID?
 ---@return string|nil
 function NVSlots.slot_of_win(win)
@@ -184,11 +218,10 @@ local function register(name, win)
   -- this module closes them by targeting the window.
   NVCompat.pin(win)
   decorate(win)
-  local remembered = NVSlots.memory().providers[name]
   tab_state().slots[name] = {
     win = win,
     buf = buf,
-    provider = (remembered and NVSlots.providers[remembered]) and remembered or NVSlots.defaults[name],
+    provider = NVSlots.provider_for(name),
     owned = true,
   }
 end
@@ -289,10 +322,12 @@ end
 --- Hide a slot because the user asked to; remembered per project.
 ---@param name string
 function NVSlots.hide(name)
-  remember(function(entry)
-    entry.closed[name] = true
-    entry.shown[name] = nil
-  end)
+  if not (name == 'left' and gutter_launch()) then
+    remember(function(entry)
+      entry.closed[name] = true
+      entry.shown[name] = nil
+    end)
+  end
   NVSlots.clear_auto(name)
   close_window(name)
   NVSlots.enforce()
@@ -301,10 +336,12 @@ end
 --- Show a slot the user had hidden; remembered per project.
 ---@param name string
 function NVSlots.show(name)
-  remember(function(entry)
-    entry.closed[name] = nil
-    entry.shown[name] = true
-  end)
+  if not (name == 'left' and gutter_launch()) then
+    remember(function(entry)
+      entry.closed[name] = nil
+      entry.shown[name] = true
+    end)
+  end
   if not NVSlots.is_applied() then
     NVSlots.open()
     return
@@ -399,7 +436,7 @@ end
 ---@param mem? table NVSlots.memory()
 function NVSlots.idle_session_panel(name, mem)
   mem = mem or NVSlots.memory()
-  local provider = mem.providers[name] or NVSlots.defaults[name]
+  local provider = NVSlots.provider_for(name, mem)
   if provider ~= 'session' or mem.shown[name] then
     return false
   end
@@ -419,7 +456,7 @@ vim.api.nvim_create_autocmd('User', {
     local mem = NVSlots.memory()
     for _, name in ipairs(NVSlots.order) do
       if not mem.closed[name] and not NVSlots.win(name) and not NVSlots.idle_session_panel(name, mem) then
-        local provider = mem.providers[name] or NVSlots.defaults[name]
+        local provider = NVSlots.provider_for(name, mem)
         if provider == 'session' then
           local back = vim.api.nvim_get_current_win()
           NVSlots.ensure(name)
@@ -451,6 +488,10 @@ function NVSlots.open(only)
     for _, name in ipairs(only) do
       wanted[name] = true
     end
+  elseif gutter_launch() then
+    -- No panels in this launch: only the inset column (opening any other
+    -- panel explicitly still works and is remembered as usual).
+    wanted.left = true
   else
     local mem = NVSlots.memory()
     for _, name in ipairs(NVSlots.order) do
@@ -715,9 +756,9 @@ function NVSlots.set_provider(name, provider)
   end
   slot.provider = provider
   NVSlots.clear_auto(name)
-  if name ~= 'bottom' then
+  if name ~= 'bottom' and not (name == 'left' and gutter_launch()) then
     remember(function(entry)
-      entry.providers[name] = provider ~= NVSlots.defaults[name] and provider or nil
+      entry.providers[name] = provider ~= NVSlots.provider_default(name) and provider or nil
     end)
   end
   local ok, err = pcall(fn, slot.win, name)
@@ -1026,9 +1067,11 @@ function NVSlots.setup()
       end
       local name = NVSlots.slot_of_win(win)
       if name and win == api.nvim_get_current_win() then
-        remember(function(entry)
-          entry.closed[name] = true
-        end)
+        if not (name == 'left' and gutter_launch()) then
+          remember(function(entry)
+            entry.closed[name] = true
+          end)
+        end
         tab_state().slots[name] = nil
         vim.schedule(NVSlots.enforce)
         return
@@ -1084,7 +1127,9 @@ function NVSlots.setup()
   })
 
   -- The layout applies once real work starts: the dashboard stays full
-  -- screen, the first file opened in this tab brings the panels in.
+  -- screen, the first file opened in this tab brings the panels in. A launch
+  -- with no layout instead opens its inset column immediately, so the text is
+  -- off the screen edge before anything is opened.
   if require('config.profile').wants 'layout' then
     vim.api.nvim_create_autocmd('BufWinEnter', {
       group = group,
@@ -1108,6 +1153,21 @@ function NVSlots.setup()
         end)
       end,
     })
+  elseif require('config.profile').wants 'gutter' then
+    -- No layout, but the text should not start at the screen edge: open the
+    -- empty left column straight away. Scheduled rather than on VimEnter,
+    -- because plugins can load from that event, after it has already fired.
+    vim.schedule(function()
+      if NVSlots.is_applied() or vim.t.nv_compare then
+        return
+      end
+      local win = api.nvim_get_current_win()
+      if api.nvim_win_get_config(win).relative ~= '' then
+        return
+      end
+      tab_state().content = win
+      NVSlots.open()
+    end)
   end
 
   local room_pending = false
