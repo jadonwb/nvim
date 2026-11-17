@@ -74,17 +74,6 @@ NVGitsigns = {
         gs.blame_line { full = true }
       end, 'Blame line')
       map({ 'o', 'x' }, 'ih', gs.select_hunk, 'Hunk')
-      -- Without a language server, K on a hunk still opens the hover menu
-      -- (its hunk section); elsewhere it stays Vim's K. A server's own K
-      -- (features/lsp) replaces this when it attaches.
-      map('n', 'K', function()
-        local sections = require 'features.lsp.sections'
-        if sections.hunk() or sections.diagnostics() then
-          require('features.lsp.ui').show_at_cursor()
-        else
-          vim.cmd 'normal! K'
-        end
-      end, 'Hover (hunk / diagnostics)')
     end,
   },
 }

@@ -202,6 +202,36 @@ function NVSlots.decorate(win)
 end
 local decorate = NVSlots.decorate
 
+--- The editor's own window options, for a content window that may have
+--- inherited a slot's. `:split` copies window options from the window it splits
+--- from, so a content window created while a panel is current comes up with the
+--- panel's winhighlight, no number column, no sign column and a fixed size.
+--- That reads as "the main area turned into a panel", e.g. after nvim-tree
+--- deletes the file that was open and the layout rebuilds the content window.
+local EDITOR_WINDOW = {
+  number = true,
+  relativenumber = true,
+  signcolumn = 'yes',
+  foldcolumn = '0',
+  statuscolumn = '',
+  cursorline = true,
+  list = true,
+  wrap = false,
+  spell = false,
+}
+
+---@param win WinID
+function NVSlots.editor_window(win)
+  local wo = vim.wo[win]
+  wo.winhighlight = ''
+  wo.winbar = ''
+  wo.winfixwidth = false
+  wo.winfixheight = false
+  for name, value in pairs(EDITOR_WINDOW) do
+    wo[name] = value
+  end
+end
+
 ---@param name string
 ---@param win WinID
 local function register(name, win)
@@ -663,10 +693,13 @@ function NVSlots.repair()
         local managed = NVBuffers and NVBuffers.get_managed and NVBuffers.get_managed { sort_lastused = true } or {}
         buf = managed[1] and managed[1].bufnr or api.nvim_create_buf(true, false)
       end
+      -- The current window here is usually a slot (the explorer, when it
+      -- deleted the file), and the split inherits its window options.
       local content
       busy(function()
         content = api.nvim_open_win(buf, true, { split = 'left', win = -1 })
       end)
+      NVSlots.editor_window(content)
       tab.content = content
       tab.last_buf = nil
       local providers = {}
@@ -1050,6 +1083,11 @@ function NVSlots.setup()
   vim.api.nvim_create_autocmd('BufEnter', {
     group = group,
     callback = function(ev)
+      -- The module's own window changes create empty buffers; they must not
+      -- be tracked as the content window (repair sets it explicitly).
+      if applying > 0 then
+        return
+      end
       local win = api.nvim_get_current_win()
       if NVSlots.is_applied() and vim.bo[ev.buf].buftype == '' and is_content_candidate(win) then
         tab_state().content = win

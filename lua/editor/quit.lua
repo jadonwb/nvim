@@ -168,8 +168,8 @@ local function review(only, done)
       message = item.name == '' and '[No Name]' or vim.fn.fnamemodify(item.name, ':~:.'),
       icon = icon,
       icon_hl = icon_hl,
-      options = { 'Write', 'Discard', 'Cancel' },
-      shortcuts = { w = 'Write', d = 'Discard', c = 'Cancel' },
+      options = { 'Write', 'Discard' },
+      shortcuts = { w = 'Write', d = 'Discard' },
       initial_index = 1,
       min_width = 40,
     })

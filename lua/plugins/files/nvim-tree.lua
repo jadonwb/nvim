@@ -44,6 +44,36 @@ return {
       end, 'Toggle preview')
       map('f', api.live_filter.start, 'Filter')
       map('F', api.live_filter.clear, 'Clear filter')
+      -- Delete asks in the same button dialog as the unsaved-changes review.
+      -- nvim-tree's own confirmation is a y/N text input (vim.ui.input); turn
+      -- it off for this one call so it does not ask twice. Other entry points
+      -- (the <cmd>s, a visual selection) keep nvim-tree's prompt.
+      map('d', function()
+        local node = api.tree.get_node_under_cursor()
+        if not node then
+          return
+        end
+        NVDialogs.select({
+          title = ('Remove %s?'):format(node.name),
+          message = vim.fn.fnamemodify(node.absolute_path, ':~:.'),
+          options = { 'Remove', 'Cancel' },
+          shortcuts = { y = 'Remove', n = 'Cancel' },
+          initial_index = 2,
+          min_width = 40,
+        }, function(choice)
+          if choice ~= 'Remove' then
+            return
+          end
+          local confirm = require('nvim-tree.config').g.ui.confirm
+          local was = confirm.remove
+          confirm.remove = false
+          local ok, err = pcall(api.fs.remove, node)
+          confirm.remove = was
+          if not ok then
+            NVMessages.error('Delete failed: ' .. tostring(err))
+          end
+        end)
+      end, 'Delete')
       -- Splits and tabs from the tree would break the grid.
       for _, lhs in ipairs { '<C-v>', '<C-x>', '<C-t>', 'O', '<Tab>' } do
         pcall(vim.keymap.del, 'n', lhs, { buffer = buf })

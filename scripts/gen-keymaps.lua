@@ -10,6 +10,7 @@ vim.wait(1500, function()
 end)
 
 local groups = {
+  K = 'code',
   a = 'opencode',
   c = 'code',
   f = 'find',
@@ -108,10 +109,10 @@ local order = {
 -- Prose under a group's table.
 local after = {
   git = {
-    '`K` on a changed line adds a **hunk** section to the hover menu: adjacent',
-    'hunks show as one, `s` stages and `r` resets the group. Without a language',
-    "server, `K` opens the menu on a hunk or diagnostic and stays Vim's `K`",
-    'elsewhere.',
+    '`K` opens the hover menu at the cursor: hover, signature (inside a call),',
+    'diagnostics, the hunk under the line, and code actions. Adjacent hunks show',
+    'as one, `s` stages and `r` resets the group. `<leader>K` opens the help docs',
+    'for the word under the cursor.',
   },
   quickfix = {
     'The list fills only when asked and shows in the bottom panel; see',

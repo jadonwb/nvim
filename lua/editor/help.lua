@@ -52,6 +52,20 @@ end
 function NVHelp.setup()
   NVCompanionPanels.register(PANEL_NAME, NVHelp.ensure_hidden)
   NVClose.register(PANEL_NAME, NVHelp.ensure_hidden)
+
+  -- The docs for the word under the cursor. K is the hover menu, so the help
+  -- lookup lives one chord up instead of on Vim's 'keywordprg' fallback.
+  K.map { '<leader>K', 'Help for the word under the cursor', function()
+    local word = vim.fn.expand '<cword>'
+    if word == '' then
+      NVMessages.info 'No word under the cursor'
+      return
+    end
+    local ok, err = pcall(vim.cmd, 'help ' .. vim.fn.escape(word, ' |'))
+    if not ok then
+      NVMessages.warn(tostring(err))
+    end
+  end, mode = 'n' }
 end
 
 --- The doc window's top strip: page name, then the reading keys right-aligned

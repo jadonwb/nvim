@@ -68,9 +68,10 @@ the buffer it was opened from (the window is kept, the grid is untouched).
 
 ## Hover / signature / diagnostics popup
 
-`K` opens hover, `gK` signature help, `]d` diagnostics; one float at the cursor,
-single border, tab chips for the sections, no dim backdrop (a hover belongs to
-its line).
+`K` opens the hover menu — hover, signature (inside a call), diagnostics, the
+git hunk on the line, code actions — one float at the cursor, single border,
+tab chips for the sections, no dim backdrop (a hover belongs to its line).
+`<leader>K` opens the help docs for the word under the cursor.
 
 ## Preview (`<leader>up`)
 
@@ -137,7 +138,7 @@ centred (`NVPromptRect` in `features/ui/ui2.lua`), so a prompt never moves aroun
 | Dialog | Use | Keys |
 | --- | --- | --- |
 | `NVDialogs.input` | `vim.ui.input` (LSP rename, plugins), Save As, agent feedback (multiline) | `CR` submit (`M-CR` multiline); `Esc` to normal mode, `Esc` again cancels |
-| `NVDialogs.select` | unsaved changes (Write / Discard / Cancel) | each option's key chip, `j`/`k`, `CR`; `Esc` cancels |
+| `NVDialogs.select` | unsaved changes (Write / Discard), delete confirm (Remove / Cancel) | each option's key chip, `j`/`k`, `CR`; `Esc` cancels |
 | `NVDialogs.info` | static text | `Esc`, `q`, `CR` |
 
 `q` and `<M-w>` cancel every dialog, and leaving it cancels. A dialog opened
@@ -146,7 +147,7 @@ from insert mode returns to insert mode. `vim.ui.select` is the snacks picker.
 ## Unsaved changes
 
 Closing a modified file (`<M-w>`, `<A-q>`, buffer delete from a picker) asks
-once per file: Write, Discard or Cancel. Cancel changes nothing; an unnamed
+once per file: Write or Discard. `Esc` cancels and changes nothing; an unnamed
 buffer asks for a name (Save As, the filetype is detected from it).
 
 While the layout is up, typed `:q`, `:bd`, `:wq`, `:x`, `:qa` and `:wqa` take the

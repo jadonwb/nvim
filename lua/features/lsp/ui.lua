@@ -24,7 +24,7 @@ local Markup = require 'features.lsp.markup'
 ---@field items? table[] code actions
 ---@field decorate? fun(buf: integer, ns: integer, lines: string[])
 
-local ICONS = { hover = '󰋽', signature = '󰊕', diagnostics = '󰅚', hunk = '', actions = '󰌵', inspect = '󰙅' }
+local ICONS = { hover = '󰋽', signature = '󰊕', diagnostics = '󰅚', hunk = '󰊢', actions = '󰌵', inspect = '󰙅' }
 local MAX_WIDTH, MIN_WIDTH = 92, 24
 
 local state = {

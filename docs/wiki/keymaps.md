@@ -165,6 +165,7 @@ The leader is `Space`; the local leader is `\`.
 
 | Key | Action | Mode |
 | --- | --- | --- |
+| `K` | Help for the word under the cursor | n |
 | `c<lt>` | Swap parameter with previous | n |
 | `c>` | Swap parameter with next | n |
 | `cf` | Format buffer | n |
@@ -199,10 +200,10 @@ The leader is `Space`; the local leader is `\`.
 | `gs` | Stage / unstage hunk (or the selected lines) | n, x |
 | `ih` | Hunk text object | o, x |
 
-`K` on a changed line adds a **hunk** section to the hover menu: adjacent
-hunks show as one, `s` stages and `r` resets the group. Without a language
-server, `K` opens the menu on a hunk or diagnostic and stays Vim's `K`
-elsewhere.
+`K` opens the hover menu at the cursor: hover, signature (inside a call),
+diagnostics, the hunk under the line, and code actions. Adjacent hunks show
+as one, `s` stages and `r` resets the group. `<leader>K` opens the help docs
+for the word under the cursor.
 
 ## Quickfix
 
