@@ -10,7 +10,6 @@ return {
         heading = {
           sign = false,
           width = 'block',
-          -- Fit the pane: a fixed minimum overflowed narrow windows.
           min_width = 85,
           border = true,
           border_virtual = true,
@@ -51,9 +50,9 @@ return {
             head_background = true,
           },
         },
-        -- Tables are drawn as a rigid grid; in a variable-width pane (the agent
-        -- transcript, a split) they wrap into vertical text and clip. Raw pipe
-        -- lines stay aligned enough to read and copy at any width.
+        dash = {
+          width = 85,
+        },
         pipe_table = {
           enabled = true,
           cell = 'trimmed',
