@@ -21,6 +21,9 @@ local Markup = require 'features.lsp.markup'
 ---@field ft? string
 ---@field color? string chip colour
 ---@field plain? boolean lines are shown as-is
+---@field prepare? fun(): string[] build plain lines the first time the section is shown
+---@field tabstop? integer tab width for plain code
+---@field vartabstop? string variable tab widths for plain code
 ---@field items? table[] code actions
 ---@field decorate? fun(buf: integer, ns: integer, lines: string[])
 
@@ -181,6 +184,13 @@ end
 local function draw_content()
   local section = state.sections[state.index]
   local buf = state.content.buf
+  if section.prepare then
+    local prepare = section.prepare
+    section.prepare = nil
+    section.lines = prepare()
+  end
+  vim.bo[buf].tabstop = section.tabstop or vim.go.tabstop
+  vim.bo[buf].vartabstop = section.vartabstop or ''
   vim.bo[buf].modifiable = true
   vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
   local lines
@@ -196,11 +206,16 @@ local function draw_content()
     pcall(section.decorate, buf, ns, lines)
   end
   vim.bo[buf].modifiable = false
-  local width = MIN_WIDTH
-  for _, l in ipairs(lines) do
-    l = l:gsub('%[([^%]]-)%]%(%S-%)', '%1'):gsub('\t', '    ')
-    width = math.max(width, vim.fn.strdisplaywidth(l) + 1)
-  end
+  local width = vim.api.nvim_buf_call(buf, function()
+    local result = MIN_WIDTH
+    for _, l in ipairs(lines) do
+      if not section.plain then
+        l = l:gsub('%[([^%]]-)%]%(%S-%)', '%1'):gsub('\t', '    ')
+      end
+      result = math.max(result, vim.fn.strdisplaywidth(l) + 1)
+    end
+    return result
+  end)
   vim.wo[state.content.win].cursorline = section.items ~= nil
   return math.min(width, MAX_WIDTH)
 end

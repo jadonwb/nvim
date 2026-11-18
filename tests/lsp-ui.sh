@@ -10,6 +10,11 @@ trap 'rm -rf -- "$tmp"' EXIT
 export XDG_CONFIG_HOME="$tmp/xdg"
 mkdir -p "$XDG_CONFIG_HOME"
 ln -sfn "$root" "$XDG_CONFIG_HOME/nvim"
+export NV_LSP_HUNK_FILE="$tmp/repo/hunk.lua"
+git init -q "$tmp/repo" || exit 1
+printf '%s\n' '-- before' 'local paint = "warm red"' '-- after' >"$NV_LSP_HUNK_FILE"
+git -C "$tmp/repo" add hunk.lua || exit 1
+printf '%s\n' '-- before' 'local paint = "warm tan"' '-- after' >"$NV_LSP_HUNK_FILE"
 
 probe=$(cat <<'LUA'
 local out = {}
@@ -102,6 +107,39 @@ add('on name=' .. tostring(S.in_arguments()))
 vim.api.nvim_win_set_cursor(0, { 1, 5 })
 add('on arg=' .. tostring(S.in_arguments()))
 
+-- Open the same hunk section as K and verify the rendered popup buffer.
+vim.cmd.edit(vim.env.NV_LSP_HUNK_FILE)
+local gs = require 'gitsigns'
+assert(vim.wait(5000, function() return #(gs.get_hunks() or {}) == 1 end), 'Gitsigns did not attach')
+vim.treesitter.start(0, 'lua')
+vim.api.nvim_win_set_cursor(0, { 2, 0 })
+NVLspUi.open { { name = 'hover', lines = { 'hover text' } }, assert(S.hunk()) }
+NVLspUi.next()
+menu, content = popup()
+add('hunk body=' .. tostring(text(content) == 'change · line 2  -1 +1\n-local paint = "warm red"\n+local paint = "warm tan"'))
+local buf = vim.api.nvim_win_get_buf(content)
+local marks = vim.api.nvim_buf_get_extmarks(buf, vim.api.nvim_get_namespaces()['nv-lsp-ui'], 0, -1, { details = true })
+local row_hls, changed, syntax = {}, {}, {}
+for _, mark in ipairs(marks) do
+  local row, col, d = mark[2], mark[3], mark[4]
+  if d.line_hl_group then
+    row_hls[row] = d.line_hl_group
+  end
+  if type(d.hl_group) == 'string' and d.hl_group:match('^GitSigns.*Inline$') then
+    local line = vim.api.nvim_buf_get_lines(buf, row, row + 1, false)[1]
+    changed[row] = line:sub(col + 1, d.end_col)
+  end
+  if type(d.hl_group) == 'string' and d.hl_group:find('string', 1, true) then
+    syntax[row] = true
+  end
+end
+add('hunk row tints=' .. tostring(row_hls[1] == 'DiffDelete' and row_hls[2] == 'DiffAdd'))
+add('hunk word tints=' .. tostring(changed[1] == 'red' and changed[2] == 'tan'))
+add('hunk syntax=' .. tostring(syntax[1] and syntax[2] or false))
+NVLspUi.focus()
+add('hunk actions=' .. tostring(vim.fn.maparg('s', 'n', false, true).desc == 'stage' and vim.fn.maparg('r', 'n', false, true).desc == 'reset'))
+NVLspUi.close()
+
 io.write('\n' .. table.concat(out, '\n'))
 LUA
 )
@@ -127,5 +165,10 @@ check 'tilde=see \~/.vimrc and `~/x`'
 check 'chained=example:|```vim|  echo 1|```|```vim|  echo 2|```'
 check 'on name=false'
 check 'on arg=true'
+check 'hunk body=true'
+check 'hunk row tints=true'
+check 'hunk word tints=true'
+check 'hunk syntax=true'
+check 'hunk actions=true'
 
 [ "$fail" = 0 ] && echo 'lsp-ui: pass' || { echo 'lsp-ui: FAIL'; exit 1; }

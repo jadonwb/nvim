@@ -310,6 +310,38 @@ local function hunk_span(h)
   return first, first + math.max(h.added.count, 1) - 1
 end
 
+-- Reuse Gitsigns' popup capture so syntax and word-diff ranges match the
+-- inline preview. A plain patch still gets row tints on older Gitsigns.
+local function hunk_rows(buf, group)
+  local ok, preview = pcall(require, 'gitsigns.hunk_preview')
+  local entry = require('gitsigns.cache').cache[buf]
+  local base = entry and entry.compare_text
+  local removed, added = {}, {}
+  for _, h in ipairs(group) do
+    local rows
+    if ok and preview.linespec_for_hunk and base then
+      local captured, spec = pcall(preview.linespec_for_hunk, buf, h, base, buf, h.added)
+      if captured then
+        rows = vim.tbl_map(function(line)
+          return line[1]
+        end, spec)
+      end
+    end
+    rows = rows or vim.tbl_map(function(line)
+      return { line }
+    end, h.lines)
+    local side = removed
+    for _, row in ipairs(rows) do
+      local sign = row[1]:sub(1, 1)
+      if sign == '+' or sign == '-' then
+        side = sign == '+' and added or removed
+      end
+      side[#side + 1] = row
+    end
+  end
+  return vim.list_extend(removed, added)
+end
+
 --- The git hunks under the cursor (gitsigns), grouped: hunks that touch or
 --- sit next to each other show together, as one change. `keys` act on the
 --- whole group from the focused popup: s stage, r reset.
@@ -364,18 +396,15 @@ function M.hunk()
 
   -- The group reads as one hunk, the way git prints one: a single header,
   -- every removed line, then every added line.
-  local minus, plus = {}, {}
+  local minus, plus = 0, 0
   for _, h in ipairs(group) do
-    for _, l in ipairs(h.lines or {}) do
-      table.insert(l:sub(1, 1) == '-' and minus or plus, l)
-    end
+    minus = minus + h.removed.count
+    plus = plus + h.added.count
   end
-  local kind = (#minus > 0 and #plus > 0) and 'change' or (#plus > 0 and 'add' or 'delete')
+  local kind = (minus > 0 and plus > 0) and 'change' or (plus > 0 and 'add' or 'delete')
   local where = gfirst == glast and ('line %d'):format(gfirst) or ('lines %d–%d'):format(gfirst, glast)
-  local lines = { ('%s · %s  -%d +%d'):format(kind, where, #minus, #plus) }
-  local heads = { true }
-  vim.list_extend(lines, minus)
-  vim.list_extend(lines, plus)
+  local header = ('%s · %s  -%d +%d'):format(kind, where, minus, plus)
+  local rows
 
   --- Run a gitsigns action on the group from the source window.
   local function act(fn)
@@ -396,19 +425,44 @@ function M.hunk()
   end
   return {
     name = 'hunk',
-    lines = lines,
+    lines = { header },
     plain = true,
+    tabstop = vim.bo[buf].tabstop,
+    vartabstop = vim.bo[buf].vartabstop,
     color = 'Orange',
+    prepare = function()
+      rows = hunk_rows(buf, group)
+      local lines = { header }
+      for _, row in ipairs(rows) do
+        lines[#lines + 1] = row[1]
+      end
+      return lines
+    end,
     keys = {
       { 's', 'stage', act(gs.stage_hunk) },
       { 'r', 'reset', act(gs.reset_hunk) },
     },
     decorate = function(b, ns)
-      for row, line in ipairs(vim.api.nvim_buf_get_lines(b, 0, -1, false)) do
-        local first = line:sub(1, 1)
-        local hl = heads[row] and 'NvMuted' or (first == '+' and 'NvGreen' or (first == '-' and 'NvRed' or nil))
-        if hl and #line > 0 then
-          vim.api.nvim_buf_set_extmark(b, ns, row - 1, 0, { end_col = #line, hl_group = hl })
+      local mark = vim.api.nvim_buf_set_extmark
+      mark(b, ns, 0, 0, { end_col = #header, hl_group = 'NvMuted' })
+      for row, body in ipairs(rows or {}) do
+        local line, highlights = body[1], body[2]
+        local sign = line:sub(1, 1)
+        if sign == '+' or sign == '-' then
+          local add = sign == '+'
+          mark(b, ns, row, 0, { line_hl_group = add and 'DiffAdd' or 'DiffDelete' })
+          mark(b, ns, row, 0, { end_col = 1, hl_group = add and 'NvGreen' or 'NvRed' })
+        end
+        for _, hl in ipairs(highlights or {}) do
+          -- Row backgrounds are applied above, including the space after EOL.
+          if hl.hl_group ~= 'GitSignsAddPreview' and hl.hl_group ~= 'GitSignsDeletePreview' then
+            mark(b, ns, row + hl.start_row, hl.start_col or 0, {
+              end_row = hl.end_row and row + hl.end_row or nil,
+              end_col = hl.end_col,
+              hl_group = hl.hl_group,
+              priority = hl.priority,
+            })
+          end
         end
       end
     end,
