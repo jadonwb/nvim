@@ -261,6 +261,8 @@ local function files_to_items(query)
   local results = require('fff').file_search(query, {
     mode = 'files',
     max_results = 100,
+    -- The dashboard can open the picker while the initial scan is still running.
+    wait_for_index_ms = 1000,
   })
   local items = {}
   for i, item in ipairs(results.items) do

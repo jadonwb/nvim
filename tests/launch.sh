@@ -100,17 +100,27 @@ else
 fi
 
 # A real terminal launch uses Neovim's own --embed child. Check both the
-# startup drawing and the transition from the dashboard to a file.
+# startup drawing, the first file search, and the transition to a file.
 if command -v script >/dev/null; then
   tui_probe=':lua vim.wait(1000, function() return vim.g.did_very_lazy end); vim.fn.writefile({require("config.profile").kind(), vim.bo.filetype, tostring(NVSlots.is_applied()), tostring(package.loaded.lualine ~= nil), tostring(vim.o.laststatus)}, vim.env.NV_PROBE)'
+  picker_probe=':lua local picker; local found = vim.wait(2000, function() picker = Snacks.picker.get()[1]; return picker and vim.iter(picker:items()):any(function(item) return item.file == vim.env.NV_TUI_FILE end) end); vim.fn.writefile({tostring(found)}, vim.env.NV_PICKER_PROBE); if picker then picker:close() end'
   file_probe=':lua vim.cmd.edit(vim.env.NV_TUI_FILE); vim.wait(2000, function() return NVSlots.is_applied() end); vim.fn.writefile({NVSlots.provider_of("left") or "none", tostring(package.loaded.lualine ~= nil), tostring(vim.o.laststatus)}, vim.env.NV_PROBE, "a")'
+  mkdir "$tmp/project"
+  cp "$tmp/one" "$tmp/project/dashboard-first-file.txt"
   got=''
-  if printf '%s\r' "$tui_probe" "$file_probe" ':qa!' | (
-    cd "$tmp" &&
-      TERM=xterm-256color NV_PROBE="$tmp/tui-probe" NV_TUI_FILE="$tmp/one" \
+  if printf '%s\rf\033%s\r%s\r%s\r' "$tui_probe" "$picker_probe" "$file_probe" ':qa!' | (
+    cd "$tmp/project" &&
+      TERM=xterm-256color NV_PROBE="$tmp/tui-probe" NV_PICKER_PROBE="$tmp/picker-probe" NV_TUI_FILE="$tmp/project/dashboard-first-file.txt" \
         timeout 15 script -q -e -c 'stty rows 55 cols 190; exec nvim' "$tmp/terminal" >/dev/null
   ); then
     got=$(cat "$tmp/tui-probe")
+  fi
+  if [ -f "$tmp/picker-probe" ] && grep -qx true "$tmp/picker-probe"; then
+    pass=$((pass + 1))
+    printf 'ok   - dashboard f lists a project file on the first open\n'
+  else
+    fail=$((fail + 1))
+    printf 'FAIL - dashboard f did not list the project file on the first open\n'
   fi
   if [ "$got" = $'workspace\nsnacks_dashboard\nfalse\nfalse\n0\nexplorer\ntrue\n3' ] &&
     LC_ALL=C grep -aqF 'Recent files' "$tmp/terminal" &&

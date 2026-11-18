@@ -39,7 +39,7 @@ launch-profile conditions.
 | Plugin                | Purpose                                         | Load            |
 | --------------------- | ----------------------------------------------- | --------------- |
 | `snacks.nvim` pickers | files, grep, symbols, diagnostics, registers, … | lazy            |
-| `fff.nvim`            | file and content search backend for the picker  | on first search |
+| `fff.nvim`            | file and content search backend for the picker  | VeryLazy        |
 | `nvim-tree.lua`       | file explorer in the `left` slot                | on use          |
 | `oil.nvim`            | bulk editing of directory entries               | command or key  |
 | `yazi.nvim`           | optional external browser                       | VeryLazy        |

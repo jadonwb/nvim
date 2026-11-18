@@ -7,8 +7,12 @@ NVFff = {
   build = function()
     require('fff.download').download_or_build_binary()
   end,
-  -- The picker requires fff on first use; its native index starts then.
-  lazy = true,
+  event = 'VeryLazy',
+  config = function(_, opts)
+    require('fff').setup(opts)
+    -- Start the background scan before the first search.
+    require('fff.core').ensure_initialized()
+  end,
   opts = {
     prompt_vim_mode = true,
     file_picker = {
