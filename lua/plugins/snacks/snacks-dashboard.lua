@@ -24,8 +24,17 @@ function NVSnacksDashboard.setup()
     vim.api.nvim_create_autocmd('VimEnter', {
       once = true,
       callback = function()
-        NVSnacksDashboard.open()
-        vim.o.laststatus = laststatus
+        if NVSnacksDashboard.open() and NVSnacksDashboard.is_active() then
+          vim.api.nvim_create_autocmd('BufWinLeave', {
+            buffer = vim.api.nvim_get_current_buf(),
+            once = true,
+            callback = function()
+              vim.o.laststatus = laststatus
+            end,
+          })
+        else
+          vim.o.laststatus = laststatus
+        end
       end,
     })
   end

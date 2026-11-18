@@ -102,8 +102,8 @@ fi
 # A real terminal launch uses Neovim's own --embed child. Check both the
 # startup drawing and the transition from the dashboard to a file.
 if command -v script >/dev/null; then
-  tui_probe=':lua vim.fn.writefile({require("config.profile").kind(), vim.bo.filetype, tostring(NVSlots.is_applied())}, vim.env.NV_PROBE)'
-  file_probe=':lua vim.cmd.edit(vim.env.NV_TUI_FILE); vim.wait(2000, function() return NVSlots.is_applied() end); vim.fn.writefile({NVSlots.provider_of("left") or "none"}, vim.env.NV_PROBE, "a")'
+  tui_probe=':lua vim.wait(1000, function() return vim.g.did_very_lazy end); vim.fn.writefile({require("config.profile").kind(), vim.bo.filetype, tostring(NVSlots.is_applied()), tostring(package.loaded.lualine ~= nil), tostring(vim.o.laststatus)}, vim.env.NV_PROBE)'
+  file_probe=':lua vim.cmd.edit(vim.env.NV_TUI_FILE); vim.wait(2000, function() return NVSlots.is_applied() end); vim.fn.writefile({NVSlots.provider_of("left") or "none", tostring(package.loaded.lualine ~= nil), tostring(vim.o.laststatus)}, vim.env.NV_PROBE, "a")'
   got=''
   if printf '%s\r' "$tui_probe" "$file_probe" ':qa!' | (
     cd "$tmp" &&
@@ -112,11 +112,11 @@ if command -v script >/dev/null; then
   ); then
     got=$(cat "$tmp/tui-probe")
   fi
-  if [ "$got" = $'workspace\nsnacks_dashboard\nfalse\nexplorer' ] &&
+  if [ "$got" = $'workspace\nsnacks_dashboard\nfalse\nfalse\n0\nexplorer\ntrue\n3' ] &&
     LC_ALL=C grep -aqF 'Recent files' "$tmp/terminal" &&
     ! LC_ALL=C grep -aqF 'Help poor children' "$tmp/terminal"; then
     pass=$((pass + 1))
-    printf 'ok   - terminal draws the dashboard first, then opens the explorer with a file\n'
+    printf 'ok   - terminal draws the dashboard first, then loads lualine and the explorer with a file\n'
   else
     fail=$((fail + 1))
     printf 'FAIL - terminal workspace startup and layout:\n%s\n' "$got"

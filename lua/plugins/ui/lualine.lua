@@ -163,7 +163,21 @@ end
 
 return {
   'nvim-lualine/lualine.nvim',
-  event = 'VeryLazy',
+  lazy = true,
+  init = function()
+    local group = vim.api.nvim_create_augroup('NV lualine startup', { clear = true })
+    local function load()
+      local win = vim.api.nvim_get_current_win()
+      if vim.v.vim_did_enter == 0 or vim.bo.filetype == 'snacks_dashboard' or vim.api.nvim_win_get_config(win).relative ~= '' then
+        return
+      end
+      require 'lualine'
+      vim.api.nvim_del_augroup_by_id(group)
+    end
+    -- VeryLazy covers direct file launches; BufEnter covers leaving the dashboard.
+    vim.api.nvim_create_autocmd('User', { group = group, pattern = 'VeryLazy', callback = load })
+    vim.api.nvim_create_autocmd('BufEnter', { group = group, callback = load })
+  end,
   opts = {
     options = {
       theme = (function()
@@ -181,7 +195,7 @@ return {
       section_separators = { left = '', right = '' },
       refresh = { statusline = 200 },
       component_separators = { left = '', right = '' },
-      disabled_filetypes = { statusline = { 'nvcheatsheet' } },
+      disabled_filetypes = { statusline = { 'nvcheatsheet', 'snacks_dashboard' } },
       always_show_tabline = false,
     },
     sections = {
