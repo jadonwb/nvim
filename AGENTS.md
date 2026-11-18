@@ -1,10 +1,9 @@
 # Neovim Config Repository
 
-This is `jadonwb/nvim`, a git submodule at
-`~/.local/share/chezmoi/dot_config/external_nvim`. Chezmoi deploys
-`~/.config/nvim` as a regular directory.
+This is `jadonwb/nvim`, a personal Neovim configuration.
 
-## Procedure
+## Tests
 
-Commit and push this repo first, then update the chezmoi superproject
-(`~/.local/share/chezmoi`) and run `chezmoi apply`.
+Add or update tests when fixing a regression or changing user-visible startup,
+restart, or layout behavior. Cover the affected user action. See
+[regression test design](docs/wiki/editor-api.md#regression-tests).
