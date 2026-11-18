@@ -71,8 +71,8 @@ function NVBridge.open_file(path, line)
   return true
 end
 
---- Show read-only text in the editing area: an artifact, a report, or anything
---- an agent wants the user to read. Real buffer lines, so it is selectable.
+--- Show read-only text in the editing area: a report or anything an agent
+--- wants the user to read. Real buffer lines, so it is selectable.
 ---@param title string
 ---@param text string
 ---@return boolean
@@ -89,11 +89,11 @@ function NVBridge.show_text(title, text)
   vim.bo[buf].modifiable = false
   vim.bo[buf].modified = false
   vim.bo[buf].filetype = 'markdown'
-  pcall(vim.api.nvim_buf_set_name, buf, 'artifact://' .. tostring(title or 'text'))
+  pcall(vim.api.nvim_buf_set_name, buf, 'text://' .. tostring(title or 'text'))
 
   local win = NVSlots and NVSlots.content_win and NVSlots.content_win() or vim.api.nvim_get_current_win()
   vim.api.nvim_win_set_buf(win, buf)
-  pcall(vim.api.nvim_set_option_value, 'winbar', '%#NvPanelBorder# ' .. tostring(title or 'Artifact') .. '  %#NvChipMuted# q back ', { win = win })
+  pcall(vim.api.nvim_set_option_value, 'winbar', '%#NvPanelBorder# ' .. tostring(title or 'Text') .. '  %#NvChipMuted# q back ', { win = win })
   vim.keymap.set('n', 'q', function()
     pcall(vim.cmd, 'bprevious')
   end, { buffer = buf, nowait = true, desc = 'Back' })

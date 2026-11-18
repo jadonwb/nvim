@@ -39,9 +39,6 @@ return {
       require 'editor.format'
       NVFormat.setup()
 
-      require 'features.opencode.artifacts'
-      NVOpenCodeArtifacts.setup()
-
       require 'features.opencode.attach'
       NVOpenCodeSession.setup()
 
@@ -93,7 +90,6 @@ return {
         end)
 
         step(function()
-          NVOpenCodeArtifacts.keymaps()
           NVOpenCodeSession.keymaps()
           require('features.opencode.context').keymaps()
           require('features.opencode.pickers').keymaps()

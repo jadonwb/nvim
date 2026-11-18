@@ -329,12 +329,9 @@ The list fills only when asked and shows in the bottom panel; see
 
 | Key | Action | Mode |
 | --- | --- | --- |
-| `a/` | Search inside OpenCode artifacts | n |
 | `aI` | Prompt: add a reference to this file | n |
-| `aa` | Show all OpenCode artifacts | n |
 | `ac` | OpenCode command → prompt | n |
 | `ad` | Prompt: add diagnostics | n |
-| `ae` | Show OpenCode evidence | n |
 | `ag` | OpenCode agent | n |
 | `ai` | Prompt: add a reference to these lines | v |
 | `ai` | Prompt: add a reference to this line | n |
@@ -342,8 +339,6 @@ The list fills only when asked and shows in the bottom panel; see
 | `am` | OpenCode model | n |
 | `an` | New OpenCode session (nvim) | n |
 | `ao` | Prompt: add a reference to a motion | n |
-| `ap` | Show OpenCode plans | n |
-| `ar` | Show OpenCode reviews | n |
 | `as` | Attach OpenCode session | n |
 | `av` | OpenCode variant (thinking level) | n |
 | `aw` | Answer what OpenCode is waiting on | n |

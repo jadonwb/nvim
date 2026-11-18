@@ -89,7 +89,7 @@ file; feature code never lives in a plugin spec.
 | `opencode/agent.lua`, `transcript.lua` | sending prompts, the transcript view |
 | `opencode/context.lua`, `prompt_lsp.lua` | prompt references and its in-process language server |
 | `opencode/requests.lua`, `pickers.lua` | permission / form answers; model, agent, skill pickers |
-| `opencode/artifacts.lua`, `rpc.lua` | plans / evidence / reviews, the RPC transport |
+| `opencode/rpc.lua` | OpenCode CLI RPC transport; its location and decode helpers serve the session store |
 | `quickfix.lua` | the quickfix list: producers, navigation ([quickfix](quickfix.md)) |
 | `extras.lua` | language extras dashboard |
 | `preview.lua` | inset file preview float |
@@ -121,6 +121,6 @@ Global LuaLS annotations for the `NV*` globals.
 | `scripts/gen-keymaps.sh`, `scripts/gen-keymaps.lua` | regenerate `docs/wiki/keymaps.md` |
 | `scripts/shot.sh`, `scripts/ansi2svg.py` | tmux pane → PNG with theme colours |
 | `tests/*.sh` | headless suites: layout, session, notify, lsp-ui, bridge, rpc, launch, extras, ui2, compat |
-| `tests/opencode/*.lua` | OpenCode artifacts and bridge units |
+| `tests/opencode/*.lua` | OpenCode RPC and bridge units |
 | `docs/wiki/` | this wiki |
 | `docs/archive/` | refactor design notes and review history |

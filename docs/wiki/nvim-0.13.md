@@ -38,7 +38,7 @@ What cannot be polyfilled goes through `NVCompat` at the call site:
 
 | Change | Where |
 | --- | --- |
-| **File watchers** reload files changed outside within ~100 ms, with no input. The checktime autocmds are gone, and OpenCode artifacts still refresh through `FileChangedShellPost`. | `config/autocmds.lua`, `editor/buffers.lua` |
+| **File watchers** reload files changed outside within ~100 ms, with no input. The checktime autocmds are gone. | `config/autocmds.lua`, `editor/buffers.lua` |
 | **Pinned panels:** slot windows have `'winpinned'`, so `:only`, `<C-w>o` and plugins leave the layout standing. Repair stays as the backstop. | `layout/slots.lua` `register()` |
 | **Anchored resizes:** each slot keeps its screen edge (left, right, bottom), so a resize trades space with the content window only. | `layout/slots.lua`, `editor/help.lua` |
 | **Window in event args:** `ev.win` instead of `tonumber(ev.match)` in WinClosed handlers; the recent-buffer list checks the event's window. | `slots.lua`, `lsp/ui.lua`, `preview.lua`, `ui/window.lua`, `buffers.lua` |

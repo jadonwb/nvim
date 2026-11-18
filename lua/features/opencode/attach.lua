@@ -1,6 +1,6 @@
 -- NVOpenCodeSession: which OpenCode session a Neovim tab is attached to.
 --
--- This is frontend state, not artifact state. It owns the per-directory
+-- This is frontend state. It owns the per-directory
 -- attachment map, session listing/creation (service API, through
 -- features/opencode/client.lua), and the attach/switch/detach picker. Feature modules ask it for the current session
 -- and use the result for their own scoping.
@@ -26,6 +26,8 @@ end
 -- session is created through the HTTP API with an explicit location.directory.
 --------------------------------------------------------------------------------
 
+--- State directory name kept from the removed artifact feature so existing
+--- attachments keep working.
 M.attachments_path = vim.fn.stdpath 'state' .. '/opencode-artifacts/attachments.json'
 
 local attachments = { path = nil, map = nil }
@@ -312,8 +314,7 @@ function M.ensure(callback)
   end)
 end
 
---- Attach, switch, or detach the session for this tab directory. Never opens
---- an artifact picker; feature entrypoints do that themselves.
+--- Attach, switch, or detach the session for this tab directory.
 function M.open_picker()
   local location = rpc.location()
   local stored = M.stored_id(location)

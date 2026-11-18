@@ -10,7 +10,7 @@ This wiki documents the configuration as it behaves, not as it was planned.
 - [Profiles](profiles.md) — workspace, difftool, mergetool, pager, transient, embedded.
 - [Quickfix](quickfix.md) — what fills the list, how to walk it, quicker.nvim as a future option.
 - [Language extras](extras.md) — per-machine language packs.
-- [OpenCode](opencode.md) — the service client, sessions, prompt, transcript, the `nvim` tool, artifacts.
+- [OpenCode](opencode.md) — the service client, sessions, prompt, transcript, the `nvim` tool.
 - [Editor API](editor-api.md) — the external API for agents and tools.
 - [Neovim 0.13](nvim-0.13.md) — the 0.13 features in use, and how 0.12 support is kept (and dropped).
 

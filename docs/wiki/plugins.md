@@ -72,7 +72,7 @@ its event, command or key.
 | Plugin | Purpose | Load |
 | --- | --- | --- |
 | built-in bridge | `features/bridge`: prompt out, stream back, RPC control | eager (feature) |
-| built-in opencode features | `features/opencode`: artifacts, sessions | eager (feature) |
+| built-in opencode features | `features/opencode`: sessions, prompt, transcript | eager (feature) |
 | `chezmoi.nvim`, `chezmoi.vim` | edit managed dotfiles through chezmoi | eager/lazy |
 
 ## LuaLS diagnostics

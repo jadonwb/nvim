@@ -1,6 +1,6 @@
 -- Contract tests for the Neovim <-> OpenCode bridge layer:
---   lua/editor/features/opencode-rpc.lua      (transport)
---   lua/editor/features/opencode-session.lua  (frontend session state)
+--   lua/features/opencode/rpc.lua      (transport)
+--   lua/features/opencode/attach.lua   (frontend session state)
 -- Run: nvim --headless -u NONE -l /path/to/nvim/tests/opencode/bridge.lua
 -- No user config, no service call, no model request, no UI.
 
@@ -34,23 +34,23 @@ end
 
 test('rpc_path scopes any namespace/method to the given directory', function()
   eq(
-    rpc.rpc_path('personal.bridge', 'describe', '/tmp/a b'),
-    '/api/rpc/personal.bridge/describe?location%5Bdirectory%5D=%2Ftmp%2Fa%20b',
+    rpc.rpc_path('fixture.bridge', 'describe', '/tmp/a b'),
+    '/api/rpc/fixture.bridge/describe?location%5Bdirectory%5D=%2Ftmp%2Fa%20b',
     'namespace and method are parameterized'
   )
   eq(
-    rpc.rpc_path('personal.artifacts', 'list', '/tmp/x'),
-    '/api/rpc/personal.artifacts/list?location%5Bdirectory%5D=%2Ftmp%2Fx',
-    'artifact namespace keeps the same shape'
+    rpc.rpc_path('fixture.example', 'describe', '/tmp/x'),
+    '/api/rpc/fixture.example/describe?location%5Bdirectory%5D=%2Ftmp%2Fx',
+    'a synthetic namespace keeps the same shape'
   )
 end)
 
 test('build_argv carries the namespace, method and normalized input', function()
-  local argv = rpc._internal.build_argv('personal.bridge', 'describe', {})
+  local argv = rpc._internal.build_argv('fixture.bridge', 'describe', {})
   eq(argv[1], rpc.exe, 'executable')
   eq(argv[2], 'api', 'subcommand')
   eq(argv[3], 'post', 'verb')
-  assert(argv[4]:match '^/api/rpc/personal%.bridge/describe%?', 'path names the bridge namespace')
+  assert(argv[4]:match '^/api/rpc/fixture%.bridge/describe%?', 'path names the bridge namespace')
   eq(vim.json.decode(argv[6]).input, vim.empty_dict(), 'empty input encodes as an object')
 end)
 
@@ -62,21 +62,21 @@ test('call routes through the injected transport and decodes output', function()
     on_exit { code = 0, stdout = vim.json.encode { output = { protocol = 1 } }, stderr = '' }
   end
   local result, err
-  rpc.call('personal.bridge', 'describe', {}, function(output, call_err)
+  rpc.call('fixture.bridge', 'describe', {}, function(output, call_err)
     result, err = output, call_err
   end)
   rpc.transport = previous
   vim.wait(2000, function()
     return result ~= nil or err ~= nil
   end)
-  assert(captured[4]:match '^/api/rpc/personal%.bridge/describe%?', 'transport received the bridge path')
+  assert(captured[4]:match '^/api/rpc/fixture%.bridge/describe%?', 'transport received the bridge path')
   eq(err, nil, 'no error')
   eq(result.protocol, 1, 'unwrapped output')
 end)
 
 test('a typed RpcError payload becomes an error string, not output', function()
   local result, err
-  rpc.call('personal.bridge', 'describe', {}, function(output, call_err)
+  rpc.call('fixture.bridge', 'describe', {}, function(output, call_err)
     result, err = output, call_err
   end, function(_, on_exit)
     on_exit {

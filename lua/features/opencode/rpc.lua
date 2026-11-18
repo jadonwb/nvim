@@ -3,11 +3,11 @@
 -- This module owns only the mechanics every OpenCode frontend call shares:
 -- the `opencode api` argv envelope, the location-scoped RPC path, request IDs,
 -- timeouts, typed RpcError decoding, and the injectable transport seam. It
--- knows nothing about artifacts, sessions, buffers, or UI.
+-- knows nothing about sessions, buffers, or UI.
 --
 -- Feature modules supply a namespace and a method:
 --   local rpc = require 'features.opencode.rpc'
---   rpc.call('personal.artifacts', 'list', {}, function(output, err) ... end)
+--   rpc.call('fixture.example', 'describe', {}, function(output, err) ... end)
 --
 -- One process per call, argv list, JSON body; nothing blocks or polls, and all
 -- callbacks are scheduled on the main loop.
