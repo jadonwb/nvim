@@ -5,14 +5,19 @@ This wiki documents the configuration as it behaves, not as it was planned.
 - [Structure](structure.md) — every Lua file and what it owns.
 - [Keymaps](keymaps.md) — generated from the running configuration.
 - [Layout](layout.md) — slots, focus mode, providers and the external API.
-- [UI](ui.md) — statusline, dashboard, notifications, cheatsheet, popup, preview, terminal.
+- [UI](ui.md) — statusline, dashboard, notifications, cheatsheet, popup,
+  preview, terminal.
 - [Plugins](plugins.md) — every plugin, why it is installed and how it loads.
-- [Profiles](profiles.md) — workspace, difftool, mergetool, pager, transient, embedded.
-- [Quickfix](quickfix.md) — what fills the list, how to walk it, quicker.nvim as a future option.
+- [Profiles](profiles.md) — workspace, difftool, mergetool, pager, transient,
+  embedded.
+- [Quickfix](quickfix.md) — what fills the list, how to walk it, quicker.nvim as
+  a future option.
 - [Language extras](extras.md) — per-machine language packs.
-- [OpenCode](opencode.md) — the service client, sessions, prompt, transcript, the `nvim` tool.
+- [OpenCode](opencode.md) — the service client, sessions, prompt, transcript,
+  the `nvim` tool.
 - [Editor API](editor-api.md) — the external API for agents and tools.
-- [Neovim 0.13](nvim-0.13.md) — the 0.13 features in use, and how 0.12 support is kept (and dropped).
+- [Neovim 0.13](nvim-0.13.md) — the 0.13 features in use, and how 0.12 support
+  is kept (and dropped).
 
-Design notes from the refactor, which explain *why* some decisions were made,
+Design notes from the refactor, which explain _why_ some decisions were made,
 are archived in `docs/archive/`; this wiki is the user-facing reference.

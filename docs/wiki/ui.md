@@ -1,7 +1,7 @@
 # UI
 
-The visual language is volt dashboards (typr) plus NvChad's block style:
-framed blocks with a subtle border, a header with icon, title and right-aligned
+The visual language is volt dashboards (typr) plus NvChad's block style: framed
+blocks with a subtle border, a header with icon, title and right-aligned
 metadata, blank-row section gaps, and chips (dark text on an accent) for state.
 
 ## Colour vocabulary
@@ -9,13 +9,13 @@ metadata, blank-row section gaps, and chips (dark text on an accent) for state.
 `config/highlights.lua` derives a semantic palette from the active colorscheme
 and rebuilds it on `ColorScheme`, so UI code never hard-codes a theme group:
 
-| Group | Used for |
-| --- | --- |
-| `ExRed` `ExGreen` `ExYellow` `ExBlue` | accents from the diagnostic palette |
-| `CommentFg`, `ExInactive`, `ExLightGrey` | muted and normal text |
-| `NvPanelBorder`, `NvPanelTitle`, `NvPanelLabel`, `NvPanelSection` | panel chrome |
-| `NvChip`, `NvChipOk`, `NvChipWarn`, `NvChipErr`, `NvChipInfo`, `NvChipMuted` | badges |
-| `NvStMode*`, `NvStFile`, `NvStMuted` | statusline blocks |
+| Group                                                                        | Used for                            |
+| ---------------------------------------------------------------------------- | ----------------------------------- |
+| `ExRed` `ExGreen` `ExYellow` `ExBlue`                                        | accents from the diagnostic palette |
+| `CommentFg`, `ExInactive`, `ExLightGrey`                                     | muted and normal text               |
+| `NvPanelBorder`, `NvPanelTitle`, `NvPanelLabel`, `NvPanelSection`            | panel chrome                        |
+| `NvChip`, `NvChipOk`, `NvChipWarn`, `NvChipErr`, `NvChipInfo`, `NvChipMuted` | badges                              |
+| `NvStMode*`, `NvStFile`, `NvStMuted`                                         | statusline blocks                   |
 
 ## Statusline
 
@@ -69,8 +69,8 @@ the buffer it was opened from (the window is kept, the grid is untouched).
 ## Hover / signature / diagnostics popup
 
 `K` opens the hover menu — hover, signature (inside a call), diagnostics, the
-git hunk on the line, code actions — one float at the cursor, single border,
-tab chips for the sections, no dim backdrop (a hover belongs to its line).
+git hunk on the line, code actions — one float at the cursor, single border, tab
+chips for the sections, no dim backdrop (a hover belongs to its line).
 `<leader>K` opens the help docs for the word under the cursor.
 
 ## Preview (`<leader>up`)
@@ -78,18 +78,17 @@ tab chips for the sections, no dim backdrop (a hover belongs to its line).
 An inset float over the content window with a dimmed backdrop; the explorer
 drives it only while it is on. `Esc`/`q` close it, `:bd` cannot break it.
 
-PNG files preview as the image (Neovim 0.13, `vim.ui.img`): scaled to fit
-with their aspect kept, under a caption with the pixel size. It needs a
-terminal with the Kitty graphics protocol; WezTerm has
-`enable_kitty_graphics`. Elsewhere, and in tmux, the caption says so.
+PNG files preview as the image (Neovim 0.13, `vim.ui.img`): scaled to fit with
+their aspect kept, under a caption with the pixel size. It needs a terminal with
+the Kitty graphics protocol; WezTerm has `enable_kitty_graphics`. Elsewhere, and
+in tmux, the caption says so.
 
 ## Compare mode (`<leader>wv`, `<leader>wm`, `<leader>wc`)
 
 Two things side by side: two files, or a file and a man page (`:Man` with
-`:vertical`, so there is no empty intermediate split). The layout is
-suspended while compare mode is open (the slots remember their state) and
-restored exactly when `<leader>wc` closes it. Each window's winbar names what it
-shows.
+`:vertical`, so there is no empty intermediate split). The layout is suspended
+while compare mode is open (the slots remember their state) and restored exactly
+when `<leader>wc` closes it. Each window's winbar names what it shows.
 
 ```vim
 :NVCompare               " pick a file for the right split
@@ -130,16 +129,17 @@ insert-mode field still closes on `q`/`Esc`.
 
 ## Dialogs
 
-Every dialog (`features/ui/dialogs.lua`) is the floating command line's surface: a
-raised panel with solid padding, a title chip (`NvPopupTitle`), and its keys as
-chips in the footer. Dialogs open where the command line does, upper third and
-centred (`NVPromptRect` in `features/ui/ui2.lua`), so a prompt never moves around.
+Every dialog (`features/ui/dialogs.lua`) is the floating command line's surface:
+a raised panel with solid padding, a title chip (`NvPopupTitle`), and its keys
+as chips in the footer. Dialogs open where the command line does, upper third
+and centred (`NVPromptRect` in `features/ui/ui2.lua`), so a prompt never moves
+around.
 
-| Dialog | Use | Keys |
-| --- | --- | --- |
-| `NVDialogs.input` | `vim.ui.input` (LSP rename, plugins), Save As, agent feedback (multiline) | `CR` submit (`M-CR` multiline); `Esc` to normal mode, `Esc` again cancels |
-| `NVDialogs.select` | unsaved changes (Write / Discard), delete confirm (Remove / Cancel) | each option's key chip, `j`/`k`, `CR`; `Esc` cancels |
-| `NVDialogs.info` | static text | `Esc`, `q`, `CR` |
+| Dialog             | Use                                                                       | Keys                                                                      |
+| ------------------ | ------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `NVDialogs.input`  | `vim.ui.input` (LSP rename, plugins), Save As, agent feedback (multiline) | `CR` submit (`M-CR` multiline); `Esc` to normal mode, `Esc` again cancels |
+| `NVDialogs.select` | unsaved changes (Write / Discard), delete confirm (Remove / Cancel)       | each option's key chip, `j`/`k`, `CR`; `Esc` cancels                      |
+| `NVDialogs.info`   | static text                                                               | `Esc`, `q`, `CR`                                                          |
 
 `q` and `<M-w>` cancel every dialog, and leaving it cancels. A dialog opened
 from insert mode returns to insert mode. `vim.ui.select` is the snacks picker.
@@ -150,13 +150,13 @@ Closing a modified file (`<M-w>`, `<A-q>`, buffer delete from a picker) asks
 once per file: Write or Discard. `Esc` cancels and changes nothing; an unnamed
 buffer asks for a name (Save As, the filetype is detected from it).
 
-While the layout is up, typed `:q`, `:bd`, `:wq`, `:x`, `:qa` and `:wqa` take the
-same path as the keys (`NVEditing.command_route`). Plain Vim would close the
-content window (a hidden buffer never prompts) and strand the panels.
-Forced forms (`:q!`), commands with arguments, and every launch without the
-layout (a commit message, a host's editor) keep Vim's behaviour. If the content
-window does close (`:q!`, `:close`, a plugin), the layout rebuilds around a new
-one showing the same buffer.
+While the layout is up, typed `:q`, `:bd`, `:wq`, `:x`, `:qa` and `:wqa` take
+the same path as the keys (`NVEditing.command_route`). Plain Vim would close the
+content window (a hidden buffer never prompts) and strand the panels. Forced
+forms (`:q!`), commands with arguments, and every launch without the layout (a
+commit message, a host's editor) keep Vim's behaviour. If the content window
+does close (`:q!`, `:close`, a plugin), the layout rebuilds around a new one
+showing the same buffer.
 
 ## Bottom panel
 
@@ -170,11 +170,10 @@ the theme's real colours: SGR runs become background bands, box-drawing
 characters are drawn as lines so borders are continuous, and the default
 foreground/background are derived from the capture itself (a separate headless
 Neovim could run under a different XDG config and paint the shot with the wrong
-theme).
-`scripts/gen-keymaps.sh` regenerates the keymap page.
+theme). `scripts/gen-keymaps.sh` regenerates the keymap page.
 
-Behaviour is covered by the headless suites in `tests/` (`tests/layout.sh`
-for the slot layout).
+Behaviour is covered by the headless suites in `tests/` (`tests/layout.sh` for
+the slot layout).
 
 Both scripts are development tools, not loaded by Neovim.
 

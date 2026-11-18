@@ -15,9 +15,9 @@ auth as `opencode:<password>`.
 
 `features/opencode/client.lua`:
 
-- **Discovery:** registrations newest first, each verified with
-  `GET /api/info`. A connection failure forgets the server so the next request
-  re-discovers it (a restarted service moves port and password).
+- **Discovery:** registrations newest first, each verified with `GET /api/info`.
+  A connection failure forgets the server so the next request re-discovers it (a
+  restarted service moves port and password).
 - **Requests:** `curl` jobs. The credentials and the JSON body go to curl on
   stdin (`-K -`), never on the command line where `ps` would show them.
 - **Events:** one long-lived `GET /api/event` stream, re-emitted as
@@ -27,8 +27,8 @@ auth as `opencode:<password>`.
   drops the stream, which reconnects with backoff (1 s doubling to 30 s).
 
 The stream is **global** in 2.2.x: it carries every session of every project,
-and `x-opencode-directory` does not filter it (verified: identical captures
-with and without the header). Every consumer filters by session id
+and `x-opencode-directory` does not filter it (verified: identical captures with
+and without the header). Every consumer filters by session id
 (`client.session_of(event)`).
 
 ## Sessions: internal and external
@@ -50,23 +50,22 @@ sessions from events:
 - **Info:** title, model, agent, metadata, cost.
 - **Busy:** busy or idle, with the running tool.
 - **Waiting on you:** permission requests and forms (questions), until they're
-  answered anywhere, the TUI included. Reading `GET …/permission` and
-  `…/form` on attach and after every reconnect catches up on missed events.
+  answered anywhere, the TUI included. Reading `GET …/permission` and `…/form`
+  on attach and after every reconnect catches up on missed events.
 
 `User NVOpenCodeSession` (`data = { id }`) fires on every change.
 
 When a followed session starts waiting, one toast appears. The session panel
-(`󰂞 waiting on you`) and the prompt strip keep an indicator until it's
-answered.
+(`󰂞 waiting on you`) and the prompt strip keep an indicator until it's answered.
 
 ## Prompt panel
 
-| Key | Action |
-| --- | --- |
-| `<CR>` | send (queued behind the current turn if the agent is busy) |
-| `<M-CR>` | send now: steer the running turn |
-| `<S-CR>` / `<C-j>` | new line |
-| `<M-a>` | transcript (and back) |
+| Key                | Action                                                     |
+| ------------------ | ---------------------------------------------------------- |
+| `<CR>`             | send (queued behind the current turn if the agent is busy) |
+| `<M-CR>`           | send now: steer the running turn                           |
+| `<S-CR>` / `<C-j>` | new line                                                   |
+| `<M-a>`            | transcript (and back)                                      |
 
 The strip shows the target, a `nvim` or `external` chip with its title, and its
 state (`working`, `waiting on you`, `offline`). It fits the window: the title
@@ -106,25 +105,25 @@ shows the title, state, waiting chip, model and cost.
 References are plain text in the draft, so typed, completed and inserted ones
 behave the same. `features/opencode/context.lua` parses them when sending:
 
-| In the draft | Sent as |
-| --- | --- |
+| In the draft                       | Sent as                                                                                                                |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | `@path`, `@path:12`, `@path:12-30` | `files[]`: `file://abs?start=12&end=30` with a mention span; OpenCode inlines that slice (a bare path: the whole file) |
-| `$skill` | `skills[]` (known skill ids only) |
-| `/command args` at the start | the whole prompt runs that command (`POST …/command`) |
+| `$skill`                           | `skills[]` (known skill ids only)                                                                                      |
+| `/command args` at the start       | the whole prompt runs that command (`POST …/command`)                                                                  |
 
 Mentions are offsets in UTF-16 code units (JS strings).
 
-| Key | Adds to the draft |
-| --- | --- |
-| `<leader>ai` | `@path:line` (normal) or `@path:a-b` (visual) |
-| `<leader>aI` | `@path` (the whole file) |
-| `<leader>ad` | diagnostics as a block under `@path:a-b`; with none on the line, the file's, under its plain path (not attached) |
-| `<leader>ao{motion}` | `@path:a-b` for the motion's lines |
-| `<leader>ak` / `<leader>ac` | `$skill` / `/command ` (pickers) |
+| Key                         | Adds to the draft                                                                                                |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `<leader>ai`                | `@path:line` (normal) or `@path:a-b` (visual)                                                                    |
+| `<leader>aI`                | `@path` (the whole file)                                                                                         |
+| `<leader>ad`                | diagnostics as a block under `@path:a-b`; with none on the line, the file's, under its plain path (not attached) |
+| `<leader>ao{motion}`        | `@path:a-b` for the motion's lines                                                                               |
+| `<leader>ak` / `<leader>ac` | `$skill` / `/command ` (pickers)                                                                                 |
 
-`features/opencode/prompt_lsp.lua` is an in-process language server attached
-to the prompt buffer (`opencode://prompt`). It needs no process and no
-JSON-RPC: `vim.lsp.start` with a Lua `cmd`.
+`features/opencode/prompt_lsp.lua` is an in-process language server attached to
+the prompt buffer (`opencode://prompt`). It needs no process and no JSON-RPC:
+`vim.lsp.start` with a Lua `cmd`.
 
 - **Completion** through blink's LSP source:
   - `@` offers files (open buffers first). They're filtered and ranked on the
@@ -135,16 +134,16 @@ JSON-RPC: `vim.lsp.start` with a Lua `cmd`.
   description.
 - **Go to definition:** `gd` opens the file at the line.
 
-Project files come from `rg --files --hidden`, not `git ls-files`, which lists
-a submodule as a single entry. The LSP panel leaves this server out.
+Project files come from `rg --files --hidden`, not `git ls-files`, which lists a
+submodule as a single entry. The LSP panel leaves this server out.
 
 ## Permissions and questions
 
 `features/opencode/requests.lua`:
 
-- **Internal sessions:** a permission request opens a select (allow once,
-  always allow, reject, reject with a message). A form (question) is walked
-  field by field:
+- **Internal sessions:** a permission request opens a select (allow once, always
+  allow, reject, reject with a message). A form (question) is walked field by
+  field:
   - free text, number or integer, yes/no, options (with "Something else…" when
     custom answers are allowed), multiselect (Tab marks), external (opens the
     URL);
@@ -155,10 +154,10 @@ a submodule as a single entry. The LSP panel leaves this server out.
   waiting on.
 - **Answered elsewhere** (the TUI): `permission.replied` / `form.replied` /
   `form.cancelled` close the prompt.
-- **Edit review**, opt-in: `vim.g.nv_opencode_review_edits = true`. For
-  internal sessions, an edit permission carrying a single-file patch opens as a
-  diff in its own tab: `da` accept, `dr` reject, `q` decide later. Off by
-  default, since edits are reviewed afterwards in the Changes panel.
+- **Edit review**, opt-in: `vim.g.nv_opencode_review_edits = true`. For internal
+  sessions, an edit permission carrying a single-file patch opens as a diff in
+  its own tab: `da` accept, `dr` reject, `q` decide later. Off by default, since
+  edits are reviewed afterwards in the Changes panel.
 
 ## Model, variant, agent
 
@@ -193,8 +192,8 @@ ${XDG_RUNTIME_DIR}/nvim-bridge/<pid>.json
   old session from the list, unless its transcript is open.
 - **Only those sessions have the tool.** The plugin
   (`dot_config/opencode/plugins/nvim-bridge.ts`) registers a session `context`
-  hook. Before every model request, it removes `nvim_control` from the tool
-  list unless a live editor lists that session. The tool is a direct tool
+  hook. Before every model request, it removes `nvim_control` from the tool list
+  unless a live editor lists that session. The tool is a direct tool
   (`codemode: false`), because the hook sees only direct tools, not Code Mode's
   catalog.
 - **Exactly that editor:** a call drives the editor bound to its session (the
@@ -205,14 +204,14 @@ Verified live: a session the dev editor connected to answered that it had
 `nvim_control` and opened a file in that editor. A session created outside
 Neovim answered that it had no such tool.
 
-| Action | Effect (editor function) |
-| --- | --- |
-| `open` | open a file at a line (`NVBridge.open_file`) |
-| `transcript` | show the target's transcript (`NVBridge.open`) |
-| `slot` | point a slot at a provider |
-| `layout` / `status` | layout state as JSON |
-| `append` | a note in the transcript, or a toast for an external target (`NVBridge.append`) |
-| `show` | read-only text in the editing area (`NVBridge.show_text`) |
+| Action              | Effect (editor function)                                                        |
+| ------------------- | ------------------------------------------------------------------------------- |
+| `open`              | open a file at a line (`NVBridge.open_file`)                                    |
+| `transcript`        | show the target's transcript (`NVBridge.open`)                                  |
+| `slot`              | point a slot at a provider                                                      |
+| `layout` / `status` | layout state as JSON                                                            |
+| `append`            | a note in the transcript, or a toast for an external target (`NVBridge.append`) |
+| `show`              | read-only text in the editing area (`NVBridge.show_text`)                       |
 
 All of it goes through `nvim --server … --remote-expr` against the editor API
 ([editor API](editor-api.md)).

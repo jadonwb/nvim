@@ -13,22 +13,22 @@ the same from the command line.
 The base applies independently of the selected packs. Launch profiles still
 control which tooling is active.
 
-| | |
-| --- | --- |
-| Servers | `lua_ls`, `jsonls`, `yamlls`, `taplo`, `systemd_lsp` |
-| Tools | `prettier` (markdown), `systemd-lsp` |
+|         |                                                                                                                           |
+| ------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Servers | `lua_ls`, `jsonls`, `yamlls`, `taplo`, `systemd_lsp`                                                                      |
+| Tools   | `prettier` (markdown), `systemd-lsp`                                                                                      |
 | Parsers | about 50, so anything reads with highlighting: assembly, linker scripts, make, CMake, Kconfig, device tree, SQL, proto, … |
 
 ## Packs
 
-| Pack | Servers | Tools | Formatters / linters | Plugins |
-| --- | --- | --- | --- | --- |
-| C / C++ | clangd, neocmake | clang-format | clang-format | cppman.nvim |
-| BitBake / Yocto | bitbake_ls | language-server-bitbake, oelint-adv | oelint-adv (lint) | |
-| Rust | rust_analyzer (clippy) | | rustfmt through the server | crates.nvim |
-| Python | basedpyright, ruff | | ruff (organize imports, format) | |
-| JavaScript / TypeScript | vtsls, eslint | prettier | prettier | |
-| Shell | bashls | shellcheck, shfmt | shfmt | |
+| Pack                    | Servers                | Tools                               | Formatters / linters            | Plugins     |
+| ----------------------- | ---------------------- | ----------------------------------- | ------------------------------- | ----------- |
+| C / C++                 | clangd, neocmake       | clang-format                        | clang-format                    | cppman.nvim |
+| BitBake / Yocto         | bitbake_ls             | language-server-bitbake, oelint-adv | oelint-adv (lint)               |             |
+| Rust                    | rust_analyzer (clippy) |                                     | rustfmt through the server      | crates.nvim |
+| Python                  | basedpyright, ruff     |                                     | ruff (organize imports, format) |             |
+| JavaScript / TypeScript | vtsls, eslint          | prettier                            | prettier                        |             |
+| Shell                   | bashls                 | shellcheck, shfmt                   | shfmt                           |             |
 
 Each pack can add parsers beyond the base. `<leader>cK` opens documentation for
 the word under the cursor in a C++ buffer. It requires the `cppman` CLI.
@@ -39,8 +39,8 @@ the word under the cursor in a C++ buffer. It requires the `cppman` CLI.
   does not sync it. A machine that has never chosen gets C/C++ and BitBake,
   which is what the config enabled before extras existed.
 - **Catalog and state:** `config/extras.lua` defines the packs and loads the
-  machine's choice. `features/extras_runtime.lua` installs tools and parsers
-  and updates running tooling. The dashboard renders that state.
+  machine's choice. `features/extras_runtime.lua` installs tools and parsers and
+  updates running tooling. The dashboard renders that state.
 - **Toggles apply at once:**
   - Turning a pack on: Mason installs its tools and servers, its parsers
     compile, its servers start on open buffers, and its formatters and linters
@@ -49,5 +49,5 @@ the word under the cursor in a C++ buffer. It requires the `cppman` CLI.
   - A pack's plugins load on the next start.
   - Installed tools stay installed; remove them in Mason (`<leader>pm`).
 
-`tests/extras.sh` covers the defaults, saving, merging, and live toggling,
-with installs stubbed.
+`tests/extras.sh` covers the defaults, saving, merging, and live toggling, with
+installs stubbed.

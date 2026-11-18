@@ -22,30 +22,30 @@ nvim --server "$NVIM" --remote-expr 'v:lua.NVSlots.toggle_slot("bottom")'
 
 ## What an external caller can do
 
-| Call | Effect |
-| --- | --- |
-| `NVSlots.state()` | `{ applied, order, slots = { name = { width, height, provider } } }` |
-| `NVSlots.status()` | live windows by slot name (window id, size, provider) |
-| `NVSlots.open()`, `.close()`, `.toggle()` | whole layout |
-| `NVSlots.open({ 'left', 'right_top' })` | build only those slots |
-| `NVSlots.ensure(name)`, `.remove(name)` | one slot on or off |
-| `NVSlots.toggle_slot(name)` | flip one slot |
-| `NVSlots.swap(a, b)` | exchange two slots' contents, windows stay |
-| `NVSlots.set_provider(slot, provider)` | point a slot at another provider |
-| `NVSlots.set_buffer(slot, buf)` | show an arbitrary buffer in a slot |
-| `NVSlots.win(name)` | window id, for `nvim_win_call` |
-| `:NVLayout status` / `slot <name> [open\|close\|toggle]` / `swap <a> <b>` | the same from Ex or vimscript |
-| `NVBridge.open()` | show the target session's transcript in the editing area |
-| `NVBridge.submit(text, opts?)` | send a prompt to the target session (`opts.delivery = 'steer'` interjects) |
-| `NVBridge.append(text)` | a note in the transcript (a toast for an external target) |
-| `NVBridge.open_file(path, line)` | show a file in the editing area, optionally at a line |
-| `NVBridge.show_text(title, text)` | show read-only text in the editing area |
-| `NVOpenCodeSessions` | followed sessions: `info`, `busy`, `waiting(id)`, `target_id()`, `is_internal(id)` |
-| `:NVAgent [text]` | open the transcript, or send `text`; `new`, `stop`, `reconnect` |
+| Call                                                                      | Effect                                                                             |
+| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `NVSlots.state()`                                                         | `{ applied, order, slots = { name = { width, height, provider } } }`               |
+| `NVSlots.status()`                                                        | live windows by slot name (window id, size, provider)                              |
+| `NVSlots.open()`, `.close()`, `.toggle()`                                 | whole layout                                                                       |
+| `NVSlots.open({ 'left', 'right_top' })`                                   | build only those slots                                                             |
+| `NVSlots.ensure(name)`, `.remove(name)`                                   | one slot on or off                                                                 |
+| `NVSlots.toggle_slot(name)`                                               | flip one slot                                                                      |
+| `NVSlots.swap(a, b)`                                                      | exchange two slots' contents, windows stay                                         |
+| `NVSlots.set_provider(slot, provider)`                                    | point a slot at another provider                                                   |
+| `NVSlots.set_buffer(slot, buf)`                                           | show an arbitrary buffer in a slot                                                 |
+| `NVSlots.win(name)`                                                       | window id, for `nvim_win_call`                                                     |
+| `:NVLayout status` / `slot <name> [open\|close\|toggle]` / `swap <a> <b>` | the same from Ex or vimscript                                                      |
+| `NVBridge.open()`                                                         | show the target session's transcript in the editing area                           |
+| `NVBridge.submit(text, opts?)`                                            | send a prompt to the target session (`opts.delivery = 'steer'` interjects)         |
+| `NVBridge.append(text)`                                                   | a note in the transcript (a toast for an external target)                          |
+| `NVBridge.open_file(path, line)`                                          | show a file in the editing area, optionally at a line                              |
+| `NVBridge.show_text(title, text)`                                         | show read-only text in the editing area                                            |
+| `NVOpenCodeSessions`                                                      | followed sessions: `info`, `busy`, `waiting(id)`, `target_id()`, `is_internal(id)` |
+| `:NVAgent [text]`                                                         | open the transcript, or send `text`; `new`, `stop`, `reconnect`                    |
 
-Slot names: `left`, `right_top`, `right_mid`, `right_bottom`, `bottom`.
-Built-in providers: `terminal`, `quickfix`, `problems`, `explorer`, `preview`,
-`changes`, `session`, `prompt`. Any provider can live in any slot.
+Slot names: `left`, `right_top`, `right_mid`, `right_bottom`, `bottom`. Built-in
+providers: `terminal`, `quickfix`, `problems`, `explorer`, `preview`, `changes`,
+`session`, `prompt`. Any provider can live in any slot.
 
 ## Regression tests
 
@@ -56,20 +56,20 @@ the restored file, real explorer buffer, slot positions, and view-specific
 toggles. The restart test also checks that the bridge registry and restart
 snapshot are clear after exit.
 
-For new layout cases, pair `NVSlots.status()` with
-`nvim_win_get_position()`, `nvim_win_get_buf()`, and the buffer's filetype.
-Assert relative positions, provider identity, and what the window actually
-displays. Window IDs can change on restart. Starting a real UI also catches
-startup differences that headless Lua or RPC calls miss.
+For new layout cases, pair `NVSlots.status()` with `nvim_win_get_position()`,
+`nvim_win_get_buf()`, and the buffer's filetype. Assert relative positions,
+provider identity, and what the window actually displays. Window IDs can change
+on restart. Starting a real UI also catches startup differences that headless
+Lua or RPC calls miss.
 
 If a case needs external keys, resizing, or multiple panes, run a private
 `tmux -L <test-id> -f /dev/null` server with a fixed terminal size. Use
-`send-keys` for actions, `capture-pane` for visible output, and a private
-Neovim `--listen` socket for state queries. Use temporary XDG state and
-runtime directories. On exit, request `:qa!`, check the server socket and
-tracked processes, and tear down only the test's tmux server and processes.
-The OpenCode `nvim` tool can help inspect a live session; regression tests can
-query the same editor state directly over RPC.
+`send-keys` for actions, `capture-pane` for visible output, and a private Neovim
+`--listen` socket for state queries. Use temporary XDG state and runtime
+directories. On exit, request `:qa!`, check the server socket and tracked
+processes, and tear down only the test's tmux server and processes. The OpenCode
+`nvim` tool can help inspect a live session; regression tests can query the same
+editor state directly over RPC.
 
 ## Agent transcript
 
@@ -104,7 +104,7 @@ nvim --server "$NVIM" --remote-expr 'v:lua.NVBridge.append("note from opencode")
   split, not a rebuild of the layout.
 - Closing a slot returns its space to its neighbour, so an external "collapse
   the bottom panel" call is just `NVSlots.remove('bottom')`.
-- `state()` returns plain strings and numbers, so a caller can encode it as
-  JSON without knowing anything about window handles.
+- `state()` returns plain strings and numbers, so a caller can encode it as JSON
+  without knowing anything about window handles.
 - Provider buffers are `nofile` and `bufhidden=wipe`; a caller that supplies its
   own buffer with `set_buffer` owns its lifetime.
