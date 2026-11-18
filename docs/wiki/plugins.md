@@ -1,8 +1,8 @@
 # Plugins
 
-One spec per file under `lua/plugins/` (grouped in subdirectories by concern).
-Plugins load through lazy.nvim; anything that is not listed as eager starts on
-its event, command or key.
+Specs live under `lua/plugins/`, grouped by concern. lazy.nvim loads plugins
+through startup, events, commands, keys, or module imports, subject to their
+launch-profile conditions.
 
 ## Core / editor
 
@@ -39,8 +39,9 @@ its event, command or key.
 | Plugin | Purpose | Load |
 | --- | --- | --- |
 | `snacks.nvim` pickers | files, grep, symbols, diagnostics, registers, … | lazy |
-| `fff.nvim` | fast file finder used by the picker | eager |
-| `oil.nvim` | buffer-based file explorer in the `left` slot | eager |
+| `fff.nvim` | file and content search backend for the picker | on first search |
+| `nvim-tree.lua` | file explorer in the `left` slot | on use |
+| `oil.nvim` | bulk editing of directory entries | command or key |
 | `yazi.nvim` | optional external browser | VeryLazy |
 | `grug-far.nvim` | project/buffer search and replace | lazy |
 
@@ -48,13 +49,15 @@ its event, command or key.
 
 | Plugin | Purpose | Load |
 | --- | --- | --- |
-| `nvim-lspconfig` | LSP transport; server list lives in `features/lsp/init.lua` | BufRead |
+| `nvim-lspconfig` | server defaults for Neovim's built-in LSP | BufReadPre / BufNewFile |
+| `SchemaStore.nvim` | JSON and YAML schema catalog | LSP dependency |
 | `mason.nvim`, `mason-lspconfig.nvim` | server installation | lazy |
 | `blink.cmp` | completion (insert + cmdline) | InsertEnter |
 | `colorful-menu.nvim` | completion menu icons | lazy |
 | `actions-preview.nvim` | code actions with a preview | lazy |
 | `conform.nvim` | formatting | BufWritePre |
-| `nvim-lint` | linters | eager |
+| `nvim-lint` | extras linters | on read or write of a configured filetype |
+| `cppman.nvim` | C++ manual popup | C/C++ pack; command or C++ buffer key |
 | `nvim-treesitter` (+ textobjects, autotag) | parsing, highlighting, objects | BufRead/VeryLazy |
 | `treesj` | split/join code blocks | lazy |
 | `nvim-lspconfig` servers | clangd, lua_ls, bitbake, neocmake, systemd | on attach |
@@ -71,8 +74,8 @@ its event, command or key.
 
 | Plugin | Purpose | Load |
 | --- | --- | --- |
-| built-in bridge | `features/bridge`: prompt out, stream back, RPC control | eager (feature) |
-| built-in opencode features | `features/opencode`: sessions, prompt, transcript | eager (feature) |
+| built-in bridge | `features/bridge`: prompt out, stream back, RPC control | workspace startup |
+| built-in opencode features | `features/opencode`: sessions, prompt, transcript | workspace startup |
 | `chezmoi.nvim`, `chezmoi.vim` | edit managed dotfiles through chezmoi | eager/lazy |
 
 ## LuaLS diagnostics
@@ -86,6 +89,6 @@ tables still carry real `---@class` annotations. Everything else stays on.
 ## Removed on purpose
 
 LazyVim's bufferline, noice, flash, persistence, mini.pairs, dashboard-nvim,
-SchemaStore and friendly-snippets are not installed. The custom tab layer is
+and friendly-snippets are not installed. The custom tab layer is
 gone; diffview's tabpage is the only tab that exists. The custom git UI is gone
 in favour of lazygit, gitsigns and diffview.

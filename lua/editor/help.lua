@@ -66,6 +66,7 @@ function NVHelp.setup()
       NVMessages.warn(tostring(err))
     end
   end, mode = 'n' }
+  NVHelp.autocmds()
 end
 
 --- The doc window's top strip: page name, then the reading keys right-aligned

@@ -223,6 +223,32 @@ function M.save_restart()
   return write_snapshot(file, true)
 end
 
+local function read_snapshot_header(file)
+  if not file or vim.fn.filereadable(file) ~= 1 then
+    error('Session file is missing: ' .. tostring(file))
+  end
+  local first = vim.fn.readfile(file, '', 1)[1] or ''
+  local data = first:sub(1, #header) == header and vim.json.decode(first:sub(#header + 1)) or nil
+  if data and data.version ~= 1 then
+    error('Unsupported session format: ' .. file)
+  end
+  return data
+end
+
+function M.prepare_restart()
+  local file = vim.env.NVIM_RESTART_SNAPSHOT
+  vim.env.NVIM_RESTART_SNAPSHOT = nil
+  if not (file and NVEnv.restart_pending) then
+    return
+  end
+  local ok, data = pcall(read_snapshot_header, file)
+  if ok and data and data.context then
+    -- Use the original profile for startup gates. UI and buffer restoration
+    -- still happen from the restart command on UIEnter.
+    NVEnv.restore_context(data.context, true)
+  end
+end
+
 local function restore_ui(data)
   if data then
     local tab = vim.api.nvim_list_tabpages()[data.active.tab]
@@ -269,14 +295,7 @@ local function restore_ui(data)
 end
 
 local function load_snapshot(file, restart)
-  if not file or vim.fn.filereadable(file) ~= 1 then
-    error('Session file is missing: ' .. tostring(file))
-  end
-  local first = vim.fn.readfile(file, '', 1)[1] or ''
-  local data = first:sub(1, #header) == header and vim.json.decode(first:sub(#header + 1)) or nil
-  if data and data.version ~= 1 then
-    error('Unsupported session format: ' .. file)
-  end
+  local data = read_snapshot_header(file)
   if restart and not (data and data.context) then
     error('Restart snapshot has no invocation context: ' .. file)
   end

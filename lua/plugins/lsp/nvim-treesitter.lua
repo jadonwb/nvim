@@ -4,17 +4,6 @@
 -- and archived). This replaces LazyVim's treesitter config, which is the only
 -- thing that used to call `TS.setup()` and start parsers per FileType.
 
-local function installed()
-  local ok, list = pcall(function()
-    return require('nvim-treesitter').get_installed()
-  end)
-  local set = {}
-  for _, lang in ipairs(ok and list or {}) do
-    set[lang] = true
-  end
-  return set
-end
-
 --- Resolve a filetype to a parser name, and report whether the parser exists.
 ---@param ft string
 ---@return string, boolean
@@ -36,20 +25,13 @@ return {
       indent = { enable = true },
       highlight = { enable = true },
       folds = { enable = true },
-      -- The base set reads anything; language extras add theirs
-      -- (config/extras.lua).
-      ensure_installed = require('config.extras').collect 'parsers',
     },
     config = function(_, opts)
       local TS = require 'nvim-treesitter'
       TS.setup(opts)
 
-      local have = installed()
-      local missing = vim.tbl_filter(function(lang)
-        return not have[lang]
-      end, opts.ensure_installed or {})
-      if #missing > 0 then
-        TS.install(missing)
+      if require('config.profile').wants 'parser_install' then
+        require('features.extras_runtime').install_parsers(require('config.extras').collect 'parsers')
       end
 
       vim.api.nvim_create_autocmd('FileType', {

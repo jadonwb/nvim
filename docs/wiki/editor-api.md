@@ -43,9 +43,33 @@ nvim --server "$NVIM" --remote-expr 'v:lua.NVSlots.toggle_slot("bottom")'
 | `NVOpenCodeSessions` | followed sessions: `info`, `busy`, `waiting(id)`, `target_id()`, `is_internal(id)` |
 | `:NVAgent [text]` | open the transcript, or send `text`; `new`, `stop`, `reconnect` |
 
-Slot names: `left`, `bottom_left`, `right_top`, `right_bottom`, `bottom`.
+Slot names: `left`, `right_top`, `right_mid`, `right_bottom`, `bottom`.
 Built-in providers: `terminal`, `quickfix`, `problems`, `explorer`, `preview`,
 `changes`, `session`, `prompt`. Any provider can live in any slot.
+
+## Regression tests
+
+Use the native Neovim API for assertions and a real terminal for actions that
+depend on a UI. `tests/rpc.sh` covers the socket interface; `tests/launch.sh`
+checks the first terminal draw; `tests/restart.sh` sends `Alt+r` and confirms
+the restored file, real explorer buffer, slot positions, and view-specific
+toggles. The restart test also checks that the bridge registry and restart
+snapshot are clear after exit.
+
+For new layout cases, pair `NVSlots.status()` with
+`nvim_win_get_position()`, `nvim_win_get_buf()`, and the buffer's filetype.
+Assert relative positions, provider identity, and what the window actually
+displays. Window IDs can change on restart. Starting a real UI also catches
+startup differences that headless Lua or RPC calls miss.
+
+If a case needs external keys, resizing, or multiple panes, run a private
+`tmux -L <test-id> -f /dev/null` server with a fixed terminal size. Use
+`send-keys` for actions, `capture-pane` for visible output, and a private
+Neovim `--listen` socket for state queries. Use temporary XDG state and
+runtime directories. On exit, request `:qa!`, check the server socket and
+tracked processes, and tear down only the test's tmux server and processes.
+The OpenCode `nvim` tool can help inspect a live session; regression tests can
+query the same editor state directly over RPC.
 
 ## Agent transcript
 

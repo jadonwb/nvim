@@ -1,5 +1,4 @@
 .luarc.json
 lazy-lock.json
 lua/plugins/theme.lua
-lazy-lock.json
 lazyvim.json

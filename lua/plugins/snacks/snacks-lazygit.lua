@@ -88,9 +88,6 @@ function NVSLazygit.setup()
   end)
 end
 
---- Lazygit lives on <M-g> only (snacks-lazygit spec keys).
-function NVSLazygit.keymaps() end
-
 return {
   'folke/snacks.nvim',
   opts = {

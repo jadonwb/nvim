@@ -73,6 +73,7 @@ end
 -- Recognize startup commands, without treating arguments after -- as options.
 local function startup_commands(argv)
   local commands = {}
+  local flags = {}
   local takes_value = {
     ['-u'] = true,
     ['-i'] = true,
@@ -97,6 +98,8 @@ local function startup_commands(argv)
       commands[#commands + 1] = argv[i] or ''
     elseif takes_value[arg] then
       i = i + 1
+    elseif arg == '-' or arg == '--embed' then
+      flags[arg] = true
     elseif arg:sub(1, 1) == '+' then
       commands[#commands + 1] = arg:sub(2)
     elseif arg:sub(1, 2) == '-c' and #arg > 2 then
@@ -104,7 +107,7 @@ local function startup_commands(argv)
     end
     i = i + 1
   end
-  return commands
+  return commands, flags
 end
 
 -- Startup facts are captured once. Completion is separate mutable state.
@@ -134,7 +137,7 @@ local function capture_startup()
       files[#files + 1] = path
     end
   end
-  local commands = startup_commands(vim.v.argv)
+  local commands, flags = startup_commands(vim.v.argv)
   local host = NVEnv.launched_by(DEFAULT_HOSTS)
   local purpose
   for _, command in ipairs(commands) do
@@ -170,6 +173,14 @@ local function capture_startup()
   if launch_mode == 'pager' or launch_mode == 'difftool' or launch_mode == 'mergetool' then
     purpose = launch_mode
   end
+  if not purpose and flags['-'] and launch_mode ~= 'transient' then
+    purpose = 'pager'
+  end
+  -- The built-in terminal UI also starts a server with --embed. It identifies
+  -- itself on the stdio channel before Neovim sources the user's config.
+  local client = flags['--embed'] and vim.api.nvim_get_chan_info(1).client
+  local builtin_tui = client and client.name == 'nvim-tui'
+  local embedded = host ~= nil or (flags['--embed'] == true and not builtin_tui)
   local reason = vim.fn.exists 'v:startreason' == 1 and vim.v.startreason or 'normal'
   local startup = {
     pid = vim.fn.getpid(),
@@ -184,13 +195,13 @@ local function capture_startup()
     host = host,
     launch_mode = launch_mode,
     purpose = purpose,
-    embedded = host ~= nil,
-    transient = launch_mode ~= nil or host ~= nil or purpose ~= nil,
+    embedded = embedded,
+    transient = launch_mode ~= nil or embedded or purpose ~= nil,
     reason = reason,
     restarted = reason == 'restart' or reason == 'restart!',
   }
   -- mode is a display summary only. Policies use the independent facts above.
-  startup.mode = purpose or (host and 'host_editor') or (startup.transient and 'transient') or (startup.has_files and 'files') or 'workspace'
+  startup.mode = purpose or (host and 'host_editor') or (embedded and 'embedded') or (startup.transient and 'transient') or (startup.has_files and 'files') or 'workspace'
   startup.policy = derive_policy(startup)
   if startup.restarted then
     -- Do not activate normal session loading before the native restart snapshot restores
@@ -210,8 +221,9 @@ NVEnv.restart_pending = NVEnv.startup.restarted
 NVEnv.completed = {}
 local target_buffers = {}
 
--- Called only by the explicit restart snapshot loader.
-function NVEnv.restore_context(context)
+-- Restore launch facts before plugin setup, then restore the full policy when
+-- the saved editor state is ready.
+function NVEnv.restore_context(context, pending)
   local current = NVEnv.startup
   local startup = vim.deepcopy(context.startup)
   startup.origin_pid = startup.origin_pid or startup.pid
@@ -220,10 +232,13 @@ function NVEnv.restore_context(context)
   startup.restarted = true
   startup.current_ancestors = current.ancestors
   startup.policy = derive_policy(startup)
+  if pending then
+    startup.policy.session = { load = false, save = false }
+  end
   NVEnv.startup = startup
   NVEnv.completed = vim.deepcopy(context.completed or {})
   NVEnv.workspace_activated = context.workspace_activated == true
-  NVEnv.restart_pending = false
+  NVEnv.restart_pending = pending == true
   target_buffers = {}
 end
 

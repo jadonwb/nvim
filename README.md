@@ -1,56 +1,23 @@
-# LazyNvim config for me
+# Neovim configuration
 
-I switched from kickstart to LazyVim because I started using Omarchy
+Personal Neovim config using lazy.nvim, with an IDE layout for workspaces and
+smaller launch profiles for diff, pager, and embedded editing. Chezmoi deploys
+this repository to `~/.config/nvim`; Omarchy supplies the active theme on
+machines that use it. Elsewhere the theme falls back to `habamax`.
 
-## Introduction
+## Setup
 
-My config for neovim, I think I am somewhere in the middle between minimal and
-full IDE.
+1. Install Neovim 0.12 or 0.13. See [version support](docs/wiki/nvim-0.13.md).
+2. Install `git`, `make`, `unzip`, a C compiler, `ripgrep`, `fd`, and a recent
+   `tree-sitter` CLI. A Nerd Font is recommended for icons. Use `wl-clipboard`
+   on Wayland or `xclip`/`xsel` on X11 for system clipboard access.
+3. Deploy with `chezmoi apply ~/.config/nvim`, or place this repository at
+   `~/.config/nvim` on a standalone machine.
+4. Start Neovim and run `:Lazy sync` to install plugins, then restart.
+   Startup does not automatically install missing plugins. lazy.nvim owns
+   `lazy-lock.json` locally; Git and chezmoi leave it alone.
+5. Open `:NVExtras` to choose language packs. New state defaults to C/C++ and
+   BitBake. C++ manual pages require the separate `cppman` executable; for
+   example, `uv tool install cppman` installs it for your user.
 
-## Installation
-
-### Install Neovim
-
-I use _only_ the latest
-['stable'](https://github.com/neovim/neovim/releases/tag/stable) and latest
-['nightly'](https://github.com/neovim/neovim/releases/tag/nightly) of Neovim. If
-you are experiencing issues, please make sure you have the latest versions.
-
-### Install External Dependencies
-
-External Requirements:
-
-- Basic utils: `git`, `make`, `unzip`, C Compiler (`gcc`)
-- [ripgrep](https://github.com/BurntSushi/ripgrep#installation),
-  [fd-find](https://github.com/sharkdp/fd#installation)
-- Clipboard tool (xclip/xsel/wl-clipboard)
-- A [Nerd Font](https://www.nerdfonts.com/): optional, provides various icons
-  - if you have it set `vim.g.have_nerd_font` in `init.lua` to true
-- Emoji fonts (Ubuntu only, and only if you want emoji!)
-  `sudo apt install fonts-noto-color-emoji`
-- Language Setup:
-  - If you want to write Golang, you will need `go`
-  - If you want to write Rust, you will need `rustup`
-  - For Language Servers that aren't available via Mason, you will likely need
-    `npm` and `python/pip`
-  - etc.
-
-### Linux Install (The two distros I use, work and personal)
-
-<details><summary>Ubuntu Install Steps</summary>
-
-```sh
-sudo add-apt-repository ppa:neovim-ppa/unstable -y
-sudo apt update
-sudo apt install make gcc ripgrep unzip git xclip neovim
-```
-
-</details>
-
-<details><summary>Arch Install Steps</summary>
-
-```sh
-sudo pacman -S --noconfirm --needed gcc make git ripgrep fd unzip neovim
-```
-
-</details>
+See the [wiki](docs/wiki/README.md) for startup, keymaps, and feature guides.

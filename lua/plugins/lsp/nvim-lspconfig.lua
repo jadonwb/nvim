@@ -1,5 +1,4 @@
--- nvim-lspconfig is the transport; the server list and the keymaps live in
--- config/lsp.lua so they are readable as data instead of a plugin `opts` table.
+-- nvim-lspconfig provides server defaults. features/lsp owns Neovim's LSP setup.
 return {
   'neovim/nvim-lspconfig',
   cond = function()

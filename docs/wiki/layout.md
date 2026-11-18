@@ -57,7 +57,7 @@ Leader groups for the editor's own UI live in `features/layout/keymaps.lua`;
 | Key | Action |
 | --- | --- |
 | `<M-i>` / `<leader>li` | Focus mode: hide / restore the layout (hidden panels stay hidden) |
-| `<leader>le` `lc` `lo` `ls` `lb` | Toggle a panel: explorer, changes, OpenCode, LSP, bottom (brings back a hidden one); `<leader>fe` = explorer |
+| `<leader>le` `lc` `lo` `ls` `lb` | Toggle explorer, Changes, OpenCode, LSP, or bottom. Changes, OpenCode, and LSP follow their views after a swap. `<leader>fe` also toggles the explorer. |
 | `<M-w>` in a panel | Hide that panel |
 | `<A-0>` / `<A-=>` / `<leader>l0` | Restore default sizes |
 | `<M-S-arrows>` in a panel | Swap the panel's contents with the neighbouring panel (layout unchanged); `<leader>lw` / `<M-Tab>` swap with a picked one |

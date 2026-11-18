@@ -7,10 +7,8 @@ NVFff = {
   build = function()
     require('fff.download').download_or_build_binary()
   end,
-  init = function()
-    -- Scan early before first usage of picker
-    require('fff').scan_files()
-  end,
+  -- The picker requires fff on first use; its native index starts then.
+  lazy = true,
   opts = {
     prompt_vim_mode = true,
     file_picker = {

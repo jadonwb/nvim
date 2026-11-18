@@ -62,15 +62,22 @@ local installs = {}
 package.loaded['mason-registry'] = {
   refresh = function(cb) cb() end,
   get_package = function(name)
-    return { is_installed = function() return false end, install = function() installs[#installs + 1] = name end }
+    return {
+      is_installed = function() return false end,
+      is_installing = function() return false end,
+      install = function() installs[#installs + 1] = name end,
+    }
   end,
 }
-package.loaded['nvim-treesitter'] = setmetatable({ install = function(list) installs[#installs + 1] = 'ts:' .. table.concat(list, ',') end }, { __index = package.loaded['nvim-treesitter'] or {} })
+package.loaded['nvim-treesitter'] = {
+  get_installed = function() return { 'rust' } end,
+  install = function(list) installs[#installs + 1] = 'ts:' .. table.concat(list, ',') end,
+}
 local E = require 'features.extras'
 require('features.lsp').servers.rust_analyzer = require('features.lsp').servers.rust_analyzer or {}
 E.toggle 'rust'
 add('rust on=' .. tostring(X.enabled 'rust' and vim.lsp.is_enabled 'rust_analyzer'))
-add('installs requested=' .. tostring(#installs > 0))
+add('installs requested=' .. tostring(vim.tbl_contains(installs, 'ts:ron')))
 E.toggle 'rust'
 add('rust off=' .. tostring(not X.enabled 'rust' and not vim.lsp.is_enabled 'rust_analyzer'))
 
@@ -94,5 +101,43 @@ check 'enabled()=true'
 check 'rust on=true'
 check 'installs requested=true'
 check 'rust off=true'
+
+# Use fresh processes so lazy.nvim sees the choice made before startup.
+printf '%s\n' '// C++ extra fixture' >"$tmp/sample.cpp"
+for enabled in false true; do
+  mkdir -p "$XDG_STATE_HOME/nvim"
+  if [ "$enabled" = true ]; then
+    printf '%s\n' '{"enabled":["cpp"]}' >"$XDG_STATE_HOME/nvim/extras.json"
+  else
+    printf '%s\n' '{"enabled":[]}' >"$XDG_STATE_HOME/nvim/extras.json"
+  fi
+  got=$(timeout 30 nvim --headless --cmd "lua vim.lsp.enable = function() end" "$tmp/sample.cpp" \
+    "+lua local map = vim.fn.maparg('<leader>cK', 'n', false, true); print('cpp=' .. tostring(map.buffer == 1) .. ' loaded=' .. tostring(package.loaded.cppman ~= nil)); vim.cmd.enew(); print('elsewhere=' .. tostring(vim.fn.maparg('<leader>cK', 'n') ~= ''))" \
+    +qa! 2>&1 </dev/null)
+  check "cpp=$enabled loaded=false"
+  check 'elsewhere=false'
+if grep -Eq "module 'cppman' not found|Error in BufRead" <<<"$got"; then
+    printf '%s\n' "$got"
+    fail=1
+  fi
+done
+
+# Exercise the real read/write hooks with a fake linter, then turn its pack off.
+printf '%s\n' '{"enabled":["bitbake"]}' >"$XDG_STATE_HOME/nvim/extras.json"
+printf '%s\n' 'SUMMARY = "BitBake extra fixture"' >"$tmp/sample.bb"
+lint_probe=$(cat <<'LUA'
+local calls = {}
+package.loaded.lint = {
+  try_lint = function(names) calls[#calls + 1] = table.concat(names, ',') end,
+  get_namespace = function() return vim.api.nvim_create_namespace('nv-test-lint') end,
+}
+vim.lsp.enable = function() end
+_G.NVTestLint = calls
+LUA
+)
+got=$(NV_LINT_FIXTURE="$tmp/sample.bb" timeout 30 nvim --headless --cmd "lua $lint_probe" \
+  "+lua vim.cmd.edit(vim.env.NV_LINT_FIXTURE); vim.cmd.write(); require('features.extras').toggle('bitbake'); vim.cmd.write(); io.write('\nlint=' .. table.concat(NVTestLint, '|') .. '\n')" \
+  +qa! 2>&1 </dev/null)
+check 'lint=oelint-adv|oelint-adv'
 
 [ "$fail" = 0 ] && echo 'extras: pass' || { echo 'extras: FAIL'; exit 1; }

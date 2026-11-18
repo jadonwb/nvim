@@ -12,6 +12,10 @@ end
 return {
   {
     'folke/snacks.nvim',
+    init = function()
+      NVSnacksDashboard.setup()
+      NVSLazygit.setup()
+    end,
     opts = {
       explorer = { enabled = false },
       scroll = { enabled = false },
@@ -52,16 +56,6 @@ return {
           border = NVBorders.padded,
           keys = { [NVKeymaps.close] = 'close', ['<Esc>'] = 'close' },
         },
-      },
-    },
-    keys = {
-      {
-        '<leader>,',
-        function()
-          require('features.ui.notify').open()
-        end,
-        mode = { 'n', 'i', 'v' },
-        desc = 'Notification centre',
       },
     },
   },

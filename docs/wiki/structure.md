@@ -1,30 +1,32 @@
 # Structure
 
-Every Lua file in the config, grouped by responsibility. One plugin per spec
-file; feature code never lives in a plugin spec.
+Use this map to find the owner of a behavior. Plugin specs describe load
+conditions and contain integration hooks for the plugins they configure.
 
 | Directory | Holds |
 | --- | --- |
-| `lua/config/` | decisions made once at startup |
+| `lua/config/` | startup phases, settings, and launch policy |
 | `lua/core/` | building blocks with no UI or feature knowledge |
 | `lua/editor/` | editing behaviour: buffers, windows, saving and quitting |
 | `lua/features/` | subsystems: layout, LSP UI, OpenCode, UI surfaces |
-| `lua/plugins/` | lazy.nvim specs, one plugin per file, in folders by area |
+| `lua/plugins/` | lazy.nvim specs grouped by area |
 
 ## Entry point
 
 | File | Role |
 | --- | --- |
-| `init.lua` | load order: compat → options → autocmds → core → dialogs → editor → ui2 → notifications → highlights → lazy |
+| `init.lua` | calls `config.startup.setup()` |
+| `lua/config/startup.lua` | compatibility and UI hooks, eager feature registration, independent `VeryLazy` steps |
 
 ## `lua/config/`
 
 | File | Role |
 | --- | --- |
 | `options.lua` | leader keys, editing defaults, listchars/folds, filetype additions |
-| `autocmds.lua` | small global autocmds (checktime, yank highlight, last cursor, q-closes) |
+| `autocmds.lua` | small global autocmds (yank highlight, last cursor, q-closes) |
 | `lazy.lua` | lazy.nvim bootstrap and the spec imports (`lua/plugins/**`) |
-| `profile.lua` | launch-profile classification and feature gating |
+| `lazy_ui.lua` | close behavior, dashboard install/update status |
+| `profile.lua` | maps launch facts from `core/environment.lua` to feature gates |
 | `extras.lua` | language packs and the always-on base (data; see [extras](extras.md)) |
 | `highlights.lua` | links into the theme's Nv*/Ex* vocabulary, fallbacks |
 | `remote_clipboard.lua` | OSC 52 clipboard behaviour over SSH |
@@ -48,13 +50,12 @@ file; feature code never lives in a plugin spec.
 
 | File | Role |
 | --- | --- |
-| `editor.lua` | requires session and the panel registry |
 | `buffers.lua` | managed buffers, MRU, delete, toggle, keymaps |
 | `editing.lua` | editing keys, save / Save As, typed `:q`/`:wq` routing |
 | `navigation.lua` | jumps, diagnostics navigation, popup dismissal |
 | `windows.lua` | window navigation / swap / size keys |
 | `format.lua` | format-on-save toggles and conform glue |
-| `help.lua` | help / man open as a doc pane in the content window |
+| `help.lua` | help / man open in the content window with the layout on |
 | `quit.lua` | write / discard review, save-and-quit, restart |
 | `session.lua` | workspace snapshot: files, active view and the slot layout |
 | `ui-toggles.lua` | `<leader>u` toggles |
@@ -92,6 +93,7 @@ file; feature code never lives in a plugin spec.
 | `opencode/rpc.lua` | OpenCode CLI RPC transport; its location and decode helpers serve the session store |
 | `quickfix.lua` | the quickfix list: producers, navigation ([quickfix](quickfix.md)) |
 | `extras.lua` | language extras dashboard |
+| `extras_runtime.lua` | tool/parser installation and live tooling updates |
 | `preview.lua` | inset file preview float |
 | `compare.lua` | two-column file / man compare |
 | `cheatsheet.lua` | keymap cheatsheet |
@@ -100,8 +102,7 @@ file; feature code never lives in a plugin spec.
 
 | Path | Plugins |
 | --- | --- |
-| `editor.lua` | startup wiring (virtual specs: order matters, no plugin) |
-| `lazy.lua`, `plenary.lua` | lazy.nvim's own settings, the utility library |
+| `plenary.lua` | utility library |
 | `ui/` | arrowlake, volt, lualine, which-key, mini.icons, mini.hipatterns, todo-comments |
 | `editing/` | blink.cmp, mini.ai, nvim-spider, ts-comments, guess-indent, ufo, winshift |
 | `files/` | nvim-tree, oil, yazi, fff, chezmoi, grug-far |
@@ -118,6 +119,7 @@ Global LuaLS annotations for the `NV*` globals.
 
 | Path | Role |
 | --- | --- |
+| `after/ftplugin/` | buffer-local defaults for specific filetypes |
 | `scripts/gen-keymaps.sh`, `scripts/gen-keymaps.lua` | regenerate `docs/wiki/keymaps.md` |
 | `scripts/shot.sh`, `scripts/ansi2svg.py` | tmux pane → PNG with theme colours |
 | `tests/*.sh` | headless suites: layout, session, notify, lsp-ui, bridge, rpc, launch, extras, ui2, compat |

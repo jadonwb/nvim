@@ -8,7 +8,10 @@ whether each pack's tools are installed, and the details of the pack under the
 cursor. `x`, `<CR>` or `<Space>` toggles it. `:NVExtras <pack> [on|off]` does
 the same from the command line.
 
-## Always on
+## Base tooling
+
+The base applies independently of the selected packs. Launch profiles still
+control which tooling is active.
 
 | | |
 | --- | --- |
@@ -27,21 +30,21 @@ the same from the command line.
 | JavaScript / TypeScript | vtsls, eslint | prettier | prettier | |
 | Shell | bashls | shellcheck, shfmt | shfmt | |
 
-Each pack also lists the parsers it relies on (most are in the base set).
+Each pack can add parsers beyond the base. `<leader>cK` opens documentation for
+the word under the cursor in a C++ buffer. It requires the `cppman` CLI.
 
 ## How it works
 
 - **Machine-local choice:** stored in `stdpath('state')/extras.json`, so chezmoi
   does not sync it. A machine that has never chosen gets C/C++ and BitBake,
   which is what the config enabled before extras existed.
-- **`config/extras.lua` is data:** the packs and the base. Every consumer reads
-  it: the server list (`features/lsp`), Mason tools (`plugins/lsp/mason.lua`),
-  treesitter parsers, conform, nvim-lint, and plugin specs through
-  `extras.enabled(name)`.
+- **Catalog and state:** `config/extras.lua` defines the packs and loads the
+  machine's choice. `features/extras_runtime.lua` installs tools and parsers
+  and updates running tooling. The dashboard renders that state.
 - **Toggles apply at once:**
   - Turning a pack on: Mason installs its tools and servers, its parsers
     compile, its servers start on open buffers, and its formatters and linters
-    take effect.
+    take effect. Configured linters run on file read and save.
   - Turning a pack off: its servers stop.
   - A pack's plugins load on the next start.
   - Installed tools stay installed; remove them in Mason (`<leader>pm`).

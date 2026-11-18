@@ -25,26 +25,27 @@ return {
         desc = 'Format buffer',
       },
     },
-    opts = {
-      default_format_opts = {
-        lsp_format = 'fallback',
-      },
-      formatters = {
-        prettier = {
-          condition = function()
-            return true
-          end,
-          require_cwd = false,
-          prepend_args = {
-            '--config',
-            vim.fn.expand '~/.prettierrc.yaml',
-            '--config-precedence',
-            'prefer-file',
+    opts = function()
+      return {
+        default_format_opts = {
+          lsp_format = 'fallback',
+        },
+        formatters = {
+          prettier = {
+            condition = function()
+              return true
+            end,
+            require_cwd = false,
+            prepend_args = {
+              '--config',
+              vim.fn.expand '~/.prettierrc.yaml',
+              '--config-precedence',
+              'prefer-file',
+            },
           },
         },
-      },
-      -- The base (markdown) and this machine's language extras.
-      formatters_by_ft = require('config.extras').by_ft 'formatters',
-    },
+        formatters_by_ft = require('config.extras').by_ft 'formatters',
+      }
+    end,
   },
 }

@@ -14,96 +14,16 @@ NVExtras = {}
 local M = NVExtras
 
 local X = require 'config.extras'
+local runtime = require 'features.extras_runtime'
 
 local function notify(msg, level)
   vim.notify(msg, level or vim.log.levels.INFO, { title = 'Extras' })
 end
 
---- Mason packages for servers, through mason-lspconfig's mapping.
-local function server_packages(servers)
-  local ok, map = pcall(function()
-    return require('mason-lspconfig.mappings').get_mason_map().lspconfig_to_package
-  end)
-  local out = {}
-  for _, s in ipairs(servers) do
-    local pkg = ok and map[s]
-    if pkg then
-      out[#out + 1] = pkg
-    end
-  end
-  return out
-end
-
-local function mason_install(packages)
-  local ok, registry = pcall(require, 'mason-registry')
-  if not ok then
-    return
-  end
-  registry.refresh(function()
-    for _, name in ipairs(packages) do
-      local okp, pkg = pcall(registry.get_package, name)
-      if okp and not pkg:is_installed() then
-        pkg:install()
-      end
-    end
-  end)
-end
-
-local function sync_formatters_linters()
-  local okc, conform = pcall(require, 'conform')
-  if okc then
-    conform.formatters_by_ft = X.by_ft 'formatters'
-  end
-  local okl, lint = pcall(require, 'lint')
-  if okl then
-    lint.linters_by_ft = X.by_ft 'linters'
-  end
-end
-
---- Apply pack `name` being turned on or off, without a restart.
-function M.apply(name, on)
-  local pack = X.packs[name]
-  local servers = pack.servers or {}
-  -- Servers of other enabled packs (or the base) stay.
-  local keep = {}
-  for _, s in ipairs(X.collect 'servers') do
-    keep[s] = true
-  end
-  if on then
-    mason_install(vim.list_extend(vim.deepcopy(pack.tools or {}), server_packages(servers)))
-    if pack.parsers and #pack.parsers > 0 then
-      pcall(function()
-        require('nvim-treesitter').install(pack.parsers)
-      end)
-    end
-    local lsp = package.loaded['features.lsp']
-    for _, s in ipairs(servers) do
-      if lsp and lsp.servers[s] then
-        vim.lsp.config(s, lsp.servers[s])
-      end
-    end
-    pcall(vim.lsp.enable, servers, true)
-  else
-    local off = vim.tbl_filter(function(s)
-      return not keep[s]
-    end, servers)
-    pcall(vim.lsp.enable, off, false)
-    for _, s in ipairs(off) do
-      for _, client in ipairs(vim.lsp.get_clients { name = s }) do
-        client:stop()
-      end
-    end
-  end
-  if package.loaded['features.lsp'] then
-    package.loaded['features.lsp'].enabled = X.collect 'servers'
-  end
-  sync_formatters_linters()
-end
-
 function M.toggle(name)
   local on = not X.enabled(name)
   X.set(name, on)
-  M.apply(name, on)
+  runtime.apply(name, on)
   local pack = X.packs[name]
   local later = on and pack.plugins and #pack.plugins > 0 and (' · ' .. table.concat(pack.plugins, ', ') .. ' on next start') or ''
   notify(('%s %s%s'):format(pack.name, on and 'on' or 'off', later))
@@ -118,7 +38,7 @@ local state = { handle = nil, rows = {} }
 --- Mason packages a pack needs, and how many are installed.
 local function install_state(name)
   local pack = X.packs[name]
-  local pkgs = vim.list_extend(vim.deepcopy(pack.tools or {}), server_packages(pack.servers or {}))
+  local pkgs = runtime.packages(pack)
   local ok, registry = pcall(require, 'mason-registry')
   if not ok or #pkgs == 0 then
     return nil
@@ -231,14 +151,17 @@ function M.render()
     detail('tools', pack.tools)
     detail('format', fts(pack.formatters))
     detail('lint', fts(pack.linters))
-    detail('parsers', pack.parsers)
+    local additional = vim.tbl_filter(function(lang)
+      return not vim.tbl_contains(X.base.parsers, lang)
+    end, pack.parsers or {})
+    detail('parsers', additional)
     detail('plugins', pack.plugins and vim.tbl_map(function(p)
       return p .. ' (next start)'
     end, pack.plugins))
     add(P.blank())
   end
 
-  add(P.label('Always on', nil, w))
+  add(P.label('Base tooling', nil, w))
   add(P.row({ { '  servers     ', 'NvMuted' }, { table.concat(X.base.servers, ', '), 'NvDim' } }, {}, w))
   add(P.row({ { '  tools       ', 'NvMuted' }, { table.concat(X.base.tools, ', '), 'NvDim' } }, {}, w))
   add(P.row({ { '  parsers     ', 'NvMuted' }, { #X.base.parsers .. ' for reading anything (asm, linkerscript, make, …)', 'NvDim' } }, {}, w))

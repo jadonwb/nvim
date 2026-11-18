@@ -5,7 +5,7 @@
 -- mergetool launch only needs colours, the close chain and diffview; it does
 -- not need LSP, completion, folds, markdown rendering or languages tooling.
 --
--- The classification itself lives in editor/environment.lua (NVEnv.startup),
+-- Launch facts come from core/environment.lua (NVEnv.startup),
 -- which records purpose, host and transient state from the real invocation. It
 -- defines a global rather than returning a table, so it is required here for
 -- the side effect when something loads this module before the editor modules.
@@ -23,7 +23,7 @@ end
 ---@return 'workspace'|'difftool'|'mergetool'|'pager'|'transient'|'embedded'
 function M.kind()
   local startup = NVEnv.startup
-  return startup.purpose or (startup.host and 'embedded') or (startup.transient and 'transient') or 'workspace'
+  return startup.purpose or ((startup.embedded or startup.host) and 'embedded') or (startup.transient and 'transient') or 'workspace'
 end
 
 ---@return boolean

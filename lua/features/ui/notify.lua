@@ -207,6 +207,11 @@ function NVNotify.install()
   end
 end
 
+function NVNotify.setup()
+  NVNotify.install()
+  K.map { '<leader>,', 'Notification centre', NVNotify.open, mode = { 'n', 'i', 'v' } }
+end
+
 function NVNotify.clear()
   NVNotify.store = {}
   NVNotify.unread = 0

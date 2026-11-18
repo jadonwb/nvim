@@ -15,15 +15,29 @@ local function map(lhs, desc, rhs, mode)
   K.map { lhs, desc, rhs, mode = mode or 'n' }
 end
 
-local function panel(name)
+local function panel(name, provider)
   return function()
+    local target = name
     if not NVSlots.is_applied() then
       NVSlots.toggle()
     end
     if name == 'bottom' then
       return NVBottom.toggle()
     end
-    NVSlots.toggle_slot(name)
+    if provider then
+      local slot = NVSlots.slot_with_provider(provider)
+      if not slot then
+        local memory = NVSlots.memory()
+        for _, candidate in ipairs(NVSlots.right_column) do
+          if NVSlots.provider_for(candidate, memory) == provider then
+            slot = candidate
+            break
+          end
+        end
+      end
+      target = slot or name
+    end
+    NVSlots.toggle_slot(target)
   end
 end
 
@@ -38,9 +52,9 @@ function M.setup()
   map('<leader>li', 'Focus mode (toggle layout)', NVSlots.toggle)
   map('<leader>le', 'Panel: explorer', panel 'left')
   map('<leader>fe', 'File explorer (toggle)', panel 'left')
-  map('<leader>lc', 'Panel: changes', panel 'right_top')
-  map('<leader>lo', 'Panel: OpenCode', panel 'right_mid')
-  map('<leader>ls', 'Panel: LSP', panel 'right_bottom')
+  map('<leader>lc', 'Panel: changes', panel('right_top', 'changes'))
+  map('<leader>lo', 'Panel: OpenCode', panel('right_mid', 'session'))
+  map('<leader>ls', 'Panel: LSP', panel('right_bottom', 'lsp'))
   map('<leader>lb', 'Panel: bottom', panel 'bottom')
   map('<leader>l0', 'Reset panel sizes', NVSlots.reset_sizes)
   map('<leader>lw', 'Swap this panel with…', function()

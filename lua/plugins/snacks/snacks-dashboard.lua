@@ -15,25 +15,20 @@ function NVSnacksDashboard.setup()
   -- Full screen at startup; the layout applies when a file is opened.
   -- Opened in VimEnter itself (not scheduled): Neovim draws the first frame
   -- right after, so the dashboard is what appears, not the empty buffer.
-  if vim.v.vim_did_enter == 0 then
+  if vim.v.vim_did_enter == 0 and NVSnacksDashboard.should_show() then
+    local laststatus = vim.o.laststatus
+    vim.o.laststatus = 0
+    for opt, value in pairs { number = false, relativenumber = false, signcolumn = 'no', cursorline = false } do
+      vim.api.nvim_set_option_value(opt, value, { scope = 'local' })
+    end
     vim.api.nvim_create_autocmd('VimEnter', {
       once = true,
       callback = function()
         NVSnacksDashboard.open()
-        NVSnacksDashboard.unveil()
+        vim.o.laststatus = laststatus
       end,
     })
   end
-end
-
---- Restore what config/options.lua hid for a no-file start.
-function NVSnacksDashboard.unveil()
-  local veiled = vim.g.nv_startup_veil
-  if not veiled then
-    return
-  end
-  vim.g.nv_startup_veil = nil
-  vim.o.laststatus = veiled
 end
 
 --- Open the dashboard in the content window (snacks' own autostart is

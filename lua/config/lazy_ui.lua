@@ -56,10 +56,10 @@ end
 vim.api.nvim_create_autocmd('User', {
   pattern = { 'LazyInstall', 'LazyUpdate', 'LazyCheck' },
   callback = function()
-    if NVSnacksDashboard.is_active() then
+    if NVSnacksDashboard and NVSnacksDashboard.is_active() then
       vim.cmd 'edit'
     end
   end,
 })
 
-return {}
+return NVLazy

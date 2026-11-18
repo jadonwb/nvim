@@ -9,7 +9,7 @@
 -- The choice is machine-local (stdpath('state')/extras.json), not part of
 -- the synced config: work enables C/C++ and BitBake, a laptop maybe none.
 -- `<leader>px` (features/extras.lua) toggles packs and applies them at once;
--- only a pack's plugins need a restart.
+-- only a pack's plugin specs need a restart.
 --
 -- Everything that installs or enables something reads this module:
 -- features/lsp (servers), plugins/lsp/mason.lua (tools),
@@ -98,7 +98,7 @@ M.packs = {
 --- Display order in the menu.
 M.order = { 'cpp', 'bitbake', 'rust', 'python', 'web', 'shell' }
 
---- Always on.
+--- Available independently of the choice of packs, subject to launch policy.
 M.base = {
   servers = { 'lua_ls', 'jsonls', 'yamlls', 'taplo', 'systemd_lsp' },
   tools = { 'prettier', 'systemd-lsp' },

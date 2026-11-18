@@ -353,7 +353,9 @@ function NVQuit.restart()
     NVEnv.restarting = true
     -- `restart!`: no native session; the snapshot above is the whole state.
     local command = NVCompat.restart .. ' lua require("editor.session").restore_restart(' .. string.format('%q', file) .. ')'
+    vim.env.NVIM_RESTART_SNAPSHOT = file
     local ok, err = pcall(vim.cmd, command)
+    vim.env.NVIM_RESTART_SNAPSHOT = nil
     if not ok then
       NVEnv.restarting = false
       error('Restart failed; snapshot retained at ' .. file .. ': ' .. tostring(err))

@@ -17,26 +17,12 @@ function NVMason.setup()
   end)
 end
 
---- Install the tools listed in `opts.ensure_installed`.
---- LazyVim did this; mason itself only knows about its own UI and registry.
----@param opts table
-local function install_missing(opts)
-  local registry = require 'mason-registry'
-  registry.refresh(function()
-    for _, tool in ipairs(opts.ensure_installed or {}) do
-      local ok, package = pcall(registry.get_package, tool)
-      if ok and not package:is_installed() then
-        package:install()
-      end
-    end
-  end)
-end
-
 return {
   'mason-org/mason.nvim',
   cond = function()
     return require('config.profile').wants 'lsp'
   end,
+  init = NVMason.setup,
   cmd = 'Mason',
   keys = { { '<leader>pm', '<cmd>Mason<cr>', desc = 'Mason' } },
   build = ':MasonUpdate',
@@ -49,13 +35,10 @@ return {
       backdrop = 70,
       icons = { package_installed = '●', package_pending = '󰔟', package_uninstalled = '○' },
     },
-    -- Tools that are not language servers (servers install through
-    -- mason-lspconfig, features/lsp): the base and this machine's extras.
-    ensure_installed = require('config.extras').collect 'tools',
   },
   config = function(_, opts)
     require('mason').setup(opts)
-    install_missing(opts)
+    require('features.extras_runtime').install_tools(require('config.extras').collect 'tools')
 
     -- A newly installed server should start without restarting Neovim.
     require('mason-registry'):on('package:install:success', function()

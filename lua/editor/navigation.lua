@@ -100,3 +100,5 @@ function fn.scroll_vertical(direction)
     NVKeys.send('a', { mode = 'n' })
   end
 end
+
+return NVNavigation

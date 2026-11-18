@@ -64,6 +64,10 @@ function NVUIToggles.keymaps()
     require('features.ui.notify').clear()
   end, { desc = 'Clear notifications' })
 
-  map('n', '<leader>uf', NVFormat.toggle_global, { desc = 'Toggle Auto Format (Global)' })
-  map('n', '<leader>uF', NVFormat.toggle_buffer, { desc = 'Toggle Auto Format (Buffer)' })
+  if NVFormat then
+    map('n', '<leader>uf', NVFormat.toggle_global, { desc = 'Toggle Auto Format (Global)' })
+    map('n', '<leader>uF', NVFormat.toggle_buffer, { desc = 'Toggle Auto Format (Buffer)' })
+  end
 end
+
+return NVUIToggles

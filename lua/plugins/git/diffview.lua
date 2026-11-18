@@ -223,6 +223,7 @@ end
 
 return {
   'dlyongemallo/diffview-plus.nvim',
+  init = NVDiffview.setup,
   cmd = {
     'DiffviewOpen',
     'DiffviewClose',

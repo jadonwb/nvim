@@ -181,6 +181,9 @@ end
 function NVGrugFar.setup()
   NVCompanionPanels.register(filetype, NVGrugFar.ensure_hidden)
   NVClose.register(filetype, NVGrugFar.ensure_current_hidden)
+  NVGrugFar.autocmds()
 end
+
+NVGrugFar.init = NVGrugFar.setup
 
 return { NVGrugFar }
