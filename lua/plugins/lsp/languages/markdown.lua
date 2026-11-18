@@ -55,6 +55,7 @@ return {
         },
         pipe_table = {
           enabled = true,
+          grid = true,
           cell = 'trimmed',
           alignment_indicator = '┅',
         },
