@@ -52,12 +52,15 @@ function lazy_fn.close()
   end
 end
 
--- Refresh dashboard items after lazy operations complete
+-- Refresh the dashboard's install/update item after lazy operations complete.
+-- The dashboard buffer has no file, so it is re-rendered rather than re-read.
 vim.api.nvim_create_autocmd('User', {
   pattern = { 'LazyInstall', 'LazyUpdate', 'LazyCheck' },
   callback = function()
     if NVSnacksDashboard and NVSnacksDashboard.is_active() then
-      vim.cmd 'edit'
+      pcall(function()
+        require('snacks').dashboard.update()
+      end)
     end
   end,
 })

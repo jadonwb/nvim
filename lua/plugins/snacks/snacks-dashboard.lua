@@ -24,6 +24,20 @@ function NVSnacksDashboard.setup()
     vim.api.nvim_create_autocmd('VimEnter', {
       once = true,
       callback = function()
+        -- The dashboard draws at VimEnter; lazy.nvim measures the startup time
+        -- at UIEnter, after that. Redraw once the time is known so the footer
+        -- shows it.
+        vim.api.nvim_create_autocmd('User', {
+          pattern = 'LazyVimStarted',
+          once = true,
+          callback = function()
+            if NVSnacksDashboard.is_active() then
+              pcall(function()
+                require('snacks').dashboard.update()
+              end)
+            end
+          end,
+        })
         if NVSnacksDashboard.open() and NVSnacksDashboard.is_active() then
           vim.api.nvim_create_autocmd('BufWinLeave', {
             buffer = vim.api.nvim_get_current_buf(),
@@ -78,25 +92,29 @@ return {
         end,
       },
       sections = {
+        { section = 'header', padding = 1 },
         -- Status chips: version, branch and launch profile, the same facts the
         -- statusline and session panel leave out.
         function()
           local version = vim.version()
-          local branch = vim.fn.systemlist({ 'git', 'branch', '--show-current' })[1]
           local profile = require('config.profile').kind() or 'workspace'
-          return {
-            align = 'center',
-            padding = 0,
-            text = {
-              { ' 󰚩 nvim ' .. version.major .. '.' .. version.minor .. '.' .. version.patch .. ' ', hl = 'special' },
-              { '   ', hl = 'footer' },
-              { '  ' .. ((branch and branch ~= '') and branch or 'no branch') .. ' ', hl = 'special' },
-              { '   ', hl = 'footer' },
-              { ' ' .. profile .. ' ', hl = 'special' },
-            },
+          local text = {
+            { ' 󰚩 nvim ' .. version.major .. '.' .. version.minor .. '.' .. version.patch .. ' ', hl = 'special' },
+            { '   ', hl = 'footer' },
           }
+          -- The branch chip only appears inside a repository; a detached HEAD
+          -- has no branch name.
+          local git = vim.system({ 'git', 'branch', '--show-current' }, { text = true }):wait()
+          if git.code == 0 then
+            local branch = vim.trim(git.stdout or '')
+            vim.list_extend(text, {
+              { '  ' .. (branch ~= '' and branch or 'no branch') .. ' ', hl = 'special' },
+              { '   ', hl = 'footer' },
+            })
+          end
+          text[#text + 1] = { ' ' .. profile .. ' ', hl = 'special' }
+          return { align = 'center', padding = 1, text = text }
         end,
-        { section = 'header' },
         function()
           return {
             {

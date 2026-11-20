@@ -40,10 +40,14 @@ statusline never repeats them.
 Opened by the layout into the content window (`NVSnacksDashboard.open`), because
 Snacks' own autostart is a float that refuses to run with more than one window.
 
-Sections: version / branch / profile chips, the Neovim header, the working
+Sections: the Neovim header, version / branch / profile chips, the working
 directory, action keys, recent files (with readable path tails) and startup
 stats. Below 44 terminal lines the recent-files section is dropped: the content
-window is too short for it and a clipped list looked broken.
+window is too short for it and a clipped list looked broken. The branch chip
+appears only inside a git repository. The dashboard draws at `VimEnter` and
+redraws on `LazyVimStarted`, when lazy.nvim has measured the startup time; a
+finished install, update or check redraws it too. `tests/dashboard.sh` covers
+these.
 
 ## Notification centre (`<leader>,`)
 
