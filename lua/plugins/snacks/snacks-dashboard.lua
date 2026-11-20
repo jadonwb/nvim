@@ -141,6 +141,7 @@ return {
         keys = function()
           local items = {}
 
+          NVLazy.check_updates_early()
           local missing, updates = NVLazy.anything_missing(), NVLazy.update_count()
           if missing or updates > 0 then
             local desc = missing and (updates > 0 and ('Install + update plugins (%d)'):format(updates) or 'Install plugins')
