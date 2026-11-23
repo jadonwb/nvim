@@ -62,9 +62,13 @@ local function system_all(cmds, opts)
 end
 
 local running = false
+local queued = false
 
 function M.refresh_git()
+  -- An event that lands while git is running is not dropped: run once more
+  -- with the state it produced, so the panel ends on the latest status.
   if running then
+    queued = true
     return
   end
   running = true
@@ -81,42 +85,46 @@ function M.refresh_git()
       M.git = { files = {}, ready = true, repo = false }
       emit 'changes'
       emit 'session'
-      return
-    end
-    local stats = {}
-    parse_numstat(results.unstaged and results.unstaged.stdout, stats, false)
-    parse_numstat(results.staged and results.staged.stdout, stats, true)
+    else
+      local stats = {}
+      parse_numstat(results.unstaged and results.unstaged.stdout, stats, false)
+      parse_numstat(results.staged and results.staged.stdout, stats, true)
 
-    local git = { files = {}, ready = true, repo = true, ahead = 0, behind = 0 }
-    for line in status.stdout:gmatch '[^\n]+' do
-      if line:sub(1, 2) == '##' then
-        local head = line:sub(4)
-        git.branch = head:match '^No commits yet on (.+)$' or head:match '^([^%.%s]+)'
-        git.upstream = head:match '%.%.%.(%S+)'
-        git.ahead = tonumber(head:match 'ahead (%d+)') or 0
-        git.behind = tonumber(head:match 'behind (%d+)') or 0
-      else
-        local x, y, path = line:sub(1, 1), line:sub(2, 2), line:sub(4)
-        path = path:gsub('^.* %-> ', ''):gsub('^"(.*)"$', '%1')
-        local stat = stats[path] or {}
-        git.files[#git.files + 1] = {
-          path = path,
-          x = x,
-          y = y,
-          staged = x ~= ' ' and x ~= '?',
-          unstaged = y ~= ' ' or x == '?',
-          untracked = x == '?',
-          stat = stat.stat,
-          staged_stat = stat.staged_stat,
-        }
+      local git = { files = {}, ready = true, repo = true, ahead = 0, behind = 0 }
+      for line in status.stdout:gmatch '[^\n]+' do
+        if line:sub(1, 2) == '##' then
+          local head = line:sub(4)
+          git.branch = head:match '^No commits yet on (.+)$' or head:match '^([^%.%s]+)'
+          git.upstream = head:match '%.%.%.(%S+)'
+          git.ahead = tonumber(head:match 'ahead (%d+)') or 0
+          git.behind = tonumber(head:match 'behind (%d+)') or 0
+        else
+          local x, y, path = line:sub(1, 1), line:sub(2, 2), line:sub(4)
+          path = path:gsub('^.* %-> ', ''):gsub('^"(.*)"$', '%1')
+          local stat = stats[path] or {}
+          git.files[#git.files + 1] = {
+            path = path,
+            x = x,
+            y = y,
+            staged = x ~= ' ' and x ~= '?',
+            unstaged = y ~= ' ' or x == '?',
+            untracked = x == '?',
+            stat = stat.stat,
+            staged_stat = stat.staged_stat,
+          }
+        end
       end
+      table.sort(git.files, function(a, b)
+        return a.path < b.path
+      end)
+      M.git = git
+      emit 'changes'
+      emit 'session'
     end
-    table.sort(git.files, function(a, b)
-      return a.path < b.path
-    end)
-    M.git = git
-    emit 'changes'
-    emit 'session'
+    if queued then
+      queued = false
+      M.refresh_git()
+    end
   end)
 end
 
@@ -508,9 +516,11 @@ end
 
 function M.setup()
   local group = vim.api.nvim_create_augroup('NV panel data', { clear = true })
-  local git_soon = debounce(250, M.refresh_git)
+  -- gitsigns already coalesces edits for 100 ms; keep the extra wait short so
+  -- the changes panel follows a save or stage closely.
+  local git_soon = debounce(80, M.refresh_git)
   vim.api.nvim_create_autocmd({ 'FocusGained', 'BufWritePost', 'DirChanged', 'ShellCmdPost' }, { group = group, callback = git_soon })
-  vim.api.nvim_create_autocmd('User', { group = group, pattern = { 'GitSignsUpdate', 'LazyGitClosed' }, callback = git_soon })
+  vim.api.nvim_create_autocmd('User', { group = group, pattern = { 'GitSignsUpdate', 'GitSignsChanged', 'LazyGitClosed' }, callback = git_soon })
   vim.api.nvim_create_autocmd('TermClose', { group = group, callback = git_soon })
 
   local lsp_soon = debounce(150, function()
