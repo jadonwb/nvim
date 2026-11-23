@@ -61,6 +61,141 @@ local function system_all(cmds, opts)
   return results
 end
 
+-- ── worktree watchers ──────────────────────────────────────────────────────
+--
+-- git reports nothing by itself: a file created or edited outside Neovim (an
+-- agent, another terminal) leaves the panel stale until an unrelated event
+-- fires. Watch the directories git reports on, plus the git directory, and
+-- refresh when any of them changes. libuv watches one directory at a time, so
+-- the set comes from `git ls-files` and grows with each changed path.
+
+--- Read-only git calls. `GIT_OPTIONAL_LOCKS=0` keeps status from refreshing
+--- the index (a write the watcher below would see as a change).
+---@param cwd string
+---@return vim.SystemOpts
+local function git_opts(cwd)
+  return {
+    cwd = cwd,
+    text = true,
+    env = vim.tbl_extend('force', vim.fn.environ(), { GIT_OPTIONAL_LOCKS = '0' }),
+  }
+end
+
+local WATCH_LIMIT = 2048
+local watchers = {} ---@type table<string, uv.uv_fs_event_t>
+local watch_count = 0
+local watch_root ---@type string|nil
+local watch_event ---@type (fun()|nil)
+
+---@param path string
+local function unwatch(path)
+  local handle = watchers[path]
+  if not handle then
+    return
+  end
+  watchers[path] = nil
+  watch_count = watch_count - 1
+  pcall(handle.stop, handle)
+  pcall(handle.close, handle)
+end
+
+local function unwatch_all()
+  for path in pairs(watchers) do
+    unwatch(path)
+  end
+  watch_root = nil
+end
+
+---@param path string
+local function watch(path)
+  if watchers[path] or not watch_event or watch_count >= WATCH_LIMIT then
+    return
+  end
+  local handle = vim.uv.new_fs_event()
+  if not handle then
+    return
+  end
+  local ok = pcall(handle.start, handle, path, {}, function(err)
+    -- A watched file can be replaced (the index) or its directory removed.
+    if err then
+      vim.schedule(function()
+        unwatch(path)
+      end)
+      return
+    end
+    vim.schedule(watch_event)
+  end)
+  if ok then
+    watchers[path] = handle
+    watch_count = watch_count + 1
+  else
+    pcall(handle.close, handle)
+  end
+end
+
+--- Watch every directory under `path`, up to the limit. git reports an
+--- untracked tree as one entry (`dir/`), and libuv watches one directory at a
+--- time, so the tree's own directories are added here.
+---@param path string
+local function watch_tree(path)
+  local stack = { path }
+  while #stack > 0 and watch_count < WATCH_LIMIT do
+    local dir = table.remove(stack)
+    watch(dir)
+    local handle = vim.uv.fs_scandir(dir)
+    if handle then
+      while true do
+        local name, kind = vim.uv.fs_scandir_next(handle)
+        if not name then
+          break
+        end
+        if name ~= '.git' then
+          local child = vim.fs.joinpath(dir, name)
+          if kind == 'directory' or (kind == nil and vim.fn.isdirectory(child) == 1) then
+            stack[#stack + 1] = child
+          end
+        end
+      end
+    end
+  end
+end
+
+--- Watch the working tree and the git directory. Cheap to call again.
+function M.watch_git()
+  local cwd = vim.fn.getcwd()
+  vim.async.run(function()
+    local top = vim.async.await(3, vim.system, { 'git', 'rev-parse', '--show-toplevel', '--absolute-git-dir' }, git_opts(cwd))
+    local lines = vim.split(vim.trim((top and top.stdout) or ''), '\n')
+    local root, gitdir = lines[1], lines[2]
+    if not top or top.code ~= 0 or not root or root == '' then
+      unwatch_all()
+      return
+    end
+    if root ~= watch_root then
+      unwatch_all()
+      watch_root = root
+    end
+    watch(root)
+    -- The index, HEAD and refs are replaced by rename, so watch their
+    -- directories instead of the files themselves.
+    if gitdir and gitdir ~= '' then
+      watch(gitdir)
+      watch(vim.fs.joinpath(gitdir, 'refs/heads'))
+    end
+    -- One listing from the root: the same commands in a subdirectory only
+    -- report that directory's files.
+    local r = system_all({
+      tracked = { 'git', 'ls-files', '-z' },
+      others = { 'git', 'ls-files', '-z', '--others', '--exclude-standard' },
+    }, git_opts(root))
+    for _, result in ipairs { r.tracked, r.others } do
+      for file in ((result and result.stdout) or ''):gmatch '[^%z]+' do
+        watch(vim.fs.joinpath(root, vim.fs.dirname(file)))
+      end
+    end
+  end)
+end
+
 local running = false
 local queued = false
 
@@ -78,7 +213,7 @@ function M.refresh_git()
       status = { 'git', 'status', '--porcelain=v1', '-b', '--untracked-files=normal' },
       unstaged = { 'git', 'diff', '--numstat' },
       staged = { 'git', 'diff', '--cached', '--numstat' },
-    }, { cwd = cwd, text = true })
+    }, git_opts(cwd))
     running = false
     local status = results.status
     if not status or status.code ~= 0 then
@@ -118,6 +253,17 @@ function M.refresh_git()
         return a.path < b.path
       end)
       M.git = git
+      if watch_root then
+        for _, f in ipairs(git.files) do
+          local dir = vim.fs.joinpath(watch_root, vim.fs.dirname(f.path))
+          watch(dir)
+          -- An untracked tree is one `dir/` entry: watch inside it, so later
+          -- edits and new files there are seen as well.
+          if f.path:sub(-1) == '/' then
+            watch_tree(dir)
+          end
+        end
+      end
       emit 'changes'
       emit 'session'
     end
@@ -519,7 +665,9 @@ function M.setup()
   -- gitsigns already coalesces edits for 100 ms; keep the extra wait short so
   -- the changes panel follows a save or stage closely.
   local git_soon = debounce(80, M.refresh_git)
+  watch_event = git_soon
   vim.api.nvim_create_autocmd({ 'FocusGained', 'BufWritePost', 'DirChanged', 'ShellCmdPost' }, { group = group, callback = git_soon })
+  vim.api.nvim_create_autocmd('DirChanged', { group = group, callback = M.watch_git })
   vim.api.nvim_create_autocmd('User', { group = group, pattern = { 'GitSignsUpdate', 'GitSignsChanged', 'LazyGitClosed' }, callback = git_soon })
   vim.api.nvim_create_autocmd('TermClose', { group = group, callback = git_soon })
 
@@ -575,6 +723,7 @@ function M.setup()
   })
 
   M.refresh_git()
+  M.watch_git()
 
   -- The followed session changes outside Neovim; poll it cheaply (one
   -- read-only query) every 2 s while busy, every 15 s otherwise.

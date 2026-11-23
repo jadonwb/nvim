@@ -27,6 +27,10 @@ The workspace is a fixed grid of slots around the editing area:
 - `<M-i>` restores exactly the panels that were open when it hid the layout,
   including a bottom panel opened while it was off; panels you hid stay hidden.
 - A panel that disappears for any other reason (`:only`, a plugin) is rebuilt.
+- The Changes panel is data-driven: it watches the working tree (`uv.fs_event`,
+  one handle per git directory) and `.git`, so files edited or created by
+  another process show up as fast as they do in the explorer. Git commands run
+  with `GIT_OPTIONAL_LOCKS=0`, so the refresh never triggers itself.
 - Sizes are one pure function of the screen size (`NVSlots.geometry`). Toggling
   the layout never changes them. Dragging a separator or `:resize` on a panel
   becomes this tab's size; `<A-0>` / `<A-=>` restore the defaults.

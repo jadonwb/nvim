@@ -78,6 +78,19 @@ data.refresh_git()
 vim.wait(3000, function() return data.git ~= nil end)
 add('git=' .. tostring(data.git and data.git.repo) .. ' files=' .. (data.git and #data.git.files or -1))
 
+-- A file written straight to disk (no buffer, no autocmd) is seen by the
+-- working tree watcher.
+vim.wait(1000) -- let the watchers install
+vim.fn.writefile({ 'outside' }, 'outside.txt')
+add('watch=' .. tostring(vim.wait(3000, function()
+  for _, f in ipairs(data.git.files) do
+    if f.path == 'outside.txt' then
+      return true
+    end
+  end
+  return false
+end)))
+
 -- 0.13 only: pinned slot windows survive :only; file watchers reload.
 if v013 then
   vim.cmd 'edit a.txt'
@@ -114,6 +127,7 @@ check 'resize=40'
 check 'uri=true'
 check 'review dialog=true discarded=true file=three reviewing=false'
 check 'git=true files=2'
+check 'watch=true'
 check 'pinned=true'
 check 'watch=outside FileChangedShellPost=true'
 
