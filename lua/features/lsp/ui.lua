@@ -206,6 +206,13 @@ local function draw_content()
     pcall(section.decorate, buf, ns, lines)
   end
   vim.bo[buf].modifiable = false
+  -- `strdisplaywidth()` adds cells for a line that word-wraps in the window it
+  -- is measured in: the first render runs while the float still has its
+  -- placeholder width, which made the popup a column too wide until the next
+  -- render. Line break off measures the text itself, at any width.
+  local win = state.content.win
+  local linebreak = vim.wo[win].linebreak
+  vim.wo[win].linebreak = false
   local width = vim.api.nvim_buf_call(buf, function()
     local result = MIN_WIDTH
     for _, l in ipairs(lines) do
@@ -216,7 +223,8 @@ local function draw_content()
     end
     return result
   end)
-  vim.wo[state.content.win].cursorline = section.items ~= nil
+  vim.wo[win].linebreak = linebreak
+  vim.wo[win].cursorline = section.items ~= nil
   return math.min(width, MAX_WIDTH)
 end
 

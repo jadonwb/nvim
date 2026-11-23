@@ -62,6 +62,14 @@ NVLspUi.open { { name = 'hover', lines = { 'only' } } }
 menu, content = popup()
 add('single has menu=' .. tostring(menu ~= nil and content ~= nil))
 
+-- A line that wraps in the placeholder-width float must not leave the popup
+-- wider than its text once it is widened: the next render agrees on the width.
+NVLspUi.open { { name = 'hover', lines = { 'alpha beta gamma delta x' } } }
+menu, content = popup()
+local width_open = vim.api.nvim_win_get_width(content)
+NVLspUi.next()
+add('stable width=' .. tostring(width_open == vim.api.nvim_win_get_width(content)))
+
 -- Closing the content externally (:q, <C-w>c) takes everything down.
 NVLspUi.open {
   { name = 'hover', lines = { 'a' } },
@@ -157,6 +165,7 @@ check 'next body=true'
 check 'wrapped height=true'
 check 'prev body=true'
 check 'single has menu=true'
+check 'stable width=true'
 check 'external close=true'
 check 'tab released=true'
 check 'diag order=true'
