@@ -52,8 +52,9 @@ providers: `terminal`, `quickfix`, `problems`, `explorer`, `preview`, `changes`,
 Use the native Neovim API for assertions and a real terminal for actions that
 depend on a UI. `tests/rpc.sh` covers the socket interface; `tests/launch.sh`
 checks the first terminal draw; `tests/restart.sh` sends `Alt+r` and confirms
-the restored file, real explorer buffer, slot positions, and view-specific
-toggles. The restart test also checks that the bridge registry and restart
+the restored file, real explorer buffer, slot positions, view-specific toggles,
+and that a restart in focus mode stays off with the panels available to the next
+toggle. The restart test also checks that the bridge registry and restart
 snapshot are clear after exit.
 
 For new layout cases, pair `NVSlots.status()` with `nvim_win_get_position()`,

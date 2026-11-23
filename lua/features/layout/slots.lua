@@ -957,6 +957,48 @@ function NVSlots.state()
   return { applied = NVSlots.is_applied(), order = NVSlots.order, slots = slots, hidden = NVSlots.memory().closed }
 end
 
+--- The layout as a session or restart snapshot should keep it: the slots on
+--- screen, or, in focus mode, the slots the next toggle would bring back.
+---@return table|nil
+function NVSlots.capture_state()
+  local tab = tab_state()
+  if tab.focus then
+    local saved = tab.focus_slots or { names = {}, providers = {} }
+    return {
+      applied = false,
+      focus = true,
+      slots = vim.deepcopy(saved.names),
+      providers = vim.deepcopy(saved.providers),
+    }
+  end
+  if not NVSlots.is_applied() then
+    return nil
+  end
+  local providers = {}
+  for name, slot in pairs(NVSlots.status()) do
+    if not (NVSlots.is_auto and NVSlots.is_auto(name)) then
+      providers[name] = slot.provider
+    end
+  end
+  if next(providers) then
+    return { applied = true, providers = providers }
+  end
+end
+
+--- Put a restored session back in focus mode: no slot windows, and the next
+--- toggle brings back the saved slots and providers.
+---@param state { slots?: string[], providers?: table<string, string> }
+function NVSlots.restore_focus(state)
+  local tab = tab_state()
+  teardown()
+  tab.content = center_win() or api.nvim_get_current_win()
+  tab.focus = true
+  tab.focus_slots = {
+    names = state.slots or vim.tbl_keys(state.providers or {}),
+    providers = vim.deepcopy(state.providers or {}),
+  }
+end
+
 -- ── reading room ───────────────────────────────────────────────────────────
 --
 -- Side panels step aside when the content needs the width: the content area

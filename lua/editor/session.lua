@@ -79,16 +79,8 @@ local function capture(restart)
   -- The slot layout is part of the workspace: which panels were open and what
   -- each was showing. Slot windows themselves are not in mksession (their
   -- buffers are unlisted), so they are rebuilt on restore.
-  if NVSlots and NVSlots.is_applied and NVSlots.is_applied() then
-    local providers = {}
-    for name, slot in pairs(NVSlots.status()) do
-      if not (NVSlots.is_auto and NVSlots.is_auto(name)) then
-        providers[name] = slot.provider
-      end
-    end
-    if next(providers) then
-      data.layout = { applied = true, providers = providers }
-    end
+  if NVSlots and NVSlots.capture_state then
+    data.layout = NVSlots.capture_state()
   end
 
   local captured = {}
@@ -277,7 +269,11 @@ local function restore_ui(data)
   vim.api.nvim_exec_autocmds('BufWinEnter', { buffer = 0, modeline = false })
 
   local layout = data and data.layout
-  if layout and layout.applied and require('config.profile').wants 'layout' then
+  if layout and require('config.profile').wants 'layout' then
+    if layout.focus and NVSlots.restore_focus then
+      NVSlots.restore_focus(layout)
+      return
+    end
     local names = vim.tbl_keys(layout.providers or {})
     if #names > 0 then
       NVSlots.open(names)

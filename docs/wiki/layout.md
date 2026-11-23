@@ -51,7 +51,9 @@ the prompt.
 A restart (`<A-r>`) starts a process that looks like a workspace and then
 restores the original invocation. The profile is read from that restored record,
 so the inset — and the layout key — survive a restart; the layout is rebuilt by
-the restore itself, never by the placeholder classification.
+the restore itself, never by the placeholder classification. A restart in focus
+mode stays off: the next `<M-i>` brings back the panels that were open, with
+their providers. Workspace sessions save the same state.
 
 ## Keymaps
 

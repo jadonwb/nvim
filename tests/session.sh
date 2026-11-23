@@ -69,4 +69,25 @@ grep -q 'left=explorer' <<<"$got2" || { echo 'FAIL: explorer not restored (2)'; 
 if grep -Eq '(^|,)bottom=' <<<"$got2"; then echo 'FAIL: closed bottom slot was reopened'; fail=1; fi
 if grep -Eq '(^|,)right_top=' <<<"$got2"; then echo 'FAIL: closed right_top slot was reopened'; fail=1; fi
 
+# A session saved in focus mode stays off; the next toggle restores the slots.
+nvim --headless \
+  "+lua vim.cmd 'edit $repo/a.txt'" \
+  "+lua vim.cmd 'NVLayout open'" \
+  "+lua NVSlots.toggle()" \
+  "+lua vim.fn.writefile({ 'saved=' .. tostring(NVSession.save()) }, '$tmp/save3.txt')" \
+  +qa! 2>"$tmp/save3.err"
+
+nvim --headless \
+  "+lua NVSession.restore()" \
+  "+lua vim.wait(400)" \
+  "+lua local off = not NVSlots.is_applied(); NVSlots.toggle(); vim.wait(300); local p = {}; for n, s in pairs(NVSlots.status()) do p[#p + 1] = n .. '=' .. tostring(s.provider) end; table.sort(p); vim.fn.writefile({ 'off=' .. tostring(off), 'on=' .. tostring(NVSlots.is_applied()), table.concat(p, ',') }, '$tmp/restore3.txt')" \
+  +qa! 2>"$tmp/restore3.err"
+
+got3=$(cat "$tmp/restore3.txt" 2>/dev/null)
+printf 'focus:      %s\n' "$got3"
+grep -qx 'off=true' <<<"$got3" || { echo 'FAIL: focus-mode session restored with the layout on'; fail=1; }
+grep -q 'on=true' <<<"$got3" || { echo 'FAIL: layout did not come back after restore'; fail=1; }
+grep -q 'left=explorer' <<<"$got3" || { echo 'FAIL: explorer missing after focus restore'; fail=1; }
+grep -q 'right_top=changes' <<<"$got3" || { echo 'FAIL: right_top missing after focus restore'; fail=1; }
+
 [ "$fail" = 0 ] && echo 'session: pass' || { echo 'session: FAIL'; exit 1; }
