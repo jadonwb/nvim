@@ -22,6 +22,10 @@ The workspace is a fixed grid of slots around the editing area:
 - `<M-w>` (or `:q`) inside a panel **hides that panel**. Hidden panels are
   remembered per project (`stdpath('state')/nv-layout.json`): a restart and
   `<M-i>` off/on keep them hidden. `:NVLayout slot <name> open` brings one back.
+- The bottom panel is opt-in: the layout opens it only when you showed it in
+  this project. `<C-/>` opens it on demand.
+- `<M-i>` restores exactly the panels that were open when it hid the layout,
+  including a bottom panel opened while it was off; panels you hid stay hidden.
 - A panel that disappears for any other reason (`:only`, a plugin) is rebuilt.
 - Sizes are one pure function of the screen size (`NVSlots.geometry`). Toggling
   the layout never changes them. Dragging a separator or `:resize` on a panel
@@ -63,7 +67,7 @@ Leader groups for the editor's own UI live in `features/layout/keymaps.lua`;
 | `<M-S-arrows>` in a panel              | Swap the panel's contents with the neighbouring panel (layout unchanged); `<leader>lw` / `<M-Tab>` swap with a picked one                               |
 | `<leader>lv` / `lm` / `lx`             | Compare: file side by side, man page side by side, close                                                                                                |
 | `<C-/>`                                | Show / hide the bottom panel (focuses a terminal or the prompt)                                                                                         |
-| `<M-n>`                                | Cycle the bottom panel (prompt / terminal / quickfix)                                                                                                   |
+| `<M-m>`                                | Cycle the bottom panel (prompt / terminal / quickfix)                                                                                                   |
 | `<leader>tb` / `tf` / `tc`             | Terminal in the bottom panel / floating (toggle) / main window; inside a terminal, _moves_ it there                                                     |
 | `<leader>tt` / `tn` / `t]` `t[`        | Pick a terminal (shows its home) / new panel terminal / next, previous                                                                                  |
 | `<Esc><Esc>` (terminal)                | Leave terminal mode                                                                                                                                     |

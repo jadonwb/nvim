@@ -108,7 +108,7 @@ function NVBottom.winbar(win, mode)
     end
     parts[#parts + 1] = '%#NvKey# ]q [q %#NvMuted# next / prev  %#NvKey# < > %#NvMuted# older / newer  %#NvKey# SPC xx %#NvMuted# hide '
   else
-    parts[#parts + 1] = '%#NvKey# M-n %#NvMuted# next '
+    parts[#parts + 1] = '%#NvKey# M-m %#NvMuted# next '
   end
   pcall(function()
     vim.wo[win].winbar = table.concat(parts)

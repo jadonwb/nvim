@@ -54,7 +54,7 @@ is `Space`; the local leader is `\`.
 | `<M-j>`       | Scroll down a bit                                                                          | n    |
 | `<M-k>`       | Scroll up a bit                                                                            | n    |
 | `<M-l>`       | Scroll right                                                                               | n    |
-| `<M-n>`       | Cycle bottom panel                                                                         | n    |
+| `<M-m>`       | Cycle bottom panel                                                                         | n    |
 | `<M-q>`       | Save all and quit                                                                          | n    |
 | `<M-r>`       | Save session and restart                                                                   | n    |
 | `<M-t>`       | Create new buffer                                                                          | n    |
@@ -372,7 +372,7 @@ previews a reference, `gd` opens it.
 
 - `<M-i>` toggles focus mode; the layout restores exactly the slots that were
   open.
-- `<M-n>` cycles the bottom panel modes.
+- `<M-m>` cycles the bottom panel modes.
 - `<M-a>` opens the agent transcript.
 - Window navigation is `<C-h>/<C-j>/<C-k>/<C-l>` everywhere, including the
   explorer.

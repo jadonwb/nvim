@@ -25,7 +25,7 @@ NVKeymaps = {
   restart = '<A-r>',
 
   layout_toggle = '<M-i>',
-  bottom_cycle = '<M-n>',
+  bottom_cycle = '<M-m>',
   agent = '<M-a>',
 }
 

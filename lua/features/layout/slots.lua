@@ -485,7 +485,7 @@ vim.api.nvim_create_autocmd('User', {
   pattern = 'NVOpenCodeSession',
   group = vim.api.nvim_create_augroup('NV slots session panel', { clear = true }),
   callback = function()
-    if not (NVSlots.is_applied() and not NVSlots.restoring) then
+    if not (NVSlots.is_applied() and not NVSlots.restoring and not tab_state().focus) then
       return
     end
     local mem = NVSlots.memory()
@@ -516,6 +516,7 @@ function NVSlots.open(only)
   local tab = tab_state()
   tab.content = center
   tab.focus = false
+  tab.focus_slots = nil
   tab.room = nil
 
   local wanted = {}
@@ -530,7 +531,10 @@ function NVSlots.open(only)
   else
     local mem = NVSlots.memory()
     for _, name in ipairs(NVSlots.order) do
-      wanted[name] = not mem.closed[name] and not NVSlots.idle_session_panel(name, mem)
+      -- The bottom panel is opt-in: it opens when the user showed it here,
+      -- never just because the layout did.
+      local opt_in = name ~= 'bottom' or mem.shown[name] == true
+      wanted[name] = opt_in and not mem.closed[name] and not NVSlots.idle_session_panel(name, mem)
     end
   end
 
@@ -673,7 +677,7 @@ function NVSlots.repair()
     return
   end
   local tab = tab_state()
-  if not next(tab.slots) then
+  if tab.focus or not next(tab.slots) then
     return
   end
   repairing = true
@@ -855,13 +859,48 @@ function NVSlots.refresh_providers()
   NVSlots._sizes = NVSlots._slot_sizes()
 end
 
---- Focus mode: hide the whole layout, or bring it back. Slots the user hid
---- stay hidden; the geometry is recomputed from the same inputs.
+--- Focus mode: hide the whole layout, or bring back exactly what was open.
+---
+--- The snapshot is taken before the windows close, so a timer or a provider
+--- that runs during the teardown cannot rebuild the layout half-hidden. The
+--- next press restores that same set of slots and providers; panels opened
+--- while the layout was off join it.
 function NVSlots.toggle()
   local tab = tab_state()
-  if NVSlots.is_applied() then
-    teardown()
+  if tab.focus then
+    local saved = tab.focus_slots or { names = {}, providers = {} }
+    local names, providers = vim.deepcopy(saved.names), vim.deepcopy(saved.providers)
+    for _, name in ipairs(NVSlots.order) do
+      local slot = tab.slots[name]
+      if slot and existing(name) and not vim.tbl_contains(names, name) then
+        names[#names + 1] = name
+        providers[name] = slot.provider
+      end
+    end
+    tab.focus_slots = nil
+    if #names > 0 then
+      NVSlots.open(names)
+      for name, provider in pairs(providers) do
+        if provider then
+          NVSlots.set_provider(name, provider)
+        end
+      end
+    else
+      NVSlots.open()
+    end
+    NVMessages.debug 'Layout on'
+  elseif NVSlots.is_applied() then
+    local saved = { names = {}, providers = {} }
+    for _, name in ipairs(NVSlots.order) do
+      local slot = tab.slots[name]
+      if slot and existing(name) then
+        saved.names[#saved.names + 1] = name
+        saved.providers[name] = slot.provider
+      end
+    end
+    tab.focus_slots = saved
     tab.focus = true
+    teardown()
     NVMessages.debug 'Focus mode'
   else
     NVSlots.open()
@@ -1200,7 +1239,7 @@ function NVSlots.setup()
           return
         end
         vim.schedule(function()
-          if not NVSlots.is_applied() and api.nvim_win_is_valid(win) then
+          if not tab_state().focus and not NVSlots.is_applied() and api.nvim_win_is_valid(win) then
             tab_state().content = win
             NVSlots.open()
           end

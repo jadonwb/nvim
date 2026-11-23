@@ -73,6 +73,24 @@ add('hidden kept=' .. tostring(not NVSlots.is_open 'right_mid') .. ' remembered=
 NVSlots.show 'right_mid' wait()
 add('shown=' .. tostring(NVSlots.is_open 'right_mid'))
 
+-- The bottom panel is opt-in, and focus mode restores exactly what was open.
+add('bottom default=' .. tostring(NVSlots.is_open 'bottom'))
+NVSlots.show 'bottom' wait()
+add('bottom shown=' .. tostring(NVSlots.is_open 'bottom') .. ' provider=' .. tostring(NVSlots.provider_of 'bottom'))
+NVSlots.set_provider('bottom', 'quickfix') wait()
+NVSlots.toggle() wait() NVSlots.toggle() wait()
+add('bottom kept=' .. tostring(NVSlots.is_open 'bottom') .. ' provider=' .. tostring(NVSlots.provider_of 'bottom'))
+NVSlots.hide 'bottom' wait()
+NVSlots.toggle() wait()
+-- A panel opened while the layout is off (the transient bottom) joins the
+-- restore instead of being torn down.
+NVSlots.ensure 'bottom' NVSlots.render_slot 'bottom' wait()
+NVSlots.toggle() wait()
+add('bottom returns=' .. tostring(NVSlots.is_open 'bottom') .. ' sides=' .. tostring(sides_open()))
+NVSlots.hide 'bottom' wait()
+NVSlots.toggle() wait() NVSlots.toggle() wait()
+add('bottom hidden kept=' .. tostring(not NVSlots.is_open 'bottom'))
+
 -- A panel closed outside the API is rebuilt; :only is repaired.
 vim.api.nvim_win_close(NVSlots.win 'right_top', true) wait(400)
 add('repaired=' .. tostring(NVSlots.is_open 'right_top'))
@@ -120,13 +138,18 @@ printf '%s\n' "$got"
 
 fail=0
 check() { if ! grep -qx -- "$1" <<<"$got"; then printf 'FAIL: missing %s\n' "$1"; fail=1; fi; }
-check 'applied=true sides=true bottom=true'
+check 'applied=true sides=true bottom=false'
 check 'left narrower=true'
 check 'left provider=explorer'
 check 'focus off=true'
 check 'toggle stable=true'
 check 'hidden kept=true remembered=true'
 check 'shown=true'
+check 'bottom default=false'
+check 'bottom shown=true provider=prompt'
+check 'bottom kept=true provider=quickfix'
+check 'bottom returns=true sides=true'
+check 'bottom hidden kept=true'
 check 'repaired=true'
 check 'only repaired=true stable=true'
 check 'room sides gone=true'
@@ -186,7 +209,7 @@ check 'gutter back=true slots=1'
 check 'gutter hidden=true remembered=false'
 check 'gutter returns=true'
 check 'gutter panel=true'
-check 'gutter reset=true slots=1'
+check 'gutter reset=true slots=2'
 
 # ── a restart restores the launch ──────────────────────────────────────────
 # A restart starts a fresh process, which looks like a workspace, and then

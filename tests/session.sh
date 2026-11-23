@@ -29,6 +29,7 @@ cd "$repo" || exit 1
 nvim --headless \
   "+lua vim.cmd 'edit $repo/a.txt'" \
   "+lua vim.cmd 'NVLayout open'" \
+  "+lua vim.cmd 'NVLayout slot bottom open'" \
   "+lua NVSlots.set_provider('bottom', 'quickfix')" \
   "+lua NVSlots.set_provider('right_bottom', 'prompt')" \
   "+lua vim.fn.writefile({ 'saved=' .. tostring(NVSession.save()), 'applied=' .. tostring(NVSlots.is_applied()) }, '$tmp/save.txt')" \
@@ -56,7 +57,7 @@ grep -q 'right_top=changes' <<<"$got" || { echo 'FAIL: default provider missing'
 grep -q 'left=explorer' <<<"$got" || { echo 'FAIL: explorer not restored'; fail=1; }
 
 # A layout with slots closed must restore with those slots still closed.
-nvim --headless   "+lua vim.cmd 'edit $repo/b.txt'"   "+lua vim.cmd 'NVLayout open'"   "+lua NVSlots.remove 'bottom'"   "+lua NVSlots.remove 'right_top'"   "+lua NVSlots.set_provider('right_bottom', 'quickfix')"   "+lua vim.fn.writefile({ 'saved=' .. tostring(NVSession.save()) }, '$tmp/save2.txt')"   +qa! 2>"$tmp/save2.err"
+nvim --headless   "+lua vim.cmd 'edit $repo/b.txt'"   "+lua vim.cmd 'NVLayout open'"   "+lua vim.cmd 'NVLayout slot bottom open'"   "+lua NVSlots.remove 'bottom'"   "+lua NVSlots.remove 'right_top'"   "+lua NVSlots.set_provider('right_bottom', 'quickfix')"   "+lua vim.fn.writefile({ 'saved=' .. tostring(NVSession.save()) }, '$tmp/save2.txt')"   +qa! 2>"$tmp/save2.err"
 
 nvim --headless   "+lua NVSession.restore()"   "+lua vim.wait(400)"   "+lua local p = {}; for n, s in pairs(NVSlots.status()) do p[#p + 1] = n .. '=' .. tostring(s.provider) end; table.sort(p); vim.fn.writefile({ 'applied=' .. tostring(NVSlots.is_applied()), table.concat(p, ',') }, '$tmp/restore2.txt')"   +qa! 2>"$tmp/restore2.err"
 
