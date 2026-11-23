@@ -177,6 +177,14 @@ function NVSPickers.buffers()
   }
 end
 
+--- Files entered recently, the same oldfiles list the dashboard used to show:
+--- every directory, data/cache/state excluded, with a preview.
+function NVSPickers.recent()
+  Snacks.picker.recent {
+    layout = NVSPickerHorizontalLayout.build(),
+  }
+end
+
 function NVSPickers.git_branches()
   Snacks.picker.git_branches {
     layout = NVSPickerVerticalLayout.build(),
@@ -533,8 +541,8 @@ return {
 
       -- The <leader>s group, restored from LazyVim's snacks picker mappings.
       -- The entries the previous config deleted are still absent:
-      -- sb, sB (buffer lines / grep buffers), sg, sG (grep), sw, sW (grep word)
-      -- and sr (search and replace).
+      -- sb, sB (buffer lines / grep buffers), sg, sG (grep) and sw, sW
+      -- (grep word). sr is recent files here, not search and replace.
       {
         '<leader>s"',
         function()
@@ -646,6 +654,11 @@ return {
           Snacks.picker.qflist()
         end,
         desc = 'Quickfix List',
+      },
+      {
+        '<leader>sr',
+        NVSPickers.recent,
+        desc = 'Recent Files',
       },
       {
         '<leader>sR',

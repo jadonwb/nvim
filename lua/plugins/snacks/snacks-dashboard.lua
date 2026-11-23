@@ -77,20 +77,6 @@ return {
   opts = {
     dashboard = {
       enabled = false,
-      formats = {
-        -- Snacks' default pathshorten turns every component into one letter when
-        -- the field is narrow. Show the tail of the path instead, which is the
-        -- part that identifies the file.
-        file = function(item, ctx)
-          local fname = vim.fn.fnamemodify(item.file, ':~:.')
-          if ctx.width and #fname > ctx.width then
-            -- Keep the two identifying parts instead of an unreadable tail.
-            local parent = vim.fn.fnamemodify(item.file, ':h:t')
-            fname = parent .. '/' .. vim.fn.fnamemodify(item.file, ':t')
-          end
-          return { { fname, hl = 'file' } }
-        end,
-      },
       sections = {
         { section = 'header', padding = 1 },
         -- Status chips: version, branch and launch profile, the same facts the
@@ -126,15 +112,6 @@ return {
           }
         end,
         { section = 'keys', gap = 1, padding = 1 },
-        -- Recent files need vertical room. On a short terminal the content
-        -- window is 25 rows, and the bottom panel would cut the list in half,
-        -- so the dashboard drops it rather than showing a clipped section.
-        (vim.o.lines >= 44) and {
-          function()
-            return { align = 'center', padding = 0, text = { { ' Recent files ', hl = 'title' } } }
-          end,
-          { section = 'recent_files', cwd = false, limit = 4, padding = 0 },
-        } or {},
         { section = 'startup' },
       },
       preset = {

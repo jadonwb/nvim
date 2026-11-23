@@ -245,6 +245,7 @@ The list fills only when asked and shows in the bottom panel; see
 | `sm` | Marks                  | n    |
 | `sp` | Search for Plugin Spec | n    |
 | `sq` | Quickfix List          | n    |
+| `sr` | Recent Files           | n    |
 | `ss` | LSP Symbols            | n    |
 | `st` | Todo                   | n    |
 | `su` | Undotree               | n    |

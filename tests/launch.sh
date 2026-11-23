@@ -123,7 +123,7 @@ if command -v script >/dev/null; then
     printf 'FAIL - dashboard f did not list the project file on the first open\n'
   fi
   if [ "$got" = $'workspace\nsnacks_dashboard\nfalse\nfalse\n0\nexplorer\ntrue\n3' ] &&
-    LC_ALL=C grep -aqF 'Recent files' "$tmp/terminal" &&
+    LC_ALL=C grep -aqF 'LazyGit' "$tmp/terminal" &&
     ! LC_ALL=C grep -aqF 'Help poor children' "$tmp/terminal"; then
     pass=$((pass + 1))
     printf 'ok   - terminal draws the dashboard first, then loads lualine and the explorer with a file\n'
