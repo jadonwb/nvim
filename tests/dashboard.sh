@@ -106,6 +106,26 @@ else
   bad 'update item after the local check' "$(screen)"
 fi
 
+# An update that finishes while Lazy's view is current still refreshes the
+# dashboard it covers; otherwise the old item survives closing Lazy.
+nv 'luaeval("vim.cmd.Lazy()")' >/dev/null
+for _ in $(seq 30); do
+  [ "$(nv '&filetype')" = lazy ] && break
+  sleep 0.1
+done
+nv 'luaeval("(function() local p = require(\"lazy.core.config\").plugins[\"snacks.nvim\"]; p._.updates = nil; require(\"lazy.manage.checker\").report(false); vim.api.nvim_exec_autocmds(\"User\", { pattern = \"LazyUpdate\", modeline = false }) end)()")' >/dev/null
+sleep 0.3
+tmux -L "$server" send-keys -l q
+for _ in $(seq 30); do
+  [ "$(nv '&filetype')" = snacks_dashboard ] && break
+  sleep 0.1
+done
+if ! screen | grep -q 'Update plugins'; then
+  ok 'an update while Lazy is open clears the dashboard item'
+else
+  bad 'update item survives Lazy' "$(screen | grep 'Update plugins')"
+fi
+
 # Updates lazy.nvim already knows about are in the first frame. The probe
 # fakes one: lazy sees a different remote commit for snacks.nvim (set up at
 # VimEnter, before the dashboard draws), and records whether the dashboard

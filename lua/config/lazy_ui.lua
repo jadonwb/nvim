@@ -73,8 +73,10 @@ function lazy_fn.close()
 end
 
 -- The dashboard buffer has no file, so it is re-rendered rather than re-read.
+-- Lazy's view is current while an install or update completes, so check that
+-- the dashboard buffer exists rather than that it is focused.
 local function refresh_dashboard()
-  if NVSnacksDashboard and NVSnacksDashboard.is_active() then
+  if NVSnacksDashboard and NVSnacksDashboard.is_loaded() then
     pcall(function()
       require('snacks').dashboard.update()
     end)

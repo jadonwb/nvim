@@ -8,6 +8,17 @@ function NVSnacksDashboard.is_active()
   return vim.bo.filetype == 'snacks_dashboard'
 end
 
+--- The dashboard buffer exists. Lazy opens its own view over it while an
+--- install or update runs, so it is not the current buffer then.
+function NVSnacksDashboard.is_loaded()
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.b[buf].snacks_main and vim.bo[buf].filetype == 'snacks_dashboard' then
+      return true
+    end
+  end
+  return false
+end
+
 function NVSnacksDashboard.setup()
   NVClose.register('dashboard', function()
     return NVSnacksDashboard.is_active()
