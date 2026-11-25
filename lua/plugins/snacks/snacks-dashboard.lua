@@ -106,7 +106,7 @@ return {
             local branch = vim.trim(git.stdout or '')
             vim.list_extend(text, {
               { '  ' .. (branch ~= '' and branch or 'no branch') .. ' ', hl = 'special' },
-              { '   ', hl = 'footer' },
+              { '   ',                                                   hl = 'footer' },
             })
           end
           text[#text + 1] = { ' ' .. profile .. ' ', hl = 'special' }
@@ -122,7 +122,7 @@ return {
             },
           }
         end,
-        { section = 'keys', gap = 1, padding = 1 },
+        { section = 'keys',   gap = 1,    padding = 1 },
         { section = 'startup' },
       },
       preset = {
@@ -132,8 +132,9 @@ return {
           NVLazy.check_updates_early()
           local missing, updates = NVLazy.anything_missing(), NVLazy.update_count()
           if missing or updates > 0 then
-            local desc = missing and (updates > 0 and ('Install + update plugins (%d)'):format(updates) or 'Install plugins')
-              or ('Update plugins (%d)'):format(updates)
+            local desc = missing and
+                (updates > 0 and ('Install + update plugins (%d)'):format(updates) or 'Install plugins')
+                or ('Update plugins (%d)'):format(updates)
             table.insert(items, {
               icon = ' ',
               key = 'i',
@@ -156,7 +157,7 @@ return {
           table.insert(items, { icon = ' ', key = 'g', desc = 'LazyGit', action = NVSLazygit.show })
           table.insert(items, { icon = ' ', key = 'f', desc = 'Find file', action = NVFffPicker.find_files })
           table.insert(items, { icon = ' ', key = 's', desc = 'Find text', action = NVFffPicker.live_grep })
-          table.insert(items, { icon = ' ', key = 'e', desc = 'Browse Files', action = ':Yazi' })
+          table.insert(items, { icon = ' ', key = 'r', desc = 'Recent Files', action = NVSPickers.recent })
           -- ' ' TODO: make a new file option?
           table.insert(items, { icon = ' ', key = 'q', desc = 'Quit', action = ':qa' })
 
