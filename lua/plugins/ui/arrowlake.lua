@@ -3,7 +3,7 @@ return {
     'jadonwb/arrowlake.nvim',
     dev = true,
     opts = {
-      transparent = true,
+      transparent = false,
     },
     keys = {
       {
